@@ -1,0 +1,256 @@
+[07/18 17:18:06.108598][debug][1084539][Context.cpp:30] Context creating, work_dir=/Users/premshah/Desktop/Robotics/GSET/GSETGripper/camera
+[07/18 17:18:06.108623][debug][1084539][Context.cpp:49] Config file version=1.1
+[07/18 17:18:06.108923][debug][1084539][FrameBufferManager.cpp:23] Max global frame buffer size updated! size=2048.000MB
+[07/18 17:18:06.108928][info][1084539][Context.cpp:68] Context created with config: default config!
+[07/18 17:18:06.108981][info][1084539][Context.cpp:73] Work directory=/Users/premshah/Desktop/Robotics/GSET/GSETGripper/camera, SDK version=v1.10.16-20241021-c0329e356
+[07/18 17:18:06.109004][debug][1084539][DeviceManager.cpp:30] DeviceManager init ...
+[07/18 17:18:06.109006][info][1084539][MacPal.cpp:31] createObPal: create MacPal!
+[07/18 17:18:06.114734][debug][1084539][DeviceManager.cpp:34] Enable USB Device Enumerator ...
+[07/18 17:18:06.115815][debug][1084539][EnumeratorLibusb.cpp:324] queryDevicesInfo done!
+[07/18 17:18:06.115833][debug][1084539][UsbDeviceEnumerator.cpp:163] Current usb device port list:
+[07/18 17:18:06.115862][debug][1084539][UsbDeviceEnumerator.cpp:166]  - 1-2.4.2-9.0 | Orbbec Astra+ Depth Camera
+[07/18 17:18:06.115874][debug][1084539][UsbDeviceEnumerator.cpp:166]  - 1-2.4.2-9.2 | Orbbec Astra+ IR Camera
+[07/18 17:18:06.115886][debug][1084539][UsbDeviceEnumerator.cpp:166]  - 1-2.4.2-9.4 | Orbbec(R) Astra(TM) Data Channel
+[07/18 17:18:06.115898][debug][1084539][UsbDeviceEnumerator.cpp:166]  - 1-1.4.1-7.0 | Orbbec Astra+ RGB Camera
+[07/18 17:18:06.115929][info][1084539][MacPal.cpp:125] Create PollingDeviceWatcher!
+[07/18 17:18:06.115952][debug][1084539][UsbDeviceEnumerator.cpp:71] Found 1 device(s):
+[07/18 17:18:06.115965][debug][1084539][UsbDeviceEnumerator.cpp:74]   - Name: Astra+, PID: 0x0636, SN/ID: BY1H75401PH, connection: USB3.0
+[07/18 17:18:06.115977][info][1084539][DeviceManager.cpp:15] Current found device(s): (1)
+[07/18 17:18:06.115993][info][1084539][DeviceManager.cpp:24] 	- Name: Astra+, PID: 0x0636, SN/ID: BY1H75401PH, Connection: USB3.0
+[07/18 17:18:06.116008][debug][1084539][DeviceManager.cpp:52] DeviceManager construct done!
+[07/18 17:18:06.116023][info][1084539][Pipeline.cpp:15] Try to create pipeline with default device.
+[07/18 17:18:06.116038][debug][1084539][DeviceManager.cpp:109] DeviceManager  createDevice...
+[07/18 17:18:06.116049][debug][1084539][UsbDeviceEnumerator.cpp:291] UsbDeviceEnumerator createDevice...
+[07/18 17:18:06.116081][debug][1084539][AstraUvcDevice.cpp:17] AstraUvcDevice init ...
+[07/18 17:18:06.116135][debug][1084539][AstraUvcDevice.cpp:151] init sensor map start!
+[07/18 17:18:06.116150][info][1084539][AstraUvcDevice.cpp:168] init sensor map done!
+[07/18 17:18:06.116169][debug][1084539][AstraUvcDevice.cpp:94] createCommand start!
+[07/18 17:18:06.117684][debug][1084539][ObLibuvcDevicePort.cpp:58] uvc_open success
+[07/18 17:18:06.117760][debug][1084539][VendorCommand.cpp:205] VendorCommand constructor 6000007e4018
+[07/18 17:18:06.142772][debug][1084539][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1000, dataLen: 164
+[07/18 17:18:06.142791][debug][1084539][AstraUvcDevice.cpp:147] Command has been created!
+[07/18 17:18:06.173001][debug][1084539][PropertyAccessor.cpp:50] get firmware data success! propertyId: 1000, dataLen: 164
+[07/18 17:18:06.173015][info][1084539][AbstractDevice.cpp:124] 	- Firmware version: 1.0.22
+[07/18 17:18:06.173048][debug][1084539][AstraUvcDevice.cpp:288] Init depth process param start!
+[07/18 17:18:06.234489][debug][1084539][HostProtocol.cpp:466] get property value success! propertyId=63, cur={intValue: 1, floatValue: 1.4013e-45}, max={intValue: 1, floatValue: 1.4013e-45}, min={intValue: 0, floatValue: 0},def={intValue: 0, floatValue: 0},step={intValue: 1, floatValue: 1.4013e-45}
+[07/18 17:18:06.234505][debug][1084539][HostProtocol.cpp:433] Set property value, propertyId=63, value={intValue: 0, floatValue: 0}
+[07/18 17:18:06.308026][debug][1084539][HostProtocol.cpp:433] Set property value, propertyId=63, value={intValue: 1, floatValue: 1.4013e-45}
+[07/18 17:18:06.375725][debug][1084539][AstraUvcDevice.cpp:300] Astra+ long-distance version!
+[07/18 17:18:06.375894][debug][1084539][AstraUvcDevice.cpp:321] disparityParam: baseline: 7.522599, zpd: 129.8334503173828, zpps: 0.11279311031103134, bitSize: 12, unit: 10, packMode: 1
+[07/18 17:18:06.375900][debug][1084539][AstraUvcDevice.cpp:323] softFilterParam: maxSpeckleSize: 960, maxDiff: 16, filterType: 0
+[07/18 17:18:06.375903][info][1084539][AstraUvcDevice.cpp:327] Init depth process param done!
+[07/18 17:18:06.375913][info][1084539][AstraUvcDevice.cpp:23] Astra device created! PID: 0x0636, SN: BY1H75401PH
+[07/18 17:18:06.375919][debug][1084539][UsbDeviceEnumerator.cpp:359] Device created successfully! Name: Astra+, PID: 0x0636, SN/ID: BY1H75401PH
+[07/18 17:18:06.375922][info][1084539][DeviceManager.cpp:150] Device created successfully! Name: Astra+, PID: 0x0636, SN/ID: BY1H75401PH
+[07/18 17:18:06.376099][debug][1084539][Pipeline.cpp:29] Pipeline init ...
+[07/18 17:18:06.376109][debug][1084539][Pipeline.cpp:168] loadFrameQueueSizeConfig() config queue size: 10
+[07/18 17:18:06.376128][warning][1084539][ObException.cpp:5] Current device does not support frame sync!
+[07/18 17:18:06.376632][warning][1084539][Pipeline.cpp:45] Execute failure! A libobsensor_exception has occurred!
+	 - where:45#Pipeline
+	 - msg:Current device does not support frame sync!
+	 - type:N11libobsensor31unsupported_operation_exceptionE
+[07/18 17:18:06.376639][info][1084539][Pipeline.cpp:47] Pipeline created with device: {name: Astra+, sn: BY1H75401PH}, @0x13AE0E7C8
+[07/18 17:18:06.377110][debug][1084539][FrameProcessor.cpp:90] FrameProcessor init with 5 blocks! @5282840296
+[07/18 17:18:06.377115][debug][1084539][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[07/18 17:18:06.377117][debug][1084539][FrameProcessor.cpp:98]  - block: FrameUnpacker, status: enable
+[07/18 17:18:06.377120][debug][1084539][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[07/18 17:18:06.377121][debug][1084539][FrameProcessor.cpp:98]  - block: FrameSoftFilter, status: enable
+[07/18 17:18:06.377123][debug][1084539][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[07/18 17:18:06.377125][debug][1084539][FrameProcessor.cpp:98]  - block: Disparity2DepthConverter, status: enable
+[07/18 17:18:06.377127][debug][1084539][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[07/18 17:18:06.377129][debug][1084539][FrameProcessor.cpp:98]  - block: D2CFilter, status: disable
+[07/18 17:18:06.377131][debug][1084539][FrameProcessingBlock.cpp:26] Block created with frame queue size: 10
+[07/18 17:18:06.377132][debug][1084539][FrameProcessor.cpp:98]  - block: PostProcessFilter, status: disable
+[07/18 17:18:06.377179][debug][1084539][VideoSensor.cpp:252] VideoSensor construct!
+[07/18 17:18:06.377198][debug][1084539][VideoSensor.cpp:278] VideoSensor created, @OB_SENSOR_DEPTH
+[07/18 17:18:06.377215][info][1084539][AstraUvcDevice.cpp:220] Depth sensor has been created!
+[07/18 17:18:06.377226][debug][1084539][VideoSensor.cpp:119] device has original Y16 format, no need to add virtual format!
+[07/18 17:18:06.377252][info][1084539][VideoSensor.cpp:384] Query stream profile! size= 48, SensorType=OB_SENSOR_DEPTH
+[07/18 17:18:06.377257][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 480, fps: 30}
+[07/18 17:18:06.377260][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 160, height: 120, fps: 30}
+[07/18 17:18:06.377263][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 160, height: 120, fps: 15}
+[07/18 17:18:06.377265][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 160, height: 120, fps: 10}
+[07/18 17:18:06.377267][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 160, height: 120, fps: 7}
+[07/18 17:18:06.377269][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 240, fps: 30}
+[07/18 17:18:06.377271][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 240, fps: 15}
+[07/18 17:18:06.377279][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 240, fps: 10}
+[07/18 17:18:06.377281][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 320, height: 240, fps: 7}
+[07/18 17:18:06.377283][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 480, fps: 15}
+[07/18 17:18:06.377285][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 480, fps: 10}
+[07/18 17:18:06.377287][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 480, fps: 7}
+[07/18 17:18:06.377290][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1280, height: 1024, fps: 30}
+[07/18 17:18:06.377292][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1280, height: 1024, fps: 15}
+[07/18 17:18:06.377294][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1280, height: 1024, fps: 10}
+[07/18 17:18:06.377296][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 1280, height: 1024, fps: 7}
+[07/18 17:18:06.377298][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 160, height: 120, fps: 30}
+[07/18 17:18:06.377300][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 160, height: 120, fps: 15}
+[07/18 17:18:06.377302][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 160, height: 120, fps: 10}
+[07/18 17:18:06.377305][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 160, height: 120, fps: 7}
+[07/18 17:18:06.377307][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 320, height: 240, fps: 30}
+[07/18 17:18:06.377309][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 320, height: 240, fps: 15}
+[07/18 17:18:06.377311][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 320, height: 240, fps: 10}
+[07/18 17:18:06.377313][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 320, height: 240, fps: 7}
+[07/18 17:18:06.377315][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 640, height: 480, fps: 30}
+[07/18 17:18:06.377317][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 640, height: 480, fps: 15}
+[07/18 17:18:06.377319][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 640, height: 480, fps: 10}
+[07/18 17:18:06.377321][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 640, height: 480, fps: 7}
+[07/18 17:18:06.377323][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 1280, height: 1024, fps: 30}
+[07/18 17:18:06.377325][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 1280, height: 1024, fps: 15}
+[07/18 17:18:06.377327][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 1280, height: 1024, fps: 10}
+[07/18 17:18:06.377329][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y11, width: 1280, height: 1024, fps: 7}
+[07/18 17:18:06.377331][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 160, height: 120, fps: 30}
+[07/18 17:18:06.377333][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 160, height: 120, fps: 15}
+[07/18 17:18:06.377335][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 160, height: 120, fps: 10}
+[07/18 17:18:06.377468][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 160, height: 120, fps: 7}
+[07/18 17:18:06.377474][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 320, height: 240, fps: 30}
+[07/18 17:18:06.377477][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 320, height: 240, fps: 15}
+[07/18 17:18:06.377479][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 320, height: 240, fps: 10}
+[07/18 17:18:06.377482][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 320, height: 240, fps: 7}
+[07/18 17:18:06.377485][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 640, height: 480, fps: 30}
+[07/18 17:18:06.377487][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 640, height: 480, fps: 15}
+[07/18 17:18:06.377489][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 640, height: 480, fps: 10}
+[07/18 17:18:06.377492][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 640, height: 480, fps: 7}
+[07/18 17:18:06.377494][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 1280, height: 1024, fps: 30}
+[07/18 17:18:06.377497][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 1280, height: 1024, fps: 15}
+[07/18 17:18:06.377499][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 1280, height: 1024, fps: 10}
+[07/18 17:18:06.377501][info][1084539][VideoSensor.cpp:386]  - {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y12, width: 1280, height: 1024, fps: 7}
+[07/18 17:18:08.382839][debug][1084539][Pipeline.cpp:227] Pipeline start() start!
+[07/18 17:18:08.382868][info][1084539][Pipeline.cpp:188] Check and set config start!
+[07/18 17:18:08.382889][info][1084539][Pipeline.cpp:223] Check and set config done!
+[07/18 17:18:08.407583][debug][1084539][HostProtocol.cpp:466] get property value success! propertyId=14, cur={intValue: 0, floatValue: 0}, max={intValue: 1, floatValue: 1.4013e-45}, min={intValue: 0, floatValue: 0},def={intValue: 0, floatValue: 0},step={intValue: 1, floatValue: 1.4013e-45}
+[07/18 17:18:08.407621][debug][1084539][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[07/18 17:18:08.407630][debug][1084539][HostProtocol.cpp:433] Set property value, propertyId=63, value={intValue: 1, floatValue: 1.4013e-45}
+[07/18 17:18:08.438106][debug][1084539][PropertyAccessor.cpp:17] set property value success! propertyId: 63, value: {intValue: 1, floatValue: 1.4013e-45}
+[07/18 17:18:08.469035][debug][1084539][HostProtocol.cpp:466] get property value success! propertyId=14, cur={intValue: 0, floatValue: 0}, max={intValue: 1, floatValue: 1.4013e-45}, min={intValue: 0, floatValue: 0},def={intValue: 0, floatValue: 0},step={intValue: 1, floatValue: 1.4013e-45}
+[07/18 17:18:08.469047][debug][1084539][PropertyAccessor.cpp:28] get property value success! propertyId: 14, value: {intValue: 0, floatValue: 0}
+[07/18 17:18:08.469064][debug][1084539][FrameProcessingBlockManager.cpp:75]  FrameProcessingBlockManager started, 0 blocks contained!
+[07/18 17:18:08.469068][info][1084539][Pipeline.cpp:288] Try to start streams!
+[07/18 17:18:08.469104][debug][1084539][VideoSensor.cpp:566] VideoSensor::start, @OB_SENSOR_DEPTH
+[07/18 17:18:08.469132][debug][1084539][FrameMemoryPool.cpp:35] FrameMemoryPool created!
+[07/18 17:18:08.469141][debug][1084539][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor10DepthFrameE, obj addr:0x6000010fc400, frame obj total size:0.586MB
+[07/18 17:18:08.469144][debug][1084539][FrameMemoryPool.cpp:60] DepthFrame bufferManager created!
+[07/18 17:18:08.469151][debug][1084539][FrameProcessor.cpp:144] Frame processor active blocks chain update: input ->FrameSoftFilter -> Disparity2DepthConverter -> output
+[07/18 17:18:08.469162][debug][1084539][FrameProcessor.cpp:155] FrameProcessor started, 5 blocks contained!
+[07/18 17:18:08.469167][info][1084539][VideoSensor.cpp:646] start OB_SENSOR_DEPTH stream with profile: {type: OB_STREAM_DEPTH, format: OB_FORMAT_Y16, width: 640, height: 480, fps: 30}, Backend Format: OB_FORMAT_Y16
+[07/18 17:18:08.469172][debug][1084539][ObLibuvcDevicePort.cpp:75] ObLibuvcDevicePort::startStream()...
+[07/18 17:18:08.469177][debug][1084539][ObLibuvcDevicePort.cpp:90] playProfile: infIndex=0, selected_format.width=640, height=480, format=OB_FORMAT_Y16
+[07/18 17:18:08.510373][debug][1084539][ObLibuvcDevicePort.cpp:143] ObLibuvcDevicePort::startStream() done
+[07/18 17:18:08.510415][debug][1084539][VideoSensor.cpp:672] Stream state changed to STREAM_STATE_STARTING. @OB_SENSOR_DEPTH
+[07/18 17:18:08.510420][debug][1084539][VideoSensor.cpp:674] Stream starting! @OB_SENSOR_DEPTH
+[07/18 17:18:08.510422][debug][1084539][Pipeline.cpp:299] Sensor stream started, sensorType=OB_SENSOR_DEPTH
+[07/18 17:18:08.510425][info][1084539][Pipeline.cpp:301] Start streams done!
+[07/18 17:18:08.510434][info][1084539][Pipeline.cpp:277] Pipeline start done!
+[07/18 17:18:08.583355][debug][1084689][FrameBufferManager.cpp:35] New frame buffer allocated=0.586MB, total usage: allocated=0.586MB, max limit=2048.000MB
+[07/18 17:18:08.583694][warning][1084689][VideoSensor.cpp:453] This frame will be dropped because the data size does not match the expectation! size=16384, expected=614400 @OB_SENSOR_DEPTH
+[07/18 17:18:08.646783][warning][1084689][VideoSensor.cpp:448] This frame will be dropped because because the data size is larger than expected! size=778696, expected=614400 @OB_SENSOR_DEPTH
+[07/18 17:18:08.679976][debug][1084689][VideoSensor.cpp:460] Stream state changed to STREAM_STATE_STREAMING. @OB_SENSOR_DEPTH
+[07/18 17:18:08.680193][debug][1084689][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor15FrameSoftFilterE process thread started!
+[07/18 17:18:08.681192][debug][1084693][FrameProcessingBlock.cpp:59] FrameProcessingBlock@N11libobsensor24Disparity2DepthConverterE process thread started!
+[07/18 17:18:08.681535][debug][1084694][FrameBufferManager.hpp:65] FrameBufferManager created! frame type:N11libobsensor8FrameSetE, obj addr:0x6000010e8080, frame obj total size:0.000MB
+[07/18 17:18:08.681563][debug][1084694][FrameMemoryPool.cpp:92] Frameset bufferManager created!
+[07/18 17:18:08.681594][debug][1084694][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=0.587MB, max limit=2048.000MB
+[07/18 17:18:08.681636][debug][1084694][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH
+[07/18 17:18:08.713258][debug][1084689][FrameBufferManager.cpp:35] New frame buffer allocated=0.586MB, total usage: allocated=1.173MB, max limit=2048.000MB
+[07/18 17:18:08.713681][debug][1084694][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=1.174MB, max limit=2048.000MB
+[07/18 17:18:08.746616][debug][1084689][FrameBufferManager.cpp:35] New frame buffer allocated=0.586MB, total usage: allocated=1.760MB, max limit=2048.000MB
+[07/18 17:18:08.746899][debug][1084694][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=1.760MB, max limit=2048.000MB
+[07/18 17:18:08.779939][debug][1084689][FrameBufferManager.cpp:35] New frame buffer allocated=0.586MB, total usage: allocated=2.347MB, max limit=2048.000MB
+[07/18 17:18:08.780207][debug][1084694][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=2.347MB, max limit=2048.000MB
+[07/18 17:18:08.813274][debug][1084689][FrameBufferManager.cpp:35] New frame buffer allocated=0.586MB, total usage: allocated=2.934MB, max limit=2048.000MB
+[07/18 17:18:08.813553][debug][1084694][FrameBufferManager.cpp:35] New frame buffer allocated=0.000MB, total usage: allocated=2.934MB, max limit=2048.000MB
+[07/18 17:18:11.584220][warning][1084690][VideoSensor.cpp:453] This frame will be dropped because the data size does not match the expectation! size=16179, expected=614400 @OB_SENSOR_DEPTH [**11 logs in 3000ms, last: 17:18:08.605031**]
+[07/18 17:18:11.713913][debug][1084694][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**91 logs in 3032ms**]
+[07/18 17:18:13.613944][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=32.206757fps
+[07/18 17:18:13.714335][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=30.200676fps
+[07/18 17:18:17.747400][debug][1084962][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**180 logs in 6033ms, last: 17:18:17.714844**]
+[07/18 17:18:18.614642][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.994001fps
+[07/18 17:18:18.715059][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:18:23.615362][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.994001fps
+[07/18 17:18:23.749098][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.996027fps
+[07/18 17:18:28.616089][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.994001fps
+[07/18 17:18:28.783203][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.996027fps
+[07/18 17:18:29.750069][debug][1084694][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**361 logs in 12002ms**]
+[07/18 17:18:33.650103][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:18:33.816953][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=30.001987fps
+[07/18 17:18:38.684186][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:18:38.817926][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:18:43.718250][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:18:43.818782][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:18:48.752303][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:18:48.819486][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:18:53.753022][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.994001fps
+[07/18 17:18:53.753277][debug][1084694][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**720 logs in 24003ms**]
+[07/18 17:18:53.853284][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.996027fps
+[07/18 17:18:58.787042][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:18:58.854045][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:19:03.821110][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:03.888181][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.996027fps
+[07/18 17:19:08.855145][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:08.922193][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.996027fps
+[07/18 17:19:13.889212][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:13.923002][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:19:18.923251][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:18.924103][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:19:23.957319][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:23.957760][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=30.001987fps
+[07/18 17:19:28.958023][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.994001fps
+[07/18 17:19:28.958449][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:19:33.959125][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.994001fps
+[07/18 17:19:33.992072][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:38.993213][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.996027fps
+[07/18 17:19:39.026136][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:41.760341][debug][1084694][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**1440 logs in 48007ms**]
+[07/18 17:19:44.027276][debug][1084694][Pipeline.cpp:323] Pipeline streaming... frameset output rate=29.996027fps
+[07/18 17:19:44.060191][debug][1084689][VideoSensor.cpp:427] OB_SENSOR_DEPTH Streaming... frameRate=29.996027fps
+[07/18 17:19:47.427659][info][1084539][Pipeline.cpp:411] Try to stop pipeline!
+[07/18 17:19:47.427702][info][1084539][Pipeline.cpp:383] Try to stop streams!
+[07/18 17:19:47.427713][debug][1084539][VideoSensor.cpp:678] VideoSensor::stop, @OB_SENSOR_DEPTH
+[07/18 17:19:47.427717][debug][1084539][VideoSensor.cpp:701] Stream state changed to STREAM_STATE_STOPPING. @OB_SENSOR_DEPTH
+[07/18 17:19:47.427721][debug][1084539][ObLibuvcDevicePort.cpp:148] ObLibuvcDevicePort::stopStream()...
+[07/18 17:19:47.429583][debug][1084539][ObLibuvcDevicePort.cpp:172] ObLibuvcDevicePort::stopStream() done
+[07/18 17:19:47.429595][debug][1084539][VideoSensor.cpp:727] stream stoped! @OB_SENSOR_DEPTH
+[07/18 17:19:47.430067][debug][1084539][FrameProcessingBlock.cpp:74] Process thread stoped! N11libobsensor15FrameSoftFilterE@0x13ae0dcc8 
+[07/18 17:19:47.431328][debug][1084539][FrameProcessingBlock.cpp:74] Process thread stoped! N11libobsensor24Disparity2DepthConverterE@0x13ae045c8 
+[07/18 17:19:47.431339][debug][1084539][FrameProcessor.cpp:165] FrameProcessor stoped!
+[07/18 17:19:47.431350][debug][1084539][HostProtocol.cpp:433] Set property value, propertyId=38, value={intValue: 1, floatValue: 1.4013e-45}
+[07/18 17:19:47.456742][debug][1084539][VideoSensor.cpp:716] Stream state changed to STREAM_STATE_STOPED. @OB_SENSOR_DEPTH
+[07/18 17:19:47.456771][info][1084539][VideoSensor.cpp:734] Video sensor stopped, @OB_SENSOR_DEPTH
+[07/18 17:19:47.456782][info][1084539][Pipeline.cpp:396] Sensor stream stopped, sensorType=OB_SENSOR_DEPTH
+[07/18 17:19:47.456787][info][1084539][Pipeline.cpp:402] Stop streams done!
+[07/18 17:19:47.456801][debug][1084539][HostProtocol.cpp:433] Set property value, propertyId=42, value={intValue: 0, floatValue: 0}
+[07/18 17:19:47.487175][debug][1084539][PropertyAccessor.cpp:17] set property value success! propertyId: 42, value: {intValue: 0, floatValue: 0}
+[07/18 17:19:47.487194][debug][1084539][FrameProcessingBlockManager.cpp:84] FrameProcessingBlockManager stoped!
+[07/18 17:19:47.487197][debug][1084539][FrameProcessingBlockManager.cpp:20] Processing block list cleared!
+[07/18 17:19:47.487200][info][1084539][Pipeline.cpp:443] Stop pipeline done!
+[07/18 17:19:47.493505][debug][1084539][Pipeline.cpp:68] Pipeline deInit start!
+[07/18 17:19:47.493527][info][1084539][Pipeline.cpp:75] Pipeline destroyed! @0x13AE0E7C8
+[07/18 17:19:47.493537][info][1084539][AstraUvcDevice.cpp:27] Astra device destroyed! PID: 0x0636, SN: BY1H75401PH
+[07/18 17:19:47.493545][debug][1084539][VideoSensor.cpp:282] VideoSensor::~VideoSensor(), @OB_SENSOR_DEPTH
+[07/18 17:19:47.493548][info][1084539][VideoSensor.cpp:303] VideoSensor destroyed, @OB_SENSOR_DEPTH
+[07/18 17:19:47.493562][debug][1084539][FrameProcessor.cpp:111] FrameProcessor destroyed! @5282840296
+[07/18 17:19:47.493807][debug][1084539][VendorCommand.cpp:213] destructor 6000007e4018
+[07/18 17:19:47.493816][debug][1084539][VendorCommand.cpp:467] disableHeartBeat heartBeatHelper_: 0x0
+[07/18 17:19:47.494145][debug][1084539][HostProtocol.cpp:139] ~HostProtocol()
+[07/18 17:19:47.494180][debug][1084555][HostProtocol.cpp:167] emitTranDataFutureSignalThread_ finish
+[07/18 17:19:47.494198][debug][1084539][ObLibuvcDevicePort.cpp:63] ~ObLibuvcDevicePort
+[07/18 17:19:47.534815][info][1084539][ObLibuvcDevicePort.cpp:70] uvc_close done.
+[07/18 17:19:47.534841][info][1084539][ObLibuvcDevicePort.cpp:71] ~ObLibuvcDevicePort done
+[07/18 17:19:47.535580][debug][1084539][Context.cpp:81] Context destroying ...
+[07/18 17:19:47.535588][debug][1084539][DeviceManager.cpp:56] DeviceManager destroy ...
+[07/18 17:19:47.535590][debug][1084539][DeviceManager.cpp:64] DeviceManager Destructors done
+[07/18 17:19:47.537092][debug][1084539][FrameBufferManager.hpp:72] FrameBufferManager destroying...! frame type: N11libobsensor8FrameSetE,  obj addr:0x6000010e8080
+[07/18 17:19:47.537100][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.000MB, total usage: allocated=2.934MB, max limit=2048.000MB
+[07/18 17:19:47.537102][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.000MB, total usage: allocated=2.933MB, max limit=2048.000MB
+[07/18 17:19:47.537104][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.000MB, total usage: allocated=2.933MB, max limit=2048.000MB
+[07/18 17:19:47.537106][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.000MB, total usage: allocated=2.932MB, max limit=2048.000MB
+[07/18 17:19:47.537108][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.000MB, total usage: allocated=2.932MB, max limit=2048.000MB
+[07/18 17:19:47.537109][debug][1084539][FrameBufferManager.cpp:69] AbstractFrameBufferManager destroyed! manager type:N11libobsensor26AbstractFrameBufferManagerE,  obj addr:0x6000010e8080
+[07/18 17:19:47.537111][debug][1084539][FrameBufferManager.hpp:72] FrameBufferManager destroying...! frame type: N11libobsensor10DepthFrameE,  obj addr:0x6000010fc400
+[07/18 17:19:47.537113][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.586MB, total usage: allocated=2.346MB, max limit=2048.000MB
+[07/18 17:19:47.537115][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.586MB, total usage: allocated=1.759MB, max limit=2048.000MB
+[07/18 17:19:47.537117][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.586MB, total usage: allocated=1.173MB, max limit=2048.000MB
+[07/18 17:19:47.537119][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.586MB, total usage: allocated=0.586MB, max limit=2048.000MB
+[07/18 17:19:47.537120][debug][1084539][FrameBufferManager.cpp:54] Frame buffer released=0.586MB, total usage: allocated=0.000MB, max limit=2048.000MB
+[07/18 17:19:47.537122][debug][1084539][FrameBufferManager.cpp:69] AbstractFrameBufferManager destroyed! manager type:N11libobsensor26AbstractFrameBufferManagerE,  obj addr:0x6000010fc400
+[07/18 17:19:47.537123][info][1084539][Context.cpp:84] Context destroyed
+[07/18 17:19:47.537150][debug][1089745][Pipeline.cpp:319] Frame received on pipeline! type=OB_FRAME_DEPTH [**170 logs in 5776ms, last: 17:19:47.427635**]

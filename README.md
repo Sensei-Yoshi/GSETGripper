@@ -49,7 +49,7 @@ From inside `pyorbbecsdk-v1`:
 ```bash
 python3 -m venv venv
 source venv/bin/activate
-python -m pip install "pybind11==2.11.0" "numpy<2.0" "opencv-python<4.12"
+python -m pip install "pybind11==2.11.0" "numpy<2.0" "opencv-python<4.12" "pyserial"
 ```
 
 The NumPy pin is intentional. The Orbbec Python wrapper expects NumPy 1.x, and newer OpenCV wheels may otherwise install NumPy 2.x.
@@ -107,6 +107,100 @@ GSETGripper/camera/depth_viewer_macos.sh
 ```
 
 This opens the Orbbec SDK depth viewer using OpenCV. Press `q` or `Esc` to quit.
+
+## Arduino LED Serial Trigger
+
+The camera trigger code shows a live depth window and sends serial messages to an Arduino based on the closest valid value in the depth map.
+
+Files:
+
+```text
+GSETGripper/
+  camera/
+    depth_serial_trigger.py
+    depth_serial_trigger_macos.sh
+  arduino/
+    default_led_serial/
+      default_led_serial.ino
+```
+
+The threshold is defined at the top of `camera/depth_serial_trigger.py`:
+
+```python
+LOWEST_HEIGHT_MM = 500
+```
+
+The trigger region is also defined at the top of `camera/depth_serial_trigger.py`:
+
+```python
+CENTER_ROI_RADIUS_PIXELS = 120
+```
+
+In this script, depth means camera-to-object distance in millimeters. It does not mean vertical height from the table or floor.
+
+The function `lowest_height_is_below_threshold(depth_map_mm)` returns `True` when the closest valid depth value is less than `LOWEST_HEIGHT_MM`. The running trigger script applies that calculation only inside the circular center region drawn on the depth window. When the result is `True`, the Python script sends `LED_ON` over serial. When the result is `False`, it sends `LED_OFF`.
+
+The depth window overlays:
+
+```text
+Min depth: current closest valid depth in millimeters
+Center depth: depth at the center crosshair, or invalid
+Trigger: True or False
+Threshold: configured threshold in millimeters
+ROI radius: circular trigger region radius in pixels
+Valid pixels: valid depth pixels in the frame
+```
+
+Black pixels in the window are invalid depth pixels. If a hand is too close to the camera, too reflective, moving quickly, or near a depth edge, the camera may return invalid pixels for that hand. In that case the closest valid depth may come from the background instead of the hand.
+
+The script only sends a message when the state changes. This prevents unnecessary serial traffic while the camera is running.
+
+### Upload the Arduino Sketch
+
+Open this sketch in the Arduino IDE:
+
+```text
+GSETGripper/arduino/default_led_serial/default_led_serial.ino
+```
+
+Select the correct board and port, then upload it. The sketch uses `LED_BUILTIN`, which is the default test LED on most Arduino boards.
+
+The Arduino expects:
+
+```text
+Baud rate: 9600
+Messages: LED_ON, LED_OFF
+Line ending: newline
+```
+
+### Run the Trigger
+
+With the Astra+ and Arduino connected, run from the workspace root:
+
+```bash
+cd /path/to/GSET
+GSETGripper/camera/depth_serial_trigger_macos.sh
+```
+
+This opens the live depth window. Press `q` or `Esc` to quit.
+
+If auto-detection finds the wrong serial port, pass the Arduino port explicitly:
+
+```bash
+GSETGripper/camera/depth_serial_trigger_macos.sh --port /dev/cu.usbmodem1101
+```
+
+To run the serial trigger without the depth window:
+
+```bash
+GSETGripper/camera/depth_serial_trigger_macos.sh --no-window
+```
+
+To list available serial ports on macOS:
+
+```bash
+ls /dev/cu.*
+```
 
 ## Custom SDK Location
 
