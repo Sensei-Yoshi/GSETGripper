@@ -1,4 +1,8 @@
+import json
+import time
 from collections import deque
+from datetime import datetime, timezone
+from pathlib import Path
 from typing import Optional, Tuple
 
 import cv2
@@ -18,10 +22,14 @@ from depth_closest import (
 FRAME_TIMEOUT_MS = 500
 WINDOW_NAME = "Orbbec Closest Point Viewer"
 ESC_KEY = 27
+CAPTURE_KEY = ord("c")
 MARKER_COLOR = (0, 255, 0)
 ROI_COLOR = (255, 255, 255)
+CAPTURE_FLASH_COLOR = (0, 255, 255)
+CAPTURE_FLASH_SECONDS = 1.0
 SIDEBAR_WIDTH = 260
 SMOOTHING_WINDOW_FRAMES = 5
+CAPTURE_FILE_PATH = Path(__file__).parent / "captures" / "latest_capture.json"
 
 
 def depth_map_to_color_image(depth_map_mm: np.ndarray) -> np.ndarray:
@@ -54,7 +62,24 @@ def smooth_closest_point(
     return float(np.median(depths)), (int(np.median(rows)), int(np.median(cols)))
 
 
-def render_frame(depth_map_mm: np.ndarray, closest: Optional[Tuple[float, Tuple[int, int]]]) -> np.ndarray:
+def save_capture(closest: Tuple[float, Tuple[int, int]]) -> None:
+    closest_depth_mm, (row, col) = closest
+    CAPTURE_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "depth_mm": closest_depth_mm,
+        "row": row,
+        "col": col,
+        "captured_at_epoch": time.time(),
+        "captured_at": datetime.now(timezone.utc).isoformat(),
+    }
+    CAPTURE_FILE_PATH.write_text(json.dumps(payload, indent=2))
+
+
+def render_frame(
+    depth_map_mm: np.ndarray,
+    closest: Optional[Tuple[float, Tuple[int, int]]],
+    capture_flash_active: bool = False,
+) -> np.ndarray:
     depth_image = depth_map_to_color_image(depth_map_mm)
     height, width = depth_map_mm.shape
 
@@ -85,6 +110,10 @@ def render_frame(depth_map_mm: np.ndarray, closest: Optional[Tuple[float, Tuple[
         cv2.putText(sidebar, f"row: {row}", (16, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         cv2.putText(sidebar, f"col: {col}", (16, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
+    hint_text = "CAPTURED" if capture_flash_active else "Press 'c' to capture"
+    hint_color = CAPTURE_FLASH_COLOR if capture_flash_active else (160, 160, 160)
+    cv2.putText(sidebar, hint_text, (16, height - 24), cv2.FONT_HERSHEY_SIMPLEX, 0.55, hint_color, 2)
+
     return np.hstack((depth_image, sidebar))
 
 
@@ -97,6 +126,7 @@ def run() -> None:
     config.enable_stream(depth_profile)
 
     history: "deque[Tuple[float, Tuple[int, int]]]" = deque(maxlen=SMOOTHING_WINDOW_FRAMES)
+    capture_flash_until = 0.0
 
     pipeline.start(config)
     try:
@@ -115,12 +145,20 @@ def run() -> None:
                 history.append(raw_closest)
 
             closest = smooth_closest_point(history)
-            frame_image = render_frame(depth_map_mm, closest)
+            capture_flash_active = time.time() < capture_flash_until
+            frame_image = render_frame(depth_map_mm, closest, capture_flash_active)
 
             cv2.imshow(WINDOW_NAME, frame_image)
             key = cv2.waitKey(1)
             if key in (ord("q"), ESC_KEY):
                 break
+            if key == CAPTURE_KEY:
+                if closest is not None:
+                    save_capture(closest)
+                    print(f"Captured: {closest[0]:.1f} mm -> {CAPTURE_FILE_PATH}")
+                    capture_flash_until = time.time() + CAPTURE_FLASH_SECONDS
+                else:
+                    print("Capture skipped: no valid closest point right now.")
     finally:
         pipeline.stop()
         cv2.destroyAllWindows()
