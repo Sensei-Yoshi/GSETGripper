@@ -8,4 +8,4 @@ SDK_PYTHON="${ORBBEC_SDK_PYTHON:-/opt/anaconda3/envs/gripperenv/bin/python}"
 
 sudo env PYTHONPATH="${SDK_DIR}/install/lib" \
   "${SDK_PYTHON}" \
-  "${SCRIPT_DIR}/depth_serial_trigger.py" "$@"
+  "${SCRIPT_DIR}/depth_closest_viewer.py"
