@@ -5,9 +5,10 @@ import numpy as np
 
 from pyorbbecsdk import Config, OBSensorType, Pipeline
 
-MIN_VALID_DEPTH_MM = 20
+MIN_VALID_DEPTH_MM = 200
 MAX_VALID_DEPTH_MM = 10000
 FRAME_TIMEOUT_MS = 500
+CENTER_ROI_RADIUS_PIXELS = 120
 
 
 def read_depth_map_mm(frames) -> Optional[np.ndarray]:
@@ -22,12 +23,26 @@ def read_depth_map_mm(frames) -> Optional[np.ndarray]:
     return depth.astype(np.float32) * scale
 
 
-def find_closest_point(depth_map_mm: np.ndarray) -> Optional[Tuple[float, Tuple[int, int]]]:
+def get_center_roi_mask(depth_map_mm: np.ndarray, radius_pixels: int = CENTER_ROI_RADIUS_PIXELS) -> np.ndarray:
+    height, width = depth_map_mm.shape
+    center_y = height // 2
+    center_x = width // 2
+    y_indices, x_indices = np.ogrid[:height, :width]
+    distance_squared = (x_indices - center_x) ** 2 + (y_indices - center_y) ** 2
+    return distance_squared <= radius_pixels ** 2
+
+
+def find_closest_point(
+    depth_map_mm: np.ndarray, roi_mask: Optional[np.ndarray] = None
+) -> Optional[Tuple[float, Tuple[int, int]]]:
     valid_mask = (
         np.isfinite(depth_map_mm)
         & (depth_map_mm >= MIN_VALID_DEPTH_MM)
         & (depth_map_mm <= MAX_VALID_DEPTH_MM)
     )
+    if roi_mask is not None:
+        valid_mask = valid_mask & roi_mask
+
     if not valid_mask.any():
         return None
 
@@ -57,9 +72,10 @@ def main() -> int:
             if depth_map_mm is None:
                 continue
 
-            result = find_closest_point(depth_map_mm)
+            roi_mask = get_center_roi_mask(depth_map_mm)
+            result = find_closest_point(depth_map_mm, roi_mask=roi_mask)
             if result is None:
-                print("No valid depth pixels in frame.")
+                print("No valid depth pixels in center ROI.")
                 return 3
 
             closest_depth_mm, (row, col) = result
