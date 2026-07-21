@@ -10,3 +10,7 @@ capture_*.png
 capture_*.json
 output_labeled.png
 cats_segmented.png
+camera/captures/
+
+# External SDK clone (see README)
+pyorbbecsdk-v1/

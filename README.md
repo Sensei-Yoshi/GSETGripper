@@ -10,9 +10,11 @@ The helper scripts in this repository assume this workspace layout:
 GSET/
   GSETGripper/
     camera/
-      depth_probe.py
-      probe_depth_macos.sh
-      depth_viewer_macos.sh
+      depth_closest.py
+      depth_closest_macos.sh
+      depth_closest_viewer.py
+      depth_closest_viewer_macos.sh
+      depth_closest_read.py
   pyorbbecsdk-v1/
 ```
 
@@ -88,140 +90,53 @@ python3 -c "import pyorbbecsdk; print('pyorbbecsdk import ok')"
 
 ## Validate the Depth Camera
 
-Connect the Astra+ over USB 3.0, then run the probe script from the workspace root:
+Connect the Astra+ over USB 3.0, then run the closest-point script from the workspace root:
 
 ```bash
 cd /path/to/GSET
-GSETGripper/camera/probe_depth_macos.sh
+GSETGripper/camera/depth_closest_macos.sh
 ```
 
 The script uses `sudo` because the Orbbec SDK may not see the depth device on macOS without elevated USB access.
 
-A successful run should show:
+A successful run should print the closest valid depth pixel in the center ROI, e.g.:
 
 ```text
-SDK device count: 1
-Device 0: DeviceInfo(name=Astra+ ...)
-Depth frame received
-Shape: 480x640
-Valid pixels: ...
-Median valid depth: ...
+Closest depth: 842.0 mm at pixel (row=241, col=318)
 ```
 
 The message `Current device does not support frame sync!` can appear with Astra+. It is not fatal if the script still receives a depth frame.
 
-## Run the Live Depth Viewer
+## Find Object Height
 
-After the probe works, run:
-
-```bash
-cd /path/to/GSET
-GSETGripper/camera/depth_viewer_macos.sh
-```
-
-This opens the Orbbec SDK depth viewer using OpenCV. Press `q` or `Esc` to quit.
-
-## Arduino LED Serial Trigger
-
-The camera trigger code shows a live depth window and sends serial messages to an Arduino based on the closest valid value in the depth map.
+Once the camera is validated, use the live viewer to capture a reading, then convert it to a real-world object height.
 
 Files:
 
 ```text
 GSETGripper/
   camera/
-    depth_serial_trigger.py
-    depth_serial_trigger_macos.sh
-  arduino/
-    default_led_serial/
-      default_led_serial.ino
+    depth_closest_viewer.py
+    depth_closest_viewer_macos.sh
+    depth_closest_read.py
 ```
 
-The threshold is defined at the top of `camera/depth_serial_trigger.py`:
-
-```python
-LOWEST_HEIGHT_MM = 2500
-```
-
-The trigger region is also defined at the top of `camera/depth_serial_trigger.py`:
-
-```python
-CENTER_ROI_RADIUS_PIXELS = 120
-```
-
-In this script, depth means camera-to-object distance in millimeters. It does not mean vertical height from the table or floor.
-
-The function `lowest_height_is_below_threshold(depth_map_mm)` returns `True` when the closest valid depth value is less than `LOWEST_HEIGHT_MM`. The running trigger script applies that calculation only inside the circular center region drawn on the depth window. When the result is `True`, the Python script sends `LED_ON` over serial. When the result is `False`, it sends `LED_OFF`.
-
-The depth window overlays:
-
-```text
-Min depth: current closest valid depth in millimeters
-Center depth: depth at the center crosshair, or invalid
-Trigger: True or False
-Threshold: configured threshold in millimeters
-ROI radius: circular trigger region radius in pixels
-Valid pixels: valid depth pixels in the frame
-```
-
-Black pixels in the window are invalid depth pixels. If a hand is too close to the camera, too reflective, moving quickly, or near a depth edge, the camera may return invalid pixels for that hand. In that case the closest valid depth may come from the background instead of the hand.
-
-The script only sends a message when the state changes. This prevents unnecessary serial traffic while the camera is running.
-
-### Upload the Arduino Sketch
-
-Open this sketch in the Arduino IDE:
-
-```text
-GSETGripper/arduino/default_led_serial/default_led_serial.ino
-```
-
-Select the correct board and port, then upload it. The sketch uses `LED_BUILTIN`, which is the default test LED on most Arduino boards.
-
-The Arduino expects:
-
-```text
-Baud rate: 9600
-Messages: LED_ON, LED_OFF
-Line ending: newline
-```
-
-### Run the Trigger
-
-With the Astra+ and Arduino connected, run from the workspace root:
+Run the viewer from the workspace root:
 
 ```bash
 cd /path/to/GSET
-GSETGripper/camera/depth_serial_trigger_macos.sh
+GSETGripper/camera/depth_closest_viewer_macos.sh
 ```
 
-This opens the live depth window. Press `q` or `Esc` to quit.
+This opens a live window showing the closest valid depth point in the center ROI. Press `c` to capture the current reading to `camera/captures/latest_capture.json`. Press `q` or `Esc` to quit.
 
-If auto-detection finds the wrong serial port, pass the Arduino port explicitly:
+Then read the captured value and convert it to object height above the ground:
 
 ```bash
-GSETGripper/camera/depth_serial_trigger_macos.sh --port /dev/cu.usbmodem1101
+python GSETGripper/camera/depth_closest_read.py
 ```
 
-To run the serial trigger without the depth window:
-
-```bash
-GSETGripper/camera/depth_serial_trigger_macos.sh --no-window
-```
-
-To test the same camera, ROI, min-depth, visual overlay, and trigger logic without an Arduino connected:
-
-```bash
-GSETGripper/camera/depth_serial_trigger_macos.sh --no-serial
-```
-
-In `--no-serial` mode, the script prints `Would send: LED_ON` or `Would send: LED_OFF` instead of opening a serial connection.
-
-To list available serial ports on macOS:
-
-```bash
-ls /dev/cu.*
-```
+`depth_closest_read.py` applies the rig's fixed geometry (camera mount height and horizontal camera-to-object offset, defined at the top of the file) to turn the raw slant-distance depth reading into `compute_object_height_mm()`, the object's height above the ground.
 
 ## Custom SDK Location
 
@@ -229,8 +144,8 @@ If `pyorbbecsdk-v1` is not next to `GSETGripper`, set `ORBBEC_SDK_DIR`:
 
 ```bash
 export ORBBEC_SDK_DIR=/absolute/path/to/pyorbbecsdk-v1
-GSETGripper/camera/probe_depth_macos.sh
-GSETGripper/camera/depth_viewer_macos.sh
+GSETGripper/camera/depth_closest_macos.sh
+GSETGripper/camera/depth_closest_viewer_macos.sh
 ```
 
 ## Troubleshooting
