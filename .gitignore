@@ -1,0 +1,12 @@
+# Secrets — never commit the API key
+.env
+
+# Python
+.venv/
+__pycache__/
+
+# Generated outputs
+capture_*.png
+capture_*.json
+output_labeled.png
+cats_segmented.png

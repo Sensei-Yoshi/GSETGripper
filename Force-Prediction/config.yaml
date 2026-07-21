@@ -1,0 +1,190 @@
+# =============================================================================
+# config.yaml  —  THE single place to tune this system.
+#
+# Everything a researcher would want to sweep lives here: retrieval weights,
+# physics bounds, force limits, model IDs, the LLM PROMPTS, and the EXPERIMENT
+# definitions (E1..E6 as toggle sets). No tunable is hard-coded in Python.
+#
+# Loaded and validated by force_prediction/config.py into typed objects.
+# =============================================================================
+
+seed: 20260721
+
+paths:
+  experiences: data/experiences.jsonl
+  images: data/images
+  splits: data/splits.json
+  cache: data/cache
+
+# --- Force conventions (single source of truth) ------------------------------
+# NOTE: this resolves the 5 N vs 8 N inconsistency in project-context.md.
+# All force values are the normal force read by the load cell behind the
+# STATIONARY finger, in newtons. Never doubled, never summed across fingers.
+force:
+  limit_n: 8.0          # hardware safe limit; failure at this => infeasible
+  increment_n: 0.25     # staircase step and label quantization grid
+  min_n: 0.25           # smallest commandable / reportable force
+  hold_seconds: 3.0     # required successful-lift hold time
+  lift_height_mm: 50.0
+  gravity: 9.81
+
+# --- Geometry ----------------------------------------------------------------
+geometry:
+  pad_height_mm: 65.0   # h_pad in a = min(1, h_available / h_pad)
+
+# --- Roughness ---------------------------------------------------------------
+roughness:
+  n_classes: 5
+  ordinal: true         # if false, retrieval uses exact-match instead of |r-r'|/4
+  labels:               # human-readable meanings (also injected into prompts)
+    1: smoothest
+    2: smooth-mild
+    3: moderate
+    4: rough
+    5: roughest
+
+# --- Retrieval ---------------------------------------------------------------
+retrieval:
+  k: 5                  # experiences per gripper branch
+  weights:              # hybrid score S = w_s*cos + w_m*Smass + w_r*Srough + w_a*Scontact
+    semantic: 0.40
+    mass: 0.25
+    roughness: 0.20
+    contact: 0.15
+  sigma_mass: 0.7       # scale for exp(-|log m_q - log m_i| / sigma) ; log-grams
+  sigma_contact: 0.25   # scale for exp(-|a_q - a_i| / sigma)
+  embedding:
+    provider: gemini          # 'gemini' or 'mock'
+    model: gemini-embedding-2-preview
+    dim: 1536                 # Matryoshka truncation (<= 3072)
+
+# --- Physics reduced-order model ---------------------------------------------
+# T_sil = alpha_sil(c) * a * N
+# T_geo = alpha_geo(c) * a * N + beta(c) * a * N/(N+N50)
+# Coefficients are SMOOTH & MONOTONE in roughness class c (few params, not 16).
+physics:
+  # alpha(c) = alpha0 * exp(-decay * (c - 1))   (effective friction, decays with roughness)
+  # Defaults sized so the 20 g - 1.5 kg synthetic range is mostly feasible for at
+  # least one gripper, with genuine heavy+rough infeasible cases. Replace with
+  # values calibrated from James et al. data once collected.
+  alpha_sil0: 2.5
+  alpha_sil_decay: 0.15
+  alpha_geo0: 2.0
+  alpha_geo_decay: 0.10
+  # beta(c) = beta0 * clip(1 - beta_decay * (c - 1), 0, 1)   (adhesive support, decays)
+  beta0: 6.0
+  beta_decay: 0.30
+  n50: 1.5              # preload for adhesive seating in N/(N+N50)
+  # Calibration bounds (constrained least-squares); fit INSIDE each training fold.
+  bounds:
+    alpha0: [0.05, 5.0]
+    decay: [0.0, 1.0]
+    beta0: [0.0, 50.0]
+    beta_decay: [0.0, 1.0]
+    n50: [0.05, 20.0]
+
+# --- Models (Gemini) ---------------------------------------------------------
+models:
+  vlm: gemini-3.1-pro       # predictor + descriptor; Exp-Force's best config
+  temperature: 0.0
+  max_retries: 4
+  cache: true               # content-hashed disk cache of every embedding/VLM call
+  dry_run: false            # if true, no network calls; deterministic stub responses
+
+# --- Learning (residual models for E6) ---------------------------------------
+learning:
+  residual_model: gbt       # 'ridge' | 'gbt' | 'gp'
+  embedding_pca_dims: 8     # PCA of semantic embedding fed to the residual model
+  ridge_alpha: 1.0
+  gbt_n_estimators: 300
+  gbt_max_depth: 3
+  gbt_learning_rate: 0.05
+
+# --- Evaluation --------------------------------------------------------------
+evaluation:
+  n_folds: 5
+  within_thresholds_n: [0.25, 0.5]
+
+# =============================================================================
+# PROMPTS  —  edit here, never in code. Rendered by prediction.py with payload.
+# =============================================================================
+prompts:
+  system: |
+    You are a robotics grasp-material selection and pre-grasp force estimation model.
+
+    TASK
+    Given an object image, measured object properties, a fixed robotic gripper
+    embodiment, retrieved grasping experiences, and an optional deterministic
+    physics estimate, estimate the minimum stationary-finger normal force
+    required to lift the object under the standardized test protocol.
+
+    FORCE CONVENTION
+    All force values are in newtons and refer exclusively to the normal force
+    measured by the load cell mounted behind the stationary gripper finger.
+    Do not double the force and do not convert it into a summed two-finger force.
+
+    AVAILABLE GRIPPERS
+    1. "gecko": TPU fin-ray finger with a mushroom-cap gecko-inspired dry adhesive pad.
+    2. "silicone": TPU fin-ray finger with a non-adhesive high-friction silicone pad.
+
+    MATERIAL REASONING
+    Gecko adhesion depends on intimate surface contact. It is generally more
+    favorable on clean, dry, smooth, nonporous surfaces with broad projected
+    contact. Its benefit may decrease on rough, porous, fibrous, dusty, wet,
+    oily, contaminated, or loosely coated surfaces. Silicone relies primarily on
+    friction and viscoelastic surface interaction; it may need more normal force
+    on smooth surfaces but can be more robust on rough or poorly adhesive ones.
+    Do not choose a gripper from roughness alone. Consider measured roughness
+    class together with mass, projected contact fraction, visible surface
+    material and condition, and the retrieved gripper-specific experiences.
+
+    MEASUREMENTS
+    Measured mass, roughness class, and projected contact fraction are
+    authoritative. Do not replace them with visual estimates. Use vision only for
+    properties not directly measured (material family, porosity, fibrousness,
+    contamination, visible surface condition).
+
+    RETRIEVED EXPERIENCES
+    Retrieved experiences are empirical observations from the same gripper
+    embodiment and force convention. Each also reports the SAME object's force on
+    the OTHER gripper when available; use this gecko-vs-silicone delta to reason
+    about the material crossover. Favor physically and semantically close
+    experiences, but do not copy a force without accounting for differences in
+    mass, roughness, contact fraction, and surface material.
+
+    PHYSICS ESTIMATE
+    When a physics force estimate is provided, treat it as a numerical prior, not
+    guaranteed ground truth. Adjust it only when experiences and visible surface
+    evidence give a clear reason.
+
+    OUTPUT
+    Return only valid JSON matching the supplied schema. "reasoning_trace" must
+    be a concise evidence summary of at most three sentences identifying the most
+    important measured and retrieved evidence. It must not contain extended
+    hidden chain-of-thought.
+
+  descriptor: |
+    Describe this object for a robotic grasping database. In 1-2 sentences,
+    state the visible material family, surface condition (clean/dry/dusty/wet/
+    oily/coated), whether the surface looks porous or fibrous, and the coarse
+    shape. Be factual and concise. Return only the requested JSON.
+
+  per_gripper_instruction: |
+    Estimate the minimum stationary-finger normal force (newtons) to lift this
+    object with the "{candidate_gripper}" gripper under the standardized
+    protocol, and judge feasibility within the force limit. Use the measured
+    properties, the retrieved "{candidate_gripper}" experiences (including their
+    other-gripper force where present), and the physics estimate if provided.
+
+# =============================================================================
+# EXPERIMENTS  —  E1..E6 as toggle sets over the single pipeline.
+# See docs/experiments.md for the scientific rationale of each.
+# =============================================================================
+experiments:
+  e1:   {use_measured: false, use_retrieval: false, use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false}
+  e2:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false}
+  e3:   {use_measured: true,  use_retrieval: true,  use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false}
+  e3b:  {use_measured: true,  use_retrieval: true,  use_paired_rows: false, use_physics: false, use_vlm: false, use_residual: false}
+  e4:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: true,  use_vlm: false, use_residual: false}
+  e5:   {use_measured: true,  use_retrieval: true,  use_paired_rows: true,  use_physics: true,  use_vlm: true,  use_residual: false}
+  e6:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: true,  use_vlm: false, use_residual: true}

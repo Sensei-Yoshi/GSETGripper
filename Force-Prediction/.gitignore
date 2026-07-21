@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+*.egg-info/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+
+# Generated data (regenerate with: make collect ; run_experiment.py)
+data/experiences.jsonl
+data/splits.json
+data/images/*.png
+data/cache/*.json
+results.json
+
+# Keep the data dirs themselves
+!data/images/
+!data/cache/
