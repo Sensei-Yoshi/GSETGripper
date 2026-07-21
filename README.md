@@ -73,6 +73,19 @@ After installation, the compiled Python module and Orbbec dynamic libraries shou
 pyorbbecsdk-v1/install/lib/
 ```
 
+To make `pyorbbecsdk` importable after activating the virtual environment, add the SDK install folder to the venv path:
+
+```bash
+python -c 'import pathlib, sysconfig; pathlib.Path(sysconfig.get_paths()["purelib"], "pyorbbecsdk_local_install.pth").write_text(str(pathlib.Path.cwd() / "install/lib") + "\n")'
+```
+
+After that, this should work from the workspace root:
+
+```bash
+source pyorbbecsdk-v1/venv/bin/activate
+python3 -c "import pyorbbecsdk; print('pyorbbecsdk import ok')"
+```
+
 ## Validate the Depth Camera
 
 Connect the Astra+ over USB 3.0, then run the probe script from the workspace root:
@@ -127,7 +140,7 @@ GSETGripper/
 The threshold is defined at the top of `camera/depth_serial_trigger.py`:
 
 ```python
-LOWEST_HEIGHT_MM = 500
+LOWEST_HEIGHT_MM = 2500
 ```
 
 The trigger region is also defined at the top of `camera/depth_serial_trigger.py`:
@@ -195,6 +208,14 @@ To run the serial trigger without the depth window:
 ```bash
 GSETGripper/camera/depth_serial_trigger_macos.sh --no-window
 ```
+
+To test the same camera, ROI, min-depth, visual overlay, and trigger logic without an Arduino connected:
+
+```bash
+GSETGripper/camera/depth_serial_trigger_macos.sh --no-serial
+```
+
+In `--no-serial` mode, the script prints `Would send: LED_ON` or `Would send: LED_OFF` instead of opening a serial connection.
 
 To list available serial ports on macOS:
 

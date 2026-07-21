@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "force-prediction"
+version = "0.1.0"
+description = "Material-aware gripper selection and minimum-force prediction for gecko/silicone soft grippers"
+requires-python = ">=3.11"
+dependencies = [
+    "numpy<2",
+    "opencv-python<4.12",
+    "pyserial>=3.5",
+    "pydantic>=2.6",
+    "pyyaml>=6.0",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "tenacity>=8.2",
+    "platformdirs>=4.0",
+    # google-genai is only needed for live Gemini calls; the whole pipeline
+    # runs on mocks without it. Kept optional so CI/tests need no API key.
+]
+
+[project.optional-dependencies]
+gemini = ["google-genai>=0.3"]
+dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.9", "types-PyYAML", "types-pyserial"]
+
+[tool.setuptools.packages.find]
+include = ["force_prediction*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]  # line length handled by formatter; long prompt strings allowed
+
+[tool.mypy]
+python_version = "3.11"
+warn_unused_ignores = true
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

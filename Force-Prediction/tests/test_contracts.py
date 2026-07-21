@@ -1,0 +1,64 @@
+from __future__ import annotations
+
+import pytest
+from pydantic import ValidationError
+
+from force_prediction.config import load_config
+from force_prediction.contracts import (
+    ExperienceRecord,
+    Gripper,
+    group_by_object,
+)
+from force_prediction.hardware import (
+    CameraSource,
+    GripperController,
+    LoadCell,
+    MassSource,
+    RoughnessSource,
+    make_mock_bench,
+)
+
+CFG = load_config()
+
+
+def _rec(**kw):
+    base = dict(
+        object_id="o1", image_path="", mass_g=100.0, roughness_class=2,
+        projected_contact_fraction=0.8, gripper=Gripper.GECKO,
+        min_force_n=1.0, feasible=True,
+    )
+    base.update(kw)
+    return ExperienceRecord(**base)
+
+
+def test_feasible_requires_force():
+    with pytest.raises(ValidationError):
+        _rec(feasible=True, min_force_n=None)
+
+
+def test_infeasible_requires_limit_and_no_force():
+    with pytest.raises(ValidationError):
+        _rec(feasible=False, min_force_n=2.0, failed_at_limit_n=8.0)
+    ok = _rec(feasible=False, min_force_n=None, failed_at_limit_n=8.0)
+    assert ok.failed_at_limit_n == 8.0
+
+
+def test_group_and_oracle():
+    recs = [
+        _rec(object_id="o1", gripper=Gripper.GECKO, min_force_n=1.25),
+        _rec(object_id="o1", gripper=Gripper.SILICONE, min_force_n=2.5),
+    ]
+    objects = group_by_object(recs)
+    obj = objects["o1"]
+    assert obj.other_gripper_force(Gripper.GECKO) == 2.5
+    g, f = obj.oracle()
+    assert g is Gripper.GECKO and f == 1.25
+
+
+def test_mock_devices_satisfy_protocols():
+    _, devices = make_mock_bench(CFG)
+    assert isinstance(devices.gripper, GripperController)
+    assert isinstance(devices.load_cell, LoadCell)
+    assert isinstance(devices.roughness, RoughnessSource)
+    assert isinstance(devices.mass, MassSource)
+    assert isinstance(devices.camera, CameraSource)
