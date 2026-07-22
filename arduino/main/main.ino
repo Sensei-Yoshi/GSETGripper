@@ -94,15 +94,13 @@ void loop() {
   // Must be called as often as possible for AccelStepper to step correctly.
   stepperZA.run();
   stepperZB.run();
-
   stepperSelect.run();
+  stepperGrip.run();
 
   if (zMovePending && stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
     zMovePending = false;
     Serial.println("DONE Z");
   }
-  stepperGrip.run();
-
   if (selectMovePending && stepperSelect.distanceToGo() == 0) {
     selectMovePending = false;
     Serial.println("DONE SELECT");
