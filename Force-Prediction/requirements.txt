@@ -1,0 +1,8 @@
+google-genai
+scipy
+numpy
+pydantic
+PyTest
+PyYaml
+pandas
+opencv-python

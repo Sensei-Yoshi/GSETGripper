@@ -23,7 +23,24 @@ import numpy as np
 from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from .config import Config
+from .config import REPO_ROOT, Config
+
+
+def load_dotenv(path: Path | None = None) -> None:
+    """Load KEY=VALUE lines from a .env into the environment (existing env wins).
+
+    No dependency; mirrors the material-segmenter pattern. Looks at the repo root
+    by default so `GEMINI_API_KEY=...` in .env is picked up for live calls.
+    """
+    path = path or (REPO_ROOT / ".env")
+    if not path.exists():
+        return
+    for line in path.read_text().splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
 class _DiskCache:
@@ -71,6 +88,7 @@ class GeminiClient:
         if self._client is None:
             from google import genai
 
+            load_dotenv()  # pick up GEMINI_API_KEY from a repo-root .env if present
             api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
             if not api_key:
                 raise RuntimeError("Set GEMINI_API_KEY (or GOOGLE_API_KEY) for live Gemini calls.")

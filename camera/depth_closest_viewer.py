@@ -10,7 +10,7 @@ import numpy as np
 
 from pyorbbecsdk import Config, OBSensorType, Pipeline
 
-from depth_closest import (
+from GSETGripper.camera.depth_closest import (
     CENTER_ROI_RADIUS_PIXELS,
     MAX_VALID_DEPTH_MM,
     MIN_VALID_DEPTH_MM,

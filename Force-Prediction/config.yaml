@@ -85,7 +85,10 @@ physics:
 
 # --- Models (Gemini) ---------------------------------------------------------
 models:
-  vlm: gemini-3.1-pro       # predictor + descriptor; Exp-Force's best config
+  vlm: gemini-flash-latest  # alias -> current free-tier Flash (2.5-flash is now blocked
+                            # for new keys). Vision + JSON schema. Other options:
+                            # gemini-flash-lite-latest (cheaper), gemini-3-flash,
+                            # gemini-3.1-pro (best, needs paid quota — Exp-Force's choice).
   temperature: 0.0
   max_retries: 4
   cache: true               # content-hashed disk cache of every embedding/VLM call
