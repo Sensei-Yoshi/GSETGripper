@@ -7,6 +7,10 @@ const int Z_A_STEP_PIN = 2;
 const int Z_A_DIR_PIN = 3;
 AccelStepper stepperZA(AccelStepper::DRIVER, Z_A_STEP_PIN, Z_A_DIR_PIN);
 
+const int Z_B_STEP_PIN = 4;
+const int Z_B_DIR_PIN = 5;
+AccelStepper stepperZB(AccelStepper::DRIVER, Z_B_STEP_PIN, Z_B_DIR_PIN);
+
 const float Z_MAX_SPEED_STEPS_PER_SEC = 800.0;
 const float Z_ACCELERATION_STEPS_PER_SEC2 = 400.0;
 
@@ -27,6 +31,9 @@ void setup() {
 
   stepperZA.setMaxSpeed(Z_MAX_SPEED_STEPS_PER_SEC);
   stepperZA.setAcceleration(Z_ACCELERATION_STEPS_PER_SEC2);
+
+  stepperZB.setMaxSpeed(Z_MAX_SPEED_STEPS_PER_SEC);
+  stepperZB.setAcceleration(Z_ACCELERATION_STEPS_PER_SEC2);
 }
 
 void loop() {
@@ -44,8 +51,9 @@ void loop() {
 
   // Must be called as often as possible for AccelStepper to step correctly.
   stepperZA.run();
+  stepperZB.run();
 
-  if (zMovePending && stepperZA.distanceToGo() == 0) {
+  if (zMovePending && stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
     zMovePending = false;
     Serial.println("DONE Z");
   }
@@ -73,6 +81,7 @@ void processCommand(const String& message) {
 void moveZTo(float targetHeightMM) {
   long targetSteps = clampSteps((long)(targetHeightMM * Z_STEPS_PER_MM), Z_MIN_STEPS, Z_MAX_STEPS, "Z");
   stepperZA.moveTo(targetSteps);
+  stepperZB.moveTo(targetSteps);
   zMovePending = true;
 }
 
