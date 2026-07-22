@@ -24,6 +24,22 @@ const long Z_MAX_STEPS = 5000; // TODO: calibrate safe travel range
 
 bool zMovePending = false;
 
+// ---- SELECT axis (gecko <-> silicone gripper head) ----
+const int SELECT_STEP_PIN = 6;
+const int SELECT_DIR_PIN = 7;
+AccelStepper stepperSelect(AccelStepper::DRIVER, SELECT_STEP_PIN, SELECT_DIR_PIN);
+
+const float SELECT_MAX_SPEED_STEPS_PER_SEC = 400.0;
+const float SELECT_ACCELERATION_STEPS_PER_SEC2 = 200.0;
+
+// TODO: calibrate exact step counts for each named position.
+const long SELECT_GEKKO_STEPS = 0;
+const long SELECT_SILICONE_STEPS = 800;
+const long SELECT_MIN_STEPS = 0;
+const long SELECT_MAX_STEPS = 800; // TODO: calibrate safe travel range
+
+bool selectMovePending = false;
+
 String command;
 
 void setup() {
@@ -34,6 +50,9 @@ void setup() {
 
   stepperZB.setMaxSpeed(Z_MAX_SPEED_STEPS_PER_SEC);
   stepperZB.setAcceleration(Z_ACCELERATION_STEPS_PER_SEC2);
+
+  stepperSelect.setMaxSpeed(SELECT_MAX_SPEED_STEPS_PER_SEC);
+  stepperSelect.setAcceleration(SELECT_ACCELERATION_STEPS_PER_SEC2);
 }
 
 void loop() {
@@ -53,9 +72,15 @@ void loop() {
   stepperZA.run();
   stepperZB.run();
 
+  stepperSelect.run();
+
   if (zMovePending && stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
     zMovePending = false;
     Serial.println("DONE Z");
+  }
+  if (selectMovePending && stepperSelect.distanceToGo() == 0) {
+    selectMovePending = false;
+    Serial.println("DONE SELECT");
   }
 }
 
@@ -73,6 +98,16 @@ void processCommand(const String& message) {
       return;
     }
     moveZTo(targetHeightMM);
+  } else if (message.startsWith("SELECT ")) {
+    String arg = message.substring(7);
+    arg.trim();
+    if (arg == "GEKKO") {
+      moveSelectTo(SELECT_GEKKO_STEPS);
+    } else if (arg == "SILICONE") {
+      moveSelectTo(SELECT_SILICONE_STEPS);
+    } else {
+      sendErr("unknown select position");
+    }
   } else {
     sendErr("unknown command");
   }
@@ -83,6 +118,12 @@ void moveZTo(float targetHeightMM) {
   stepperZA.moveTo(targetSteps);
   stepperZB.moveTo(targetSteps);
   zMovePending = true;
+}
+
+void moveSelectTo(long targetSteps) {
+  long clamped = clampSteps(targetSteps, SELECT_MIN_STEPS, SELECT_MAX_STEPS, "SELECT");
+  stepperSelect.moveTo(clamped);
+  selectMovePending = true;
 }
 
 long clampSteps(long value, long minSteps, long maxSteps, const char* axisName) {
