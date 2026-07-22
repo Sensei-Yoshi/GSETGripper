@@ -40,6 +40,26 @@ const long SELECT_MAX_STEPS = 800; // TODO: calibrate safe travel range
 
 bool selectMovePending = false;
 
+// ---- GRIP axis (open/close the active gripper) ----
+const int GRIP_STEP_PIN = 8;
+const int GRIP_DIR_PIN = 9;
+AccelStepper stepperGrip(AccelStepper::DRIVER, GRIP_STEP_PIN, GRIP_DIR_PIN);
+
+const float GRIP_MAX_SPEED_STEPS_PER_SEC = 400.0;
+const float GRIP_ACCELERATION_STEPS_PER_SEC2 = 200.0;
+
+// TODO: calibrate. GRIP_OPEN_STEPS is the fully-open home position.
+// GRIP_MAX_OPENING_MM is the object width (mm) that corresponds to fully
+// open jaws; GRIP_STEPS_PER_MM converts the remaining jaw travel needed to
+// close around a narrower object into steps.
+const long GRIP_OPEN_STEPS = 0;
+const float GRIP_MAX_OPENING_MM = 60.0;
+const float GRIP_STEPS_PER_MM = 5.0;
+const long GRIP_MIN_STEPS = 0;
+const long GRIP_MAX_STEPS = 600; // TODO: calibrate safe travel range
+
+bool gripMovePending = false;
+
 String command;
 
 void setup() {
@@ -53,6 +73,9 @@ void setup() {
 
   stepperSelect.setMaxSpeed(SELECT_MAX_SPEED_STEPS_PER_SEC);
   stepperSelect.setAcceleration(SELECT_ACCELERATION_STEPS_PER_SEC2);
+
+  stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
+  stepperGrip.setAcceleration(GRIP_ACCELERATION_STEPS_PER_SEC2);
 }
 
 void loop() {
@@ -78,9 +101,15 @@ void loop() {
     zMovePending = false;
     Serial.println("DONE Z");
   }
+  stepperGrip.run();
+
   if (selectMovePending && stepperSelect.distanceToGo() == 0) {
     selectMovePending = false;
     Serial.println("DONE SELECT");
+  }
+  if (gripMovePending && stepperGrip.distanceToGo() == 0) {
+    gripMovePending = false;
+    Serial.println("DONE GRIP");
   }
 }
 
@@ -108,6 +137,23 @@ void processCommand(const String& message) {
     } else {
       sendErr("unknown select position");
     }
+  } else if (message.startsWith("GRIP ")) {
+    String arg = message.substring(5);
+    arg.trim();
+    if (arg == "OPEN") {
+      moveGripToSteps(GRIP_OPEN_STEPS);
+    } else if (arg.startsWith("CLOSE")) {
+      String widthArg = arg.substring(5);
+      widthArg.trim();
+      float widthMM;
+      if (!parseFloatStrict(widthArg, widthMM)) {
+        sendErr("bad value");
+        return;
+      }
+      moveGripToSteps(gripStepsForWidth(widthMM));
+    } else {
+      sendErr("unknown grip command");
+    }
   } else {
     sendErr("unknown command");
   }
@@ -124,6 +170,20 @@ void moveSelectTo(long targetSteps) {
   long clamped = clampSteps(targetSteps, SELECT_MIN_STEPS, SELECT_MAX_STEPS, "SELECT");
   stepperSelect.moveTo(clamped);
   selectMovePending = true;
+}
+
+void moveGripToSteps(long targetSteps) {
+  long clamped = clampSteps(targetSteps, GRIP_MIN_STEPS, GRIP_MAX_STEPS, "GRIP");
+  stepperGrip.moveTo(clamped);
+  gripMovePending = true;
+}
+
+long gripStepsForWidth(float widthMM) {
+  float travelMM = GRIP_MAX_OPENING_MM - widthMM;
+  if (travelMM < 0) {
+    travelMM = 0;
+  }
+  return GRIP_OPEN_STEPS + (long)(travelMM * GRIP_STEPS_PER_MM);
 }
 
 long clampSteps(long value, long minSteps, long maxSteps, const char* axisName) {
