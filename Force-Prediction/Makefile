@@ -1,4 +1,4 @@
-.PHONY: setup lint typecheck test collect run all clean
+.PHONY: setup lint typecheck test collect run viewer prepare-viewer all clean
 
 PY ?= python
 
@@ -25,6 +25,12 @@ run:
 
 run-all:
 	$(PY) scripts/run_experiment.py --all --dry-run --out results.json
+
+prepare-viewer:
+	$(PY) scripts/prepare_expforce_viewer.py
+
+viewer:
+	$(PY) -m streamlit run app.py
 
 # End-to-end smoke: dataset -> full experiment suite, all offline.
 smoke: collect run-all

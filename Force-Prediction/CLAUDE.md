@@ -59,15 +59,17 @@ VLM) and **DeliGrasp** (LLM-inferred physics params → controller). Physics is 
 | `scripts/check_*.py` | stand-alone stage debuggers |
 | `scripts/run_experiment.py` | run E1–E6 |
 | `scripts/expforce_testset.py` | live Gemini POC on the public Exp-Force dataset |
+| `app.py` / `expforce.py` | local 100/29 synthetic validation viewer + immutable dataset adapter |
 
 ## Decisions locked (do not silently change)
 - **VLM:** `config.models.vlm`. Currently `gemini-flash-lite-latest` (best free-tier quota).
   `gemini-flash-latest` / `gemini-3.1-pro-preview` are higher quality if quota allows;
   Exp-Force's best was `gemini-3.1-pro`. `gemini-2.5-flash` is **blocked for new keys** — don't use it.
-- **Embedding:** `gemini-embedding-2` (or `-preview`), **text-only**, **asymmetric retrieval
+- **Embedding:** `gemini-embedding-2` (or `-preview`), **semantic-description-only**, **asymmetric retrieval
   format** — stored experiences as documents (`title: none | text: {…}`), queries as
   `task: search result | query: {…}`. Implemented in `GeminiEmbeddingProvider`; `dim: 1536`
-  (Matryoshka). `gemini-embedding-2` has NO `task_type` param (that was `embedding-001`).
+  (Matryoshka). Mass, roughness, and contact are explicit hybrid-score terms, not duplicated
+  inside the vector. `gemini-embedding-2` has NO `task_type` param (that was `embedding-001`).
 - **Physics (James-grounded):** in `config.yaml physics:` — silicone friction **rises** with
   roughness (`alpha_sil_decay` negative); gecko vdW adhesion (`beta`) **collapses** to ~0 by the
   roughest class. Crossover ≈ class 3. Model form matches James Eq. 1/2 in the saturated regime.
@@ -86,7 +88,7 @@ data/
 ├── images/             # object RGB
 ├── splits.json         # frozen GroupKFold
 ├── cache/<sha256>.json # ← every embedding vector + every VLM response, content-hash keyed
-└── expforce/           # the POC's isolated dataset (dataset.csv, images/, experiences.jsonl)
+└── expforce/           # immutable source CSV + frozen 100/29 split + derived viewer artifacts
 ```
 Embeddings are computed on demand, cached to `data/cache/`, and loaded into an in-memory dict
 for exact search during a run. No database.
@@ -100,13 +102,18 @@ $VENV scripts/run_experiment.py --all --dry-run           # E1–E6 offline
 $VENV scripts/check_pipeline.py                            # full E5 on one object, offline
 $VENV scripts/expforce_testset.py --live --limit 6 --k 3  # live Gemini POC (needs .env key)
 $VENV tests/test_gemini_live.py                            # single live call smoke
+$VENV scripts/prepare_expforce_viewer.py                   # derived records + frozen split
+$VENV -m streamlit run app.py                              # local validation viewer
 ```
 
 ## Status — what's proven vs pending
-- **Offline:** every module + all E1–E6 run; **19 pytest green**.
-- **Live:** full Gemini stack proven on real **Exp-Force** data (descriptor + `gemini-embedding-2`
+- **Offline:** every module + all E1–E6 run; **27 offline pytest green** plus Streamlit UI smoke.
+- **Synthetic viewer:** the unchanged paired Exp-Force fixture now has a frozen 100-reference /
+  29-test split, detailed top-7 retrieval traces, tie-aware selection metrics, cache telemetry,
+  and persisted JSON/CSV benchmark results. It validates plumbing, not physical performance.
+- **Prior live POC:** full Gemini stack ran on provisional **Exp-Force** fixture data (descriptor + `gemini-embedding-2`
   asymmetric retrieval + structured force prediction + GroupKFold). 6-object POC **MAE 0.083 N**
-  (tiny sample; Exp-Force benchmark ≈ 0.43 N).
+  (tiny synthetic/provisional sample; do not treat as a scientific result).
 - **Tested live:** semantic retrieval + mass similarity + VLM force. **NOT yet live:**
   roughness/contact/physics/gripper-selection — the Exp-Force set has no roughness/contact labels
   (held constant), so those are validated **offline on synthetic data** and await our own

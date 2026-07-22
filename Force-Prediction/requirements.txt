@@ -19,6 +19,10 @@ google-genai>=0.3
 # --- plots for the physical-relationships analysis (docs/relationships) ---
 matplotlib>=3.7
 
+# --- local research viewer ---
+streamlit>=1.40
+pandas>=2.0
+
 # --- dev / CI ---
 pytest>=8.0
 ruff>=0.4

@@ -30,6 +30,22 @@ python scripts/check_prediction.py   # one per-gripper VLM call (dry-run stub)
 python scripts/check_pipeline.py     # full E5 on one object, every stage printed
 ```
 
+## Exp-Force pipeline viewer
+
+The local Streamlit viewer uses the unchanged synthetic `dataset_2gripper.csv`,
+freezes 100 reference objects and 29 held-out objects, and calls the same `Pipeline`
+used by the experiment runner. Prepare derived records offline, then start the app:
+
+```bash
+pip install -e ".[viewer,gemini]"
+python scripts/prepare_expforce_viewer.py
+streamlit run app.py
+```
+
+Use `python scripts/prepare_expforce_viewer.py --live` to download all images and
+generate cached Gemini descriptions. The UI defaults to offline E5 so it can be
+tested without an API key; Live Gemini uses the same content-addressed cache.
+
 ## Live runs
 
 Set a key and flip `models.dry_run: false` in `config.yaml`:

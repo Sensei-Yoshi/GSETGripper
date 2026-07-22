@@ -142,12 +142,12 @@ def compute_metrics(rows: list[EvalRow], cfg: Config) -> Metrics:
     infeasible_picks = 0
     regrets: list[float] = []
     for row in rows:
-        oracle_g, oracle_f = row.truth.oracle()
-        if oracle_g is None:  # no feasible gripper in truth -> skip selection scoring
+        optimal, oracle_f = row.truth.optimal_grippers()
+        if not optimal:  # no feasible gripper in truth -> skip selection scoring
             continue
         considered += 1
         chosen = row.result.desired_gripper
-        if chosen == oracle_g.value:
+        if chosen in {gripper.value for gripper in optimal}:
             correct += 1
         # regret: what the choice actually costs in true force
         if chosen in ("gecko", "silicone"):

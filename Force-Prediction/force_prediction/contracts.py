@@ -107,6 +107,18 @@ class ObjectRecord(BaseModel):
             return None, None
         return min(candidates, key=lambda gf: gf[1])
 
+    def optimal_grippers(self) -> tuple[set[Gripper], float | None]:
+        """Return every minimum-force gripper so tied labels score fairly."""
+        candidates = {
+            g: rec.min_force_n
+            for g, rec in ((Gripper.GECKO, self.gecko), (Gripper.SILICONE, self.silicone))
+            if rec is not None and rec.feasible and rec.min_force_n is not None
+        }
+        if not candidates:
+            return set(), None
+        minimum = min(candidates.values())
+        return {g for g, force in candidates.items() if force == minimum}, minimum
+
 
 class Query(BaseModel):
     """Measured properties of a query object (no force labels)."""

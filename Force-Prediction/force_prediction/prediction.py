@@ -27,7 +27,7 @@ from .contracts import (
 )
 from .llm import get_client
 from .physics import PhysicsEstimate
-from .retrieval import RetrievedExperience
+from .retrieval import RetrievedExperience, normalized_weights
 
 
 def _force_constraints(cfg: Config) -> dict:
@@ -77,6 +77,11 @@ def vlm_predict_gripper(
             physics_estimate.feasible if (physics_estimate and include_measured) else None
         ),
         "retrieved_experiences": [r.to_payload(include_paired) for r in retrieved],
+        "retrieval_config": {
+            "normalized_weights": normalized_weights(cfg),
+            "sigma_mass": cfg.retrieval.sigma_mass,
+            "sigma_contact": cfg.retrieval.sigma_contact,
+        },
         "force_constraints": _force_constraints(cfg),
     }
     if cfg.models.dry_run:

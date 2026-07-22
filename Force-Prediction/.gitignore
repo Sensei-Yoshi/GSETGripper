@@ -17,6 +17,12 @@ data/images/*.png
 data/cache/*.json
 results.json
 
+# Exp-Force viewer artifacts (source CSV and frozen split remain tracked)
+data/expforce/preparation_manifest.json
+data/expforce/validation_experiences.jsonl
+data/expforce/results/
+data/expforce/images/*.png
+
 # Keep the data dirs themselves
 !data/images/
 !data/cache/

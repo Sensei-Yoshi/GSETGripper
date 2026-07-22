@@ -13,7 +13,8 @@ retrieval index) so nothing leaks across the GroupKFold boundary.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
+from typing import Any
 
 import numpy as np
 
@@ -28,6 +29,7 @@ from .contracts import (
     SelectionResult,
 )
 from .learning import ResidualForceModel, base_features
+from .llm import get_client
 from .perception import describe
 from .physics import PhysicsEstimate, PhysicsModel, PhysicsParams, calibrate
 from .prediction import (
@@ -58,6 +60,17 @@ class QueryInput:
     image_bgr: np.ndarray | None = None
     image_path: str = ""
     semantic_description: str | None = None
+
+
+@dataclass
+class PipelineRunResult:
+    """Selection plus the evidence needed by evaluation and research tooling."""
+
+    selection: SelectionResult
+    semantic_description: str
+    retrieved: dict[str, list[RetrievedExperience]]
+    physics_estimates: dict[str, dict[str, Any] | None]
+    cache_stats: dict[str, Any]
 
 
 class Pipeline:
@@ -123,6 +136,9 @@ class Pipeline:
 
     # -------------------------------------------------------------- predict #
     def predict(self, q: QueryInput) -> SelectionResult:
+        return self.predict_detailed(q).selection
+
+    def predict_detailed(self, q: QueryInput) -> PipelineRunResult:
         description = q.semantic_description
         if description is None and self._needs_description():
             description = describe(q.image_bgr, self.cfg).description
@@ -144,6 +160,8 @@ class Pipeline:
             )
 
         predictions: dict[Gripper, PerGripperPrediction] = {}
+        retrieval_trace: dict[str, list[RetrievedExperience]] = {}
+        physics_trace: dict[str, dict[str, Any] | None] = {}
         for gripper in GRIPPERS:
             cq = CandidateQuery(**query.model_dump(), candidate_gripper=gripper)
             physics_est = None
@@ -156,8 +174,19 @@ class Pipeline:
                 retrieved = self.index.retrieve(
                     query, query_vec, gripper, exclude_object_id=q.object_id
                 )
+            retrieval_trace[gripper.value] = retrieved
+            physics_trace[gripper.value] = asdict(physics_est) if physics_est is not None else None
             predictions[gripper] = self._predict_one(cq, q.image_bgr, retrieved, physics_est, query_vec)
-        return select(predictions)
+        cache_stats: dict[str, Any] = {}
+        if not self.cfg.models.dry_run:
+            cache_stats = get_client(self.cfg).cache_stats()
+        return PipelineRunResult(
+            selection=select(predictions),
+            semantic_description=query.semantic_description,
+            retrieved=retrieval_trace,
+            physics_estimates=physics_trace,
+            cache_stats=cache_stats,
+        )
 
     def _predict_one(
         self,

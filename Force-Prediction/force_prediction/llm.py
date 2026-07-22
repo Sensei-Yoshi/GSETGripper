@@ -16,6 +16,7 @@ import base64
 import hashlib
 import json
 import os
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -46,23 +47,51 @@ def load_dotenv(path: Path | None = None) -> None:
 class _DiskCache:
     """Tiny content-addressed JSON cache under paths.cache."""
 
+    VERSION = "v2"
+
     def __init__(self, root: Path) -> None:
         self.root = root
         self.root.mkdir(parents=True, exist_ok=True)
+        self.hits = 0
+        self.misses = 0
+        self.writes = 0
+        self.read_errors = 0
 
     @staticmethod
     def key(*parts: Any) -> str:
-        blob = json.dumps(parts, sort_keys=True, default=str).encode("utf-8")
+        blob = json.dumps((_DiskCache.VERSION, *parts), sort_keys=True, default=str).encode("utf-8")
         return hashlib.sha256(blob).hexdigest()
 
     def get(self, key: str) -> Any | None:
         path = self.root / f"{key}.json"
         if path.exists():
-            return json.loads(path.read_text())
+            try:
+                value = json.loads(path.read_text())
+            except (OSError, json.JSONDecodeError):
+                self.read_errors += 1
+                self.misses += 1
+                return None
+            self.hits += 1
+            return value
+        self.misses += 1
         return None
 
     def put(self, key: str, value: Any) -> None:
-        (self.root / f"{key}.json").write_text(json.dumps(value))
+        destination = self.root / f"{key}.json"
+        payload = json.dumps(value)
+        with tempfile.NamedTemporaryFile("w", dir=self.root, delete=False) as fh:
+            fh.write(payload)
+            temporary = Path(fh.name)
+        temporary.replace(destination)
+        self.writes += 1
+
+    def stats(self) -> dict[str, int]:
+        return {
+            "hits": self.hits,
+            "misses": self.misses,
+            "writes": self.writes,
+            "read_errors": self.read_errors,
+        }
 
 
 def _encode_image(image_bgr: np.ndarray | None) -> str | None:
@@ -82,7 +111,15 @@ class GeminiClient:
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         self.cache = _DiskCache(cfg.path("cache")) if cfg.models.cache else None
-        self._client = None  # lazy
+        self._client: Any = None  # lazy
+        self.backend_attempts = {"generation": 0, "embedding": 0}
+
+    def cache_stats(self) -> dict[str, Any]:
+        return {
+            "enabled": self.cache is not None,
+            **(self.cache.stats() if self.cache is not None else {}),
+            "backend_attempts": dict(self.backend_attempts),
+        }
 
     def _sdk(self):  # noqa: ANN202 - external type
         if self._client is None:
@@ -125,6 +162,7 @@ class GeminiClient:
         self, system: str, instruction: str, schema: type[BaseModel],
         img_b64: str | None, extra: dict | None,
     ) -> dict:
+        self.backend_attempts["generation"] += 1
         from google.genai import types
 
         parts: list[Any] = [instruction]
@@ -163,6 +201,7 @@ class GeminiClient:
 
     @retry(stop=stop_after_attempt(8), wait=wait_exponential(min=2, max=60))
     def _embed_live(self, text: str, img_b64: str | None) -> np.ndarray:
+        self.backend_attempts["embedding"] += 1
         from google.genai import types
 
         contents: list[Any] = [text]

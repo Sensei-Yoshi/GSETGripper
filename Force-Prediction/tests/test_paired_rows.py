@@ -32,3 +32,23 @@ def test_e5_pipeline_runs_end_to_end():
     result = pipe.predict(query_input_from_object(test, cfg))
     assert result.desired_gripper in ("gecko", "silicone", "none")
     assert set(result.candidate_predictions) == {"gecko", "silicone"}
+
+
+def test_detailed_pipeline_preserves_selection_and_exposes_trace():
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = True
+    cfg.retrieval.k = 7
+    records = fabricate_records(cfg, 30)
+    held = records[0].object_id
+    train = [r for r in records if r.object_id != held]
+    test = [r for r in records if r.object_id == held]
+    pipe = Pipeline(cfg, cfg.experiment("e5")).fit(train)
+    query = query_input_from_object(test, cfg)
+
+    detailed = pipe.predict_detailed(query)
+    ordinary = pipe.predict(query)
+
+    assert detailed.selection == ordinary
+    assert set(detailed.retrieved) == {"gecko", "silicone"}
+    assert all(len(items) == 7 for items in detailed.retrieved.values())
+    assert set(detailed.physics_estimates) == {"gecko", "silicone"}

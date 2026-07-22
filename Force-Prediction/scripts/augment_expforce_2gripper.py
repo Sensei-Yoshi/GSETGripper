@@ -39,7 +39,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 import numpy as np  # noqa: E402
 
 from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import ExperienceRecord, Gripper, Meta, save_experiences  # noqa: E402
+from force_prediction.contracts import (  # noqa: E402
+    ExperienceRecord,
+    Gripper,
+    Meta,
+    save_experiences,
+)
 
 # James real-object gecko/silicone ratios anchor the smooth end (~0.52-1.03); the
 # Fig 2/4 roughness collapse anchors the rough end. Ratio = gecko / silicone.

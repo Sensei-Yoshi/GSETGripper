@@ -6,6 +6,7 @@ from force_prediction.hardware import fabricate_records
 from force_prediction.retrieval import (
     ExperienceIndex,
     build_embedding_text,
+    normalized_weights,
     s_contact,
     s_mass,
     s_roughness,
@@ -21,6 +22,36 @@ def test_similarity_bounds():
     assert s_roughness(2, 2, CFG) == 1.0
     assert s_roughness(1, 5, CFG) == 0.0
     assert s_roughness(1, 2, CFG) == 0.75
+
+
+def test_embedding_text_is_semantic_only():
+    first = build_embedding_text("smooth glass cup", 100, 1, 0.9, CFG)
+    second = build_embedding_text("smooth glass cup", 900, 5, 0.2, CFG)
+    assert first == second == "smooth glass cup"
+
+
+def test_weights_normalize_and_breakdown_sums_to_score():
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = True
+    weights = normalized_weights(cfg)
+    assert sum(weights.values()) == 1.0
+    records = fabricate_records(cfg, 10)
+    index = ExperienceIndex(cfg).fit(records)
+    probe = records[0]
+    q = Query(object_id="probe", image_path="", mass_g=probe.mass_g,
+              roughness_class=probe.roughness_class,
+              projected_contact_fraction=probe.projected_contact_fraction,
+              semantic_description=probe.semantic_description)
+    result = index.retrieve(q, index.embed_query(q), Gripper.GECKO)[0]
+    assert result.similarity is not None
+    contributions = (
+        result.similarity.semantic_contribution
+        + result.similarity.mass_contribution
+        + result.similarity.roughness_contribution
+        + result.similarity.contact_contribution
+    )
+    assert abs(result.score - contributions) < 1e-9
+    assert result.rank == 1
 
 
 def test_branch_filter_and_topk_and_paired():
