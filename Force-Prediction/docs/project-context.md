@@ -1,3 +1,18 @@
+> **⚠️ THIS IS THE ORIGINAL DESIGN PROPOSAL (the "why"), not the current code state.**
+> A working implementation now exists. **For onboarding — repo layout, environment/venv, the
+> Gemini + embedding decisions, the James-grounded physics, how to run things, what's proven vs
+> pending, and the iCloud gotcha — read [`../CLAUDE.md`](../CLAUDE.md) first**, then `../README.md`.
+> Some proposals below have since been decided (e.g. Gemini over Qwen; `gemini-embedding-2` with
+> asymmetric retrieval formatting; no vector DB yet; James-calibrated physics coefficients).
+> This document is kept for design rationale.
+>
+> **Quick facts:** package `force_prediction/` (flat, config-driven); one `pipeline.py` for all
+> experiments E1–E6 (toggles in `config.yaml`); mock-first so everything runs offline; live
+> Gemini POC on the Exp-Force dataset works (MAE 0.083 N on 6 objects). venv at
+> `/Users/premshah/Desktop/Robotics/GSET/env`; key in repo-root `.env`.
+
+---
+
  You are right to correct those points:
 
 * The roughness system returns **one of five discrete classes**, not a probability vector.

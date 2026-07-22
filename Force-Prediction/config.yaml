@@ -67,19 +67,19 @@ physics:
   # Defaults sized so the 20 g - 1.5 kg synthetic range is mostly feasible for at
   # least one gripper, with genuine heavy+rough infeasible cases. Replace with
   # values calibrated from James et al. data once collected.
-  alpha_sil0: 2.5
-  alpha_sil_decay: 0.15
-  alpha_geo0: 2.0
-  alpha_geo_decay: 0.10
+  alpha_sil0: 2.0
+  alpha_sil_decay: -0.12
+  alpha_geo0: 2.2
+  alpha_geo_decay: 0.05
   # beta(c) = beta0 * clip(1 - beta_decay * (c - 1), 0, 1)   (adhesive support, decays)
-  beta0: 6.0
-  beta_decay: 0.30
-  n50: 1.5              # preload for adhesive seating in N/(N+N50)
+  beta0: 3.0
+  beta_decay: 0.28
+  n50: 0.7              # preload for adhesive seating in N/(N+N50)
   # Calibration bounds (constrained least-squares); fit INSIDE each training fold.
   bounds:
     alpha0: [0.05, 5.0]
-    decay: [0.0, 1.0]
-    beta0: [0.0, 50.0]
+    decay: [-0.3, 0.6]
+    beta0: [0.0, 30.0]
     beta_decay: [0.0, 1.0]
     n50: [0.05, 20.0]
 
