@@ -85,7 +85,7 @@ physics:
 
 # --- Models (Gemini) ---------------------------------------------------------
 models:
-  vlm: gemini-flash-latest  # alias -> current free-tier Flash (2.5-flash is now blocked
+  vlm: gemini-flash-lite-latest  # higher free quota for the POC
                             # for new keys). Vision + JSON schema. Other options:
                             # gemini-flash-lite-latest (cheaper), gemini-3-flash,
                             # gemini-3.1-pro (best, needs paid quota — Exp-Force's choice).

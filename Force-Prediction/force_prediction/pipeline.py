@@ -139,7 +139,8 @@ class Pipeline:
             query_vec = self.provider.embed(
                 build_embedding_text(query.semantic_description, query.mass_g,
                                      query.roughness_class,
-                                     query.projected_contact_fraction, self.cfg)
+                                     query.projected_contact_fraction, self.cfg),
+                is_query=True,
             )
 
         predictions: dict[Gripper, PerGripperPrediction] = {}

@@ -120,7 +120,7 @@ class GeminiClient:
             self.cache.put(cache_key, result)
         return result
 
-    @retry(stop=stop_after_attempt(4), wait=wait_exponential(min=1, max=20))
+    @retry(stop=stop_after_attempt(8), wait=wait_exponential(min=2, max=60))
     def _generate_json_live(
         self, system: str, instruction: str, schema: type[BaseModel],
         img_b64: str | None, extra: dict | None,
@@ -161,7 +161,7 @@ class GeminiClient:
             self.cache.put(cache_key, vec.tolist())
         return vec
 
-    @retry(stop=stop_after_attempt(4), wait=wait_exponential(min=1, max=20))
+    @retry(stop=stop_after_attempt(8), wait=wait_exponential(min=2, max=60))
     def _embed_live(self, text: str, img_b64: str | None) -> np.ndarray:
         from google.genai import types
 

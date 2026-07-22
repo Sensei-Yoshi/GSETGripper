@@ -33,16 +33,23 @@ from .llm import get_client
 # --------------------------------------------------------------------------- #
 @runtime_checkable
 class EmbeddingProvider(Protocol):
-    def embed(self, text: str, image_bgr: np.ndarray | None = None) -> np.ndarray: ...
+    def embed(
+        self, text: str, image_bgr: np.ndarray | None = None, is_query: bool = False
+    ) -> np.ndarray: ...
 
 
 class MockEmbeddingProvider:
-    """Deterministic hash-based vectors so offline retrieval is reproducible."""
+    """Deterministic hash-based vectors so offline retrieval is reproducible.
+
+    Ignores `is_query` (a hash mock has no learned query/doc alignment, so the
+    asymmetric template would break same-object query<->doc matching)."""
 
     def __init__(self, dim: int) -> None:
         self.dim = dim
 
-    def embed(self, text: str, image_bgr: np.ndarray | None = None) -> np.ndarray:
+    def embed(
+        self, text: str, image_bgr: np.ndarray | None = None, is_query: bool = False
+    ) -> np.ndarray:
         seed = int.from_bytes(hashlib.sha256(text.encode("utf-8")).digest()[:8], "big")
         rng = np.random.default_rng(seed)
         vec = rng.standard_normal(self.dim).astype(np.float32)
@@ -50,11 +57,23 @@ class MockEmbeddingProvider:
 
 
 class GeminiEmbeddingProvider:
+    """gemini-embedding-2: asymmetric retrieval formatting (Google's documented
+    templates). Stored experiences are embedded as documents, the query with the
+    retrieval-query template, which aligns query<->corpus better than embedding
+    both identically (SEMANTIC_SIMILARITY is explicitly not for retrieval)."""
+
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
 
-    def embed(self, text: str, image_bgr: np.ndarray | None = None) -> np.ndarray:
-        return get_client(self.cfg).embed(text=text, image_bgr=image_bgr)
+    def embed(
+        self, text: str, image_bgr: np.ndarray | None = None, is_query: bool = False
+    ) -> np.ndarray:
+        formatted = (
+            f"task: search result | query: {text}"
+            if is_query
+            else f"title: none | text: {text}"
+        )
+        return get_client(self.cfg).embed(text=formatted, image_bgr=image_bgr)
 
 
 def get_embedding_provider(cfg: Config) -> EmbeddingProvider:
@@ -157,7 +176,7 @@ class ExperienceIndex:
             query.semantic_description, query.mass_g, query.roughness_class,
             query.projected_contact_fraction, self.cfg,
         )
-        return self.provider.embed(text)
+        return self.provider.embed(text, is_query=True)
 
     def retrieve(
         self,

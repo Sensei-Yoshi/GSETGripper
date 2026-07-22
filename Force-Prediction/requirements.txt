@@ -1,8 +1,25 @@
-google-genai
-scipy
-numpy
-pydantic
-PyTest
-PyYaml
-pandas
-opencv-python
+# Force-Prediction dependencies.
+# Install:  python -m pip install -r requirements.txt
+# (or `pip install -e ".[dev]"` which reads pyproject.toml instead)
+
+# --- core runtime ---
+numpy<2
+opencv-python<4.12
+pyserial>=3.5
+pydantic>=2.6
+pyyaml>=6.0
+scipy>=1.11
+scikit-learn>=1.4
+tenacity>=8.2
+platformdirs>=4.0
+
+# --- live Gemini (perception / retrieval / prediction) ---
+google-genai>=0.3
+
+# --- plots for the physical-relationships analysis (docs/relationships) ---
+matplotlib>=3.7
+
+# --- dev / CI ---
+pytest>=8.0
+ruff>=0.4
+mypy>=1.9
