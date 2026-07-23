@@ -2,28 +2,104 @@
 
 const unsigned long BAUD_RATE = 9600;
 
-//set tostep/dir pins and wiring type.
-const int STEP_PIN = 2;
-const int DIR_PIN = 3;
-AccelStepper stepper(AccelStepper::DRIVER, STEP_PIN, DIR_PIN);
+// ---- Z axis (lead screw) ----
+const int Z_A_STEP_PIN = 2;
+const int Z_A_DIR_PIN = 3;
+AccelStepper stepperZA(AccelStepper::DRIVER, Z_A_STEP_PIN, Z_A_DIR_PIN);
 
-//tune for motor/rig.
-const float MAX_SPEED_STEPS_PER_SEC = 800.0;
-const float ACCELERATION_STEPS_PER_SEC2 = 400.0;
+const int Z_B_STEP_PIN = 4;
+const int Z_B_DIR_PIN = 5;
+AccelStepper stepperZB(AccelStepper::DRIVER, Z_B_STEP_PIN, Z_B_DIR_PIN);
 
-// TODO: calibrate for the real gantry (lead screw pitch, microstepping, etc.).
+const float Z_MAX_SPEED_STEPS_PER_SEC = 2500.0;      // 12.5 mm/s
+const float Z_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2; reaches full speed in 0.5 s over 3.1 mm
+
+// Calibrated for: NEMA 17, 1.8 deg (200 full steps/rev), integrated Tr8x8 (P2)
+// lead screw (4-start, 8 mm lead), TMC2209 driver in standalone mode at 1/8
+// microstepping (MS1/MS2 both low).
+//   (200 steps/rev * 8 microsteps) / 8 mm per rev = 200 steps/mm
+//
 // Z 0 is wherever the arm physically is when the board powers on/resets --
 // there's no homing routine or limit switch yet, so it is not tied to any
-// fixed real-world height until one is added.
-const float STEPS_PER_MM = 10.0;
+// fixed real-world height until one is added. For reference: the motor is
+// mounted 127 mm (5 in) above the ground, so the nut's reachable band sits
+// roughly 127-527 mm above ground.
+const float Z_STEPS_PER_MM = 200.0;
+const long Z_MIN_STEPS = 0;
+// TODO: measure actual usable travel. The screw is 400 mm long, but the nut
+// block's own length plus motor-end clearance eat into that -- expect 355-375
+// mm. 350 mm is a conservative placeholder until measured.
+const long Z_MAX_STEPS = 70000; // 350 mm * 200 steps/mm
+
+bool zMovePending = false;
+
+// ---- SELECT axis (gecko <-> silicone gripper head) ----
+const int SELECT_STEP_PIN = 6;
+const int SELECT_DIR_PIN = 7;
+AccelStepper stepperSelect(AccelStepper::DRIVER, SELECT_STEP_PIN, SELECT_DIR_PIN);
+
+const float SELECT_MAX_SPEED_STEPS_PER_SEC = 1600.0;  // 1 turret rev/s (60 RPM)
+const float SELECT_ACCELERATION_STEPS_PER_SEC2 = 2000.0;
+
+// Rotary turret, direct drive (no gearbox or belt), same 1.8 deg motor and 1/8
+// microstepping as Z: 200 steps/rev * 8 = 1600 microsteps per turret rev.
+// The two gripper heads are mounted 80 deg apart:
+//   1600 * (80 / 360) = 355.6 steps -> rounded to 356 (+0.1 deg). Moves are
+//   absolute, so that rounding offset is fixed and never accumulates.
+// TODO: confirm which head sits at 0 deg -- swapping these two constants is
+// the whole fix if gecko and silicone are the other way round.
+const long SELECT_GEKKO_STEPS = 0;      // head A, 0 deg
+const long SELECT_SILICONE_STEPS = 356; // head B, 80 deg
+const long SELECT_MIN_STEPS = 0;
+const long SELECT_MAX_STEPS = 356;
+
+bool selectMovePending = false;
+
+// ---- GRIP axis (open/close the active gripper) ----
+const int GRIP_STEP_PIN = 8;
+const int GRIP_DIR_PIN = 9;
+AccelStepper stepperGrip(AccelStepper::DRIVER, GRIP_STEP_PIN, GRIP_DIR_PIN);
+
+const float GRIP_MAX_SPEED_STEPS_PER_SEC = 2500.0;      // 12.5 mm/s of jaw travel
+const float GRIP_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2
+
+// Separate Tr8x8 (P2) lead screw with the same spec as Z (4-start, 8 mm lead),
+// same 1.8 deg motor, same 1/8 microstepping, coupled 1:1 with no reduction:
+//   (200 steps/rev * 8 microsteps) / 8 mm per rev = 200 steps/mm
+// Only ONE jaw moves (the opposing jaw is rigidly fixed to the frame), so jaw
+// opening changes 1:1 with nut travel -- hence no factor of 2 below or in
+// gripStepsForWidth().
+//
+// GRIP_OPEN_STEPS is the fully-open home position. GRIP_MAX_OPENING_MM is the
+// object width (mm) that corresponds to fully open jaws; GRIP_STEPS_PER_MM
+// converts the remaining jaw travel needed to close around a narrower object
+// into steps.
+const long GRIP_OPEN_STEPS = 0;
+const float GRIP_MAX_OPENING_MM = 60.0; // TODO: measure the fully-open jaw gap
+const float GRIP_STEPS_PER_MM = 200.0;
+const long GRIP_MIN_STEPS = 0;
+// Fully-closed travel = GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM. Update this
+// alongside GRIP_MAX_OPENING_MM when the jaw gap is measured.
+const long GRIP_MAX_STEPS = 12000;
+
+bool gripMovePending = false;
 
 String command;
 
 void setup() {
   Serial.begin(BAUD_RATE);
 
-  stepper.setMaxSpeed(MAX_SPEED_STEPS_PER_SEC);
-  stepper.setAcceleration(ACCELERATION_STEPS_PER_SEC2);
+  stepperZA.setMaxSpeed(Z_MAX_SPEED_STEPS_PER_SEC);
+  stepperZA.setAcceleration(Z_ACCELERATION_STEPS_PER_SEC2);
+
+  stepperZB.setMaxSpeed(Z_MAX_SPEED_STEPS_PER_SEC);
+  stepperZB.setAcceleration(Z_ACCELERATION_STEPS_PER_SEC2);
+
+  stepperSelect.setMaxSpeed(SELECT_MAX_SPEED_STEPS_PER_SEC);
+  stepperSelect.setAcceleration(SELECT_ACCELERATION_STEPS_PER_SEC2);
+
+  stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
+  stepperGrip.setAcceleration(GRIP_ACCELERATION_STEPS_PER_SEC2);
 }
 
 void loop() {
@@ -40,22 +116,148 @@ void loop() {
   }
 
   // Must be called as often as possible for AccelStepper to step correctly.
-  stepper.run();
+  stepperZA.run();
+  stepperZB.run();
+  stepperSelect.run();
+  stepperGrip.run();
+
+  if (zMovePending && stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
+    zMovePending = false;
+    Serial.println("DONE Z");
+  }
+  if (selectMovePending && stepperSelect.distanceToGo() == 0) {
+    selectMovePending = false;
+    Serial.println("DONE SELECT");
+  }
+  if (gripMovePending && stepperGrip.distanceToGo() == 0) {
+    gripMovePending = false;
+    Serial.println("DONE GRIP");
+  }
 }
 
 void processCommand(const String& message) {
-  if (message.startsWith("MOVE ")) {
-    long targetSteps = message.substring(5).toInt();
-    stepper.moveTo(targetSteps);
-  } else if (message.startsWith("Z ")) {
-    float targetHeightMM = message.substring(2).toFloat();
-    long targetSteps = (long)(targetHeightMM * STEPS_PER_MM);
-    stepper.moveTo(targetSteps);
-    Serial.print("Moving to Z=");
-    Serial.print(targetHeightMM);
-    Serial.print("mm (steps=");
-    Serial.print(targetSteps);
-    Serial.println(")");
+  if (message.length() == 0) {
+    return;
   }
-  // TODO: add other commands as needed (e.g. HOME, STOP, SPEED <n>).
+
+  if (message.startsWith("Z ")) {
+    String arg = message.substring(2);
+    arg.trim();
+    float targetHeightMM;
+    if (!parseFloatStrict(arg, targetHeightMM)) {
+      sendErr("bad value");
+      return;
+    }
+    moveZTo(targetHeightMM);
+  } else if (message.startsWith("SELECT ")) {
+    String arg = message.substring(7);
+    arg.trim();
+    if (arg == "GEKKO") {
+      moveSelectTo(SELECT_GEKKO_STEPS);
+    } else if (arg == "SILICONE") {
+      moveSelectTo(SELECT_SILICONE_STEPS);
+    } else {
+      sendErr("unknown select position");
+    }
+  } else if (message.startsWith("GRIP ")) {
+    String arg = message.substring(5);
+    arg.trim();
+    if (arg == "OPEN") {
+      moveGripToSteps(GRIP_OPEN_STEPS);
+    } else if (arg.startsWith("CLOSE")) {
+      String widthArg = arg.substring(5);
+      widthArg.trim();
+      float widthMM;
+      if (!parseFloatStrict(widthArg, widthMM)) {
+        sendErr("bad value");
+        return;
+      }
+      moveGripToSteps(gripStepsForWidth(widthMM));
+    } else {
+      sendErr("unknown grip command");
+    }
+  } else {
+    sendErr("unknown command");
+  }
+}
+
+void moveZTo(float targetHeightMM) {
+  long targetSteps = clampSteps((long)(targetHeightMM * Z_STEPS_PER_MM), Z_MIN_STEPS, Z_MAX_STEPS, "Z");
+  stepperZA.moveTo(targetSteps);
+  stepperZB.moveTo(targetSteps);
+  zMovePending = true;
+}
+
+void moveSelectTo(long targetSteps) {
+  long clamped = clampSteps(targetSteps, SELECT_MIN_STEPS, SELECT_MAX_STEPS, "SELECT");
+  stepperSelect.moveTo(clamped);
+  selectMovePending = true;
+}
+
+void moveGripToSteps(long targetSteps) {
+  long clamped = clampSteps(targetSteps, GRIP_MIN_STEPS, GRIP_MAX_STEPS, "GRIP");
+  stepperGrip.moveTo(clamped);
+  gripMovePending = true;
+}
+
+long gripStepsForWidth(float widthMM) {
+  float travelMM = GRIP_MAX_OPENING_MM - widthMM;
+  if (travelMM < 0) {
+    travelMM = 0;
+  }
+  return GRIP_OPEN_STEPS + (long)(travelMM * GRIP_STEPS_PER_MM);
+}
+
+long clampSteps(long value, long minSteps, long maxSteps, const char* axisName) {
+  long clamped = value;
+  if (clamped < minSteps) {
+    clamped = minSteps;
+  } else if (clamped > maxSteps) {
+    clamped = maxSteps;
+  }
+  if (clamped != value) {
+    Serial.print("WARN ");
+    Serial.print(axisName);
+    Serial.print(" clamped to ");
+    Serial.println(clamped);
+  }
+  return clamped;
+}
+
+bool parseFloatStrict(const String& s, float& out) {
+  if (s.length() == 0) {
+    return false;
+  }
+  bool seenDigit = false;
+  bool seenDot = false;
+  int start = 0;
+  if (s[0] == '-' || s[0] == '+') {
+    start = 1;
+  }
+  if (start >= (int)s.length()) {
+    return false;
+  }
+  for (int i = start; i < (int)s.length(); i++) {
+    char c = s[i];
+    if (c == '.') {
+      if (seenDot) {
+        return false;
+      }
+      seenDot = true;
+    } else if (isDigit(c)) {
+      seenDigit = true;
+    } else {
+      return false;
+    }
+  }
+  if (!seenDigit) {
+    return false;
+  }
+  out = s.toFloat();
+  return true;
+}
+
+void sendErr(const char* reason) {
+  Serial.print("ERR ");
+  Serial.println(reason);
 }
