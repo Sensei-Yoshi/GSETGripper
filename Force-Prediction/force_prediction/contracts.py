@@ -156,6 +156,8 @@ class SelectionResult(BaseModel):
     predicted_normal_force_n: float | None = None
     candidate_predictions: dict[str, PerGripperPrediction] = Field(default_factory=dict)
     reasoning_trace: str = ""
+    prediction_tie: bool = False
+    tie_break_reason: str | None = None
 
 
 # --------------------------------------------------------------------------- #

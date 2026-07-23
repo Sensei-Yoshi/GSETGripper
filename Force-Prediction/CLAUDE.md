@@ -88,7 +88,7 @@ data/
 ├── images/             # object RGB
 ├── splits.json         # frozen GroupKFold
 ├── cache/<sha256>.json # ← every embedding vector + every VLM response, content-hash keyed
-└── expforce/           # immutable source CSV + frozen 100/29 split + derived viewer artifacts
+└── expforce/           # synthetic source + 129-object experience pool + viewer artifacts
 ```
 Embeddings are computed on demand, cached to `data/cache/`, and loaded into an in-memory dict
 for exact search during a run. No database.
@@ -102,14 +102,14 @@ $VENV scripts/run_experiment.py --all --dry-run           # E1–E6 offline
 $VENV scripts/check_pipeline.py                            # full E5 on one object, offline
 $VENV scripts/expforce_testset.py --live --limit 6 --k 3  # live Gemini POC (needs .env key)
 $VENV tests/test_gemini_live.py                            # single live call smoke
-$VENV scripts/prepare_expforce_viewer.py                   # derived records + frozen split
+$VENV scripts/prepare_expforce_viewer.py                   # checkpointed descriptors + records
 $VENV -m streamlit run app.py                              # local validation viewer
 ```
 
 ## Status — what's proven vs pending
 - **Offline:** every module + all E1–E6 run; **27 offline pytest green** plus Streamlit UI smoke.
-- **Synthetic viewer:** the unchanged paired Exp-Force fixture now has a frozen 100-reference /
-  29-test split, detailed top-7 retrieval traces, tie-aware selection metrics, cache telemetry,
+- **Synthetic viewer:** the paired Exp-Force fixture has one strict winner per object, a 129-object
+  experience pool with leave-one-out evaluation, detailed top-7 retrieval traces, cache telemetry,
   and persisted JSON/CSV benchmark results. It validates plumbing, not physical performance.
 - **Prior live POC:** full Gemini stack ran on provisional **Exp-Force** fixture data (descriptor + `gemini-embedding-2`
   asymmetric retrieval + structured force prediction + GroupKFold). 6-object POC **MAE 0.083 N**

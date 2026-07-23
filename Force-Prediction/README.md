@@ -32,9 +32,10 @@ python scripts/check_pipeline.py     # full E5 on one object, every stage printe
 
 ## Exp-Force pipeline viewer
 
-The local Streamlit viewer uses the unchanged synthetic `dataset_2gripper.csv`,
-freezes 100 reference objects and 29 held-out objects, and calls the same `Pipeline`
-used by the experiment runner. Prepare derived records offline, then start the app:
+The local Streamlit viewer uses the synthetic `dataset_2gripper.csv`, whose paired
+forces have one strict winning gripper per object. All 129 objects form the experience
+pool. Known-object evaluation is leave-one-object-out; custom queries use all 129.
+The viewer calls the same `Pipeline` used by the experiment runner:
 
 ```bash
 pip install -e ".[viewer,gemini]"
@@ -42,9 +43,13 @@ python scripts/prepare_expforce_viewer.py
 streamlit run app.py
 ```
 
-Use `python scripts/prepare_expforce_viewer.py --live` to download all images and
-generate cached Gemini descriptions. The UI defaults to offline E5 so it can be
-tested without an API key; Live Gemini uses the same content-addressed cache.
+Use `python scripts/prepare_expforce_viewer.py --live` to download all images,
+checkpoint contact-region Gemini descriptions per object, and warm one text-only
+reference embedding per object. Preparation is resumable after quota interruptions.
+The UI defaults to offline E5; Live Gemini uses the content-addressed cache.
+The **Data Viewer** browses all 129 images/descriptions and exact saved single runs.
+The **Help & Experiments** tab explains the lab workflow, every E1-E6 ablation,
+what a live E5 run executes, and the difference between preparation and evaluation.
 
 ## Live runs
 
@@ -92,7 +97,7 @@ See [`docs/experiments.md`](docs/experiments.md).
 
 | E1 | E2 | E3 | E3b | E4 | E5 | E6 |
 |----|----|----|-----|----|----|----|
-| vision-only | +measured | +retrieval | retrieval-only (no VLM) | physics-only (no VLM) | **full method** | physics+residual |
+| vision-only | +measured | +retrieval | retrieval-only (no VLM) | physics-only (no VLM) | **retrieval+paired rows+VLM** | physics+residual |
 
 ## Team workstreams (2–3 week sprint, 6 people)
 

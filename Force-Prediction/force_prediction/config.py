@@ -122,6 +122,7 @@ class EvaluationConfig(BaseModel):
 
 
 class Prompts(BaseModel):
+    descriptor_system: str
     system: str
     descriptor: str
     per_gripper_instruction: str

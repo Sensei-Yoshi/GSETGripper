@@ -112,13 +112,25 @@ evaluation:
 # PROMPTS  —  edit here, never in code. Rendered by prediction.py with payload.
 # =============================================================================
 prompts:
+  descriptor_system: |
+    You create contact-region records for a robotic grasp-experience retrieval system.
+    Analyze only visible evidence in the supplied object image. The robot uses two
+    opposing compliant fingers at a fixed, centered grasp band around the object's
+    lateral surfaces. Focus on the surface patches those pads are most likely to touch.
+
+    The record will be converted into a text embedding and used to retrieve objects
+    with similar pad-to-object interfaces. Describe discriminating contact evidence;
+    do not recommend a gripper, predict force, infer a force label, or restate measured
+    mass, roughness class, or projected contact fraction. If the likely contact patch
+    is hidden or ambiguous, say so rather than inventing material or condition.
+
   system: |
     You are a robotics grasp-material selection and pre-grasp force estimation model.
 
     TASK
     Given an object image, measured object properties, a fixed robotic gripper
-    embodiment, retrieved grasping experiences, and an optional deterministic
-    physics estimate, estimate the minimum stationary-finger normal force
+    embodiment, and retrieved grasping experiences, estimate the minimum
+    stationary-finger normal force
     required to lift the object under the standardized test protocol.
 
     FORCE CONVENTION
@@ -155,11 +167,6 @@ prompts:
     experiences, but do not copy a force without accounting for differences in
     mass, roughness, contact fraction, and surface material.
 
-    PHYSICS ESTIMATE
-    When a physics force estimate is provided, treat it as a numerical prior, not
-    guaranteed ground truth. Adjust it only when experiences and visible surface
-    evidence give a clear reason.
-
     OUTPUT
     Return only valid JSON matching the supplied schema. "reasoning_trace" must
     be a concise evidence summary of at most three sentences identifying the most
@@ -167,17 +174,32 @@ prompts:
     hidden chain-of-thought.
 
   descriptor: |
-    Describe this object for a robotic grasping database. In 1-2 sentences,
-    state the visible material family, surface condition (clean/dry/dusty/wet/
-    oily/coated), whether the surface looks porous or fibrous, and the coarse
-    shape. Be factual and concise. Return only the requested JSON.
+    Inspect the likely opposing finger-contact patches in the centered grasp band.
+    Return the requested structured JSON with:
+    - the likely contact region and whether it is clearly visible;
+    - the material actually touching the pads, distinguishing substrate from a
+      label, wrapper, coating, sleeve, or exposed contents;
+    - visible condition such as clean, dry, dusty, wet, oily, worn, or unknown;
+    - local geometry, including curvature, broad continuous area, seams, ridges,
+      edges, lobes, or other interruptions;
+    - an uncertainty statement grounded in what the image does or does not show;
+    - a concise retrieval_description containing the most discriminating
+      pad-to-object interface evidence in 1-2 sentences. Roughly follow this template: [Material/object form]. The intended contact region is [surface condition], [geometry], and [other relevant properties].
+
+    Good retrieval_description examples:
+    1. "Transparent cylindrical glass object with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has no visible seams, texture, or contamination."
+    2. "Small curved snack chip with a porous, visibly textured surface and a thin, brittle structure. Its irregular geometry provides only a small, uneven contact region."
+
+    Do not
+    choose gecko or silicone and do not estimate force. Return only JSON matching
+    the supplied schema.
 
   per_gripper_instruction: |
     Estimate the minimum stationary-finger normal force (newtons) to lift this
     object with the "{candidate_gripper}" gripper under the standardized
     protocol, and judge feasibility within the force limit. Use the measured
-    properties, the retrieved "{candidate_gripper}" experiences (including their
-    other-gripper force where present), and the physics estimate if provided.
+    properties and the retrieved "{candidate_gripper}" experiences (including
+    their other-gripper force where present).
 
 # =============================================================================
 # EXPERIMENTS  —  E1..E6 as toggle sets over the single pipeline.
@@ -189,5 +211,5 @@ experiments:
   e3:   {use_measured: true,  use_retrieval: true,  use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false}
   e3b:  {use_measured: true,  use_retrieval: true,  use_paired_rows: false, use_physics: false, use_vlm: false, use_residual: false}
   e4:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: true,  use_vlm: false, use_residual: false}
-  e5:   {use_measured: true,  use_retrieval: true,  use_paired_rows: true,  use_physics: true,  use_vlm: true,  use_residual: false}
+  e5:   {use_measured: true,  use_retrieval: true,  use_paired_rows: true,  use_physics: false, use_vlm: true,  use_residual: false}
   e6:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: true,  use_vlm: false, use_residual: true}

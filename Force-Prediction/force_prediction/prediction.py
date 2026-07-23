@@ -70,12 +70,6 @@ def vlm_predict_gripper(
     payload = {
         "query": query_block,
         "roughness_scale": cfg.roughness.labels,
-        "physics_force_estimate_n": (
-            physics_estimate.min_force_n if (physics_estimate and include_measured) else None
-        ),
-        "physics_feasible": (
-            physics_estimate.feasible if (physics_estimate and include_measured) else None
-        ),
         "retrieved_experiences": [r.to_payload(include_paired) for r in retrieved],
         "retrieval_config": {
             "normalized_weights": normalized_weights(cfg),
@@ -193,10 +187,35 @@ def select(
             candidate_predictions=candidate_map,
             reasoning_trace=reasoning or "no feasible gripper",
         )
-    best = min(feasible, key=lambda p: p.predicted_normal_force_n)
+    minimum = min(predicted.predicted_normal_force_n for predicted in feasible)
+    tied = [predicted for predicted in feasible if predicted.predicted_normal_force_n == minimum]
+    compatibility_rank = {
+        Compatibility.HIGH: 3,
+        Compatibility.MEDIUM: 2,
+        Compatibility.LOW: 1,
+        Compatibility.UNKNOWN: 0,
+    }
+    best = max(tied, key=lambda predicted: compatibility_rank[predicted.compatibility])
+    tie_break_reason = None
+    if len(tied) > 1:
+        ranks = {compatibility_rank[predicted.compatibility] for predicted in tied}
+        tie_break_reason = (
+            "higher predicted material compatibility"
+            if len(ranks) > 1
+            else "stable gripper order because force and compatibility were equal"
+        )
     return SelectionResult(
         desired_gripper=best.candidate_gripper.value,
         predicted_normal_force_n=best.predicted_normal_force_n,
         candidate_predictions=candidate_map,
-        reasoning_trace=reasoning or "lowest feasible predicted stationary-finger force",
+        reasoning_trace=(
+            reasoning
+            or (
+                f"predicted-force tie resolved by {tie_break_reason}"
+                if tie_break_reason
+                else "lowest feasible predicted stationary-finger force"
+            )
+        ),
+        prediction_tie=len(tied) > 1,
+        tie_break_reason=tie_break_reason,
     )

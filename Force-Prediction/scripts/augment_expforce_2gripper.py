@@ -1,15 +1,14 @@
 """Augment the public Exp-Force dataset into a semi-realistic TWO-gripper dataset.
 
 Exp-Force gives (image, mass, min grasp force) for ONE compliant friction gripper.
-We synthesize gecko vs silicone forces + roughness + contact so the full pipeline
+We use those values only as seeds for a fully synthetic validation fixture, then
+synthesize gecko vs silicone forces + roughness + contact so the full pipeline
 (gripper selection, roughness/contact factors, crossover) can be exercised on
 realistic-looking data *before* our own collection exists.
 
 Modeling choices (documented so this is defensible, not made-up):
-  * SILICONE = the real Exp-Force force. Their FORTE fin-ray pad is a compliant
-    FRICTION pad — mechanically our TPU-silicone — so the measured min force is the
-    best available silicone estimate for each object (already reflects true mass +
-    friction). Kept as-is.
+  * SILICONE starts from the Exp-Force force and is quantized to our force grid.
+    It remains a synthetic proxy for this gripper embodiment, not ground truth.
   * ROUGHNESS class (1 smooth .. 5 rough) and CONTACT fraction (0..1) are inferred
     per object from material/shape keywords in its name.
   * GECKO = silicone * ratio(roughness) * contact_adjust * small_noise, where
@@ -129,6 +128,29 @@ def gecko_force(silicone_n: float, c: int, a: float, name: str) -> float:
     return silicone_n * ratio * contact_adjust * noise
 
 
+def break_quantized_tie(
+    silicone_n: float,
+    gecko_n: float | None,
+    roughness_class: int,
+    cfg,
+) -> tuple[float, float | None]:
+    """Give every synthetic object a strict winner by one force-grid step."""
+    if gecko_n is None or not math.isclose(gecko_n, silicone_n):
+        return silicone_n, gecko_n
+
+    step = cfg.force.increment_n
+    if roughness_class <= 2:
+        if gecko_n - step >= cfg.force.min_n:
+            gecko_n = round(gecko_n - step, 6)
+        else:
+            silicone_n = round(min(cfg.force.limit_n, silicone_n + step), 6)
+    elif gecko_n + step <= cfg.force.limit_n:
+        gecko_n = round(gecko_n + step, 6)
+    else:
+        silicone_n = round(max(cfg.force.min_n, silicone_n - step), 6)
+    return silicone_n, gecko_n
+
+
 def main() -> int:
     cfg = load_config()
     src = cfg.root / "data" / "expforce" / "dataset.csv"
@@ -139,18 +161,21 @@ def main() -> int:
     rows = list(csv.DictReader(src.open()))
     records: list[ExperienceRecord] = []
     table: list[dict] = []
-    n_gecko_fav = n_sil_fav = n_gecko_infeasible = n_crossover = 0
+    n_gecko_fav = n_sil_fav = n_gecko_infeasible = n_crossover = n_ties_adjusted = 0
 
     for r in rows:
         name = r["Object"]
         oid = _slug(name)
         mass = float(r["Mass"])
-        sil = _quantize(float(r["Gripping Force"]), cfg)      # silicone = real measurement
+        sil = _quantize(float(r["Gripping Force"]), cfg)
         c = infer_roughness(name)
         a = round(infer_contact(name), 3)
         raw_gecko = gecko_force(sil, c, a, name)
         gecko_feasible = raw_gecko <= limit
         gecko = _quantize(raw_gecko, cfg) if gecko_feasible else None
+        was_tied = gecko is not None and math.isclose(gecko, sil)
+        sil, gecko = break_quantized_tie(sil, gecko, c, cfg)
+        n_ties_adjusted += int(was_tied)
 
         if gecko is not None:
             if gecko < sil:
@@ -159,11 +184,14 @@ def main() -> int:
                 n_sil_fav += 1
             if abs(gecko - sil) <= 0.5:
                 n_crossover += 1
-            favored = "gecko" if gecko < sil else "silicone" if sil < gecko else "tie"
+            favored = "gecko" if gecko < sil else "silicone"
         else:
             n_gecko_infeasible += 1
             n_sil_fav += 1
             favored = "silicone"
+
+        if gecko is not None and math.isclose(gecko, sil):
+            raise AssertionError(f"strict-winner adjustment failed for {name}")
 
         table.append({
             "Object": name, "Image": r["Image"], "Mass_g": mass,
@@ -187,7 +215,7 @@ def main() -> int:
             ))
 
     with out_csv.open("w", newline="") as fh:
-        w = csv.DictWriter(fh, fieldnames=list(table[0].keys()))
+        w = csv.DictWriter(fh, fieldnames=list(table[0].keys()), lineterminator="\n")
         w.writeheader()
         w.writerows(table)
     save_experiences(out_jsonl, records)
@@ -196,6 +224,7 @@ def main() -> int:
     print(f"Wrote {out_jsonl}  ({len(records)} rows, 2 per object)")
     print(f"\ngecko-favored: {n_gecko_fav}   silicone-favored: {n_sil_fav}   "
           f"gecko-infeasible: {n_gecko_infeasible}   crossover(<=0.5N): {n_crossover}")
+    print(f"quantized ties adjusted by one force-grid step: {n_ties_adjusted}")
     ro006 = [t for t in table if t["roughness_class"] in (1, 2)]
     print(f"smooth objects (class 1-2): {len(ro006)}  -> mostly gecko-favored")
     print("\nsample:")

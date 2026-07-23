@@ -1,4 +1,4 @@
-"""Immutable Exp-Force validation adapter, split, preparation, and benchmark tools."""
+"""Exp-Force experience-pool preparation, inspection, and benchmark tools."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ import hashlib
 import json
 import math
 import re
+import tempfile
 import urllib.request
 from collections import Counter
 from collections.abc import Callable
@@ -14,22 +15,22 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
-import numpy as np
 from pydantic import BaseModel, Field, model_validator
 
 from .config import Config
 from .contracts import ExperienceRecord, Gripper, Meta, group_by_object, save_experiences
 from .evaluation import EvalRow, compute_metrics
-from .perception import describe
+from .perception import Description, describe
 from .pipeline import Pipeline, PipelineRunResult, QueryInput
+from .retrieval import build_embedding_text, get_embedding_provider
 
 BASE_URL = "https://raw.githubusercontent.com/expforcesubmission/Exp-Force-Website/main"
-SPLIT_ALGORITHM = "balanced-marginals-v2"
 SOURCE_RELATIVE = Path("data/expforce/dataset_2gripper.csv")
-SPLIT_RELATIVE = Path("data/expforce/validation_split.json")
 EXPERIENCES_RELATIVE = Path("data/expforce/validation_experiences.jsonl")
 PREPARATION_RELATIVE = Path("data/expforce/preparation_manifest.json")
+DESCRIPTORS_RELATIVE = Path("data/expforce/descriptors")
 RESULTS_RELATIVE = Path("data/expforce/results")
+RUNS_RELATIVE = Path("data/expforce/runs")
 
 
 def slug(name: str) -> str:
@@ -70,6 +71,8 @@ class ExpForceRow(BaseModel):
             if not feasible and force is not None:
                 raise ValueError(f"{name} infeasible row must not contain force")
         expected = self.expected_favored()
+        if expected == "tie":
+            raise ValueError("synthetic validation rows require one strict winning gripper")
         if self.favored_gripper != expected:
             raise ValueError(
                 f"favored_gripper={self.favored_gripper!r}, expected {expected!r}"
@@ -174,108 +177,90 @@ def to_experiences(
     return records
 
 
-def _bin(value: float, edges: list[float]) -> int:
-    return int(np.digitize([value], edges, right=True)[0])
+class PreparedDescriptor(BaseModel):
+    schema_version: int = 2
+    object_id: str
+    object_name: str
+    image_name: str
+    image_path: str
+    image_sha256: str | None = None
+    descriptor_source: str
+    descriptor_model: str | None = None
+    descriptor_signature: str
+    descriptor: Description
+    embedding_status: str = "pending"
+    embedding_model: str | None = None
+    embedding_dim: int | None = None
+    embedding_sha256: str | None = None
+    updated_at: str
 
 
-def _tokens(rows: list[ExpForceRow]) -> dict[str, set[str]]:
-    log_masses = np.log([row.mass_g for row in rows])
-    mass_edges = list(np.quantile(log_masses, [0.25, 0.5, 0.75]))
-    contacts = [row.projected_contact_fraction for row in rows]
-    contact_edges = list(np.quantile(contacts, [0.25, 0.5, 0.75]))
-    output: dict[str, set[str]] = {}
-    for row in rows:
-        feasible_forces = [
-            force
-            for force, feasible in (
-                (row.silicone_force_n, row.silicone_feasible),
-                (row.gecko_force_n, row.gecko_feasible),
-            )
-            if feasible and force is not None
-        ]
-        minimum_force = min(feasible_forces) if feasible_forces else 999.0
-        output[row.object_id] = {
-            f"favored:{row.favored_gripper}",
-            f"roughness:{row.roughness_class}",
-            f"mass:{_bin(math.log(row.mass_g), mass_edges)}",
-            f"contact:{_bin(row.projected_contact_fraction, contact_edges)}",
-            f"force:{_bin(minimum_force, [0.5, 1.5, 3.0])}",
-        }
+def _write_json_atomic(path: Path, payload: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False) as fh:
+        json.dump(payload, fh, indent=2)
+        fh.write("\n")
+        temporary = Path(fh.name)
+    temporary.replace(path)
+
+
+def _descriptor_signature(cfg: Config) -> str:
+    payload = {
+        "model": cfg.models.vlm,
+        "system": cfg.prompts.descriptor_system,
+        "instruction": cfg.prompts.descriptor,
+        "schema": Description.model_json_schema(),
+    }
+    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
+
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _descriptor_path(cfg: Config, object_id: str) -> Path:
+    return cfg.root / DESCRIPTORS_RELATIVE / f"{object_id}.json"
+
+
+def load_prepared_descriptors(cfg: Config) -> dict[str, PreparedDescriptor]:
+    root = cfg.root / DESCRIPTORS_RELATIVE
+    if not root.exists():
+        return {}
+    output: dict[str, PreparedDescriptor] = {}
+    for path in sorted(root.glob("*.json")):
+        try:
+            item = PreparedDescriptor.model_validate_json(path.read_text())
+        except (OSError, ValueError):
+            continue
+        output[item.object_id] = item
     return output
 
 
-def make_validation_split(rows: list[ExpForceRow], seed: int, test_size: int = 29) -> dict:
-    if test_size <= 0 or test_size >= len(rows):
-        raise ValueError("test_size must leave non-empty reference and test sets")
-    token_map = _tokens(rows)
-    full = Counter(
-        token
-        for object_id in sorted(token_map)
-        for token in sorted(token_map[object_id])
+def _fallback_description(row: ExpForceRow, reason: str) -> Description:
+    return Description(
+        retrieval_description=row.object_name,
+        contact_region="centered lateral grasp band",
+        contact_material="unknown",
+        visible_surface_material="unknown",
+        visible_surface_condition="unknown",
+        local_geometry="unknown",
+        contact_patch_visibility=reason,
+        uncertainty="No Gemini image descriptor is available.",
     )
-    targets = {token: count * test_size / len(rows) for token, count in full.items()}
-    rng = np.random.default_rng(seed)
-    tie_order = {row.object_id: float(rng.random()) for row in rows}
-    selected: list[str] = []
-    selected_counts: Counter[str] = Counter()
-
-    def objective(counts: Counter[str]) -> float:
-        return sum(
-            ((counts[token] - targets[token]) ** 2) / max(targets[token], 1.0)
-            for token in sorted(targets)
-        )
-
-    remaining = {row.object_id for row in rows}
-    while len(selected) < test_size:
-        choices = []
-        for object_id in remaining:
-            candidate_counts = selected_counts.copy()
-            candidate_counts.update(sorted(token_map[object_id]))
-            choices.append((objective(candidate_counts), tie_order[object_id], object_id))
-        _, _, chosen = min(choices)
-        selected.append(chosen)
-        selected_counts.update(sorted(token_map[chosen]))
-        remaining.remove(chosen)
-
-    test_ids = sorted(selected)
-    reference_ids = sorted(remaining)
-    return {
-        "schema_version": 1,
-        "algorithm": SPLIT_ALGORITHM,
-        "seed": seed,
-        "reference_object_ids": reference_ids,
-        "test_object_ids": test_ids,
-        "distribution": {
-            "full": dict(sorted(full.items())),
-            "test": dict(sorted(selected_counts.items())),
-        },
-    }
-
-
-def get_or_create_split(cfg: Config, refresh: bool = False) -> dict:
-    path = cfg.root / SPLIT_RELATIVE
-    digest = source_sha256(cfg)
-    if path.exists() and not refresh:
-        split = json.loads(path.read_text())
-        if split.get("source_sha256") == digest and split.get("algorithm") == SPLIT_ALGORITHM:
-            return split
-        raise ValueError("validation split is stale; refresh it explicitly")
-    split = make_validation_split(load_rows(cfg), cfg.seed)
-    split["source_file"] = str(SOURCE_RELATIVE)
-    split["source_sha256"] = digest
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(split, indent=2) + "\n")
-    return split
 
 
 def _download_image(image_name: str, destination: Path) -> bool:
     if destination.exists():
         return True
     destination.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as fh:
+        temporary = Path(fh.name)
     try:
-        urllib.request.urlretrieve(f"{BASE_URL}/images/{image_name}", destination)
+        urllib.request.urlretrieve(f"{BASE_URL}/images/{image_name}", temporary)
     except Exception:  # noqa: BLE001 - caller reports every missing image
+        temporary.unlink(missing_ok=True)
         return False
+    temporary.replace(destination)
     return True
 
 
@@ -283,57 +268,182 @@ def prepare_dataset(
     cfg: Config,
     *,
     live: bool,
-    refresh_split: bool = False,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> dict:
     rows = load_rows(cfg)
-    split = get_or_create_split(cfg, refresh=refresh_split)
-    descriptions: dict[str, str] = {}
+    prepared = load_prepared_descriptors(cfg)
     missing_images: list[str] = []
     image_root = cfg.root / "data/expforce/images"
     run_cfg = cfg.model_copy(deep=True)
     run_cfg.models.dry_run = not live
+    signature = _descriptor_signature(run_cfg)
+    manifest_path = cfg.root / PREPARATION_RELATIVE
+    total_steps = len(rows) * (2 if live else 1)
+    completed_steps = 0
+    descriptors_completed = 0
+    embeddings_completed = 0
+    manifest = {
+        "schema_version": 2,
+        "created_at": datetime.now(UTC).isoformat(),
+        "updated_at": datetime.now(UTC).isoformat(),
+        "status": "running",
+        "source_sha256": source_sha256(cfg),
+        "descriptor_signature": signature,
+        "descriptor_mode": "live_gemini" if live else "offline_or_checkpoint",
+        "objects": len(rows),
+        "experience_rows": 2 * len(rows),
+        "descriptors_completed": 0,
+        "embeddings_completed": 0,
+        "missing_images": missing_images,
+        "failed_stage": None,
+        "failed_object": None,
+        "error": None,
+    }
 
-    for index, row in enumerate(rows, start=1):
+    def save_manifest() -> None:
+        manifest["updated_at"] = datetime.now(UTC).isoformat()
+        manifest["missing_images"] = list(missing_images)
+        _write_json_atomic(manifest_path, manifest)
+
+    def report(name: str) -> None:
+        nonlocal completed_steps
+        completed_steps += 1
+        if progress is not None:
+            progress(completed_steps, total_steps, name)
+
+    for row in rows:
+        descriptors_completed += 1
         destination = image_root / row.image_name
         available = destination.exists() or (live and _download_image(row.image_name, destination))
+        image_hash = _file_sha256(destination) if available else None
+        existing = prepared.get(row.object_id)
+        reusable_live = bool(
+            existing
+            and existing.descriptor_source == "live_gemini"
+            and existing.descriptor_signature == signature
+            and existing.image_sha256 == image_hash
+        )
         if not available:
             missing_images.append(row.image_name)
-            descriptions[row.object_id] = row.object_name
+            descriptor = _fallback_description(row, "image unavailable")
+            source = "missing_image_fallback"
+        elif reusable_live and existing is not None:
+            descriptor = existing.descriptor
+            source = existing.descriptor_source
         elif live:
-            import cv2
+            try:
+                import cv2
 
-            image = cv2.imread(str(destination))
-            descriptions[row.object_id] = describe(image, run_cfg).description
+                image = cv2.imread(str(destination))
+                if image is None:
+                    raise ValueError(f"could not decode {destination}")
+                descriptor = describe(image, run_cfg)
+                source = "live_gemini"
+            except Exception as error:  # noqa: BLE001 - checkpoint progress before surfacing API failure
+                manifest.update(
+                    status="failed",
+                    failed_stage="descriptor",
+                    failed_object=row.object_id,
+                    error=f"{type(error).__name__}: {error}",
+                )
+                save_manifest()
+                raise
+        elif existing is not None and existing.descriptor_source == "live_gemini":
+            descriptor = existing.descriptor
+            source = existing.descriptor_source
         else:
-            descriptions[row.object_id] = row.object_name
-        if progress is not None:
-            progress(index, len(rows), row.object_name)
+            descriptor = _fallback_description(row, "offline object-name fallback")
+            source = "object_name_fallback"
 
-    records = to_experiences(cfg, rows, descriptions)
+        checkpoint = PreparedDescriptor(
+            object_id=row.object_id,
+            object_name=row.object_name,
+            image_name=row.image_name,
+            image_path=f"data/expforce/images/{row.image_name}",
+            image_sha256=image_hash,
+            descriptor_source=source,
+            descriptor_model=run_cfg.models.vlm if source == "live_gemini" else None,
+            descriptor_signature=signature,
+            descriptor=descriptor,
+            embedding_status=(existing.embedding_status if reusable_live and existing else "pending"),
+            embedding_model=(existing.embedding_model if reusable_live and existing else None),
+            embedding_dim=(existing.embedding_dim if reusable_live and existing else None),
+            embedding_sha256=(existing.embedding_sha256 if reusable_live and existing else None),
+            updated_at=datetime.now(UTC).isoformat(),
+        )
+        _write_json_atomic(
+            _descriptor_path(cfg, row.object_id), checkpoint.model_dump(mode="json")
+        )
+        prepared[row.object_id] = checkpoint
+        manifest["descriptors_completed"] = descriptors_completed
+        save_manifest()
+        report(f"descriptor: {row.object_name}")
+
+    descriptions = {key: value.descriptor for key, value in prepared.items()}
+    records = to_experiences(
+        cfg,
+        rows,
+        {object_id: descriptor.description for object_id, descriptor in descriptions.items()},
+    )
     save_experiences(cfg.root / EXPERIENCES_RELATIVE, records)
-    manifest = {
-        "schema_version": 1,
-        "created_at": datetime.now(UTC).isoformat(),
-        "source_sha256": source_sha256(cfg),
-        "split_sha256": hashlib.sha256(json.dumps(split, sort_keys=True).encode()).hexdigest(),
-        "descriptor_mode": "live_gemini" if live else "object_name_fallback",
-        "objects": len(rows),
-        "experience_rows": len(records),
-        "missing_images": missing_images,
-    }
-    manifest_path = cfg.root / PREPARATION_RELATIVE
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n")
+
+    if live:
+        provider = get_embedding_provider(run_cfg)
+        for row in rows:
+            embeddings_completed += 1
+            checkpoint = prepared[row.object_id]
+            try:
+                vector = provider.embed(
+                    build_embedding_text(checkpoint.descriptor.description),
+                    is_query=False,
+                )
+            except Exception as error:  # noqa: BLE001 - cache keeps every prior successful vector
+                manifest.update(
+                    status="failed",
+                    failed_stage="embedding",
+                    failed_object=row.object_id,
+                    error=f"{type(error).__name__}: {error}",
+                )
+                save_manifest()
+                raise
+            checkpoint.embedding_status = "ready"
+            checkpoint.embedding_model = run_cfg.retrieval.embedding.model
+            checkpoint.embedding_dim = len(vector)
+            checkpoint.embedding_sha256 = hashlib.sha256(vector.tobytes()).hexdigest()
+            checkpoint.updated_at = datetime.now(UTC).isoformat()
+            _write_json_atomic(
+                _descriptor_path(cfg, row.object_id), checkpoint.model_dump(mode="json")
+            )
+            manifest["embeddings_completed"] = embeddings_completed
+            save_manifest()
+            report(f"text embedding: {row.object_name}")
+
+    manifest.update(
+        status="complete",
+        experience_rows=len(records),
+        descriptor_source_counts=dict(
+            sorted(Counter(item.descriptor_source for item in prepared.values()).items())
+        ),
+        failed_stage=None,
+        failed_object=None,
+        error=None,
+    )
+    save_manifest()
     return manifest
 
 
-def load_validation_records(cfg: Config) -> list[ExperienceRecord]:
+def load_experience_pool(cfg: Config) -> list[ExperienceRecord]:
     path = cfg.root / EXPERIENCES_RELATIVE
     if path.exists():
         from .contracts import load_experiences
 
         return load_experiences(path)
     return to_experiences(cfg, load_rows(cfg))
+
+
+def load_validation_records(cfg: Config) -> list[ExperienceRecord]:
+    """Compatibility alias for older scripts."""
+    return load_experience_pool(cfg)
 
 
 def load_image(cfg: Config, record: ExperienceRecord):  # noqa: ANN201
@@ -359,23 +469,127 @@ def _retrieval_payload(detailed: PipelineRunResult) -> dict:
     }
 
 
+def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
+    return {
+        "selection": detailed.selection.model_dump(mode="json"),
+        "semantic_description": detailed.semantic_description,
+        "retrieved": _retrieval_payload(detailed),
+        "physics_estimates": detailed.physics_estimates,
+        "cache_stats": detailed.cache_stats,
+    }
+
+
+def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
+    from .contracts import SelectionResult
+    from .retrieval import RetrievedExperience
+
+    return PipelineRunResult(
+        selection=SelectionResult.model_validate(payload["selection"]),
+        semantic_description=payload.get("semantic_description", ""),
+        retrieved={
+            gripper: [RetrievedExperience.model_validate(item) for item in items]
+            for gripper, items in payload.get("retrieved", {}).items()
+        },
+        physics_estimates=payload.get("physics_estimates", {}),
+        cache_stats=payload.get("cache_stats", {}),
+    )
+
+
+def save_pipeline_run(
+    cfg: Config,
+    *,
+    detailed: PipelineRunResult,
+    experiment: str,
+    execution_mode: str,
+    query: dict,
+    truth: dict | None,
+    counterfactual: bool,
+    image_bgr=None,  # noqa: ANN001
+    baseline: PipelineRunResult | None = None,
+) -> Path:
+    created_at = datetime.now(UTC)
+    image_path = None
+    image_digest = None
+    if image_bgr is not None:
+        import cv2
+
+        ok, encoded = cv2.imencode(".png", image_bgr)
+        if not ok:
+            raise RuntimeError("failed to encode run image")
+        image_bytes = encoded.tobytes()
+        image_digest = hashlib.sha256(image_bytes).hexdigest()
+        destination = cfg.root / "data/expforce/run_images" / f"{image_digest}.png"
+        if not destination.exists():
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            with tempfile.NamedTemporaryFile("wb", dir=destination.parent, delete=False) as fh:
+                fh.write(image_bytes)
+                temporary = Path(fh.name)
+            temporary.replace(destination)
+        image_path = str(destination.relative_to(cfg.root))
+
+    run_id = f"{created_at.strftime('%Y%m%dT%H%M%S%fZ')}_{experiment}_{query['object_id']}"
+    artifact = {
+        "schema_version": 1,
+        "run_id": run_id,
+        "created_at": created_at.isoformat(),
+        "source_sha256": source_sha256(cfg),
+        "evaluation_protocol": (
+            "leave-one-object-out" if truth is not None and not counterfactual else "custom"
+        ),
+        "experiment": experiment,
+        "experiment_toggles": cfg.experiment(experiment).model_dump(mode="json"),
+        "execution_mode": execution_mode,
+        "models": {
+            "vlm": cfg.models.vlm,
+            "embedding": cfg.retrieval.embedding.model,
+            "embedding_dim": cfg.retrieval.embedding.dim,
+        },
+        "retrieval_config": cfg.retrieval.model_dump(mode="json"),
+        "query": {
+            **query,
+            "image_artifact_path": image_path,
+            "image_sha256": image_digest,
+        },
+        "counterfactual": counterfactual,
+        "truth": truth,
+        "result": pipeline_result_to_dict(detailed),
+        "baseline": pipeline_result_to_dict(baseline) if baseline is not None else None,
+    }
+    path = cfg.root / RUNS_RELATIVE / f"{run_id}.json"
+    _write_json_atomic(path, artifact)
+    return path
+
+
+def load_saved_runs(cfg: Config) -> list[dict]:
+    root = cfg.root / RUNS_RELATIVE
+    if not root.exists():
+        return []
+    runs: list[dict] = []
+    for path in sorted(root.glob("*.json"), reverse=True):
+        try:
+            run = json.loads(path.read_text())
+        except (OSError, json.JSONDecodeError):
+            continue
+        run["artifact_path"] = str(path)
+        runs.append(run)
+    return runs
+
+
 def run_benchmark(
     cfg: Config,
     experiment: str,
     *,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> BenchmarkResult:
-    split = get_or_create_split(cfg)
-    records = load_validation_records(cfg)
-    reference_ids = set(split["reference_object_ids"])
-    test_ids = split["test_object_ids"]
-    train = [record for record in records if record.object_id in reference_ids]
+    records = load_experience_pool(cfg)
     by_object = group_by_object(records)
-    pipe = Pipeline(cfg, cfg.experiment(experiment)).fit(train)
+    object_ids = sorted(by_object)
     eval_rows: list[EvalRow] = []
     output_rows: list[dict] = []
 
-    for index, object_id in enumerate(test_ids, start=1):
+    for index, object_id in enumerate(object_ids, start=1):
+        train = [record for record in records if record.object_id != object_id]
+        pipe = Pipeline(cfg, cfg.experiment(experiment)).fit(train)
         truth = by_object[object_id]
         sample = truth.gecko or truth.silicone
         assert sample is not None
@@ -392,6 +606,8 @@ def run_benchmark(
         result = detailed.selection
         eval_rows.append(EvalRow(object_id=object_id, truth=truth, result=result))
         optimal, oracle_force = truth.optimal_grippers()
+        if len(optimal) != 1:
+            raise ValueError(f"validation object {object_id!r} does not have a strict winner")
         chosen = result.desired_gripper
         chosen_truth = truth.get(Gripper(chosen)) if chosen in {"gecko", "silicone"} else None
         regret = None
@@ -406,7 +622,7 @@ def run_benchmark(
             "pred_gecko_force_n": result.candidate_predictions["gecko"].predicted_normal_force_n,
             "true_silicone_force_n": truth.silicone.min_force_n if truth.silicone else None,
             "pred_silicone_force_n": result.candidate_predictions["silicone"].predicted_normal_force_n,
-            "true_favored": "tie" if len(optimal) > 1 else next(iter(optimal)).value,
+            "true_favored": next(iter(optimal)).value,
             "predicted_gripper": chosen,
             "selection_correct": chosen in {gripper.value for gripper in optimal},
             "regret_n": regret,
@@ -417,7 +633,7 @@ def run_benchmark(
         }
         output_rows.append(row)
         if progress is not None:
-            progress(index, len(test_ids), object_id)
+            progress(index, len(object_ids), object_id)
 
     metrics = compute_metrics(eval_rows, cfg).to_dict()
     metadata = {
@@ -425,8 +641,9 @@ def run_benchmark(
         "experiment": experiment,
         "dry_run": cfg.models.dry_run,
         "source_sha256": source_sha256(cfg),
-        "split_algorithm": split["algorithm"],
-        "split_seed": split["seed"],
+        "evaluation_protocol": "leave-one-object-out",
+        "experience_pool_objects": len(object_ids),
+        "training_objects_per_run": len(object_ids) - 1,
         "model": cfg.models.vlm,
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,

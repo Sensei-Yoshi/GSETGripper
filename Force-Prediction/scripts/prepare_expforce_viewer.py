@@ -1,4 +1,4 @@
-"""Prepare immutable Exp-Force validation artifacts and the frozen 100/29 split."""
+"""Prepare the 129-object Exp-Force experience pool and semantic retrieval cache."""
 
 from __future__ import annotations
 
@@ -16,7 +16,6 @@ from force_prediction.expforce import prepare_dataset, validation_summary  # noq
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--live", action="store_true", help="Download images and use Gemini descriptors.")
-    parser.add_argument("--refresh-split", action="store_true")
     args = parser.parse_args()
     cfg = load_config().model_copy(deep=True)
 
@@ -28,7 +27,6 @@ def main() -> int:
     manifest = prepare_dataset(
         cfg,
         live=args.live,
-        refresh_split=args.refresh_split,
         progress=progress,
     )
     print(json.dumps(manifest, indent=2))

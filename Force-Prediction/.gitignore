@@ -17,9 +17,12 @@ data/images/*.png
 data/cache/*.json
 results.json
 
-# Exp-Force viewer artifacts (source CSV and frozen split remain tracked)
+# Exp-Force viewer artifacts
 data/expforce/preparation_manifest.json
 data/expforce/validation_experiences.jsonl
+data/expforce/descriptors/
+data/expforce/runs/
+data/expforce/run_images/
 data/expforce/results/
 data/expforce/images/*.png
 

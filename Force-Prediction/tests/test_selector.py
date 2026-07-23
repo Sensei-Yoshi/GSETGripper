@@ -44,6 +44,18 @@ def test_none_when_all_infeasible():
     assert r.desired_gripper == "none" and r.predicted_normal_force_n is None
 
 
+def test_prediction_tie_is_explicit_and_uses_compatibility():
+    gecko = _p(Gripper.GECKO, 1.0)
+    silicone = _p(Gripper.SILICONE, 1.0)
+    silicone.compatibility = Compatibility.HIGH
+
+    result = select({Gripper.GECKO: gecko, Gripper.SILICONE: silicone})
+
+    assert result.prediction_tie is True
+    assert result.desired_gripper == "silicone"
+    assert result.tie_break_reason == "higher predicted material compatibility"
+
+
 def test_evaluation_accepts_either_gripper_for_true_force_tie():
     truth = ObjectRecord(
         object_id="tie",

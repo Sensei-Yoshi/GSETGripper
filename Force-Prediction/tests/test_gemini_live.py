@@ -7,8 +7,8 @@ Run it directly to see output:
     python tests/test_gemini_live.py
     python tests/test_gemini_live.py /path/to/some/image.png
 
-Under `pytest` it SKIPS unless a key is available (GEMINI_API_KEY / GOOGLE_API_KEY
-or a repo-root .env) and the default image exists, so the offline suite stays green.
+Under `pytest` it SKIPS unless `RUN_LIVE_GEMINI_TESTS=1`, an API key is available,
+and the default image exists, so the offline suite stays deterministic.
 
 Key handling: put `GEMINI_API_KEY=...` in Force-Prediction/.env (git-ignored) or
 `export GEMINI_API_KEY=...`. The model is whatever `models.vlm` is in config.yaml.
@@ -47,6 +47,10 @@ def _have_key() -> bool:
     return bool(os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY"))
 
 
+def _live_tests_enabled() -> bool:
+    return os.environ.get("RUN_LIVE_GEMINI_TESTS") == "1"
+
+
 def _load_image(path: str):  # noqa: ANN202
     import cv2
 
@@ -57,8 +61,8 @@ def _load_image(path: str):  # noqa: ANN202
 
 
 @pytest.mark.skipif(
-    not _have_key() or not Path(DEFAULT_IMAGE).exists(),
-    reason="no API key or default image missing; live Gemini test skipped",
+    not _live_tests_enabled() or not _have_key() or not Path(DEFAULT_IMAGE).exists(),
+    reason="set RUN_LIVE_GEMINI_TESTS=1 with an API key and image to run live",
 )
 def test_gemini_structured_image() -> None:
     """One real structured-output call with an image -> valid PerGripperPrediction."""
@@ -109,11 +113,10 @@ def main() -> int:
               f"feasible={pred.feasible}  compat={pred.compatibility.value}")
         print(f"            reason: {pred.reasoning_trace}")
 
-    # (3) Optional: multimodal embedding smoke (may 404 if the preview model is
-    # unavailable on your tier — wrapped so it never fails the demo).
+    # (3) Optional: text embedding smoke. Retrieval never embeds image pixels.
     print("\n── embedding smoke ───────────────────────────────────────")
     try:
-        vec = get_client(cfg).embed(text="smooth rigid plastic bottle", image_bgr=img)
+        vec = get_client(cfg).embed(text="smooth rigid plastic bottle")
         print(f"  embedding dim: {len(vec)} (model {cfg.retrieval.embedding.model})")
     except Exception as e:  # noqa: BLE001
         print(f"  embedding skipped: {type(e).__name__}: {e}")

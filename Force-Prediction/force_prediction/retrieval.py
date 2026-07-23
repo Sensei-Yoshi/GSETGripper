@@ -58,7 +58,7 @@ class MockEmbeddingProvider:
 
 class GeminiEmbeddingProvider:
     """gemini-embedding-2: asymmetric retrieval formatting (Google's documented
-    templates). Stored experiences are embedded as documents, the query with the
+    templates). Stored experiences are embedded as reference text, the query with the
     retrieval-query template, which aligns query<->corpus better than embedding
     both identically (SEMANTIC_SIMILARITY is explicitly not for retrieval)."""
 

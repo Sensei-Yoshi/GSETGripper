@@ -14,13 +14,17 @@ from force_prediction.contracts import Gripper, group_by_object
 from force_prediction.expforce import (
     PREPARATION_RELATIVE,
     RESULTS_RELATIVE,
-    get_or_create_split,
+    load_experience_pool,
     load_image,
+    load_prepared_descriptors,
     load_rows,
-    load_validation_records,
+    load_saved_runs,
+    pipeline_result_from_dict,
     prepare_dataset,
     run_benchmark,
     save_benchmark,
+    save_pipeline_run,
+    source_sha256,
     validation_summary,
 )
 from force_prediction.pipeline import Pipeline, PipelineRunResult, QueryInput
@@ -51,12 +55,10 @@ st.markdown(
 )
 
 
-@st.cache_data(show_spinner=False)
-def _load_static() -> tuple[list, dict, dict]:
+def _load_static() -> tuple[list, dict]:
     cfg = load_config().model_copy(deep=True)
     rows = load_rows(cfg)
-    split = get_or_create_split(cfg)
-    return rows, split, validation_summary(cfg, rows)
+    return rows, validation_summary(cfg, rows)
 
 
 def _run_config(
@@ -90,16 +92,43 @@ def _decode_upload(uploaded) -> np.ndarray | None:  # noqa: ANN001
     return cv2.imdecode(data, cv2.IMREAD_COLOR)
 
 
-def _rgb(image_bgr: np.ndarray | None) -> np.ndarray | None:
-    return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB) if image_bgr is not None else None
+def _rgb(image_bgr: np.ndarray) -> np.ndarray:
+    return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+
+@st.cache_data(show_spinner=False)
+def _thumbnail(path: str, modified_ns: int, max_width: int = 420) -> np.ndarray | None:
+    del modified_ns
+    image = cv2.imread(path)
+    if image is None:
+        return None
+    if image.shape[1] > max_width:
+        scale = max_width / image.shape[1]
+        image = cv2.resize(
+            image,
+            (max_width, max(1, int(image.shape[0] * scale))),
+            interpolation=cv2.INTER_AREA,
+        )
+    return _rgb(image)
 
 
 def _truth_for_display(obj) -> dict:  # noqa: ANN001
     optimal, _ = obj.optimal_grippers()
+    if len(optimal) != 1:
+        raise ValueError(f"validation object {obj.object_id!r} does not have a strict winner")
     return {
         "true_gecko_force_n": obj.gecko.min_force_n if obj.gecko else None,
         "true_silicone_force_n": obj.silicone.min_force_n if obj.silicone else None,
-        "true_selection": "tie" if len(optimal) > 1 else next(iter(optimal)).value,
+        "true_selection": next(iter(optimal)).value,
+    }
+
+
+def _truth_payload(obj) -> dict:  # noqa: ANN001
+    return {
+        **_truth_for_display(obj),
+        "object_id": obj.object_id,
+        "gecko_feasible": obj.gecko.feasible if obj.gecko else None,
+        "silicone_feasible": obj.silicone.feasible if obj.silicone else None,
     }
 
 
@@ -146,15 +175,27 @@ def _render_prediction(
     counterfactual: bool,
     baseline: PipelineRunResult | None,
     cfg: Config,
+    experiment: str | None = None,
 ) -> None:
     result = detailed.selection
     metric_cols = st.columns(3)
-    metric_cols[0].metric("Selected gripper", result.desired_gripper.title())
+    selected_label = result.desired_gripper.title()
+    if result.prediction_tie:
+        selected_label += " (tie-break)"
+    metric_cols[0].metric("Selected gripper", selected_label)
     metric_cols[1].metric(
         "Selected force",
         f"{result.predicted_normal_force_n:.2f} N" if result.predicted_normal_force_n else "None",
     )
-    metric_cols[2].metric("Experiment", st.session_state.get("last_experiment", "E5").upper())
+    metric_cols[2].metric(
+        "Experiment", (experiment or st.session_state.get("last_experiment", "E5")).upper()
+    )
+
+    if result.prediction_tie:
+        st.warning(
+            "Both grippers have the same predicted command force. Selection used "
+            f"{result.tie_break_reason or 'the deterministic fallback rule'}."
+        )
 
     if counterfactual:
         st.markdown(
@@ -173,10 +214,24 @@ def _render_prediction(
             result.desired_gripper in {g.value for g in truth.optimal_grippers()[0]}
         )
         st.markdown(
-            f'<p class="status-ok">Held-out selection: {truth_values["true_selection"]}; '
+            f'<p class="status-ok">Leave-one-out truth: {truth_values["true_selection"]}; '
             f'prediction {"correct" if predicted_correct else "incorrect"}.</p>',
             unsafe_allow_html=True,
         )
+        ground_truth = st.columns(3)
+        ground_truth[0].metric(
+            "True gecko force",
+            f"{truth_values['true_gecko_force_n']:.2f} N"
+            if truth_values["true_gecko_force_n"] is not None
+            else "Infeasible",
+        )
+        ground_truth[1].metric(
+            "True silicone force",
+            f"{truth_values['true_silicone_force_n']:.2f} N"
+            if truth_values["true_silicone_force_n"] is not None
+            else "Infeasible",
+        )
+        ground_truth[2].metric("True winning gripper", truth_values["true_selection"].title())
 
     pred_cols = st.columns(2)
     for column, gripper in zip(pred_cols, ("gecko", "silicone"), strict=True):
@@ -198,11 +253,15 @@ def _render_prediction(
                 delta_color="inverse",
             )
             physics = detailed.physics_estimates.get(gripper)
-            st.caption(
-                f"Physics prior: {physics.get('min_force_n')} N"
-                if physics
-                else "Physics prior: not used"
-            )
+            if physics:
+                raw_force = physics.get("raw_force_n")
+                raw_label = f"{raw_force:.3f} N" if raw_force is not None else "infeasible"
+                st.caption(
+                    f"Physics model: raw {raw_label}, "
+                    f"command-grid {physics.get('min_force_n')} N"
+                )
+            else:
+                st.caption("Physics model: not used by this experiment")
             st.write(pred.reasoning_trace or "No reasoning trace for this experiment.")
 
     st.subheader("Top seven reference matches")
@@ -231,17 +290,16 @@ def _render_prediction(
     _render_formula(cfg)
 
 
-def single_run_view(base_cfg: Config, rows: list, split: dict) -> None:
-    records = load_validation_records(base_cfg)
+def single_run_view(base_cfg: Config, rows: list) -> None:
+    records = load_experience_pool(base_cfg)
     objects = group_by_object(records)
-    row_by_id = {row.object_id: row for row in rows}
-    test_ids = split["test_object_ids"]
-    names = {row_by_id[object_id].object_name: object_id for object_id in test_ids}
+    prepared = load_prepared_descriptors(base_cfg)
+    names = {row.object_name: row.object_id for row in rows}
 
     controls, output = st.columns([0.38, 0.62], gap="large")
     with controls:
         st.subheader("Query")
-        selected_name = st.selectbox("Held-out object", sorted(names))
+        selected_name = st.selectbox("Dataset object", sorted(names))
         object_id = names[selected_name]
         truth = objects[object_id]
         sample = truth.gecko or truth.silicone
@@ -274,6 +332,7 @@ def single_run_view(base_cfg: Config, rows: list, split: dict) -> None:
             format_func=lambda value: value.upper(),
         )
         mode = st.segmented_control("Execution", ["Offline", "Live Gemini"], default="Offline")
+        live_execution = mode == "Live Gemini"
 
         with st.expander("Retrieval tuning", expanded=True):
             semantic_w = st.slider("Semantic weight", 0.0, 1.0, 0.40, 0.05)
@@ -288,7 +347,7 @@ def single_run_view(base_cfg: Config, rows: list, split: dict) -> None:
     try:
         cfg = _run_config(
             base_cfg,
-            live=mode == "Live Gemini",
+            live=live_execution,
             semantic=semantic_w,
             mass=mass_w,
             roughness=roughness_w,
@@ -302,13 +361,23 @@ def single_run_view(base_cfg: Config, rows: list, split: dict) -> None:
         return
 
     if run:
-        reference_ids = set(split["reference_object_ids"])
-        training = [record for record in records if record.object_id in reference_ids]
         counterfactual = bool(
             uploaded is not None
             or not np.isclose(mass, sample.mass_g)
             or roughness != sample.roughness_class
             or not np.isclose(contact, sample.projected_contact_fraction)
+        )
+        training = (
+            records
+            if counterfactual
+            else [record for record in records if record.object_id != object_id]
+        )
+        prepared_item = prepared.get(object_id)
+        prepared_text = (
+            prepared_item.descriptor.description if prepared_item is not None else None
+        )
+        semantic_description = (
+            None if uploaded is not None else prepared_text or sample.semantic_description
         )
         with output, st.spinner("Running the shared pipeline..."):
             pipe = Pipeline(cfg, cfg.experiment(experiment)).fit(training)
@@ -320,12 +389,15 @@ def single_run_view(base_cfg: Config, rows: list, split: dict) -> None:
                     projected_contact_fraction=contact,
                     image_bgr=query_image,
                     image_path=sample.image_path if uploaded is None else "",
-                    semantic_description=None if uploaded is not None else sample.semantic_description,
+                    semantic_description=semantic_description,
                 )
             )
             baseline = None
             if counterfactual:
-                baseline = pipe.predict_detailed(
+                baseline_pipe = Pipeline(cfg, cfg.experiment(experiment)).fit(
+                    [record for record in records if record.object_id != object_id]
+                )
+                baseline = baseline_pipe.predict_detailed(
                     QueryInput(
                         object_id=object_id,
                         mass_g=sample.mass_g,
@@ -333,28 +405,64 @@ def single_run_view(base_cfg: Config, rows: list, split: dict) -> None:
                         projected_contact_fraction=sample.projected_contact_fraction,
                         image_bgr=source_image,
                         image_path=sample.image_path,
-                        semantic_description=sample.semantic_description,
+                        semantic_description=prepared_text or sample.semantic_description,
                     )
                 )
-            st.session_state["single_result"] = (detailed, truth, counterfactual, baseline, cfg)
+            run_path = save_pipeline_run(
+                cfg,
+                detailed=detailed,
+                experiment=experiment,
+                execution_mode=mode or "Offline",
+                query={
+                    "object_id": f"custom_{object_id}" if counterfactual else object_id,
+                    "source_object_id": object_id,
+                    "object_name": selected_name,
+                    "mass_g": mass,
+                    "roughness_class": roughness,
+                    "projected_contact_fraction": contact,
+                    "semantic_description": detailed.semantic_description,
+                    "original_image_path": sample.image_path if uploaded is None else None,
+                },
+                truth=_truth_payload(truth),
+                counterfactual=counterfactual,
+                image_bgr=query_image,
+                baseline=baseline,
+            )
+            st.session_state["single_result"] = (
+                detailed,
+                truth,
+                counterfactual,
+                baseline,
+                cfg,
+                experiment,
+                run_path,
+            )
             st.session_state["last_experiment"] = experiment
 
     with output:
         st.subheader("Pipeline output")
         if "single_result" not in st.session_state:
-            st.info("Select a held-out object or upload an image, then run the pipeline.")
+            st.info("Select a dataset object or upload an image, then run the pipeline.")
             _render_formula(cfg)
         else:
-            detailed, stored_truth, counterfactual, baseline, stored_cfg = st.session_state[
-                "single_result"
-            ]
+            (
+                detailed,
+                stored_truth,
+                counterfactual,
+                baseline,
+                stored_cfg,
+                stored_experiment,
+                run_path,
+            ) = st.session_state["single_result"]
             _render_prediction(
                 detailed,
                 stored_truth,
                 counterfactual=counterfactual,
                 baseline=baseline,
                 cfg=stored_cfg,
+                experiment=stored_experiment,
             )
+            st.caption(f"Saved run: {run_path.name}")
 
 
 def benchmark_view(base_cfg: Config) -> None:
@@ -370,7 +478,7 @@ def benchmark_view(base_cfg: Config) -> None:
         mode = st.segmented_control(
             "Execution", ["Offline", "Live Gemini"], default="Offline", key="benchmark_mode"
         )
-        run = st.button("Run 29-object benchmark", type="primary", width="stretch")
+        run = st.button("Run 129-object leave-one-out benchmark", type="primary", width="stretch")
         st.caption("Results are synthetic pipeline diagnostics, not real-world performance claims.")
 
     if run:
@@ -384,7 +492,7 @@ def benchmark_view(base_cfg: Config) -> None:
             progress_bar.progress(done / total)
             status.caption(f"{done}/{total}: {name.replace('_', ' ')}")
 
-        with right, st.spinner("Evaluating held-out objects..."):
+        with right, st.spinner("Evaluating all objects with leave-one-out training..."):
             benchmark = run_benchmark(cfg, experiment, progress=progress)
             paths = save_benchmark(cfg, benchmark)
             st.session_state["benchmark_result"] = (benchmark, paths)
@@ -392,9 +500,9 @@ def benchmark_view(base_cfg: Config) -> None:
         status.empty()
 
     with right:
-        st.subheader("Held-out results")
+        st.subheader("Leave-one-out results")
         if "benchmark_result" not in st.session_state:
-            st.info("Run the fixed 29-object holdout to populate metrics and plots.")
+            st.info("Run all 129 objects with each query excluded from its own training set.")
             return
         benchmark, paths = st.session_state["benchmark_result"]
         force = benchmark.metrics["force"]["overall"]
@@ -427,11 +535,193 @@ def benchmark_view(base_cfg: Config) -> None:
         st.caption(f"Saved: {paths[0].name} and {paths[1].name}")
 
 
-def preparation_view(base_cfg: Config, summary: dict, split: dict) -> None:
+def _description_catalog(base_cfg: Config, rows: list) -> None:
+    prepared = load_prepared_descriptors(base_cfg)
+    search = st.text_input("Search objects", placeholder="Material, object, condition...")
+    page_size = st.segmented_control(
+        "Objects per page", [8, 12, 24], default=12, key="catalog_page_size"
+    )
+    needle = search.strip().lower()
+    filtered = []
+    for row in rows:
+        item = prepared.get(row.object_id)
+        searchable = " ".join(
+            (
+                row.object_name,
+                item.descriptor.description if item else "",
+                item.descriptor.contact_material if item else "",
+                item.descriptor.visible_surface_condition if item else "",
+            )
+        ).lower()
+        if not needle or needle in searchable:
+            filtered.append(row)
+
+    size = int(page_size or 12)
+    page_count = max(1, (len(filtered) + size - 1) // size)
+    page = st.number_input(
+        "Page", min_value=1, max_value=page_count, value=1, step=1, key="catalog_page"
+    )
+    start = (int(page) - 1) * size
+    st.caption(
+        f"Showing {start + 1 if filtered else 0}-{min(start + size, len(filtered))} "
+        f"of {len(filtered)} objects. All 129 are available through search and paging."
+    )
+
+    for row in filtered[start : start + size]:
+        item = prepared.get(row.object_id)
+        image_path = base_cfg.root / f"data/expforce/images/{row.image_name}"
+        with st.container(border=True):
+            image_col, detail_col = st.columns([0.28, 0.72], gap="medium")
+            with image_col:
+                if image_path.exists():
+                    image = _thumbnail(str(image_path), image_path.stat().st_mtime_ns)
+                    if image is not None:
+                        st.image(image, width="stretch")
+                else:
+                    st.warning("Image not downloaded")
+            with detail_col:
+                st.subheader(row.object_name)
+                if item is None:
+                    st.warning("No descriptor checkpoint. Run live Data Preparation.")
+                    st.write(row.object_name)
+                    continue
+                source_label = item.descriptor_source.replace("_", " ").title()
+                st.caption(
+                    f"{source_label} | Embedding {item.embedding_status} | "
+                    f"{item.embedding_model or 'not generated'}"
+                )
+                st.write(item.descriptor.description)
+                st.markdown(
+                    f"**Contact region:** {item.descriptor.contact_region}  \n"
+                    f"**Contact material:** {item.descriptor.contact_material}  \n"
+                    f"**Surface condition:** "
+                    f"{item.descriptor.visible_surface_condition}  \n"
+                    f"**Local geometry:** {item.descriptor.local_geometry}  \n"
+                    f"**Uncertainty:** {item.descriptor.uncertainty}"
+                )
+
+
+def _pipeline_run_inspector(base_cfg: Config) -> None:
+    runs = load_saved_runs(base_cfg)
+    if not runs:
+        st.info("No saved single runs yet. Run an object in Single Run first.")
+        return
+
+    labels = {
+        (
+            f"{run['created_at'][:19]} | {run['query'].get('object_name', run['query']['object_id'])} "
+            f"| {run['experiment'].upper()} | {run['execution_mode']}"
+        ): run
+        for run in runs
+    }
+    selected = st.selectbox("Saved run", list(labels), key="saved_run_selector")
+    run = labels[selected]
+    query = run["query"]
+    current_hash = source_sha256(base_cfg)
+    if run.get("source_sha256") != current_hash:
+        st.warning(
+            "This run was produced from a different dataset version. Its saved truth is shown "
+            "for provenance, but it is not rescored against the current data."
+        )
+
+    query_col, output_col = st.columns([0.34, 0.66], gap="large")
+    with query_col:
+        st.subheader("Exact query")
+        image_rel = query.get("image_artifact_path") or query.get("original_image_path")
+        image_path = base_cfg.root / image_rel if image_rel else None
+        if image_path and image_path.exists():
+            st.image(str(image_path), width="stretch")
+        else:
+            st.warning("Saved query image is unavailable.")
+        st.caption(f"Image SHA-256: {query.get('image_sha256') or 'not recorded'}")
+        st.metric("Mass", f"{query['mass_g']:.1f} g")
+        sensor_cols = st.columns(2)
+        sensor_cols[0].metric("Roughness", query["roughness_class"])
+        sensor_cols[1].metric("Contact", f"{query['projected_contact_fraction']:.3f}")
+        st.subheader("Run configuration")
+        st.write(f"**Experiment:** {run['experiment'].upper()}")
+        st.write(f"**Execution:** {run['execution_mode']}")
+        st.write(f"**VLM:** {run['models']['vlm']}")
+        st.write(f"**Text embedding:** {run['models']['embedding']}")
+        st.write(f"**Protocol:** {run['evaluation_protocol'].replace('-', ' ')}")
+        st.write(f"**Description:** {query.get('semantic_description', '')}")
+        with st.expander("Retrieval parameters"):
+            retrieval = run["retrieval_config"]
+            st.write(f"Top k: {retrieval['k']}")
+            st.write(f"Mass sigma: {retrieval['sigma_mass']}")
+            st.write(f"Contact sigma: {retrieval['sigma_contact']}")
+            st.json(retrieval["weights"], expanded=True)
+        with st.expander("Experiment toggles"):
+            st.json(run["experiment_toggles"], expanded=True)
+        truth = run.get("truth")
+        if truth:
+            st.subheader("Saved synthetic truth")
+            st.write(
+                f"Gecko: {truth.get('true_gecko_force_n')} N | "
+                f"Silicone: {truth.get('true_silicone_force_n')} N | "
+                f"Winner: {truth.get('true_selection', 'unknown').title()}"
+            )
+            if run.get("counterfactual"):
+                st.caption("Context only: counterfactual runs are not scored against this truth.")
+
+    with output_col:
+        st.subheader("Pipeline output")
+        cfg = base_cfg.model_copy(deep=True)
+        cfg.models.dry_run = run["execution_mode"] != "Live Gemini"
+        cfg.retrieval = type(cfg.retrieval).model_validate(run["retrieval_config"])
+        detailed = pipeline_result_from_dict(run["result"])
+        baseline = (
+            pipeline_result_from_dict(run["baseline"]) if run.get("baseline") else None
+        )
+        records = load_experience_pool(base_cfg)
+        objects = group_by_object(records)
+        source_id = query.get("source_object_id")
+        truth_obj = objects.get(source_id)
+        score_as_current = (
+            truth_obj is not None
+            and run.get("source_sha256") == current_hash
+            and not run.get("counterfactual", False)
+        )
+        _render_prediction(
+            detailed,
+            truth_obj,
+            counterfactual=not score_as_current,
+            baseline=baseline,
+            cfg=cfg,
+            experiment=run["experiment"],
+        )
+
+
+def data_viewer(base_cfg: Config, rows: list) -> None:
+    st.header("Data Viewer")
+    view = st.segmented_control(
+        "View",
+        ["Description Catalog", "Pipeline Run Inspector"],
+        default="Description Catalog",
+        key="data_viewer_mode",
+    )
+    if view == "Pipeline Run Inspector":
+        _pipeline_run_inspector(base_cfg)
+    else:
+        _description_catalog(base_cfg, rows)
+
+
+def preparation_view(base_cfg: Config, summary: dict) -> None:
+    st.subheader("What Data Preparation does")
+    st.write(
+        "This step validates all 129 synthetic objects and writes 258 gripper-specific "
+        "experience rows. Live preparation downloads images, checkpoints one structured "
+        "contact-region descriptor per object, and warms one text embedding per object. "
+        "It does not run force prediction."
+    )
+    st.info(
+        "Each Gemini descriptor is saved immediately. If quota interrupts preparation, rerun "
+        "the same button to resume from the saved checkpoints and content-addressed cache."
+    )
     stats = st.columns(4)
     stats[0].metric("Source objects", summary["objects"])
-    stats[1].metric("Reference objects", len(split["reference_object_ids"]))
-    stats[2].metric("Held-out objects", len(split["test_object_ids"]))
+    stats[1].metric("Experience-pool objects", summary["objects"])
+    stats[2].metric("Known-object training", f"{summary['objects'] - 1} per run")
     stats[3].metric("Experience rows", summary["experience_rows"])
     st.code(summary["source_sha256"], language=None)
     distributions = [
@@ -444,8 +734,10 @@ def preparation_view(base_cfg: Config, summary: dict, split: dict) -> None:
     st.dataframe(pd.DataFrame(distributions), hide_index=True, width="stretch")
 
     left, right = st.columns(2)
-    offline = left.button("Prepare derived data offline", width="stretch")
-    live = right.button("Download images and prepare live descriptors", type="primary", width="stretch")
+    offline = left.button("Build records from checkpoints", width="stretch")
+    live = right.button(
+        "Download images + Gemini descriptors", type="primary", width="stretch"
+    )
     if offline or live:
         progress_bar = st.progress(0.0)
         status = st.empty()
@@ -462,8 +754,10 @@ def preparation_view(base_cfg: Config, summary: dict, split: dict) -> None:
             st.session_state["preparation_manifest"] = manifest
             if manifest["missing_images"]:
                 st.warning(f"Missing {len(manifest['missing_images'])} images.")
+            elif live:
+                st.success("All 129 descriptors, text embeddings, and 258 rows are prepared.")
             else:
-                st.success("All 129 objects and 258 experience rows are prepared.")
+                st.success("All 258 experience rows were rebuilt from available checkpoints.")
         progress_bar.empty()
         status.empty()
 
@@ -477,10 +771,12 @@ def cache_view(base_cfg: Config) -> None:
     files = list(cache_dir.glob("*.json")) if cache_dir.exists() else []
     result_dir = base_cfg.root / RESULTS_RELATIVE
     results = list(result_dir.glob("*")) if result_dir.exists() else []
-    stats = st.columns(3)
+    runs = load_saved_runs(base_cfg)
+    stats = st.columns(4)
     stats[0].metric("Cached API responses", len(files))
     stats[1].metric("Cache size", f"{sum(path.stat().st_size for path in files) / 1024:.1f} KB")
     stats[2].metric("Saved benchmark files", len(results))
+    stats[3].metric("Saved single runs", len(runs))
     st.code(str(cache_dir), language=None)
     if "single_result" in st.session_state:
         detailed = st.session_state["single_result"][0]
@@ -491,26 +787,178 @@ def cache_view(base_cfg: Config) -> None:
     )
 
 
+def help_view(base_cfg: Config) -> None:
+    st.header("How to use the lab")
+    st.markdown(
+        """
+1. Open **Data Preparation** and build the derived records. Use the live option when you
+   want image-derived contact descriptions and reference text embeddings.
+2. Open **Single Run**, choose any of the 129 objects, or upload an image.
+3. Set mass, roughness, and projected contact fraction. Leaving the original values scores
+   with that object excluded from training; changing a value or image creates an unscored
+   counterfactual that uses the full experience pool.
+4. Choose an experiment and **Offline** or **Live Gemini**. Adjust retrieval weights and
+   similarity constants when the selected experiment uses retrieval.
+5. Click **Run pipeline**. Read the selected gripper and force first, then compare both
+   branches, evidence summaries, and top-seven matches.
+6. Use **129-Object Benchmark** for leave-one-object-out evaluation. Use **Data Viewer**
+   to inspect every image/description and saved run, and use
+   **Cache Status** to confirm that repeated Gemini requests are being reused.
+        """
+    )
+
+    st.header("Experiment definitions")
+    experiments = pd.DataFrame(
+        [
+            {
+                "Experiment": "E1",
+                "Uses": "Image + VLM",
+                "Meaning": "Vision-only zero-shot baseline; measured sensors, retrieval, and physics are hidden.",
+            },
+            {
+                "Experiment": "E2",
+                "Uses": "Sensors + VLM",
+                "Meaning": "Tests whether authoritative mass, roughness, and contact improve the VLM.",
+            },
+            {
+                "Experiment": "E3",
+                "Uses": "Sensors + retrieval + VLM",
+                "Meaning": "Adds top-k same-gripper experiences, without paired rows or physics.",
+            },
+            {
+                "Experiment": "E3b",
+                "Uses": "Sensors + retrieval",
+                "Meaning": "Pure similarity-weighted retrieval baseline; no VLM and no physics.",
+            },
+            {
+                "Experiment": "E4",
+                "Uses": "Sensors + physics",
+                "Meaning": "Calibrated physics-only baseline; no retrieval and no VLM.",
+            },
+            {
+                "Experiment": "E5",
+                "Uses": "Sensors + retrieval + paired rows + VLM",
+                "Meaning": "Full VLM method without physics. Python selects the lower feasible prediction.",
+            },
+            {
+                "Experiment": "E6",
+                "Uses": "Sensors + physics + learned residual",
+                "Meaning": "Classical learned correction to physics; no VLM decision or retrieval list.",
+            },
+        ]
+    )
+    st.dataframe(experiments, hide_index=True, width="stretch")
+    st.caption(
+        "Useful comparisons: E5 vs E3 tests paired other-gripper rows; E3 vs E3b tests "
+        "the VLM contribution; E4 vs E6 tests the learned residual over physics."
+    )
+
+    st.header("What E5 + Live Gemini means")
+    st.markdown(
+        """
+For a known dataset object, the pipeline excludes that object and uses the other 128 experiences.
+For a custom query, it uses all 129. It reuses one cached text embedding per reference object for
+both grippers, embeds the query description, and ranks references with the displayed hybrid
+similarity. It retrieves seven matches for each gripper and adds each matched object's paired
+other-gripper force. Gemini then makes two structured force estimates, one for gecko and one for
+silicone. E5 does not construct or send a physics estimate. Python selects the lower feasible
+predicted force and explicitly reports a prediction tie when quantization makes the forces equal.
+
+**Live Gemini** means Gemini-backed descriptor, embedding, and VLM stages are allowed to make
+network calls. A cached identical request makes no new call. It does not mean the labels are
+real, and it does not automatically replace an offline-prepared reference corpus with visual
+descriptions; that is the job of live Data Preparation.
+        """
+    )
+
+    manifest_path = base_cfg.root / PREPARATION_RELATIVE
+    if manifest_path.exists():
+        manifest = json.loads(manifest_path.read_text())
+        mode = manifest.get("descriptor_mode", "unknown")
+        missing = len(manifest.get("missing_images", []))
+        descriptors_done = manifest.get("descriptors_completed", 0)
+        embeddings_done = manifest.get("embeddings_completed", 0)
+        if manifest.get("status") == "complete" and missing == 0:
+            st.success(
+                f"Current experience pool: {descriptors_done} descriptors and "
+                f"{embeddings_done} warmed reference text embeddings."
+            )
+        else:
+            st.warning(
+                f"Preparation status: {manifest.get('status', mode)}; {descriptors_done} "
+                f"descriptors, {embeddings_done} embeddings, and {missing} unavailable images."
+            )
+    else:
+        st.warning("No preparation manifest exists yet. Run Data Preparation before evaluation.")
+
+    st.header("Application sections")
+    sections = pd.DataFrame(
+        [
+            {
+                "Section": "Single Run",
+                "Purpose": "Inspect one leave-one-out or custom query with full evidence.",
+            },
+            {
+                "Section": "129-Object Benchmark",
+                "Purpose": "Evaluate every object using leave-one-object-out training.",
+            },
+            {
+                "Section": "Data Viewer",
+                "Purpose": "Browse all images/descriptions and inspect exact saved pipeline runs.",
+            },
+            {
+                "Section": "Data Preparation",
+                "Purpose": "Fetch images, checkpoint descriptions, create rows, and warm text embeddings.",
+            },
+            {
+                "Section": "Cache Status",
+                "Purpose": "Inspect saved API responses and telemetry from the latest single run.",
+            },
+            {
+                "Section": "Help & Experiments",
+                "Purpose": "Understand controls, experiment ablations, and result interpretation.",
+            },
+        ]
+    )
+    st.dataframe(sections, hide_index=True, width="stretch")
+    st.info(
+        "All forces, winner labels, and reported accuracy are synthetic pipeline-validation "
+        "signals. They can reveal software or modeling behavior, but cannot establish physical "
+        "gripper performance."
+    )
+
+
 def main() -> None:
     base_cfg = load_config().model_copy(deep=True)
-    rows, split, summary = _load_static()
+    rows, summary = _load_static()
     st.title("Force Pipeline Lab")
     st.markdown(
         '<div class="synthetic-note"><b>Synthetic pipeline validation.</b> '
         'These results test software behavior and model integration, not physical gripper performance.</div>',
         unsafe_allow_html=True,
     )
-    single_tab, benchmark_tab, preparation_tab, cache_tab = st.tabs(
-        ["Single Run", "29-Object Benchmark", "Data Preparation", "Cache Status"]
+    single_tab, benchmark_tab, viewer_tab, preparation_tab, cache_tab, help_tab = st.tabs(
+        [
+            "Single Run",
+            "129-Object Benchmark",
+            "Data Viewer",
+            "Data Preparation",
+            "Cache Status",
+            "Help & Experiments",
+        ]
     )
     with single_tab:
-        single_run_view(base_cfg, rows, split)
+        single_run_view(base_cfg, rows)
     with benchmark_tab:
         benchmark_view(base_cfg)
+    with viewer_tab:
+        data_viewer(base_cfg, rows)
     with preparation_tab:
-        preparation_view(base_cfg, summary, split)
+        preparation_view(base_cfg, summary)
     with cache_tab:
         cache_view(base_cfg)
+    with help_tab:
+        help_view(base_cfg)
 
 
 if __name__ == "__main__":
