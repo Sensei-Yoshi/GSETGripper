@@ -11,16 +11,25 @@ const int Z_B_STEP_PIN = 4;
 const int Z_B_DIR_PIN = 5;
 AccelStepper stepperZB(AccelStepper::DRIVER, Z_B_STEP_PIN, Z_B_DIR_PIN);
 
-const float Z_MAX_SPEED_STEPS_PER_SEC = 800.0;
-const float Z_ACCELERATION_STEPS_PER_SEC2 = 400.0;
+const float Z_MAX_SPEED_STEPS_PER_SEC = 2500.0;      // 12.5 mm/s
+const float Z_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2; reaches full speed in 0.5 s over 3.1 mm
 
-// TODO: calibrate for the real gantry (lead screw pitch, microstepping, etc.).
+// Calibrated for: NEMA 17, 1.8 deg (200 full steps/rev), integrated Tr8x8 (P2)
+// lead screw (4-start, 8 mm lead), TMC2209 driver in standalone mode at 1/8
+// microstepping (MS1/MS2 both low).
+//   (200 steps/rev * 8 microsteps) / 8 mm per rev = 200 steps/mm
+//
 // Z 0 is wherever the arm physically is when the board powers on/resets --
 // there's no homing routine or limit switch yet, so it is not tied to any
-// fixed real-world height until one is added.
-const float Z_STEPS_PER_MM = 10.0;
+// fixed real-world height until one is added. For reference: the motor is
+// mounted 127 mm (5 in) above the ground, so the nut's reachable band sits
+// roughly 127-527 mm above ground.
+const float Z_STEPS_PER_MM = 200.0;
 const long Z_MIN_STEPS = 0;
-const long Z_MAX_STEPS = 5000; // TODO: calibrate safe travel range
+// TODO: measure actual usable travel. The screw is 400 mm long, but the nut
+// block's own length plus motor-end clearance eat into that -- expect 355-375
+// mm. 350 mm is a conservative placeholder until measured.
+const long Z_MAX_STEPS = 70000; // 350 mm * 200 steps/mm
 
 bool zMovePending = false;
 
@@ -29,14 +38,20 @@ const int SELECT_STEP_PIN = 6;
 const int SELECT_DIR_PIN = 7;
 AccelStepper stepperSelect(AccelStepper::DRIVER, SELECT_STEP_PIN, SELECT_DIR_PIN);
 
-const float SELECT_MAX_SPEED_STEPS_PER_SEC = 400.0;
-const float SELECT_ACCELERATION_STEPS_PER_SEC2 = 200.0;
+const float SELECT_MAX_SPEED_STEPS_PER_SEC = 1600.0;  // 1 turret rev/s (60 RPM)
+const float SELECT_ACCELERATION_STEPS_PER_SEC2 = 2000.0;
 
-// TODO: calibrate exact step counts for each named position.
-const long SELECT_GEKKO_STEPS = 0;
-const long SELECT_SILICONE_STEPS = 800;
+// Rotary turret, direct drive (no gearbox or belt), same 1.8 deg motor and 1/8
+// microstepping as Z: 200 steps/rev * 8 = 1600 microsteps per turret rev.
+// The two gripper heads are mounted 80 deg apart:
+//   1600 * (80 / 360) = 355.6 steps -> rounded to 356 (+0.1 deg). Moves are
+//   absolute, so that rounding offset is fixed and never accumulates.
+// TODO: confirm which head sits at 0 deg -- swapping these two constants is
+// the whole fix if gecko and silicone are the other way round.
+const long SELECT_GEKKO_STEPS = 0;      // head A, 0 deg
+const long SELECT_SILICONE_STEPS = 356; // head B, 80 deg
 const long SELECT_MIN_STEPS = 0;
-const long SELECT_MAX_STEPS = 800; // TODO: calibrate safe travel range
+const long SELECT_MAX_STEPS = 356;
 
 bool selectMovePending = false;
 
@@ -45,18 +60,27 @@ const int GRIP_STEP_PIN = 8;
 const int GRIP_DIR_PIN = 9;
 AccelStepper stepperGrip(AccelStepper::DRIVER, GRIP_STEP_PIN, GRIP_DIR_PIN);
 
-const float GRIP_MAX_SPEED_STEPS_PER_SEC = 400.0;
-const float GRIP_ACCELERATION_STEPS_PER_SEC2 = 200.0;
+const float GRIP_MAX_SPEED_STEPS_PER_SEC = 2500.0;      // 12.5 mm/s of jaw travel
+const float GRIP_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2
 
-// TODO: calibrate. GRIP_OPEN_STEPS is the fully-open home position.
-// GRIP_MAX_OPENING_MM is the object width (mm) that corresponds to fully
-// open jaws; GRIP_STEPS_PER_MM converts the remaining jaw travel needed to
-// close around a narrower object into steps.
+// Separate Tr8x8 (P2) lead screw with the same spec as Z (4-start, 8 mm lead),
+// same 1.8 deg motor, same 1/8 microstepping, coupled 1:1 with no reduction:
+//   (200 steps/rev * 8 microsteps) / 8 mm per rev = 200 steps/mm
+// Only ONE jaw moves (the opposing jaw is rigidly fixed to the frame), so jaw
+// opening changes 1:1 with nut travel -- hence no factor of 2 below or in
+// gripStepsForWidth().
+//
+// GRIP_OPEN_STEPS is the fully-open home position. GRIP_MAX_OPENING_MM is the
+// object width (mm) that corresponds to fully open jaws; GRIP_STEPS_PER_MM
+// converts the remaining jaw travel needed to close around a narrower object
+// into steps.
 const long GRIP_OPEN_STEPS = 0;
-const float GRIP_MAX_OPENING_MM = 60.0;
-const float GRIP_STEPS_PER_MM = 5.0;
+const float GRIP_MAX_OPENING_MM = 60.0; // TODO: measure the fully-open jaw gap
+const float GRIP_STEPS_PER_MM = 200.0;
 const long GRIP_MIN_STEPS = 0;
-const long GRIP_MAX_STEPS = 600; // TODO: calibrate safe travel range
+// Fully-closed travel = GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM. Update this
+// alongside GRIP_MAX_OPENING_MM when the jaw gap is measured.
+const long GRIP_MAX_STEPS = 12000;
 
 bool gripMovePending = false;
 
