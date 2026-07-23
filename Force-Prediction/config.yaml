@@ -45,7 +45,7 @@ roughness:
 
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
-  k: 5                  # experiences per gripper branch
+  k: 5                  # object neighbors (E5); rows per branch for E3/E3b
   weights:              # hybrid score S = w_s*cos + w_m*Smass + w_r*Srough + w_a*Scontact
     semantic: 0.40
     mass: 0.25
@@ -128,8 +128,8 @@ prompts:
     You are a robotics grasp-material selection and pre-grasp force estimation model.
 
     TASK
-    Given an object image, measured object properties, a fixed robotic gripper
-    embodiment, and retrieved grasping experiences, estimate the minimum
+    Given an object image, measured object properties, one or both candidate
+    robotic gripper embodiments, and retrieved grasping experiences, estimate the minimum
     stationary-finger normal force
     required to lift the object under the standardized test protocol.
 
@@ -160,10 +160,10 @@ prompts:
     contamination, visible surface condition).
 
     RETRIEVED EXPERIENCES
-    Retrieved experiences are empirical observations from the same gripper
-    embodiment and force convention. Each also reports the SAME object's force on
-    the OTHER gripper when available; use this gecko-vs-silicone delta to reason
-    about the material crossover. Favor physically and semantically close
+    Retrieved experiences are empirical observations under the same force
+    convention. Paired object experiences report both gecko and silicone outcomes;
+    use the within-object force difference to reason about the material crossover.
+    Favor physically and semantically close
     experiences, but do not copy a force without accounting for differences in
     mass, roughness, contact fraction, and surface material.
 
@@ -201,8 +201,17 @@ prompts:
     properties and the retrieved "{candidate_gripper}" experiences (including
     their other-gripper force where present).
 
+  paired_gripper_instruction: |
+    Estimate the minimum stationary-finger normal force (newtons) for both the
+    gecko and silicone grippers under the standardized protocol. Judge each
+    gripper's feasibility independently within the force limit. Use the measured
+    query properties and the single ranked list of paired object experiences,
+    where every neighbor reports both gripper outcomes when available. Return one
+    structured response containing a gecko prediction and a silicone prediction;
+    do not make the final gripper selection.
+
 # =============================================================================
-# EXPERIMENTS  —  E1..E6 as toggle sets over the single pipeline.
+# EXPERIMENTS  —  toggle sets over the single pipeline.
 # See docs/experiments.md for the scientific rationale of each.
 # =============================================================================
 experiments:

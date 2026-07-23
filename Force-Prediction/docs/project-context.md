@@ -1,1591 +1,1025 @@
-> **⚠️ THIS IS THE ORIGINAL DESIGN PROPOSAL (the "why"), not the current code state.**
-> A working implementation now exists. **For onboarding — repo layout, environment/venv, the
-> Gemini + embedding decisions, the James-grounded physics, how to run things, what's proven vs
-> pending, and the iCloud gotcha — read [`../CLAUDE.md`](../CLAUDE.md) first**, then `../README.md`.
-> Some proposals below have since been decided (e.g. Gemini over Qwen; `gemini-embedding-2` with
-> asymmetric retrieval formatting; no vector DB yet; James-calibrated physics coefficients).
-> This document is kept for design rationale.
->
-> **Quick facts:** package `force_prediction/` (flat, config-driven); one `pipeline.py` for all
-> experiments E1–E6 (toggles in `config.yaml`); mock-first so everything runs offline; live
-> Gemini POC on the Exp-Force dataset works (MAE 0.083 N on 6 objects). venv at
-> `/Users/premshah/Desktop/Robotics/GSET/env`; key in repo-root `.env`.
+# Project Context: Material-Aware Gripper Selection and Force Prediction
+
+Last updated: 2026-07-23
+
+This is the comprehensive living context for the Force-Prediction project. It
+describes the research purpose, the current implementation, the synthetic
+validation dataset, the Streamlit research lab, the experiment definitions, and
+the decisions made during development. Future work should update this document
+when a scientific assumption, public interface, data contract, or experiment
+meaning changes.
+
+`config.yaml` remains the source of truth for tunable values and prompts. The
+Python implementation remains the source of truth for executable behavior. This
+document explains how those pieces fit together and why they are designed this
+way.
+
+## 1. Project purpose
+
+The project studies a joint robotics decision:
+
+1. Choose between two compliant grippers for an object.
+2. Predict the minimum normal force needed by each gripper to lift that object.
+3. Select the feasible gripper with the lower predicted force.
+
+The two gripper embodiments are:
+
+- `gecko`: a TPU fin-ray finger with a mushroom-cap, gecko-inspired dry
+  adhesive pad.
+- `silicone`: a TPU fin-ray finger with a non-adhesive, high-friction silicone
+  pad.
+
+The prediction target is an object-gripper interaction, not an intrinsic object
+property. The same object can require different forces with the two grippers.
+The system therefore estimates both `F*(object, gecko)` and
+`F*(object, silicone)` before making the final selection.
+
+The main proposed method is E5: use measured physical properties and a visual
+description to retrieve similar objects with paired gripper outcomes, ask one
+VLM request to estimate both forces, and then make the final selection
+deterministically in Python.
+
+## 2. Research motivation
+
+This work is positioned between three related ideas:
+
+- Exp-Force motivates experience-conditioned force prediction: provide a model
+  with examples of similar past grasps rather than relying only on a zero-shot
+  image judgment.
+- DeliGrasp motivates using semantic and physical knowledge to inform grasp
+  force and material interaction.
+- The reduced-order gecko and silicone models are informed by the gripper work
+  in James et al., RoboSoft 2026. In this codebase, those models are used as
+  classical baselines and as the base model for residual learning.
+
+The research gap is not merely force regression. The system must reason about a
+material crossover: gecko adhesion can be favorable on clean, smooth,
+nonporous, broad contact patches, while silicone friction can be more robust on
+rough, porous, fibrous, contaminated, or geometrically interrupted contact
+patches. Mass alone cannot represent this interaction.
+
+The project tests several questions:
+
+- Does measured mass, roughness, and projected contact improve a vision-based
+  VLM estimate?
+- Does retrieval of prior grasp outcomes improve force prediction?
+- Is it better to retrieve paired objects once than to retrieve separate lists
+  for each gripper?
+- Does a VLM add value over a similarity-weighted retrieval average?
+- Does the proposed E5 method outperform calibrated physics or a
+  physics-residual model?
+- Can the full data, caching, retrieval, inference, evaluation, and reporting
+  pipeline run reliably before real data are collected?
+
+## 3. Scientific claim boundary
+
+All data currently used by the Exp-Force viewer must be treated as synthetic
+test data. The images are useful pipeline inputs, but the numeric labels and
+the current benchmark results are not evidence of real gripper performance.
+
+The current fixture can establish that:
+
+- data validation and conversion work;
+- images can be downloaded and described;
+- text descriptions can be embedded and cached;
+- hybrid retrieval responds to semantic and sensor changes;
+- paired gecko/silicone labels reach the prediction model correctly;
+- live and offline inference paths execute;
+- exact run provenance and benchmark metrics can be persisted;
+- repeated requests reuse cached Gemini outputs.
+
+It cannot establish that:
+
+- a predicted force will lift a real object;
+- the synthetic gecko-silicone crossover is physically correct;
+- the current retrieval weights are optimal;
+- the VLM, physics model, or residual model generalizes to real objects;
+- any synthetic MAE or selection accuracy is a publishable performance result.
+
+The Streamlit application should continue labeling the data and outputs as
+synthetic pipeline validation.
+
+## 4. Force convention and experimental target
 
----
+Every force value in this project uses one convention:
 
- You are right to correct those points:
+- Unit: newtons.
+- Quantity: normal force measured by the load cell behind the stationary
+  gripper finger.
+- Do not double the value.
+- Do not report the sum of both finger forces.
+- Current force limit: `8.0 N`.
+- Current label and command grid: `0.25 N`.
+- Minimum reportable force: `0.25 N`.
+- Nominal successful hold: `3.0 s` after a `50 mm` lift.
 
-* The roughness system returns **one of five discrete classes**, not a probability vector.
+For a real object and gripper, ground truth should be the minimum force on the
+staircase grid that completes the standardized lift-and-hold protocol. An
+infeasible record means the object failed at the configured force limit.
 
-* The target should be written as (F^*(o,g)), because the pose, lift trajectory, seating procedure, and other experimental details are held constant rather than treated as model inputs.
+The final selector chooses the lower predicted force among feasible grippers.
+If neither is feasible, it returns `none`. The synthetic dataset has exactly one
+ground-truth winner for every object. Defensive code still handles a predicted
+tie because force quantization can make two model outputs equal even when the
+ground-truth labels are different.
 
-* (F^*) will be the normal-force reading from the load cell behind the stationary finger, matching the measurement convention in James’s setup.
+## 5. Measured and perceived inputs
 
-* Only two embodiments are being considered: **TPU–gecko** and **TPU–silicone**.
+The intended query inputs are:
 
-The project should therefore be framed as **joint gripper selection and minimum-force prediction**, not merely force prediction given a predetermined gripper.
+- RGB object image.
+- Measured mass in grams.
+- Roughness class from 1 through 5.
+- Projected contact fraction from 0 through 1.
+- Optional precomputed semantic contact-region description.
 
-# Proposed project
+The measured mass, roughness, and contact fraction are authoritative. A VLM may
+use the image to describe material, condition, porosity, coating, curvature,
+seams, ridges, and contact-patch visibility, but it must not replace measured
+values with visual guesses.
 
-## Working title
+### Roughness
 
-**Material-Aware Experience-Conditioned Gripper Selection and Minimum-Force Prediction for Gecko-Adhesive and Silicone Soft Grippers**
+The current ordinal roughness scale is:
 
-## Two-sentence description
+| Class | Label |
+|---:|---|
+| 1 | smoothest |
+| 2 | smooth-mild |
+| 3 | moderate |
+| 4 | rough |
+| 5 | roughest |
 
-A robot must choose whether to grasp an unfamiliar object with a TPU-backed gecko-adhesive finger or a TPU-backed silicone finger, and then determine the minimum normal force required to lift it. The proposed system combines visual-semantic reasoning, measured mass and roughness, approximate projected contact, gripper-specific experiential retrieval, and a calibrated reduced-order physics model to select the lower-force feasible gripper and predict its required force.
+The synthetic roughness values are plausibility-oriented fixtures, not sensor
+measurements. Real work must define and calibrate the roughness measurement
+procedure.
 
-# 1. Scientific motivation
+### Projected contact fraction
 
-The James paper demonstrates that there is no universally superior contact material. TPU–gecko generally requires less normal force on smooth surfaces and on geometries where the compliant backing can establish broad adhesive contact. As roughness increases, the van der Waals contribution collapses and silicone can become superior. The paper also shows that backing compliance, object geometry, mass, and surface characteristics interact rather than acting independently.
+`projected_contact_fraction` is a dimensionless proxy for how much of the
+nominal finger pad height can contact the object at the intended grasp band. It
+is not a measured surface area in square millimeters. The general geometric
+interpretation is:
 
-That creates a decision problem:
+```text
+a = min(1, h_available / h_pad)
+```
 
-> Given a previously unseen object, which gripper material should the robot use, and what is the lowest stationary-finger normal force that will lift the object?
+The configured pad height is currently `65 mm`. The synthetic fixture preserves
+varying contact fractions. It does not contain a physical contact-area column.
 
-A simple roughness threshold is insufficient. Two objects can be assigned the same roughness class but have very different compatibility with gecko adhesion:
+### Curvature and local geometry
 
-* clean glass,
+The source CSV does not contain a numeric curvature field. Curvature and other
+local geometry can appear in the Gemini contact-region descriptor when visible
+in the image. They currently influence semantic similarity through the text
+embedding, not an independent numeric similarity term.
 
-* painted metal,
+## 6. Synthetic Exp-Force validation fixture
 
-* fibrous cardboard,
+The active source is:
 
-* soft plastic film,
+```text
+data/expforce/dataset_2gripper.csv
+```
 
-* dusty polymer,
+The file contains one row per object and these columns:
 
-* oily packaging,
-
-* porous foam.
-
-One correction to the example in your message: **dryness itself is not normally a reason to avoid a dry gecko adhesive**. Clean and dry is generally favorable. The more problematic visible states are wet, oily, dusty, fibrous, porous, contaminated, or loosely coated. The exact effects still need to be learned for your particular commercial adhesive rather than assumed from general gecko-adhesive behavior.
-
-The project is inspired by three complementary works:
-
-### James et al.
-
-This provides:
-
-* the TPU–gecko versus TPU–silicone comparison,
-
-* the physical distinction between frictional and adhesive support,
-
-* the reduced-order force model,
-
-* evidence that roughness and conformity produce a material crossover,
-
-* the stationary-finger load-cell measurement convention.
-
-### Exp-Force
-
-Exp-Force shows that a VLM can estimate pre-grasp force more accurately when given a small number of relevant prior robot experiences. It uses multimodal retrieval followed by in-context VLM prediction, achieving a best force MAE of 0.43 N using 129 objects. However, it learns experiences from one gripper embodiment and does not choose between contact mechanisms.
-
-The public Exp-Force repository currently contains the website, dataset, images, and `dataset.csv`, but I did not find the descriptor, retrieval, predictor, or evaluation implementation in it. The public dataset contains image, mass, and minimum-force labels for 129 objects. ([GitHub][1])
-
-### DeliGrasp
-
-DeliGrasp asks a language model to infer mass, friction, and compliance, then inserts those values into a first-principles adaptive grasp controller. Its central insight is that language-model reasoning should parameterize a deterministic physical controller rather than directly generate low-level actions. Public code is available, although it is hardware-specific and is not a direct implementation of your gecko/silicone problem. ([DeliGrasp][2])
-
-Your work would sit between Exp-Force and DeliGrasp:
-
-* **Exp-Force:** experiential reasoning without explicit physics.
-
-* **DeliGrasp:** physical-property reasoning plus analytical control.
-
-* **Your method:** measured physical properties + material-specific experiences + analytical force prior + gripper selection.
-
-# 2. Main research gap
-
-The minimum required grasping force is not only an object property:
-
-[
-
-F^* \neq f(o)
-
-]
-
-It is an object–gripper interaction property:
-
-[
-
-F^* = F^*(o,g)
-
-]
-
-where:
-
-* (o) is the object,
-
-* (g\in{\text{gecko},\text{silicone}}) is the contact material.
-
-Under a standardized test protocol, define:
-
-[
-
-F^*(o,g)
-
-========
-
-\min N
-
-\quad
-
-\text{such that object }o\text{ is successfully lifted by gripper }g
-
-]
-
-Here, (N) is explicitly:
-
-> **The normal-force measurement recorded by the load cell behind the stationary finger.**
-
-Do not multiply it by two or convert it into a summed two-finger force. The system, equations, dataset, predictions, and reported metrics should all use the same stationary-finger measurement convention.
-
-The pose, seating motion, lift speed, lift height, and success criterion do not need to appear as arguments to (F^*), but they must remain fixed and documented. Otherwise, two measurements labeled as the same (F^*(o,g)) may not be comparable.
-
-# 3. Proposed contributions
-
-A strong paper could claim the following contributions.
-
-## Contribution 1: Joint material selection and force prediction
-
-Rather than assuming a fixed gripper, the system predicts the required force for both TPU–gecko and TPU–silicone and selects the lower-force feasible option.
-
-This differs from Exp-Force, which predicts force for a fixed compliant gripper, and from existing multi-gripper grasping work that primarily chooses between geometrically distinct end effectors such as suction and parallel-jaw grippers. Recent work such as MultiGraspNet confirms that jointly evaluating multiple gripper types is a legitimate research direction, but it focuses on grasp-pose feasibility rather than gecko/silicone material physics and force minimization. ([arXiv][3])
-
-## Contribution 2: Measured physical information
-
-The method incorporates:
-
-* scale-measured mass,
-
-* LED-system roughness class,
-
-* vision-derived projected contact fraction,
-
-rather than relying entirely on visual guesses.
-
-## Contribution 3: Gripper-specific experiential retrieval
-
-Experiences are retrieved separately for gecko and silicone. This prevents the system from treating a 1 N silicone grasp and a 1 N gecko grasp as physically interchangeable.
-
-## Contribution 4: Hybrid semantic–physical retrieval
-
-Retrieval accounts for both:
-
-* visual and semantic object similarity,
-
-* similarity in mass, roughness class, and projected contact fraction.
-
-## Contribution 5: Physics-guided experiential correction
-
-The reduced-order equations are implemented as a deterministic calibrated model. Retrieval and learning then correct the parts of the interaction that the simplified equations do not explain.
-
-# 4. Dataset format
-
-Use one record for each **object–gripper pair**. The same object should therefore normally have two rows.
-
-{
-"image_path": "images/object_001.png",
-"object_id": "object_001",
-"mass_g": 420.0,
-"roughness_class": 2,
-"projected_contact_fraction": 0.83,
-"min_force": 1.25,
-"gripper": "gecko"
-}
-
-and:
-
-{
-"image_path": "images/object_001.png",
-"object_id": "object_001",
-"mass_g": 420.0,
-"roughness_class": 2,
-"projected_contact_fraction": 0.83,
-"min_force": 2.5,
-"gripper": "silicone"
-}
-
-I recommend renaming `min_force` to `min_force_n` so the unit is unambiguous, although this is not conceptually necessary.
-
-## One additional field is important
-
-Some objects may not be liftable by one gripper before reaching the hardware’s safe-force limit. You should not assign the maximum tested force as though it were the true minimum.
-
-Either represent this as:
-
-{
-"min_force": null,
-"feasible": false
-}
-
-or add:
-
-{
-"min_force": 5.0,
-"feasible": false
-}
-
-where `5.0` means “failed at the 5 N test limit,” not “minimum force equals 5 N.”
-
-Without a feasibility indicator, the model cannot distinguish:
-
-* “the gripper succeeds at 5 N,” from
-
-* “the gripper was tested up to 5 N and never succeeded.”
-
-# 5. Projected contact fraction
-
-Using object height as an initial approximation is acceptable provided the variable is defined honestly.
-
-It is **not actual microscopic contact area**, especially for gecko adhesion. It is a geometric proxy.
-
-For the MVP, define:
-
-[
-
-a_{\mathrm{proj}}
-
-=================
-
-\min
-
-\left(
-
-1,,
-
-\frac{h_{\mathrm{available}}}{h_{\mathrm{pad}}}
-
-\right)
-
-]
-
-where:
-
-* (h_{\mathrm{available}}) is the visible object height available at the intended grasp region,
-
-* (h_{\mathrm{pad}}) is the known pad height.
-
-If the pad height is 65 mm, for example:
-
-* an object exposing 65 mm or more receives (a_{\mathrm{proj}}=1),
-
-* an object exposing 32.5 mm receives (a_{\mathrm{proj}}=0.5).
-
-This assumes:
-
-* fixed finger width,
-
-* approximately planar local surfaces,
-
-* centered grasps,
-
-* roughly full widthwise overlap.
-
-That assumption is reasonable for an initial dataset dominated by nearly planar objects. In the paper, call the quantity:
-
-> **Projected contact fraction estimated from vertical object coverage**
-
-rather than “contact area.”
-
-A future geometry module can replace this with:
-
-* segmentation-based pad–object overlap,
-
-* local depth or curvature,
-
-* expected deformation of the fin-ray finger,
-
-* tactile measurement of realized contact.
-
-# 6. How the system should select the gripper
-
-The VLM should not make one opaque prediction of:
-
-Use gecko at 1.25 N
-
-Instead, the system should evaluate the two candidate grippers separately.
-
-## Recommended architecture
-
-### Shared perception stage
-
-Run once:
-
-1. Acquire object image.
-
-2. Read measured mass.
-
-3. Read LED roughness class.
-
-4. calculate projected contact fraction.
-
-5. Generate a visual-semantic description.
-
-6. Compute a multimodal embedding.
-
-### Gecko branch
-
-1. Filter experience pool to `gripper == "gecko"`.
-
-2. Retrieve the five most relevant gecko experiences.
-
-3. Calculate a gecko physics estimate.
-
-4. Predict gecko feasibility and minimum force.
-
-### Silicone branch
-
-1. Filter experience pool to `gripper == "silicone"`.
-
-2. Retrieve the five most relevant silicone experiences.
-
-3. Calculate a silicone physics estimate.
-
-4. Predict silicone feasibility and minimum force.
-
-### Deterministic selector
-
-Among feasible candidates:
-
-[
-
-\hat g
-
-======
-
-\arg\min_{g}
-
-\hat F(o,g)
-
-]
-
-and:
-
-[
-
-\hat F^*(o)
-
-===========
-
-\hat F(o,\hat g)
-
-]
-
-This means **gripper embodiment is not a weighted retrieval feature**. It is a hard branch or filter.
-
-That is preferable to mixing both grippers into one nearest-neighbor search because a visually similar silicone experience might otherwise displace a more physically relevant gecko experience.
-
-## Why evaluate both rather than asking the VLM to choose immediately?
-
-It gives you:
-
-* a prediction for each gripper,
-
-* an auditable basis for selection,
-
-* the ability to compare against the true oracle gripper,
-
-* a clean failure analysis,
-
-* less dependence on a single classification decision.
-
-It also allows the VLM to reject gecko based on more than roughness. The visual-semantic stage can examine:
-
-* whether the surface appears porous or fibrous,
-
-* whether there is loose paper or cardboard,
-
-* whether it appears dusty, wet, oily, or coated,
-
-* whether the contact surface is smooth plastic, glass, metal, or painted material,
-
-* whether broad pad contact appears geometrically possible.
-
-These observations should supplement the measured roughness class, not replace it.
-
-# 7. Retrieval design
-
-## Do not encode everything by concatenating raw values to the embedding
-
-Appending:
-
-[multimodal embedding, mass, roughness class, contact fraction]
-
-is not ideal. The semantic embedding may have thousands of dimensions, while the physical values contribute only three dimensions with arbitrary scales.
-
-Instead, use **semantic retrieval followed by structured physical reranking**.
-
-Hybrid retrieval and multi-stage reranking are common production patterns: dense representations provide semantic recall, while structured, lexical, or other relevance signals refine the candidate set. However, your exact mass/roughness/contact score is domain-specific and must be validated rather than assumed to be optimal. ([Google Cloud Documentation][4])
-
-Qwen’s official multimodal retrieval package also separates an efficient embedding stage from a higher-precision reranker stage, reflecting the same recall-then-rerank pattern. ([GitHub][5])
-
-## Recommended similarity score
-
-Within each gripper branch:
-
-[
-
-S(q,i)
-
-======
-
-w_s S_{\mathrm{semantic}}
-
-+
-
-w_m S_{\mathrm{mass}}
-
-+
-
-w_r S_{\mathrm{roughness}}
-
-+
-
-w_a S_{\mathrm{contact}}
-
-]
-
-### Semantic similarity
-
-[
-
-S_{\mathrm{semantic}}
-
-=====================
-
-\cos(z_q,z_i)
-
-]
-
-where (z_q) and (z_i) are multimodal image–description embeddings.
-
-### Mass similarity
-
-Use log mass because the difference between 10 g and 100 g is often more meaningful than the same absolute difference between 1,000 g and 1,090 g:
-
-[
-
-S_{\mathrm{mass}}
-
-=================
-
-\exp
-
-\left(
-
--\frac{
-
-\left|
-
-\log(m_q)-\log(m_i)
-
-\right|
-
-}{
-
-\sigma_m
-
-}
-
-\right)
-
-]
-
-### Roughness similarity
-
-Provided that the five classes are ordinal:
-
-[
-
-S_{\mathrm{roughness}}
-
-======================
-
-1-
-
-\frac{|r_q-r_i|}{4}
-
-]
-
-Examples:
-
-* same class: (1.0),
-
-* one class apart: (0.75),
-
-* four classes apart: (0.0).
-
-If your five classes are merely named categories and not reliably ordered, use exact-match or a calibrated (5\times5) similarity matrix instead.
-
-### Contact similarity
-
-[
-
-S_{\mathrm{contact}}
-
-====================
-
-\exp
-
-\left(
-
--\frac{|a_q-a_i|}{\sigma_a}
-
-\right)
-
-]
-
-## Reasonable initial weights
-
-A starting point is:
-
-[
-
-w_s=0.40,\quad
-
-w_m=0.25,\quad
-
-w_r=0.20,\quad
-
-w_a=0.15
-
-]
-
-These are **initial engineering values**, not expected final values.
-
-Tune them using only validation folds. Do not select them based on test-set results.
-
-## Is this likely to produce the highest result?
-
-It is a strong, defensible MVP. It is not guaranteed to be optimal.
-
-For a dataset with fewer than approximately 1,000 experience rows, the simplest and most reproducible method is:
-
-1. compute the score against every eligible experience,
-
-2. sort exactly,
-
-3. select the top five.
-
-You do not initially need FAISS, Qdrant, Pinecone, or another approximate-nearest-neighbor database. Those systems become valuable when the experience pool grows sufficiently large that exact comparison becomes expensive.
-
-Later improvements could include:
-
-* learning the four weights,
-
-* a pairwise learning-to-rank model,
-
-* a Qwen3-VL reranker,
-
-* gripper-specific retrieval weights,
-
-* a learned metric trained around force similarity.
-
-For the first study, manual hybrid scoring with cross-validated weights is easier to interpret and harder to overfit.
-
-## Should the physical attributes also appear in the embedding text?
-
-They can appear in the text representation:
-
-Object mass: 420 g.
-Roughness class: 2 of 5.
-Projected contact fraction: 0.83.
-
-That may help semantic retrieval, but it should not replace the explicit structured similarity terms.
-
-Use them in both places:
-
-* as text available to the embedding/reranker,
-
-* as exact structured quantities in the physical similarity score.
-
-# 8. Use (k=5), but use five per gripper
-
-For the main implementation:
-
-* retrieve **five gecko experiences**,
-
-* retrieve **five silicone experiences**.
-
-This means the predictor examines ten total experiences, but each candidate receives an equal and physically valid comparison set.
-
-A single mixed top-five set is less desirable because it might contain:
-
-* five gecko examples and no silicone examples,
-
-* four silicone examples and one gecko example,
-
-* examples whose force labels come from different physical mechanisms.
-
-Exp-Force found that performance improved rapidly with a small number of experiences and generally plateaued between roughly 5 and 10 examples, so (k=5) is a reasonable initial choice.
-
-# 9. Do not ask the VLM to numerically execute the full formula
-
-The James equations are valuable, but pasting them into the prompt and asking a VLM to solve them should not be the primary method.
-
-There are four problems with that approach:
-
-1. The parameters are not automatically known for your exact pads.
-
-2. Your roughness classes do not directly equal the paper’s FEPA or (R_q) values.
-
-3. Projected contact fraction is a proxy rather than the paper’s true conformity term.
-
-4. VLM arithmetic and nonlinear equation inversion can be inconsistent.
-
-Use the equations as a **deterministic inductive bias**, implemented in Python.
-
-## Original physical idea
-
-For silicone, the James model uses frictional support:
-
-[
-
-F_{\max}^{\mathrm{sil}}
-
-=======================
-
-\left(
-
-\mu_c^{\mathrm{sil}}\Omega_{\mathrm{fric}}
-
-\right)N
-
-]
-
-For gecko, it includes friction plus a saturating adhesive component:
-
-[
-
-F_{\max}^{\mathrm{gecko}}
-
-=========================
-
-\left(
-
-\mu_c^{\mathrm{gecko}}\Omega_{\mathrm{fric}}
-
-\right)N
-
-+
-
-\tau_0A_{\mathrm{geom}}\Omega_{\mathrm{adh}}
-
-\frac{N}{N+N_{50}}
-
-\Psi_c^{\mathrm{adh}}
-
-]
-
-The paper distinguishes a low-preload seating regime from a higher-preload saturated regime.
-
-## Simplified model for your fixed TPU fingers
-
-Because backing and pad geometry are fixed, you can absorb several constants into learned coefficients.
-
-Let:
-
-* (c) be roughness class,
-
-* (a) be projected contact fraction,
-
-* (N) be stationary-finger normal force,
-
-* (W=mg) be the object weight.
-
-### Silicone
-
-[
-
-\hat T_{\mathrm{sil}}(N,c,a)
-
-============================
-
-\alpha_c^{\mathrm{sil}},aN
-
-]
-
-### Gecko
-
-[
-
-\hat T_{\mathrm{geo}}(N,c,a)
-
-============================
-
-\alpha_c^{\mathrm{geo}},aN
-
-+
-
-\beta_c,a
-
-\frac{N}{N+N_{50}}
-
-]
-
-where:
-
-* (\alpha_c^{\mathrm{sil}}) is effective silicone friction for roughness class (c),
-
-* (\alpha_c^{\mathrm{geo}}) is effective gecko-pad mechanical friction,
-
-* (\beta_c) is the available adhesive support for roughness class (c),
-
-* (N_{50}) describes the preload needed for adhesive seating.
-
-For each candidate gripper, numerically solve:
-
-[
-
-\hat T_g(N,c,a) \ge mg
-
-]
-
-for the smallest (N).
-
-Use a robust scalar root solver such as Brent’s method or bisection. The output is:
-
-physics_force_estimate_n
-
-## How are those coefficients learned?
-
-Fit them on the training objects using constrained nonlinear least squares.
-
-Constraints should include:
-
-[
-
-\alpha_c^{\mathrm{sil}}>0,\qquad
-
-\alpha_c^{\mathrm{geo}}>0,\qquad
-
-\beta_c\ge0,\qquad
-
-N_{50}>0
-
-]
-
-Potentially enforce decreasing gecko adhesion as roughness class increases:
-
-[
-
-\beta_1 \ge \beta_2 \ge \cdots \ge \beta_5
-
-]
-
-but only if your class numbering goes from smoothest to roughest and your calibration data supports this assumption.
-
-All parameter fitting must happen inside each training fold. Fitting the coefficients once using the complete dataset and then reporting cross-validation results would leak test information.
-
-# 10. Should you train an MLP?
-
-**Not initially.**
-
-An MLP becomes attractive when you have enough unique object–gripper pairs to learn nonlinear interactions without memorizing the training objects. With a dataset closer to 100–200 objects, an MLP using high-dimensional visual embeddings can overfit easily.
-
-Exp-Force compared its retrieval-conditioned VLM with frozen visual/multimodal encoders followed by trained two-layer MLP heads. Those supervised baselines achieved reasonable errors, but the retrieval-conditioned Gemini models performed slightly better on the 129-object dataset.
-
-## Better first learned model: physics residual
-
-First calculate the physical prediction:
-
-[
-
-N_{\mathrm{physics}}
-
-]
-
-Then train a small model to predict only the residual:
-
-[
-
-r
-
-=
-
-## N^*
-
-N_{\mathrm{physics}}
-
-]
-
-The final prediction becomes:
-
-[
-
-\hat N
-
-======
-
-N_{\mathrm{physics}}
-
-+
-
-\hat r
-
-]
-
-This is easier to learn because the model does not need to discover gravity, mass scaling, roughness trends, and contact scaling from scratch.
-
-### Recommended residual models
-
-Start with:
-
-1. ridge regression,
-
-2. gradient-boosted decision trees,
-
-3. Gaussian-process regression.
-
-Inputs could be:
-
-log_mass
+```text
+Object
+Image
+Mass_g
 roughness_class
 projected_contact_fraction
-physics_force_estimate
-selected semantic-embedding dimensions or PCA components
+silicone_force_n
+silicone_feasible
+gecko_force_n
+gecko_feasible
+favored_gripper
+```
+
+The adapter converts each object into two `ExperienceRecord` rows, one for each
+gripper. The two rows share the image, description, mass, roughness, contact
+fraction, and object ID. They differ in gripper, force, and feasibility label.
+
+Current validated snapshot:
+
+- 129 unique objects.
+- 258 gripper-specific experience rows.
+- All 129 objects are feasible for both grippers in the current fixture.
+- 87 objects favor gecko and 42 favor silicone.
+- There are no equal-force ground-truth pairs.
+- All force labels lie on the `0.25 N` grid.
+- Mass range: `1 g` to `1384 g`.
+- Contact-fraction range: `0.283` to `0.987`.
+- Silicone force range: `0.25 N` to `7.0 N`.
+- Gecko force range: `0.25 N` to `7.25 N`.
+- Current source SHA-256:
+  `e0218fe46636ecd32b4f15bfb687fa72a2069cf9840c2da212ccc00813dd0b22`.
+
+The hash is recorded in saved run and benchmark artifacts. If the CSV is
+intentionally updated, derived experiences and reported hashes must be
+regenerated.
+
+### No 100/29 split
+
+An earlier viewer design proposed 100 reference objects and 29 held-out objects.
+That design is no longer active. All 129 objects are visible in the catalog and
+all 129 can serve as experiences.
+
+For a normal run on a known dataset object, the selected object is excluded from
+retrieval. Its remaining 128 objects form the experience pool. This is
+leave-one-object-out evaluation and prevents exact self-retrieval.
+
+For an uploaded image or a sensor-modified counterfactual query, there is no
+valid held-out ground truth. All 129 objects can be used as references, and the
+original object's labels are displayed only as context rather than scored as
+truth for the modified query.
+
+## 7. Descriptor generation
+
+The visual representation is a structured description of the surface region
+that the fingers are likely to grip. It is not intended to be a generic caption
+of the whole object.
+
+The descriptor prompt is in `config.yaml` under:
+
+```text
+prompts.descriptor_system
+prompts.descriptor
+```
+
+The prompt tells Gemini to:
+
+- inspect the likely opposing contact patches at a centered lateral grasp band;
+- distinguish the contact material from labels, wrappers, sleeves, coatings,
+  and exposed contents;
+- describe visible surface condition, including dust, moisture, oil, wear, or
+  uncertainty;
+- describe local geometry such as curvature, seams, ridges, edges, lobes, and
+  interruptions;
+- identify whether the likely contact patch is actually visible;
+- state uncertainty instead of inventing hidden material details;
+- produce a concise retrieval description focused on discriminating
+  pad-to-object interface evidence;
+- avoid recommending a gripper or predicting force;
+- avoid repeating measured mass, roughness, or contact fraction.
+
+The prompt also explains that the output will be converted into a text embedding
+and used to retrieve objects with similar contact interfaces. It includes good
+examples so the desired level of specificity is explicit.
+
+The structured `Description` checkpoint includes the retrieval description,
+contact region, contact material, visible material, visible condition, local
+geometry, patch visibility, and uncertainty. The `description` property used
+for embedding composes the relevant structured fields.
+
+## 8. Embedding design
+
+The current system uses text embeddings of the semantic contact-region
+description. It does not use image embeddings.
+
+The active live model is configured as:
+
+```text
+gemini-embedding-2-preview
+output dimensionality: 1536
+```
+
+Reference descriptions are embedded as search documents and query descriptions
+are embedded in the query role used by the provider. The mock provider uses a
+deterministic hash vector for offline tests.
+
+Only the semantic description enters the embedding. Mass, roughness, and
+projected contact fraction remain explicit similarity components. This matters
+for both interpretability and counterfactual testing: changing a sensor value
+can change retrieval without recomputing an unchanged semantic embedding.
 
-I would test ridge regression and gradient boosting before an MLP.
+Each object descriptor and reference embedding is prepared once per image, not
+once per gripper. The resulting vector is shared by the object's gecko and
+silicone outcomes. A query also requires only one semantic embedding per run.
 
-## Role of the VLM in the hybrid system
+At the current corpus size, exact in-memory cosine search is simpler and
+sufficient. There is no vector database. A database should only be introduced
+if corpus size, team sharing, or remote persistence creates a real need.
 
-The VLM should handle:
+## 9. Hybrid retrieval algorithm
+
+For query object `q` and reference object `i`, retrieval uses:
 
-* visible material identification,
+```text
+S(q, i) =
+    w_sem     * cos(e_q, e_i)
+  + w_mass    * exp(-|ln(m_q) - ln(m_i)| / sigma_mass)
+  + w_rough   * (1 - |r_q - r_i| / 4)
+  + w_contact * exp(-|a_q - a_i| / sigma_contact)
+```
 
-* surface-state assessment,
+where:
 
-* porosity/fibrousness,
+- `e` is the semantic text embedding;
+- `m` is mass in grams;
+- `r` is the ordinal roughness class from 1 to 5;
+- `a` is projected contact fraction from 0 to 1.
 
-* comparison with retrieved objects,
+Current defaults:
 
-* whether a gecko estimate is plausible,
+| Parameter | Value |
+|---|---:|
+| `w_sem` | 0.40 |
+| `w_mass` | 0.25 |
+| `w_rough` | 0.20 |
+| `w_contact` | 0.15 |
+| `sigma_mass` | 0.70 |
+| `sigma_contact` | 0.25 |
+| `k` | 5 objects |
 
-* whether an object appears outside the experience distribution,
+Weights are normalized automatically before use. An all-zero weight vector is
+invalid. The Streamlit controls allow the weights and sigma values to be changed
+for exploratory runs.
 
-* concise explanation.
+Every retrieval result exposes:
 
-The deterministic model should handle:
+- raw semantic cosine similarity;
+- raw mass, roughness, and contact similarities;
+- normalized weights;
+- weighted contribution of each component;
+- total hybrid score;
+- rank;
+- object sensor values;
+- paired gecko and silicone force and feasibility labels.
 
-* units,
+This trace is part of the research output, not merely a UI convenience. It makes
+the retrieval behavior inspectable and supports sensitivity analysis.
 
-* gravity,
+## 10. Current E5 algorithm
 
-* nonlinear equation solving,
+E5 is the proposed experience-conditioned VLM method. Its current implementation
+is intentionally one object retrieval and one force-prediction request, not two
+independent gripper requests.
 
-* force constraints,
+### Step 1: Build the query
 
-* candidate comparison,
+The pipeline receives the image, authoritative mass, roughness, contact
+fraction, and either a prepared descriptor or permission to generate one.
 
-* final argmin selection.
+### Step 2: Embed the description once
 
-This is the key architecture:
+The semantic contact-region description is embedded once as a query. Sensor
+changes do not invalidate this embedding if the image and description are
+unchanged.
 
-[
+### Step 3: Retrieve paired objects once
 
-\boxed{
+The hybrid score ranks objects, not gripper rows. The top five objects are
+returned. Each retrieved object carries both its gecko and silicone outcomes.
 
-\text{Physics supplies the numerical prior;}
+This is important because the source object has paired labels even though the
+general storage contract uses one row per object-gripper trial. E5 groups those
+rows by object before ranking. The model therefore sees within-object gripper
+differences directly.
 
-\quad
+The absence of silicone rows from a top-five list cannot be used as evidence to
+choose gecko, because E5's top-five list is not separated by gripper. Every
+neighbor includes both outcomes. This avoids confounding object similarity with
+which gripper branch happened to be searched.
 
-\text{experiences correct it;}
+### Step 4: Make one structured Gemini request
 
-\quad
+The request includes:
 
-\text{the VLM interprets semantics.}
+- the object image;
+- authoritative mass, roughness class, and projected contact fraction;
+- the roughness scale labels;
+- the five paired retrieved objects;
+- both force and feasibility labels for each neighbor;
+- retrieval totals and component breakdowns;
+- normalized retrieval weights and sigma constants;
+- force limits and force-grid constraints;
+- a schema requiring one gecko prediction and one silicone prediction.
 
-}
+The request does not contain a physics prior. E5 is designed to isolate measured
+properties plus retrieval plus VLM reasoning from the physics baselines.
 
-]
+The VLM does not make the final gripper selection. It returns two structured
+`PerGripperPrediction` objects with predicted force, feasibility,
+compatibility/material assessment, and a concise evidence summary. The summary
+is limited to a few sentences; it is not hidden chain-of-thought.
 
-# 11. Recommended experimental conditions
+### Step 5: Quantize and select deterministically
 
-Your proposed four conditions are valid as a **prompt ablation**, but they are not the cleanest complete scientific experiment.
+Each predicted force is clamped to the configured limits and rounded upward to
+the `0.25 N` force grid. Python then selects the lower-force feasible candidate.
+If the quantized predictions tie, the selector uses predicted material
+compatibility and then stable gripper order as a final deterministic fallback.
 
-You initially proposed:
+### Why this replaced two E5 requests
 
-| Condition | Physical values | Formula/embodiment |
+The earlier implementation retrieved and prompted separately for gecko and
+silicone. The current design is better aligned with the paired data:
 
-| --------- | ------------------ | ------------------ |
+- one query embedding instead of duplicated semantic work;
+- one ranked object list instead of two overlapping lists;
+- one image and query payload instead of two;
+- one Gemini force request instead of two;
+- direct visibility of the gecko-silicone difference for every neighbor;
+- lower token use and latency;
+- less opportunity for inconsistent reasoning between independent calls.
 
-| 1 | Estimated visually | No formula |
+There is no E5B condition. A temporary E5B label was rejected and removed. E5
+itself is the single-retrieval, single-request paired architecture. E3 and E3b
+retain branch-specific retrieval because they are experiment baselines, not the
+current proposed architecture.
 
-| 2 | Measured | No formula |
+## 11. Physics model
 
-| 3 | Estimated visually | Formula provided |
+The reduced-order model estimates tangential holding capacity as a function of
+normal force `N`, roughness class `c`, and projected contact fraction `a`.
 
-| 4 | Measured | Formula provided |
+For silicone:
 
-This is useful for testing whether measured attributes and formula prompting help. However, it does not isolate the effect of experiential retrieval, which is one of the strongest motivations from Exp-Force.
+```text
+T_silicone = alpha_silicone(c) * a * N
+```
 
-## Recommended main study
+For gecko:
 
-### E1 — Vision-only zero-shot VLM
+```text
+T_gecko = alpha_gecko(c) * a * N
+        + beta(c) * a * N / (N + N50)
+```
 
-Inputs:
+The first term represents frictional support. The second gecko term represents
+a saturating adhesive contribution. The coefficient families are constrained
+to smooth forms across roughness classes rather than fitting an unrelated value
+for every class.
 
-* RGB image,
+The solver finds the minimum quantized normal force whose holding capacity
+supports the object's weight, subject to the configured force limit. Parameters
+must be calibrated only from the training fold during real evaluation.
 
-* description of the two grippers.
+The current coefficients are a useful synthetic prior and offline mock truth.
+They are not yet calibrated evidence for the real grippers.
 
-The VLM visually estimates:
+## 12. Experiment definitions
 
-* apparent mass,
+All conditions use the same `Pipeline`. Their behavior is controlled by toggle
+sets in `config.yaml`, which avoids separate experiment-specific application
+implementations.
 
-* roughness class,
+| ID | Inputs and estimator | VLM generation? | Main question |
+|---|---|:---:|---|
+| E1 | Image/visual semantics only | Yes | How well does a vision-only zero-shot VLM perform? |
+| E2 | Image plus measured mass, roughness, and contact | Yes | Do authoritative measurements improve the VLM? |
+| E3 | Measured inputs plus branch-specific retrieval | Yes, one call per gripper | Does Exp-Force-style same-gripper retrieval help? |
+| E3b | Measured inputs plus branch-specific retrieval average | No | Does the VLM outperform a direct similarity-weighted average? |
+| E4 | Measured inputs plus calibrated reduced-order physics | No | How well does physics alone perform? |
+| E5 | Measured inputs plus one paired-object retrieval | Yes, one joint call | Does the proposed paired experiential VLM method work best? |
+| E6 | Physics plus a supervised learned residual | No | Does learning systematic physics error beat physics alone? |
 
-* projected contact,
+### E4 versus E6
 
-* surface material/state,
+E4 outputs the calibrated physics estimate directly.
 
-then predicts both forces and selects the gripper.
+E6 first computes that same physics estimate and then learns a residual:
 
-This is the weakest baseline.
+```text
+residual = true_force - physics_force
+final_force = physics_force + predicted_residual
+```
 
-### E2 — Measured-property zero-shot VLM
+The current E6 learner is a gradient-boosted tree using log mass, roughness,
+projected contact fraction, physics force, and PCA-reduced semantic text
+features. E6 may therefore need cached text embeddings, but it does not use
+retrieval and does not make a Gemini force-prediction request.
 
-Inputs:
+### E5 versus physics
 
-* RGB image,
+E5 does not calculate or send a physics prior. Physics is isolated in E4 and E6
+so the experiment comparisons remain interpretable. A physics value displayed
+for E5 would be misleading and should remain unavailable.
 
-* measured mass,
+## 13. Offline and Live Gemini modes
 
-* measured roughness class,
+The viewer exposes `Offline` and `Live Gemini` execution.
 
-* projected contact fraction,
+Offline mode:
 
-* gripper descriptions.
+- makes no network requests;
+- uses deterministic mock embeddings;
+- uses a similarity-weighted paired-neighbor estimate for E5 instead of VLM
+  force inference;
+- is appropriate for CI, UI testing, and pipeline plumbing checks;
+- must not be described as VLM reasoning.
 
-No experiences and no calculated physics prediction.
+Live Gemini mode:
 
-This isolates the value of external measurement.
+- allows Gemini text embeddings and structured generation;
+- uses prepared contact-region descriptions for known objects;
+- performs one E5 query embedding and one joint E5 force request when neither is
+  already cached;
+- can complete very quickly when requests are cache hits;
+- exposes concise per-gripper VLM evidence summaries in the output.
 
-### E3 — Measured properties + experiential retrieval
+A fast live result does not prove Gemini was called at that moment. It may mean
+the exact embedding or generation request was returned from disk cache. Cache
+Status and the run's cache telemetry distinguish hits, misses, writes, and live
+backend attempts.
 
-Inputs:
+## 14. Data Preparation workflow
 
-* RGB image,
+The Data Preparation page is for building reusable reference artifacts. It is
+not a force benchmark and does not predict gripper forces.
 
-* measured properties,
+The live preparation action performs, resumably:
 
-* top-five gecko experiences,
+1. Validate the 129-row source CSV.
+2. Download each missing image.
+3. Generate one structured Gemini contact-region descriptor per object unless a
+   matching descriptor checkpoint already exists.
+4. Write each descriptor checkpoint atomically as soon as it is available.
+5. Convert the 129 object records into 258 gripper-specific experience rows.
+6. Generate and cache one text-only reference embedding per object.
+7. Update the preparation manifest after each object and each embedding.
 
-* top-five silicone experiences.
+It does not:
 
-No physics force estimate.
+- run E5 force inference;
+- create an image embedding;
+- generate separate descriptions or embeddings for the two grippers;
+- alter the source CSV;
+- send a physics prior to Gemini.
 
-This is your Exp-Force-style reproduction extended to two grippers.
+Preparation is safe to resume after quota or process interruption. Completed
+descriptor files and content-addressed embeddings are reused. Missing images are
+reported instead of silently treated as normal descriptions.
 
-### E4 — Measured properties + deterministic physics
+Current local preparation status at the time of this update:
 
-Inputs to the numerical system:
+- status: complete;
+- mode: live Gemini;
+- descriptors: 129 of 129;
+- warmed reference embeddings: 129 of 129;
+- experience rows: 258;
+- missing images: 0.
 
-* mass,
+## 15. Cache behavior
 
-* roughness class,
+Gemini generation and embedding results are stored in the content-addressed disk
+cache configured by `paths.cache`, currently `data/cache`.
 
-* projected contact fraction,
+Writes use a temporary file followed by an atomic replace. Cache telemetry
+tracks hits, misses, writes, read errors, and live backend attempts.
 
-* calibrated reduced-order models.
+Generation cache keys include:
 
-No VLM force prediction and no experiences.
+- cache schema version;
+- VLM model ID;
+- system prompt;
+- instruction prompt;
+- output JSON schema;
+- encoded image bytes;
+- structured payload.
 
-This is an essential baseline. It answers:
+Embedding cache keys include:
 
-> Do we need a VLM at all once the physical measurements are available?
+- cache schema version;
+- embedding model ID;
+- output dimension;
+- embedding text;
+- image bytes if a caller supplies an image.
 
-### E5 — Measured properties + physics + experiential VLM
+The current retrieval pipeline supplies text only, so reference and query
+embedding keys do not contain image bytes.
 
-Inputs:
+Consequences:
 
-* RGB image,
+- repeating an identical request makes no additional Gemini backend call;
+- changing model, prompt, image, schema, payload, text, or embedding dimension
+  creates a new cache key;
+- changing only mass, roughness, contact, or retrieval weights does not require
+  a new semantic embedding when the description is unchanged;
+- changing sensor values does change retrieval scores and the E5 generation
+  payload, so the final force request is correctly invalidated;
+- changing the descriptor prompt invalidates descriptor reuse through its
+  descriptor signature;
+- deleting `data/cache` is allowed, but embeddings and force responses will need
+  to be regenerated;
+- descriptor checkpoints live separately under
+  `data/expforce/descriptors`, so deleting only `data/cache` does not delete
+  completed Gemini descriptions.
 
-* measured physical properties,
+If both the descriptor directory and cache are deleted, live preparation starts
+those stages from scratch. API credentials are loaded locally from environment
+variables or `.env` and are never written to artifacts or displayed in the UI.
 
-* physics estimate for each gripper,
+## 16. Streamlit research lab
 
-* five experiences for each gripper.
+Run the local application with:
 
-This is the proposed complete method.
+```bash
+../../env/bin/python -m streamlit run app.py
+```
 
-### E6 — Measured properties + physics-residual model
+The normal local URL is `http://localhost:8501/`.
 
-Use the deterministic physics estimate plus a ridge, gradient-boosted, or Gaussian-process residual model.
+### Single Run
 
-This lets you compare the VLM hybrid against a conventional small-data learning approach.
+This page is the main interactive pipeline surface.
 
-## Optional formula-prompt experiment
+The left side contains:
 
-You may retain:
+- known-object selection across all 129 objects;
+- image upload for a custom query;
+- mass, roughness, and projected contact controls;
+- experiment selection;
+- Offline or Live Gemini selection;
+- retrieval weights and sigma constants;
+- the Run command.
 
-> VLM receives the literal James formula and must calculate the force.
+The right side shows:
 
-But label it clearly as an ablation:
+- selected gripper and force;
+- both per-gripper predictions and feasibility;
+- concise VLM evidence summaries when applicable;
+- physics estimates only for experiments that use physics;
+- the top five paired E5 neighbors and similarity breakdown;
+- ground truth and errors for an unmodified known object;
+- baseline deltas instead of invalid scoring for counterfactual/custom runs.
 
+### 129-Object Benchmark
 
+This page runs leave-one-object-out evaluation across the full fixture. For each
+query object, the other 128 objects form the training and retrieval pool.
 
+The benchmark reports force errors, selection metrics, regret, plots, subgroup
+breakdowns, and a sortable object table. Results are persisted as JSON and CSV.
+Because the dataset is synthetic, these metrics validate software behavior and
+reporting, not physical accuracy.
 
+Live benchmarking can be slow or quota-limited on a free Gemini tier. The cache
+makes reruns resumable.
 
-# 12. Ground-truth data collection
+### Data Viewer
 
-For every object, test both contact materials.
+The Data Viewer has two roles.
 
-## Standardized procedure
+The description catalog shows all 129 objects with:
 
-1. Mount the TPU–gecko or TPU–silicone fingers.
+- the actual image;
+- object and image identifiers;
+- mass;
+- roughness class;
+- projected contact fraction;
+- both gripper forces;
+- both feasibility labels;
+- favored gripper;
+- generated descriptor and its structured fields;
+- descriptor source/model/signature and update time;
+- image hash and embedding status/model/dimension/hash.
+
+There is no curvature or physical surface-area CSV value to display. Curvature
+may appear in descriptor geometry, and projected contact fraction is the current
+contact proxy.
 
-2. Clean the pad under a documented procedure.
+The Pipeline Run Inspector displays saved single-run inputs and full outputs in
+a layout similar to Single Run. It includes the exact image, parameters,
+experiment toggles, execution mode, retrieval configuration, model versions,
+ground truth when valid, predictions, retrieval trace, physics outputs when
+applicable, cache telemetry, and persisted source/image hashes.
 
-3. Place the object at the fixed centered grasp location.
+### Data Preparation
 
-4. Close until initial contact.
-
-5. For gecko, apply the fixed seating/shear procedure.
-
-6. Attempt the standard lift.
-
-7. If the object fails, fully release and reset.
-
-8. Increase normal force by one fixed increment.
-
-9. Repeat until lift succeeds or the safety limit is reached.
-
-10. Repeat the entire minimum-force measurement at least three times.
-
-11. Store the median successful minimum force.
-
-James’s procedure similarly reset the grasp between increments, applied a small shear to seat the gecko adhesive, and recorded the stationary-finger load-cell value at successful lift.
-
-## Hold constant
-
-* finger geometry,
-
-* pad area,
-
-* object orientation,
-
-* grasp height,
-
-* gripper closing speed,
-
-* force increment,
-
-* gecko seating displacement,
-
-* seating duration,
-
-* lift speed,
-
-* lift height,
-
-* required hold duration,
-
-* pad cleaning procedure,
-
-* load-cell calibration.
-
-Randomize or counterbalance the order of gecko and silicone trials so pad aging and experiment timing do not correlate with one material.
-
-# 13. Train/test splitting
-
-This is critical.
-
-Both rows belonging to one object must remain in the same split:
-
-object_001 + gecko
-object_001 + silicone
-
-If one appears in training and the other appears in testing, the model effectively sees the test object’s image, mass, roughness, and geometry during training.
-
-Use grouped cross-validation:
-
-GroupKFold(groups=object_id)
-
-For stronger generalization, group visually near-identical variants together:
-
-* multiple apples,
-
-* multiple cans,
-
-* different sizes of the same bottle,
-
-* filled and empty versions of the same package.
-
-# 14. Metrics
-
-## Force prediction
-
-For each gripper:
-
-* MAE,
-
-* RMSE,
-
-* median absolute error,
-
-* percentage within 0.25 N,
-
-* percentage within 0.5 N.
-
-## Gripper selection
-
-Define the oracle:
-
-[
-
-g^*(o)
-
-======
-
-\arg\min_{g\in G_{\mathrm{feasible}}}
-
-F^*(o,g)
-
-]
-
-Measure:
-
-* gripper-selection accuracy,
-
-* gecko precision and recall,
-
-* silicone precision and recall,
-
-* infeasible-gripper selection rate.
-
-## Selection regret
-
-This is more informative than accuracy:
-
-[
-
-R(o)
-
-====
-
-## F^*(o,\hat g)
-
-F^*(o,g^*)
-
-]
-
-A model could select the “wrong” gripper while losing only 0.1 N, which is less serious than selecting a gripper requiring 3 N more.
-
-Report:
-
-* mean regret,
-
-* median regret,
-
-* worst-case regret.
-
-## Real-world execution
-
-* successful-lift rate,
-
-* slip/drop rate,
-
-* average applied normal force,
-
-* unnecessary-force ratio,
-
-* pad attachment failure,
-
-* object damage or permanent deformation.
-
-# 15. Professional VLM prompt
-
-Use one shared descriptor call, followed by two gripper-specific force calls. This is more reproducible than asking one call to reason simultaneously about everything.
-
-Provider-native JSON Schema should be used rather than relying only on “return JSON” wording. Gemini’s structured-output API, for example, can constrain responses to a supplied JSON Schema and validate them through Pydantic or Zod. ([Google AI for Developers][6])
-
-## System prompt
-
-You are a robotics grasp-material selection and pre-grasp force
-estimation model.
-TASK
-Given an object image, measured object properties, a fixed robotic
-gripper embodiment, retrieved grasping experiences, and an optional
-deterministic physics estimate, estimate the minimum stationary-finger
-normal force required to lift the object under the standardized test
-protocol.
-FORCE CONVENTION
-All force values are in newtons and refer exclusively to the normal
-force measured by the load cell mounted behind the stationary gripper
-finger. Do not double the force and do not convert it into a summed
-two-finger force.
-AVAILABLE GRIPPERS
-1. "gecko": TPU fin-ray finger with a mushroom-cap gecko-inspired
-dry adhesive contact pad.
-2. "silicone": TPU fin-ray finger with a non-adhesive high-friction
-silicone contact pad.
-MATERIAL REASONING
-Gecko adhesion depends on intimate surface contact. It is generally
-more favorable on clean, dry, smooth, nonporous surfaces with broad
-projected contact. Its benefit may decrease on rough, porous, fibrous,
-dusty, wet, oily, contaminated, or loosely coated surfaces.
-Silicone relies primarily on friction and viscoelastic surface
-interaction. It may require greater normal force on smooth surfaces,
-but can be more robust than gecko adhesion on rough, porous, fibrous,
-or poorly adhesive surfaces.
-Do not choose a gripper from roughness alone. Consider the measured
-roughness class together with mass, projected contact fraction, visible
-surface material, visible surface condition, and the retrieved
-gripper-specific experiences.
-MEASUREMENTS
-Measured mass, roughness class, and projected contact fraction are
-authoritative. Do not replace them with visual estimates. Visual
-reasoning may be used for properties not directly measured, including
-material family, porosity, fibrousness, contamination, and visible
-surface condition.
-RETRIEVED EXPERIENCES
-Retrieved experiences are empirical observations from the same
-gripper embodiment and force convention. Use them as local calibration
-examples. Favor experiences that are physically and semantically close
-to the query, but do not copy a force value without accounting for
-differences in mass, roughness, contact fraction, and surface material.
-PHYSICS ESTIMATE
-When a physics force estimate is provided, treat it as a numerical
-prior rather than guaranteed ground truth. Adjust it only when the
-retrieved experiences and visible surface evidence provide a clear
-reason.
-OUTPUT
-Return only valid JSON matching the supplied schema. The
-"reasoning_trace" field must be a concise evidence summary of at most
-three sentences. It must identify the most important measured and
-retrieved evidence; it must not contain an extended hidden
-chain-of-thought.
-
-I would retain the name `reasoning_trace` because that is what you requested, but operationally it should be an **auditable rationale**, not unrestricted internal reasoning.
-
-## Per-gripper user payload
-
-{
-"query": {
-"object_id": "query_001",
-"mass_g": 420.0,
-"roughness_class": 2,
-"projected_contact_fraction": 0.83,
-"candidate_gripper": "gecko"
-},
-"roughness_scale": {
-"1": "smoothest",
-"2": "smooth-mild",
-"3": "moderate",
-"4": "rough",
-"5": "roughest"
-},
-"physics_force_estimate_n": 1.1,
-"retrieved_experiences": [
-{
-"object_id": "experience_018",
-"mass_g": 390.0,
-"roughness_class": 2,
-"projected_contact_fraction": 0.88,
-"min_force": 1.0,
-"gripper": "gecko",
-"semantic_description": "Smooth rigid plastic cylindrical container"
-}
-],
-"force_constraints": {
-"minimum_n": 0.25,
-"maximum_n": 8.0,
-"resolution_n": 0.25
-}
-}
-
-## Per-gripper output schema
-
-{
-"candidate_gripper": "gecko",
-"visible_surface_material": "rigid plastic",
-"visible_surface_condition": "clean and dry",
-"compatibility": "high",
-"feasible": true,
-"predicted_normal_force_n": 1.25,
-"reasoning_trace": "The measured roughness class and high projected contact fraction favor broad gecko engagement. Retrieved plastic-container experiences of similar mass required approximately 1.0–1.5 N, consistent with the 1.1 N physics estimate."
-}
-
-Run that once for gecko and once for silicone.
-
-## Final deterministic output
-
-{
-"desired_gripper": "gecko",
-"predicted_normal_force_n": 1.25,
-"candidate_predictions": {
-"gecko": {
-"feasible": true,
-"predicted_normal_force_n": 1.25
-},
-"silicone": {
-"feasible": true,
-"predicted_normal_force_n": 2.5
-}
-},
-"reasoning_trace": "Both grippers are predicted to lift the object, but TPU-gecko has the lower predicted stationary-finger force and the visible surface appears compatible with dry adhesion."
-}
-
-The final selection should be made in Python, not by another VLM call:
-
-feasible = [prediction for prediction in predictions if prediction.feasible]
-if not feasible:
-selected_gripper = "none"
-else:
-selected = min(
-feasible,
-key=lambda prediction: prediction.predicted_normal_force_n
-)
-
-# 16. Technical software architecture
-
-project/
-├── data/
-│ ├── experiences.jsonl
-│ ├── images/
-│ └── splits.json
-├── perception/
-│ ├── object_descriptor.py
-│ └── projected_contact.py
-├── roughness/
-│ └── led_interface.py
-├── retrieval/
-│ ├── embedding.py
-│ ├── physical_similarity.py
-│ └── retrieve.py
-├── physics/
-│ ├── silicone_model.py
-│ ├── gecko_model.py
-│ ├── calibration.py
-│ └── solver.py
-├── prediction/
-│ ├── vlm_client.py
-│ ├── schemas.py
-│ ├── gripper_predictor.py
-│ └── selector.py
-├── learning/
-│ ├── residual_ridge.py
-│ ├── residual_boosting.py
-│ └── residual_gp.py
-├── evaluation/
-│ ├── grouped_cross_validation.py
-│ ├── force_metrics.py
-│ └── selection_metrics.py
-└── prompts/
-├── system_prompt.txt
-└── prediction_prompt.txt
-
-## Runtime flow
-
-RGB image
-│
-├── Visual-semantic descriptor
-│ └── multimodal embedding
-│
-Measured mass
-Measured roughness class
-Projected contact fraction
-│
-├── Filter gecko experiences
-│ └── hybrid score → top 5
-│ └── gecko physics model
-│ └── gecko force prediction
-│
-├── Filter silicone experiences
-│ └── hybrid score → top 5
-│ └── silicone physics model
-│ └── silicone force prediction
-│
-└── deterministic feasible-minimum selector
-├── desired gripper
-└── predicted stationary-finger force
-
-Qwen3-VL-Embedding is an appropriate open implementation for the multimodal retrieval component. Its official repository includes both embedding and reranking models, accepts mixed image/text inputs, and provides reproducible Python examples. ([GitHub][5])
-
-# 17. Open questions that still require decisions
-
-## Roughness class definition
-
-You need an explicit table describing:
-
-* what class 1 means,
-
-* what class 5 means,
-
-* whether classes are ordinal,
-
-* how repeatable classification is across object regions,
-
-* whether the class is measured at the intended grasp location.
-
-A five-class system is valid, but the labels must be physically interpretable.
-
-## Contact fraction definition
-
-Decide whether the first implementation uses:
-
-* total visible object height,
-
-* visible height at the intended grasp location,
-
-* segmentation overlap with the known pad rectangle.
-
-The second or third is much more defensible than whole-object height.
-
-## Gecko seating protocol
-
-The James equations distinguish seating from saturated adhesion. You need to determine whether your minimum-force protocol consistently reaches the saturated regime.
-
-If not, (N_{50}) becomes important and the full nonlinear model should remain.
-
-## Force increment
-
-A 0.25 N increment makes all force labels quantized to 0.25 N. The evaluation metrics and VLM output should use the same resolution.
-
-## Failure criterion
-
-Define:
-
-* lift height,
-
-* required hold time,
-
-* allowable movement,
-
-* what counts as slip,
-
-* whether partial lift counts,
-
-* maximum safe force.
-
-## Surface-condition ambiguity
-
-A single RGB image may not reliably distinguish:
-
-* dry from slightly oily,
-
-* clean from lightly dusty,
-
-* coated cardboard from uncoated cardboard,
-
-* clear adhesive film from smooth plastic.
-
-The system should be allowed to output `compatibility: "unknown"` rather than inventing certainty.
-
-## Selection objective
-
-The current objective is:
-
-[
-
-\min_g F^*(o,g)
-
-]
-
-A future deployment may need to include:
-
-* damage risk,
-
-* adhesive contamination,
-
-* pad wear,
-
-* release difficulty,
-
-* switching time between tools,
-
-* confidence or uncertainty.
-
-## Fragility
-
-Minimizing required force indirectly helps fragile objects, but it does not directly predict crushing or deformation limits. A future version might estimate a safe-force interval:
-
-[
-
-F_{\min}^{\mathrm{lift}}
-
-\le
-
-F
-
-\le
-
-F_{\max}^{\mathrm{damage}}
-
-]
-
-## Dataset size
-
-Determine how many unique objects you can test. The model must see enough coverage across:
-
-* all five roughness classes,
-
-* broad and narrow contact,
-
-* light and heavy objects,
-
-* porous and nonporous materials,
-
-* rigid and deformable packages,
-
-* gecko-favorable and silicone-favorable cases.
-
-## Repeated objects
-
-Several instances of the same category are useful, but train/test splitting must prevent nearly identical objects from appearing across folds.
-
-## Physics-model complexity
-
-You need to determine empirically whether:
-
-* the saturated linear model is sufficient,
-
-* the nonlinear (N/(N+N_{50})) seating term materially improves prediction,
-
-* roughness-specific coefficients can be estimated reliably with available data.
-
-# Overall recommendation
-
-The strongest implementation is **not**:
-
-> Give a VLM the James formula and ask it to choose gecko or silicone.
-
-It is:
-
-> Measure the physical quantities that can be measured, use a deterministic calibrated model to calculate a force prior for each gripper, retrieve five gripper-specific experiences using semantic and structured physical similarity, let the VLM interpret material and surface compatibility, and select the lower-force feasible candidate deterministically.
-
-That produces a clean scientific decomposition:
-
-* **Vision** handles semantic surface information.
-
-* **The LED system** provides roughness class.
-
-* **The scale** provides mass.
-
-* **Geometric vision** provides projected contact fraction.
-
-* **Physics** provides a numerical force prior.
-
-* **RAG** provides embodiment-specific experience.
-
-* **The VLM** resolves semantic and material ambiguities.
-
-* **Deterministic logic** performs the final gripper selection.
-
-This architecture is more accurate, more reproducible, and more defensible to reviewers than either a pure VLM or an MLP trained directly from a small dataset.
-
-[1]: https://github.com/expforcesubmission/Exp-Force-Website "https://github.com/expforcesubmission/Exp-Force-Website"
-
-[2]: https://deligrasp.github.io/ "https://deligrasp.github.io/"
-
-[3]: https://arxiv.org/html/2602.06504v1 "https://arxiv.org/html/2602.06504v1"
-
-[4]: https://docs.cloud.google.com/gemini-enterprise-agent-platform/build/vector-search/about-hybrid-search "https://docs.cloud.google.com/gemini-enterprise-agent-platform/build/vector-search/about-hybrid-search"
-
-[5]: https://github.com/QwenLM/Qwen3-VL-Embedding "https://github.com/QwenLM/Qwen3-VL-Embedding"
-
-[6]: https://ai.google.dev/gemini-api/docs/structured-output "https://ai.google.dev/gemini-api/docs/structured-output"
-
+This page builds or resumes image, descriptor, experience-row, and reference
+embedding artifacts. It also displays manifest progress and failures. It should
+be run before live evaluation when the image catalog or descriptor prompt has
+changed.
+
+### Cache Status
+
+This page explains cache location and displays preparation/cache state. Use it
+to understand why a live run was fast and whether the backend was actually
+called.
+
+### Help and Experiments
+
+This page explains the lab workflow, every experiment, what E5 with Live Gemini
+means, how to interpret output, the distinction between preparation and
+evaluation, and the synthetic-data limitation.
+
+## 17. Ground truth, selection, and metrics
+
+For every object, evaluation compares both predicted gripper forces with their
+paired labels and evaluates the selected gripper.
+
+Force metrics include:
+
+- mean absolute error (MAE);
+- root mean squared error (RMSE);
+- median absolute error;
+- fraction within `0.25 N`;
+- fraction within `0.5 N`;
+- exact force-grid rate where applicable.
+
+Selection metrics include:
+
+- gripper-selection accuracy;
+- infeasible-pick rate;
+- selection regret.
+
+Regret is:
+
+```text
+regret = true force of selected gripper - true force of oracle gripper
+```
+
+Regret captures the cost of a wrong selection better than accuracy alone. The
+current synthetic fixture always has one oracle gripper. The evaluator retains
+tie-aware logic as a general defensive behavior for future datasets, but equal
+force rows should not be generated for this fixture.
+
+Uploaded images and changed sensor values are counterfactual/custom queries.
+Their original object labels cannot be used as ground truth because the input
+has changed. The viewer therefore shows retrieval and prediction deltas from the
+unmodified baseline instead of reporting a misleading correctness score.
+
+## 18. Persistence and provenance
+
+Current derived artifacts are kept separate from the source CSV:
+
+```text
+data/expforce/dataset_2gripper.csv          source synthetic fixture
+data/expforce/images/                       downloaded RGB images
+data/expforce/descriptors/<object>.json     per-object descriptor checkpoints
+data/expforce/validation_experiences.jsonl  258 derived ExperienceRecord rows
+data/expforce/preparation_manifest.json     resumable preparation state
+data/cache/<sha256>.json                    embeddings and Gemini responses
+data/expforce/runs/<run_id>.json            exact saved single runs
+data/expforce/run_images/<sha256>.png        content-addressed uploaded/run images
+data/expforce/results/*.json                 benchmark metadata and full traces
+data/expforce/results/*.csv                  flat benchmark result tables
+```
+
+A saved run records:
+
+- schema version and run ID;
+- timestamp;
+- source CSV SHA-256;
+- leave-one-out or custom protocol;
+- experiment and exact toggles;
+- Offline or Live Gemini mode;
+- VLM and embedding model versions;
+- embedding dimension;
+- retrieval weights, sigmas, and `k`;
+- query values and image hash;
+- counterfactual status;
+- valid ground truth when available;
+- descriptor, predictions, selected gripper, retrieval trace, physics trace,
+  and cache telemetry;
+- optional baseline result for a counterfactual run.
+
+Benchmark JSON keeps the nested retrieval traces and metadata. Benchmark CSV is
+a flatter per-object table intended for sorting and plotting.
+
+## 19. Code architecture
+
+The package is deliberately flat, with one module per concern.
+
+| File | Responsibility |
+|---|---|
+| `config.yaml` | All tunables, model IDs, prompts, and experiment toggles |
+| `force_prediction/config.py` | Typed configuration loading and validation |
+| `force_prediction/contracts.py` | Pydantic data contracts, paired object views, predictions, selections |
+| `force_prediction/hardware.py` | Real device protocols and physics-backed mock hardware |
+| `force_prediction/perception.py` | Structured descriptor generation and depth/contact utilities |
+| `force_prediction/llm.py` | The only Gemini SDK boundary, retries, content cache, telemetry |
+| `force_prediction/retrieval.py` | Text embedding providers, hybrid score, paired and branch retrieval |
+| `force_prediction/physics.py` | Reduced-order models, calibration, and minimum-force solver |
+| `force_prediction/learning.py` | E6 physics-residual learner |
+| `force_prediction/prediction.py` | Joint/per-gripper VLM estimators, baselines, selector |
+| `force_prediction/pipeline.py` | Shared toggle-driven orchestration and `predict_detailed` |
+| `force_prediction/evaluation.py` | Force, feasibility, selection, and regret metrics |
+| `force_prediction/expforce.py` | Synthetic fixture validation, preparation, run persistence, benchmark |
+| `force_prediction/collect.py` | Real/mock staircase collection controller |
+| `scripts/run_experiment.py` | E1-E6 experiment runner |
+| `scripts/prepare_expforce_viewer.py` | CLI equivalent of resumable data preparation |
+| `app.py` | Local Streamlit research lab |
+
+`Pipeline.predict_detailed(...)` returns the selection plus descriptor,
+per-gripper predictions, retrieval evidence, physics estimates, and cache
+telemetry. `Pipeline.predict(...)` remains the compact public method and returns
+the same `SelectionResult`. Tests assert the two entry points make identical
+decisions.
+
+The Streamlit app and the batch evaluator call this shared `Pipeline`; they do
+not reimplement force prediction in UI-specific code.
+
+## 20. Configuration responsibilities
+
+Anything a researcher may tune should remain in `config.yaml`, including:
+
+- force convention and bounds;
+- roughness labels;
+- retrieval `k`, weights, and similarity constants;
+- embedding provider, model, and dimensionality;
+- physics coefficients and calibration bounds;
+- residual model settings;
+- Gemini model and temperature;
+- descriptor and prediction prompts;
+- E1-E6 toggle sets;
+- evaluation folds and thresholds.
+
+Do not silently hardcode alternate values in the Streamlit app, scripts, or
+pipeline. UI overrides should produce an explicit copied config that is saved
+with the run.
+
+## 21. Testing and demonstrated behavior
+
+The current offline suite has 34 passing tests. One live Gemini smoke test is
+skipped unless explicitly enabled.
+
+Coverage includes:
+
+- source CSV validation and paired conversion;
+- use of all 129 objects in the experience pool;
+- full 129-object leave-one-out benchmark offline;
+- strict E5 exclusion of physics;
+- no physics value in VLM payloads;
+- paired object deltas and payloads;
+- one E5 object retrieval and one joint VLM call;
+- agreement between `predict` and `predict_detailed`;
+- every similarity component, normalized weights, ranking, and top `k`;
+- semantic-only embedding text;
+- descriptor and embedding checkpoint resume behavior;
+- exact cache reuse and invalidation with a counting fake backend;
+- deterministic selection, infeasibility, and predicted tie handling;
+- physics monotonicity, quantization, and force-limit behavior;
+- grouped train/test splits for the non-viewer experiment runner.
+
+The key one-call test verifies that E5 invokes one paired retrieval and one
+Gemini generation for both grippers. The cache tests verify that identical
+generation or embedding requests do not make another backend call, while model,
+prompt, image, schema, payload, text, and embedding changes invalidate as
+expected.
+
+The last full verification also passed Ruff, mypy, and `git diff --check`.
+
+Use:
+
+```bash
+../../env/bin/python -m pytest
+../../env/bin/python -m ruff check .
+../../env/bin/python -m mypy force_prediction
+```
+
+The live smoke test is intentionally opt-in:
+
+```bash
+RUN_LIVE_GEMINI_TESTS=1 ../../env/bin/python -m pytest tests/test_gemini_live.py
+```
+
+## 22. Development decisions and superseded designs
+
+The following decisions are important because older notes or artifacts may
+refer to superseded behavior:
+
+- The 100-reference/29-test split was removed. The viewer now uses all 129
+  objects with leave-one-object-out evaluation for known queries.
+- Ground-truth force ties were removed from the synthetic CSV. Every object has
+  one strictly favored gripper.
+- Varying projected contact fractions were preserved. They were not replaced by
+  a constant.
+- The dataset source remains separate from generated descriptors, embeddings,
+  runs, and results.
+- The descriptor was changed from a generic object caption to a contact-region,
+  retrieval-specific structured record.
+- Descriptions and embeddings are generated once per object, not once per
+  gripper.
+- The E5 physics prior was removed. Physics belongs to E4 and E6.
+- E5 was changed from two branch retrievals and two force calls to one paired
+  object retrieval and one joint force call.
+- A temporary E5B experiment was removed. It must not be reintroduced as the
+  main architecture under another label.
+- E3 and E3b intentionally keep branch retrieval as comparison conditions.
+- The viewer now includes Help and Experiments, Data Viewer, Data Preparation,
+  Cache Status, Single Run, and 129-Object Benchmark pages.
+- Saved single runs preserve enough input, model, retrieval, and hash metadata
+  to reproduce or audit what was shown in the UI.
+
+## 23. What is still unknown
+
+The software pipeline is substantially validated, but the research result is
+not. Important unresolved questions include:
+
+- How should the roughness sensor be calibrated and mapped to the five classes?
+- How should projected contact fraction be measured reproducibly from depth and
+  the intended grasp pose?
+- Is a scalar contact fraction sufficient, or should real contact area,
+  curvature, or local compliance become explicit terms?
+- What standardized cleaning, seating, preload, lift, slip, and failure protocol
+  should be used for the gecko pad?
+- How many repeated trials are needed per object-gripper pair?
+- Should ground truth use the minimum successful trial, a robust percentile, or
+  a probabilistic success threshold?
+- How should fragile objects or object-damage constraints modify the selection
+  objective?
+- How stable are the retrieval rankings under different weights and Gemini
+  descriptor/model versions?
+- Does one joint VLM request actually improve accuracy relative to the E3
+  branch-specific baseline, beyond reducing tokens and latency?
+- Does the semantic embedding add value after controlling for mass, roughness,
+  and contact?
+- Does E6 generalize better than E5 once enough real labeled data exist?
+
+These are empirical questions. They should be answered with grouped,
+object-level held-out real data, not by tuning against the synthetic fixture.
+
+## 24. Transition to real data
+
+The real-data pipeline should preserve the same public contracts wherever
+possible:
+
+1. Collect both gripper outcomes for every object under the same protocol.
+2. Keep paired rows under one `object_id`.
+3. Record actual image, mass, roughness, contact proxy, feasibility, and minimum
+   stationary-finger force.
+4. Generate one contact-region descriptor and text embedding per object.
+5. Freeze object-grouped train/test splits before tuning.
+6. Fit retrieval weights, physics parameters, and residual models only inside
+   training folds.
+7. Compare all E1-E6 conditions under identical splits and force conventions.
+8. Report force error, selection accuracy, regret, feasibility behavior,
+   confidence intervals, and subgroup performance.
+9. Preserve model versions, prompts, source hashes, and cache provenance for
+   every reported result.
+10. Treat synthetic results only as software prevalidation.
+
+The existing data collection controller, device protocols, mock hardware, and
+`docs/data_collection_sop.md` are the starting point. Real firmware pins,
+control gains, sensor calibration, and protocol decisions still need to be
+finalized.
+
+## 25. Common commands
+
+From `GSETGripper/Force-Prediction`:
+
+```bash
+# Install and test
+../../env/bin/python -m pip install -e ".[viewer,gemini]"
+../../env/bin/python -m pytest
+
+# Build or resume the 129-object live descriptor/embedding catalog
+../../env/bin/python scripts/prepare_expforce_viewer.py --live
+
+# Start the research lab
+../../env/bin/python -m streamlit run app.py
+
+# Run configured experiments through the shared pipeline
+../../env/bin/python scripts/run_experiment.py --exp e5
+../../env/bin/python scripts/run_experiment.py --all --dry-run
+
+# Exercise synthetic hardware/data collection
+../../env/bin/python -m force_prediction.collect --mock --n 40
+```
+
+Live calls require `GEMINI_API_KEY` or `GOOGLE_API_KEY`, normally in a local
+git-ignored `.env` file.
+
+## 26. Invariants for future development
+
+Future changes should preserve these rules unless the research design is
+explicitly revised:
+
+1. Never mix force conventions or double stationary-finger force.
+2. Keep both gripper rows for an object in the same train/test group.
+3. Exclude a known query object from its own retrieval pool.
+4. Keep source data separate from generated artifacts.
+5. Generate one semantic descriptor and one reference embedding per object.
+6. Keep measured mass, roughness, and contact as explicit similarity terms.
+7. Keep E5 as one paired-object retrieval and one joint Gemini force request.
+8. Do not send a physics prior in E5.
+9. Make the final gripper decision deterministically from structured candidate
+   predictions.
+10. Put prompts and researcher-tunable constants in `config.yaml`.
+11. Persist source hashes, model versions, prompts/configuration, and retrieval
+   traces for reported experiments.
+12. Keep offline CI free of Gemini, hardware, and network requirements.
+13. Treat all current viewer accuracy as synthetic pipeline validation only.
+14. Do not score uploaded or sensor-modified counterfactuals against unchanged
+   source labels.
+15. Add or update tests whenever a cache key, experiment definition, data
+   contract, or algorithmic path changes.
+
+## 27. Current concise system statement
+
+For the proposed E5 condition, the system generates a contact-region description
+from the object image and embeds that description as a semantic representation.
+It combines semantic similarity with explicit mass, roughness, and projected
+contact similarities to retrieve the five most similar reference objects. Each
+reference object contributes both its gecko and silicone force outcomes. A
+single structured Gemini request uses the query image, authoritative measured
+properties, and paired retrieval evidence to predict the minimum force and
+feasibility for both grippers. The software then selects the lower-force
+feasible gripper deterministically. The current 129-object dataset and all
+reported results are synthetic and are used to validate this complete software
+flow before the same protocol is applied to real robot data.

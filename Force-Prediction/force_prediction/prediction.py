@@ -1,10 +1,11 @@
-"""Per-gripper force estimators + the deterministic selector.
+"""Force estimators plus the deterministic selector.
 
 Three estimators, all returning the same `PerGripperPrediction` contract so the
 pipeline can swap them by experiment toggle without branching logic elsewhere:
 
-  vlm_predict_gripper       — Gemini structured output (E1/E2/E3/E5); a
+  vlm_predict_gripper       — Gemini structured output (E1/E2/E3); a
                               physics/retrieval-grounded stub under dry_run.
+  vlm_predict_paired        — one joint Gemini response for both E5 grippers.
   retrieval_average_predict — similarity-weighted average of top-k forces (E3b).
   physics_predict           — straight from the calibrated physics solver (E4).
 
@@ -22,12 +23,14 @@ from .contracts import (
     CandidateQuery,
     Compatibility,
     Gripper,
+    PairedGripperPrediction,
     PerGripperPrediction,
+    Query,
     SelectionResult,
 )
 from .llm import get_client
 from .physics import PhysicsEstimate
-from .retrieval import RetrievedExperience, normalized_weights
+from .retrieval import RetrievedExperience, RetrievedObjectExperience, normalized_weights
 
 
 def _force_constraints(cfg: Config) -> dict:
@@ -95,6 +98,95 @@ def vlm_predict_gripper(
     pred.candidate_gripper = query.candidate_gripper  # trust our binding, not the model's
     pred.predicted_normal_force_n = _quantize(pred.predicted_normal_force_n, cfg)
     return pred
+
+
+def vlm_predict_paired(
+    cfg: Config,
+    query: Query,
+    image_bgr: np.ndarray | None,
+    retrieved: list[RetrievedObjectExperience],
+    include_measured: bool = True,
+) -> dict[Gripper, PerGripperPrediction]:
+    """Predict both grippers from one paired-object context and one VLM call."""
+    query_block: dict = {"object_id": query.object_id}
+    if include_measured:
+        query_block.update(
+            mass_g=query.mass_g,
+            roughness_class=query.roughness_class,
+            projected_contact_fraction=query.projected_contact_fraction,
+        )
+    payload = {
+        "query": query_block,
+        "roughness_scale": cfg.roughness.labels,
+        "retrieved_objects": [item.to_payload() for item in retrieved],
+        "retrieval_config": {
+            "normalized_weights": normalized_weights(cfg),
+            "sigma_mass": cfg.retrieval.sigma_mass,
+            "sigma_contact": cfg.retrieval.sigma_contact,
+        },
+        "force_constraints": _force_constraints(cfg),
+    }
+    if cfg.models.dry_run:
+        return {
+            gripper: _paired_retrieval_average_predict(cfg, query, retrieved, gripper)
+            for gripper in (Gripper.GECKO, Gripper.SILICONE)
+        }
+
+    raw = get_client(cfg).generate_json(
+        system=cfg.prompts.system,
+        instruction=cfg.prompts.paired_gripper_instruction,
+        schema=PairedGripperPrediction,
+        image_bgr=image_bgr,
+        extra=payload,
+    )
+    response = PairedGripperPrediction.model_validate(raw)
+    predictions = {
+        Gripper.GECKO: response.gecko,
+        Gripper.SILICONE: response.silicone,
+    }
+    for gripper, prediction in predictions.items():
+        prediction.candidate_gripper = gripper
+        prediction.predicted_normal_force_n = _quantize(
+            prediction.predicted_normal_force_n, cfg
+        )
+    return predictions
+
+
+def _paired_retrieval_average_predict(
+    cfg: Config,
+    query: Query,
+    retrieved: list[RetrievedObjectExperience],
+    gripper: Gripper,
+) -> PerGripperPrediction:
+    force_field = (
+        "gecko_min_force_n" if gripper is Gripper.GECKO else "silicone_min_force_n"
+    )
+    feasible_field = "gecko_feasible" if gripper is Gripper.GECKO else "silicone_feasible"
+    usable = [
+        item
+        for item in retrieved
+        if getattr(item, feasible_field) and getattr(item, force_field) is not None
+    ]
+    if not usable:
+        return PerGripperPrediction(
+            candidate_gripper=gripper,
+            feasible=False,
+            predicted_normal_force_n=cfg.force.limit_n,
+            reasoning_trace="no feasible paired neighbors",
+        )
+    weights = np.asarray([max(0.0, item.score) for item in usable], dtype=float)
+    if weights.sum() <= 0:
+        weights = np.ones_like(weights)
+    forces = np.asarray([getattr(item, force_field) for item in usable], dtype=float)
+    estimate = float((weights * forces).sum() / weights.sum())
+    return PerGripperPrediction(
+        candidate_gripper=gripper,
+        feasible=True,
+        predicted_normal_force_n=_quantize(estimate, cfg),
+        reasoning_trace=(
+            "offline similarity-weighted estimate from the shared paired-object neighbors"
+        ),
+    )
 
 
 def _stub_prediction(

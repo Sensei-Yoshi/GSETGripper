@@ -87,3 +87,34 @@ def test_payload_paired_toggle():
     r = index.retrieve(q, qv, Gripper.SILICONE)[0]
     assert "other_gripper_min_force_n" in r.to_payload(include_paired=True)
     assert "other_gripper_min_force_n" not in r.to_payload(include_paired=False)
+
+
+def test_object_retrieval_ranks_once_and_carries_both_gripper_labels():
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = True
+    cfg.retrieval.k = 5
+    records = fabricate_records(cfg, 20)
+    index = ExperienceIndex(cfg).fit(records)
+    probe = records[0]
+    query = Query(
+        object_id=probe.object_id,
+        image_path="",
+        mass_g=probe.mass_g,
+        roughness_class=probe.roughness_class,
+        projected_contact_fraction=probe.projected_contact_fraction,
+        semantic_description=probe.semantic_description,
+    )
+
+    results = index.retrieve_objects(
+        query,
+        index.embed_query(query),
+        exclude_object_id=probe.object_id,
+    )
+
+    assert len(results) == 5
+    assert len({item.object_id for item in results}) == 5
+    assert all(item.object_id != probe.object_id for item in results)
+    assert all(item.gecko_min_force_n is not None for item in results)
+    assert all(item.silicone_min_force_n is not None for item in results)
+    assert results == sorted(results, key=lambda item: (-item.score, item.object_id))
+    assert [item.rank for item in results] == [1, 2, 3, 4, 5]

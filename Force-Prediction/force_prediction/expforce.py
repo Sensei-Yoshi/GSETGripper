@@ -469,11 +469,16 @@ def _retrieval_payload(detailed: PipelineRunResult) -> dict:
     }
 
 
+def _object_retrieval_payload(detailed: PipelineRunResult) -> list[dict]:
+    return [item.model_dump(mode="json") for item in detailed.retrieved_objects]
+
+
 def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
     return {
         "selection": detailed.selection.model_dump(mode="json"),
         "semantic_description": detailed.semantic_description,
         "retrieved": _retrieval_payload(detailed),
+        "retrieved_objects": _object_retrieval_payload(detailed),
         "physics_estimates": detailed.physics_estimates,
         "cache_stats": detailed.cache_stats,
     }
@@ -481,7 +486,7 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
 
 def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
     from .contracts import SelectionResult
-    from .retrieval import RetrievedExperience
+    from .retrieval import RetrievedExperience, RetrievedObjectExperience
 
     return PipelineRunResult(
         selection=SelectionResult.model_validate(payload["selection"]),
@@ -490,6 +495,10 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
             gripper: [RetrievedExperience.model_validate(item) for item in items]
             for gripper, items in payload.get("retrieved", {}).items()
         },
+        retrieved_objects=[
+            RetrievedObjectExperience.model_validate(item)
+            for item in payload.get("retrieved_objects", [])
+        ],
         physics_estimates=payload.get("physics_estimates", {}),
         cache_stats=payload.get("cache_stats", {}),
     )
@@ -529,7 +538,7 @@ def save_pipeline_run(
 
     run_id = f"{created_at.strftime('%Y%m%dT%H%M%S%fZ')}_{experiment}_{query['object_id']}"
     artifact = {
-        "schema_version": 1,
+        "schema_version": 2,
         "run_id": run_id,
         "created_at": created_at.isoformat(),
         "source_sha256": source_sha256(cfg),
@@ -628,6 +637,7 @@ def run_benchmark(
             "regret_n": regret,
             "semantic_description": detailed.semantic_description,
             "retrieval": _retrieval_payload(detailed),
+            "retrieved_objects": _object_retrieval_payload(detailed),
             "physics_estimates": detailed.physics_estimates,
             "cache_stats": detailed.cache_stats,
         }
@@ -671,7 +681,11 @@ def save_benchmark(cfg: Config, benchmark: BenchmarkResult) -> tuple[Path, Path]
         )
         + "\n"
     )
-    flat_fields = [key for key in benchmark.rows[0] if key not in {"retrieval", "cache_stats"}]
+    flat_fields = [
+        key
+        for key in benchmark.rows[0]
+        if key not in {"retrieval", "retrieved_objects", "cache_stats"}
+    ]
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=flat_fields, extrasaction="ignore")
         writer.writeheader()

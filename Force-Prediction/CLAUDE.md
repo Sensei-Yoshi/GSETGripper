@@ -32,23 +32,22 @@ VLM) and **DeliGrasp** (LLM-inferred physics params → controller). Physics is 
 - **Flat package** `force_prediction/`, one module per concern, no sub-packages.
 - **`config.yaml` is the SINGLE source of tuning:** retrieval weights, physics coefficients,
   model IDs, the **prompts**, and the **E1–E6 experiment toggle-sets**. Never hardcode a tunable.
-- **One `pipeline.py`** drives every experiment; E1–E6 differ *only* by toggles
-  (`use_measured/use_retrieval/use_paired_rows/use_physics/use_vlm/use_residual`). No per-experiment code.
+- **One `pipeline.py`** drives every experiment; conditions differ *only* by toggles
+  (`use_measured/use_retrieval/use_paired_rows/use_physics/use_vlm/use_residual`).
 - **Mock-first:** physics-backed mocks in `hardware.py` + `dry_run` LLM stubs → the whole stack
   and all experiments run **offline with no hardware and no API key**.
-- **Data flow:** measured mass + LED roughness class + depth-derived contact fraction →
-  calibrated physics prior (`physics.py`) + gripper-branched hybrid RAG (`retrieval.py`, with
-  paired gecko↔silicone force deltas) → Gemini VLM resolves surface/material semantics
-  (`prediction.py`) → deterministic feasible arg-min selector.
+- **E5 data flow:** measured mass + LED roughness class + depth-derived contact fraction →
+  one hybrid object-level retrieval with paired gecko/silicone outcomes → one structured
+  Gemini response containing both force predictions → deterministic feasible arg-min selector.
 
 ## Module map
 | File | Role |
 |------|------|
 | `config.py` / `config.yaml` | typed config loader / all tunables + prompts + experiment toggles |
-| `contracts.py` | Pydantic models: `ExperienceRecord`, paired `ObjectRecord`, `Query`, `PerGripperPrediction`, `SelectionResult` |
+| `contracts.py` | Pydantic models: records, paired object view, joint/per-gripper predictions, selection result |
 | `hardware.py` | device `Protocol`s + real serial drivers + physics-backed mocks + `fabricate_records` |
 | `physics.py` | James reduced-order model (silicone/gecko), Brent solver, per-fold calibration |
-| `retrieval.py` | embedding providers + similarity + hybrid rerank + gripper-branch filter + paired rows |
+| `retrieval.py` | embedding providers + hybrid similarity + E5 paired-object retrieval + branch baselines |
 | `perception.py` | Gemini descriptor + depth height-ratio contact-fraction proxy |
 | `llm.py` | single Gemini client (structured JSON + embeddings), disk cache, retries, `.env` loader |
 | `prediction.py` | VLM estimator + non-VLM baselines + deterministic `select()` |
@@ -107,9 +106,9 @@ $VENV -m streamlit run app.py                              # local validation vi
 ```
 
 ## Status — what's proven vs pending
-- **Offline:** every module + all E1–E6 run; **27 offline pytest green** plus Streamlit UI smoke.
+- **Offline:** every module + all configured experiments run; **34 offline pytest green** plus Streamlit UI smoke.
 - **Synthetic viewer:** the paired Exp-Force fixture has one strict winner per object, a 129-object
-  experience pool with leave-one-out evaluation, detailed top-7 retrieval traces, cache telemetry,
+  experience pool with leave-one-out evaluation, detailed top-5 retrieval traces, cache telemetry,
   and persisted JSON/CSV benchmark results. It validates plumbing, not physical performance.
 - **Prior live POC:** full Gemini stack ran on provisional **Exp-Force** fixture data (descriptor + `gemini-embedding-2`
   asymmetric retrieval + structured force prediction + GroupKFold). 6-object POC **MAE 0.083 N**
@@ -132,5 +131,5 @@ $VENV -m streamlit run app.py                              # local validation vi
 - Full future-work list: `docs/backlog.md`.
 
 ## Reference
-`docs/experiments.md` (E1–E6 protocol), `docs/backlog.md`, `docs/data_collection_sop.md`,
+`docs/experiments.md` (experiment protocol), `docs/backlog.md`, `docs/data_collection_sop.md`,
 `docs/project-context.md` (original design rationale), `README.md`.

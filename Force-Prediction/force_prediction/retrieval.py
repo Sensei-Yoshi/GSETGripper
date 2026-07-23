@@ -1,11 +1,8 @@
-"""Gripper-branched hybrid retrieval with paired-row augmentation.
+"""Hybrid retrieval over semantic descriptions and measured object properties.
 
-Pipeline: embed each experience once (semantic description + physical text) →
-persist; at query time embed the query, then within a HARD gripper branch rank by
-    S = w_s*cos + w_m*S_mass + w_r*S_roughness + w_a*S_contact
-and take the top-k. Each retrieved experience is augmented with the SAME object's
-force on the OTHER gripper (the paired-row enhancement) so the predictor can see
-the gecko<->silicone crossover delta. Exact search (dataset < 1k rows); no vector DB.
+E5 ranks paired objects once and returns both gripper labels for every neighbor.
+E3/E3b retain gripper-branch retrieval as experimental baselines. Exact search is
+appropriate for this dataset (<1k objects), so no vector database is required.
 """
 
 from __future__ import annotations
@@ -180,6 +177,27 @@ class RetrievedExperience(BaseModel):
         return payload
 
 
+class RetrievedObjectExperience(BaseModel):
+    """One object-level neighbor with its paired gecko and silicone labels."""
+
+    object_id: str
+    image_path: str
+    mass_g: float
+    roughness_class: int
+    projected_contact_fraction: float
+    semantic_description: str
+    gecko_min_force_n: float | None = None
+    gecko_feasible: bool | None = None
+    silicone_min_force_n: float | None = None
+    silicone_feasible: bool | None = None
+    score: float
+    rank: int = 0
+    similarity: SimilarityBreakdown
+
+    def to_payload(self) -> dict:
+        return self.model_dump(mode="json", exclude={"image_path"})
+
+
 # --------------------------------------------------------------------------- #
 # Index
 # --------------------------------------------------------------------------- #
@@ -192,6 +210,7 @@ class ExperienceIndex:
         self.records: list[ExperienceRecord] = []
         self.objects: dict[str, ObjectRecord] = {}
         self.vectors: dict[str, np.ndarray] = {}
+        self.object_vectors: dict[str, np.ndarray] = {}
 
     @staticmethod
     def _key(rec: ExperienceRecord) -> str:
@@ -209,7 +228,44 @@ class ExperienceIndex:
             if text not in embedded:
                 embedded[text] = self.provider.embed(text)
             self.vectors[self._key(rec)] = embedded[text]
+        for object_id, obj in self.objects.items():
+            representative = obj.gecko or obj.silicone
+            if representative is not None:
+                self.object_vectors[object_id] = self.vectors[self._key(representative)]
         return self
+
+    def _score(
+        self,
+        query: Query,
+        query_vec: np.ndarray,
+        rec: ExperienceRecord,
+        reference_vec: np.ndarray,
+    ) -> SimilarityBreakdown:
+        w = normalized_weights(self.cfg)
+        semantic = cosine(query_vec, reference_vec)
+        mass = s_mass(query.mass_g, rec.mass_g, self.cfg.retrieval.sigma_mass)
+        roughness = s_roughness(query.roughness_class, rec.roughness_class, self.cfg)
+        contact = s_contact(
+            query.projected_contact_fraction,
+            rec.projected_contact_fraction,
+            self.cfg.retrieval.sigma_contact,
+        )
+        return SimilarityBreakdown(
+            semantic=semantic,
+            mass=mass,
+            roughness=roughness,
+            contact=contact,
+            semantic_contribution=w["semantic"] * semantic,
+            mass_contribution=w["mass"] * mass,
+            roughness_contribution=w["roughness"] * roughness,
+            contact_contribution=w["contact"] * contact,
+            total=(
+                w["semantic"] * semantic
+                + w["mass"] * mass
+                + w["roughness"] * roughness
+                + w["contact"] * contact
+            ),
+        )
 
     def embed_query(self, query: Query) -> np.ndarray:
         text = build_embedding_text(
@@ -226,7 +282,6 @@ class ExperienceIndex:
         k: int | None = None,
         exclude_object_id: str | None = None,
     ) -> list[RetrievedExperience]:
-        w = normalized_weights(self.cfg)
         k = k or self.cfg.retrieval.k
         scored: list[RetrievedExperience] = []
         for rec in self.records:
@@ -234,30 +289,7 @@ class ExperienceIndex:
                 continue
             if exclude_object_id is not None and rec.object_id == exclude_object_id:
                 continue
-            semantic = cosine(query_vec, self.vectors[self._key(rec)])
-            mass = s_mass(query.mass_g, rec.mass_g, self.cfg.retrieval.sigma_mass)
-            roughness = s_roughness(query.roughness_class, rec.roughness_class, self.cfg)
-            contact = s_contact(
-                query.projected_contact_fraction,
-                rec.projected_contact_fraction,
-                self.cfg.retrieval.sigma_contact,
-            )
-            breakdown = SimilarityBreakdown(
-                semantic=semantic,
-                mass=mass,
-                roughness=roughness,
-                contact=contact,
-                semantic_contribution=w["semantic"] * semantic,
-                mass_contribution=w["mass"] * mass,
-                roughness_contribution=w["roughness"] * roughness,
-                contact_contribution=w["contact"] * contact,
-                total=(
-                    w["semantic"] * semantic
-                    + w["mass"] * mass
-                    + w["roughness"] * roughness
-                    + w["contact"] * contact
-                ),
-            )
+            breakdown = self._score(query, query_vec, rec, self.vectors[self._key(rec)])
             obj = self.objects.get(rec.object_id)
             other_force = obj.other_gripper_force(rec.gripper) if obj else None
             other = obj.get(rec.gripper.other()) if obj else None
@@ -271,6 +303,47 @@ class ExperienceIndex:
                 )
             )
         scored.sort(key=lambda x: x.score, reverse=True)
+        top = scored[:k]
+        for rank, item in enumerate(top, start=1):
+            item.rank = rank
+        return top
+
+    def retrieve_objects(
+        self,
+        query: Query,
+        query_vec: np.ndarray,
+        k: int | None = None,
+        exclude_object_id: str | None = None,
+    ) -> list[RetrievedObjectExperience]:
+        """Rank each object once and expose both gripper outcomes in one result."""
+        k = k or self.cfg.retrieval.k
+        scored: list[RetrievedObjectExperience] = []
+        for object_id, obj in self.objects.items():
+            if object_id == exclude_object_id:
+                continue
+            rec = obj.gecko or obj.silicone
+            if rec is None:
+                continue
+            breakdown = self._score(
+                query, query_vec, rec, self.object_vectors[object_id]
+            )
+            scored.append(
+                RetrievedObjectExperience(
+                    object_id=object_id,
+                    image_path=rec.image_path,
+                    mass_g=rec.mass_g,
+                    roughness_class=rec.roughness_class,
+                    projected_contact_fraction=rec.projected_contact_fraction,
+                    semantic_description=rec.semantic_description,
+                    gecko_min_force_n=obj.gecko.min_force_n if obj.gecko else None,
+                    gecko_feasible=obj.gecko.feasible if obj.gecko else None,
+                    silicone_min_force_n=obj.silicone.min_force_n if obj.silicone else None,
+                    silicone_feasible=obj.silicone.feasible if obj.silicone else None,
+                    score=breakdown.total,
+                    similarity=breakdown,
+                )
+            )
+        scored.sort(key=lambda item: (-item.score, item.object_id))
         top = scored[:k]
         for rank, item in enumerate(top, start=1):
             item.rank = rank

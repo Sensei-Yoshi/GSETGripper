@@ -74,7 +74,6 @@ def _run_config(
 ) -> Config:
     cfg = base.model_copy(deep=True)
     cfg.models.dry_run = not live
-    cfg.retrieval.k = 7
     cfg.retrieval.weights.semantic = semantic
     cfg.retrieval.weights.mass = mass
     cfg.retrieval.weights.roughness = roughness
@@ -150,6 +149,31 @@ def _retrieval_table(result: PipelineRunResult, gripper: str) -> pd.DataFrame:
                 "contact_fraction": item.record.projected_contact_fraction,
                 f"{gripper}_force_n": item.record.min_force_n,
                 "paired_force_n": item.other_gripper_min_force_n,
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def _paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
+    rows = []
+    for item in result.retrieved_objects:
+        sim = item.similarity
+        rows.append(
+            {
+                "rank": item.rank,
+                "object": item.object_id.replace("_", " "),
+                "score": item.score,
+                "semantic": sim.semantic,
+                "mass": sim.mass,
+                "roughness": sim.roughness,
+                "contact": sim.contact,
+                "mass_g": item.mass_g,
+                "roughness_class": item.roughness_class,
+                "contact_fraction": item.projected_contact_fraction,
+                "gecko_force_n": item.gecko_min_force_n,
+                "gecko_feasible": item.gecko_feasible,
+                "silicone_force_n": item.silicone_min_force_n,
+                "silicone_feasible": item.silicone_feasible,
             }
         )
     return pd.DataFrame(rows)
@@ -264,8 +288,27 @@ def _render_prediction(
                 st.caption("Physics model: not used by this experiment")
             st.write(pred.reasoning_trace or "No reasoning trace for this experiment.")
 
-    st.subheader("Top seven reference matches")
-    if any(detailed.retrieved.values()):
+    st.subheader(f"Top {cfg.retrieval.k} reference matches")
+    if detailed.retrieved_objects:
+        if cfg.models.dry_run:
+            st.caption(
+                "E5 retrieves each object once with both gripper outcomes. Offline mode "
+                "uses the deterministic paired-neighbor stand-in and makes no VLM request."
+            )
+        else:
+            st.caption(
+                "E5 retrieves each object once. Both gripper outcomes come from the same "
+                "paired experience and are sent together in one VLM request."
+            )
+        st.dataframe(
+            _paired_retrieval_table(detailed),
+            hide_index=True,
+            width="stretch",
+            column_config={key: st.column_config.NumberColumn(format="%.3f") for key in (
+                "score", "semantic", "mass", "roughness", "contact"
+            )},
+        )
+    elif any(detailed.retrieved.values()):
         gecko_tab, silicone_tab = st.tabs(["Gecko branch", "Silicone branch"])
         with gecko_tab:
             st.dataframe(
@@ -484,7 +527,6 @@ def benchmark_view(base_cfg: Config) -> None:
     if run:
         cfg = base_cfg.model_copy(deep=True)
         cfg.models.dry_run = mode != "Live Gemini"
-        cfg.retrieval.k = 7
         progress_bar = right.progress(0.0)
         status = right.empty()
 
@@ -834,7 +876,7 @@ def help_view(base_cfg: Config) -> None:
 4. Choose an experiment and **Offline** or **Live Gemini**. Adjust retrieval weights and
    similarity constants when the selected experiment uses retrieval.
 5. Click **Run pipeline**. Read the selected gripper and force first, then compare both
-   branches, evidence summaries, and top-seven matches.
+   predictions, evidence summaries, and the top-five matches.
 6. Use **129-Object Benchmark** for leave-one-object-out evaluation. Use **Data Viewer**
    to inspect every image/description and saved run, and use
    **Cache Status** to confirm that repeated Gemini requests are being reused.
@@ -871,8 +913,8 @@ def help_view(base_cfg: Config) -> None:
             },
             {
                 "Experiment": "E5",
-                "Uses": "Sensors + retrieval + paired rows + VLM",
-                "Meaning": "Full VLM method without physics. Python selects the lower feasible prediction.",
+                "Uses": "Sensors + paired-object retrieval + one VLM call",
+                "Meaning": "Retrieves objects once with both force labels. Python selects the lower feasible prediction.",
             },
             {
                 "Experiment": "E6",
@@ -883,19 +925,20 @@ def help_view(base_cfg: Config) -> None:
     )
     st.dataframe(experiments, hide_index=True, width="stretch")
     st.caption(
-        "Useful comparisons: E5 vs E3 tests paired other-gripper rows; E3 vs E3b tests "
-        "the VLM contribution; E4 vs E6 tests the learned residual over physics."
+        "Useful comparisons: E5 vs E3 tests the complete paired-object method against "
+        "same-gripper experiential retrieval; E3 vs E3b tests the VLM contribution; "
+        "E4 vs E6 tests the learned residual over physics."
     )
 
     st.header("What E5 + Live Gemini means")
     st.markdown(
         """
-For a known dataset object, the pipeline excludes that object and uses the other 128 experiences.
+For a known dataset object, the pipeline excludes that object and uses the other 128 objects.
 For a custom query, it uses all 129. It reuses one cached text embedding per reference object for
 both grippers, embeds the query description, and ranks references with the displayed hybrid
-similarity. It retrieves seven matches for each gripper and adds each matched object's paired
-other-gripper force. Gemini then makes two structured force estimates, one for gecko and one for
-silicone. E5 does not construct or send a physics estimate. Python selects the lower feasible
+similarity. It retrieves five objects once, with both gecko and silicone outcomes attached to
+each object. One Gemini request returns the two structured force estimates. E5 does not construct
+or send a physics estimate. Python selects the lower feasible
 predicted force and explicitly reports a prediction tie when quantization makes the forces equal.
 
 **Live Gemini** means Gemini-backed descriptor, embedding, and VLM stages are allowed to make

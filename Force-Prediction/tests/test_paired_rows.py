@@ -1,7 +1,13 @@
 from __future__ import annotations
 
 from force_prediction.config import load_config
-from force_prediction.contracts import Gripper, Query, group_by_object
+from force_prediction.contracts import (
+    Gripper,
+    PairedGripperPrediction,
+    PerGripperPrediction,
+    Query,
+    group_by_object,
+)
 from force_prediction.hardware import fabricate_records
 from force_prediction.pipeline import Pipeline, query_input_from_object
 from force_prediction.retrieval import ExperienceIndex, build_embedding_text
@@ -37,7 +43,7 @@ def test_e5_pipeline_runs_end_to_end():
 def test_detailed_pipeline_preserves_selection_and_exposes_trace():
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = True
-    cfg.retrieval.k = 7
+    cfg.retrieval.k = 5
     records = fabricate_records(cfg, 30)
     held = records[0].object_id
     train = [r for r in records if r.object_id != held]
@@ -50,5 +56,63 @@ def test_detailed_pipeline_preserves_selection_and_exposes_trace():
 
     assert detailed.selection == ordinary
     assert set(detailed.retrieved) == {"gecko", "silicone"}
-    assert all(len(items) == 7 for items in detailed.retrieved.values())
+    assert all(not items for items in detailed.retrieved.values())
+    assert len(detailed.retrieved_objects) == 5
+    assert len({item.object_id for item in detailed.retrieved_objects}) == 5
+    assert all(item.gecko_min_force_n is not None for item in detailed.retrieved_objects)
+    assert all(item.silicone_min_force_n is not None for item in detailed.retrieved_objects)
     assert set(detailed.physics_estimates) == {"gecko", "silicone"}
+
+
+def test_e5_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = False
+    cfg.retrieval.embedding.provider = "mock"
+    cfg.retrieval.k = 5
+    records = fabricate_records(cfg, 20)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+    captured = {}
+
+    class CountingClient:
+        generation_calls = 0
+
+        def generate_json(self, **kwargs):
+            self.generation_calls += 1
+            captured.update(kwargs)
+            return PairedGripperPrediction(
+                gecko=PerGripperPrediction(
+                    candidate_gripper=Gripper.SILICONE,
+                    predicted_normal_force_n=0.8,
+                    reasoning_trace="joint gecko evidence",
+                ),
+                silicone=PerGripperPrediction(
+                    candidate_gripper=Gripper.GECKO,
+                    predicted_normal_force_n=1.3,
+                    reasoning_trace="joint silicone evidence",
+                ),
+            ).model_dump(mode="json")
+
+        def cache_stats(self):
+            return {"backend_attempts": {"generation": self.generation_calls, "embedding": 0}}
+
+    client = CountingClient()
+    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("force_prediction.pipeline.get_client", lambda _cfg: client)
+
+    pipe = Pipeline(cfg, cfg.experiment("e5")).fit(train)
+    detailed = pipe.predict_detailed(query_input_from_object(test, cfg))
+
+    assert client.generation_calls == 1
+    assert captured["schema"] is PairedGripperPrediction
+    paired_payload = captured["extra"]["retrieved_objects"]
+    assert len(paired_payload) == 5
+    assert all("gecko_min_force_n" in item for item in paired_payload)
+    assert all("silicone_min_force_n" in item for item in paired_payload)
+    assert all("image_path" not in item for item in paired_payload)
+    assert "retrieved_experiences" not in captured["extra"]
+    assert detailed.selection.candidate_predictions["gecko"].candidate_gripper is Gripper.GECKO
+    assert detailed.selection.candidate_predictions["silicone"].candidate_gripper is Gripper.SILICONE
+    assert detailed.selection.candidate_predictions["gecko"].predicted_normal_force_n == 1.0
+    assert detailed.selection.candidate_predictions["silicone"].predicted_normal_force_n == 1.5

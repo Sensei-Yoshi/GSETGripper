@@ -63,7 +63,7 @@ def run_experiment(name: str, records, cfg, folds) -> dict:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--exp", default="e5", help="Experiment id (e1..e6).")
+    p.add_argument("--exp", default="e5", help="Experiment id (e1..e6, including e3b).")
     p.add_argument("--all", action="store_true", help="Run every experiment.")
     p.add_argument("--dry-run", action="store_true", help="Force offline (no paid calls).")
     p.add_argument("--refresh-splits", action="store_true", help="Regenerate splits.json.")

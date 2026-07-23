@@ -37,11 +37,13 @@ from .prediction import (
     retrieval_average_predict,
     select,
     vlm_predict_gripper,
+    vlm_predict_paired,
 )
 from .retrieval import (
     EmbeddingProvider,
     ExperienceIndex,
     RetrievedExperience,
+    RetrievedObjectExperience,
     build_embedding_text,
     get_embedding_provider,
 )
@@ -69,6 +71,7 @@ class PipelineRunResult:
     selection: SelectionResult
     semantic_description: str
     retrieved: dict[str, list[RetrievedExperience]]
+    retrieved_objects: list[RetrievedObjectExperience]
     physics_estimates: dict[str, dict[str, Any] | None]
     cache_stats: dict[str, Any]
 
@@ -161,22 +164,47 @@ class Pipeline:
 
         predictions: dict[Gripper, PerGripperPrediction] = {}
         retrieval_trace: dict[str, list[RetrievedExperience]] = {}
+        paired_retrieval_trace: list[RetrievedObjectExperience] = []
         physics_trace: dict[str, dict[str, Any] | None] = {}
-        for gripper in GRIPPERS:
-            cq = CandidateQuery(**query.model_dump(), candidate_gripper=gripper)
-            physics_est = None
-            if (self.t.use_physics or self.t.use_residual) and self.physics is not None:
-                physics_est = self.physics.min_force(
-                    gripper, q.mass_g, q.roughness_class, q.projected_contact_fraction
+        if (
+            self.t.use_paired_rows
+            and self.t.use_retrieval
+            and self.t.use_vlm
+            and self.index is not None
+            and query_vec is not None
+        ):
+            paired_retrieval_trace = self.index.retrieve_objects(
+                query, query_vec, exclude_object_id=q.object_id
+            )
+            predictions = vlm_predict_paired(
+                self.cfg,
+                query,
+                q.image_bgr,
+                paired_retrieval_trace,
+                include_measured=self.t.use_measured,
+            )
+            retrieval_trace = {gripper.value: [] for gripper in GRIPPERS}
+            physics_trace = {gripper.value: None for gripper in GRIPPERS}
+        else:
+            for gripper in GRIPPERS:
+                cq = CandidateQuery(**query.model_dump(), candidate_gripper=gripper)
+                physics_est = None
+                if (self.t.use_physics or self.t.use_residual) and self.physics is not None:
+                    physics_est = self.physics.min_force(
+                        gripper, q.mass_g, q.roughness_class, q.projected_contact_fraction
+                    )
+                retrieved: list[RetrievedExperience] = []
+                if self.t.use_retrieval and self.index is not None and query_vec is not None:
+                    retrieved = self.index.retrieve(
+                        query, query_vec, gripper, exclude_object_id=q.object_id
+                    )
+                retrieval_trace[gripper.value] = retrieved
+                physics_trace[gripper.value] = (
+                    asdict(physics_est) if physics_est is not None else None
                 )
-            retrieved: list[RetrievedExperience] = []
-            if self.t.use_retrieval and self.index is not None and query_vec is not None:
-                retrieved = self.index.retrieve(
-                    query, query_vec, gripper, exclude_object_id=q.object_id
+                predictions[gripper] = self._predict_one(
+                    cq, q.image_bgr, retrieved, physics_est, query_vec
                 )
-            retrieval_trace[gripper.value] = retrieved
-            physics_trace[gripper.value] = asdict(physics_est) if physics_est is not None else None
-            predictions[gripper] = self._predict_one(cq, q.image_bgr, retrieved, physics_est, query_vec)
         cache_stats: dict[str, Any] = {}
         if not self.cfg.models.dry_run:
             cache_stats = get_client(self.cfg).cache_stats()
@@ -184,6 +212,7 @@ class Pipeline:
             selection=select(predictions),
             semantic_description=query.semantic_description,
             retrieved=retrieval_trace,
+            retrieved_objects=paired_retrieval_trace,
             physics_estimates=physics_trace,
             cache_stats=cache_stats,
         )

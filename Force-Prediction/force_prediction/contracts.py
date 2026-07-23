@@ -149,6 +149,13 @@ class PerGripperPrediction(BaseModel):
     reasoning_trace: str = ""
 
 
+class PairedGripperPrediction(BaseModel):
+    """One structured VLM response containing both candidate force estimates."""
+
+    gecko: PerGripperPrediction
+    silicone: PerGripperPrediction
+
+
 class SelectionResult(BaseModel):
     """Final deterministic selection across candidate grippers."""
 

@@ -126,6 +126,7 @@ class Prompts(BaseModel):
     system: str
     descriptor: str
     per_gripper_instruction: str
+    paired_gripper_instruction: str
 
 
 class ExperimentToggles(BaseModel):
