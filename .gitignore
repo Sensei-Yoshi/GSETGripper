@@ -14,3 +14,6 @@ camera/captures/
 
 # External SDK clone (see README)
 pyorbbecsdk-v1/
+
+# Editor config — machine-specific Arduino toolchain paths
+.vscode/
