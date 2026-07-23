@@ -537,6 +537,11 @@ def benchmark_view(base_cfg: Config) -> None:
 
 def _description_catalog(base_cfg: Config, rows: list) -> None:
     prepared = load_prepared_descriptors(base_cfg)
+    st.info(
+        "The source CSV does not contain curvature or physical contact area. "
+        "Projected contact fraction is its only contact-geometry measurement. "
+        "Every source column is shown on each object card below."
+    )
     search = st.text_input("Search objects", placeholder="Material, object, condition...")
     page_size = st.segmented_control(
         "Objects per page", [8, 12, 24], default=12, key="catalog_page_size"
@@ -581,9 +586,38 @@ def _description_catalog(base_cfg: Config, rows: list) -> None:
                     st.warning("Image not downloaded")
             with detail_col:
                 st.subheader(row.object_name)
+                st.caption(f"Object ID: {row.object_id} | Source image: {row.image_name}")
+
+                sensor_cols = st.columns(3)
+                sensor_cols[0].metric("Mass", f"{row.mass_g:g} g")
+                sensor_cols[1].metric("Roughness class", row.roughness_class)
+                sensor_cols[2].metric(
+                    "Projected contact fraction", f"{row.projected_contact_fraction:.3f}"
+                )
+
+                force_cols = st.columns(3)
+                force_cols[0].metric(
+                    "Gecko force",
+                    f"{row.gecko_force_n:.2f} N" if row.gecko_force_n is not None else "None",
+                )
+                force_cols[0].caption(
+                    f"Feasible: {'Yes' if row.gecko_feasible else 'No'}"
+                )
+                force_cols[1].metric(
+                    "Silicone force",
+                    (
+                        f"{row.silicone_force_n:.2f} N"
+                        if row.silicone_force_n is not None
+                        else "None"
+                    ),
+                )
+                force_cols[1].caption(
+                    f"Feasible: {'Yes' if row.silicone_feasible else 'No'}"
+                )
+                force_cols[2].metric("Favored gripper", row.favored_gripper.title())
+
                 if item is None:
                     st.warning("No descriptor checkpoint. Run live Data Preparation.")
-                    st.write(row.object_name)
                     continue
                 source_label = item.descriptor_source.replace("_", " ").title()
                 st.caption(
