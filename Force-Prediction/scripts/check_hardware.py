@@ -19,14 +19,17 @@ from force_prediction.hardware import make_mock_bench, synthetic_objects  # noqa
 def main() -> int:
     cfg = load_config()
     bench, devices = make_mock_bench(cfg)
-    coarse, fine = 4 * cfg.force.increment_n, cfg.force.increment_n
+    coarse = cfg.collection.coarse_step_n
+    fine = cfg.collection.fine_step_n
     for obj in synthetic_objects(cfg, 3):
         bench.set_object(obj)
         print(f"\n{obj.object_id}: mass={obj.mass_g:.0f}g rough={obj.roughness_class} "
               f"a={obj.projected_contact_fraction:.2f}")
         for gripper in (Gripper.GECKO, Gripper.SILICONE):
             bench.mounted_gripper = gripper
-            feasible, force, trials = measure_pair(devices, cfg, 3, coarse, fine)
+            feasible, force, trials = measure_pair(
+                devices, cfg, cfg.collection.repeats, coarse, fine
+            )
             print(f"  {gripper.value:8}: feasible={feasible} min_force={force} "
                   f"trials={trials} load_cell~{devices.load_cell.read_n():.2f}N")
     return 0

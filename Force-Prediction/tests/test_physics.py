@@ -33,8 +33,7 @@ def test_infeasible_when_over_limit():
     assert est.feasible is False and est.min_force_n is None
 
 
-def test_quantized_to_grid():
+def test_physics_returns_continuous_solution():
     est = MODEL.min_force(Gripper.GECKO, 250, 1, 0.9)
     if est.feasible:
-        steps = est.min_force_n / CFG.force.increment_n
-        assert abs(steps - round(steps)) < 1e-6
+        assert est.min_force_n == est.raw_force_n

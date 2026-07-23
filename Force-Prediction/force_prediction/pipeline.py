@@ -33,6 +33,7 @@ from .llm import get_client
 from .perception import describe
 from .physics import PhysicsEstimate, PhysicsModel, PhysicsParams, calibrate
 from .prediction import (
+    clamp_force,
     physics_predict,
     retrieval_average_predict,
     select,
@@ -92,7 +93,17 @@ class Pipeline:
         )
 
     def _needs_description(self) -> bool:
-        return self.t.use_vlm or self._needs_embeddings()
+        # The force VLM receives the image directly. A separate semantic
+        # descriptor is only needed when an embedding-based stage consumes it.
+        return self._needs_embeddings()
+
+    def _vlm_instruction(self) -> str:
+        if self.t.prompt is None:
+            raise RuntimeError("VLM experiment has no configured prompt")
+        try:
+            return self.cfg.prompts.experiments[self.t.prompt]
+        except KeyError as error:
+            raise RuntimeError(f"unknown VLM prompt key {self.t.prompt!r}") from error
 
     def fit(self, train_records: list[ExperienceRecord]) -> Pipeline:
         if self._needs_embeddings():
@@ -181,6 +192,7 @@ class Pipeline:
                 query,
                 q.image_bgr,
                 paired_retrieval_trace,
+                instruction=self._vlm_instruction(),
                 include_measured=self.t.use_measured,
             )
             retrieval_trace = {gripper.value: [] for gripper in GRIPPERS}
@@ -232,6 +244,8 @@ class Pipeline:
                 self.cfg, cq, image_bgr, retrieved,
                 physics_est if self.t.use_physics else None,
                 include_paired=self.t.use_paired_rows,
+                instruction=self._vlm_instruction(),
+                include_retrieval=self.t.use_retrieval,
                 include_measured=self.t.use_measured,
             )
         if self.t.use_retrieval:
@@ -258,10 +272,7 @@ class Pipeline:
         else:
             emb = np.empty((1, 0))
         residual = float(self.residual[cq.candidate_gripper].predict_residual(base, emb)[0])
-        inc = self.cfg.force.increment_n
-        force = round(min(self.cfg.force.limit_n,
-                          max(self.cfg.force.min_n,
-                              round((physics_est.min_force_n + residual) / inc) * inc)), 6)
+        force = clamp_force(physics_est.min_force_n + residual, self.cfg)
         return PerGripperPrediction(
             candidate_gripper=cq.candidate_gripper,
             compatibility=Compatibility.UNKNOWN,

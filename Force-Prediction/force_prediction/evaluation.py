@@ -5,7 +5,7 @@ optional coarser variant grouping). Splits are frozen to splits.json so every
 experiment is scored on identical folds.
 
 Metrics
-  force      : MAE, RMSE, medAE, %within thresholds, grid-exact (per gripper + overall)
+  force      : MAE, RMSE, medAE, %within thresholds (per gripper + overall)
   feasibility: accuracy / precision / recall of the feasible flag (per gripper)
   selection  : gripper-choice accuracy, infeasible-pick rate, and REGRET
                R(o) = F*(o, chosen) - F*(o, oracle)  (mean / median / worst)
@@ -90,13 +90,11 @@ def _force_stats(pairs: list[tuple[float, float]], cfg: Config) -> dict:
     thr = {
         f"within_{t}n": float(np.mean(errs <= t)) for t in cfg.evaluation.within_thresholds_n
     }
-    grid_exact = float(np.mean(errs <= cfg.force.increment_n / 2 + 1e-9))
     return {
         "n": len(pairs),
         "mae": float(errs.mean()),
         "rmse": float(np.sqrt((errs**2).mean())),
         "medae": float(np.median(errs)),
-        "grid_exact": grid_exact,
         **thr,
     }
 

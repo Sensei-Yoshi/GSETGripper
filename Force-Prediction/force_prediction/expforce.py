@@ -5,7 +5,6 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-import math
 import re
 import tempfile
 import urllib.request
@@ -129,19 +128,12 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
 
 def validation_summary(cfg: Config, rows: list[ExpForceRow] | None = None) -> dict:
     rows = rows or load_rows(cfg)
-    increment = cfg.force.increment_n
-    off_grid = []
-    for row in rows:
-        for force in (row.silicone_force_n, row.gecko_force_n):
-            if force is not None and not math.isclose(force / increment, round(force / increment)):
-                off_grid.append(row.object_id)
     return {
         "objects": len(rows),
         "experience_rows": 2 * len(rows),
         "source_sha256": source_sha256(cfg),
         "roughness_counts": dict(sorted(Counter(row.roughness_class for row in rows).items())),
         "favored_counts": dict(sorted(Counter(row.favored_gripper for row in rows).items())),
-        "off_force_grid": sorted(set(off_grid)),
     }
 
 
@@ -537,6 +529,15 @@ def save_pipeline_run(
         image_path = str(destination.relative_to(cfg.root))
 
     run_id = f"{created_at.strftime('%Y%m%dT%H%M%S%fZ')}_{experiment}_{query['object_id']}"
+    toggles = cfg.experiment(experiment)
+    prompt_key = toggles.prompt
+    prediction_prompts = None
+    if prompt_key is not None:
+        prediction_prompts = {
+            "system": cfg.prompts.prediction_system,
+            "instruction_key": prompt_key,
+            "instruction": cfg.prompts.experiments[prompt_key],
+        }
     artifact = {
         "schema_version": 2,
         "run_id": run_id,
@@ -546,7 +547,8 @@ def save_pipeline_run(
             "leave-one-object-out" if truth is not None and not counterfactual else "custom"
         ),
         "experiment": experiment,
-        "experiment_toggles": cfg.experiment(experiment).model_dump(mode="json"),
+        "experiment_toggles": toggles.model_dump(mode="json"),
+        "prediction_prompts": prediction_prompts,
         "execution_mode": execution_mode,
         "models": {
             "vlm": cfg.models.vlm,
@@ -646,6 +648,14 @@ def run_benchmark(
             progress(index, len(object_ids), object_id)
 
     metrics = compute_metrics(eval_rows, cfg).to_dict()
+    prompt_key = cfg.experiment(experiment).prompt
+    prediction_prompts = None
+    if prompt_key is not None:
+        prediction_prompts = {
+            "system": cfg.prompts.prediction_system,
+            "instruction_key": prompt_key,
+            "instruction": cfg.prompts.experiments[prompt_key],
+        }
     metadata = {
         "created_at": datetime.now(UTC).isoformat(),
         "experiment": experiment,
@@ -658,6 +668,7 @@ def run_benchmark(
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,
         "retrieval": cfg.retrieval.model_dump(mode="json"),
+        "prediction_prompts": prediction_prompts,
     }
     return BenchmarkResult(metrics=metrics, rows=output_rows, run_metadata=metadata)
 

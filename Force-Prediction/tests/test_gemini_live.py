@@ -73,7 +73,16 @@ def test_gemini_structured_image() -> None:
         roughness_class=2, projected_contact_fraction=0.83,
         semantic_description="", candidate_gripper=Gripper.GECKO,
     )
-    pred = vlm_predict_gripper(cfg, cq, img, [], None, include_paired=False)
+    pred = vlm_predict_gripper(
+        cfg,
+        cq,
+        img,
+        [],
+        None,
+        include_paired=False,
+        instruction=cfg.prompts.experiments["e1"],
+        include_retrieval=False,
+    )
     assert isinstance(pred, PerGripperPrediction)
     assert pred.predicted_normal_force_n >= 0
 
@@ -108,7 +117,16 @@ def main() -> int:
             roughness_class=2, projected_contact_fraction=0.83,
             semantic_description=desc.description, candidate_gripper=gripper,
         )
-        pred = vlm_predict_gripper(cfg, cq, img, [], None, include_paired=False)
+        pred = vlm_predict_gripper(
+            cfg,
+            cq,
+            img,
+            [],
+            None,
+            include_paired=False,
+            instruction=cfg.prompts.experiments["e1"],
+            include_retrieval=False,
+        )
         print(f"  {gripper.value:8}: force={pred.predicted_normal_force_n} N  "
               f"feasible={pred.feasible}  compat={pred.compatibility.value}")
         print(f"            reason: {pred.reasoning_trace}")

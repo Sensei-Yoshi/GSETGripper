@@ -35,11 +35,23 @@ class Paths(BaseModel):
 
 class ForceConfig(BaseModel):
     limit_n: float = Field(gt=0)
-    increment_n: float = Field(gt=0)
     min_n: float = Field(ge=0)
     hold_seconds: float = Field(ge=0)
     lift_height_mm: float = Field(gt=0)
     gravity: float = Field(gt=0)
+
+
+class CollectionConfig(BaseModel):
+    start_n: float = Field(ge=0)
+    coarse_step_n: float = Field(gt=0)
+    fine_step_n: float = Field(gt=0)
+    repeats: int = Field(gt=0)
+
+    @model_validator(mode="after")
+    def _coarse_is_not_finer_than_fine(self) -> CollectionConfig:
+        if self.coarse_step_n < self.fine_step_n:
+            raise ValueError("collection.coarse_step_n must be >= collection.fine_step_n")
+        return self
 
 
 class GeometryConfig(BaseModel):
@@ -78,6 +90,7 @@ class RetrievalConfig(BaseModel):
     sigma_mass: float = Field(gt=0)
     sigma_contact: float = Field(gt=0)
     embedding: EmbeddingConfig
+    use_projected_contact: bool = True
 
 
 class PhysicsBounds(BaseModel):
@@ -123,10 +136,9 @@ class EvaluationConfig(BaseModel):
 
 class Prompts(BaseModel):
     descriptor_system: str
-    system: str
+    prediction_system: str
     descriptor: str
-    per_gripper_instruction: str
-    paired_gripper_instruction: str
+    experiments: dict[str, str]
 
 
 class ExperimentToggles(BaseModel):
@@ -136,12 +148,14 @@ class ExperimentToggles(BaseModel):
     use_physics: bool
     use_vlm: bool
     use_residual: bool
+    prompt: str | None = None
 
 
 class Config(BaseModel):
     seed: int
     paths: Paths
     force: ForceConfig
+    collection: CollectionConfig
     geometry: GeometryConfig
     roughness: RoughnessConfig
     retrieval: RetrievalConfig
@@ -154,6 +168,20 @@ class Config(BaseModel):
 
     # Resolved at load time so callers get absolute paths regardless of cwd.
     root: Path = REPO_ROOT
+
+    @model_validator(mode="after")
+    def _vlm_experiments_have_prompts(self) -> Config:
+        for name, toggles in self.experiments.items():
+            if toggles.use_vlm:
+                if toggles.prompt is None:
+                    raise ValueError(f"VLM experiment {name!r} requires a prompt key")
+                if toggles.prompt not in self.prompts.experiments:
+                    raise ValueError(
+                        f"experiment {name!r} references missing prompt {toggles.prompt!r}"
+                    )
+            elif toggles.prompt is not None:
+                raise ValueError(f"non-VLM experiment {name!r} must not configure a prompt")
+        return self
 
     def path(self, key: Literal["experiences", "images", "splits", "cache"]) -> Path:
         """Absolute path for a configured data location."""

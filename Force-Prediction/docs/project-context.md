@@ -109,19 +109,20 @@ Every force value in this project uses one convention:
 - Do not double the value.
 - Do not report the sum of both finger forces.
 - Current force limit: `8.0 N`.
-- Current label and command grid: `0.25 N`.
-- Minimum reportable force: `0.25 N`.
+- Hardware commands and model predictions are continuous within `0` to `8.0 N`.
+- Prediction outputs are not rounded or snapped to a force grid.
 - Nominal successful hold: `3.0 s` after a `50 mm` lift.
 
-For a real object and gripper, ground truth should be the minimum force on the
-staircase grid that completes the standardized lift-and-hold protocol. An
-infeasible record means the object failed at the configured force limit.
+For a real object and gripper, ground truth should be the minimum force found by
+the standardized lift-and-hold search protocol. The configured coarse and fine
+search steps control measurement resolution only; they do not constrain later
+predictions or commands. An infeasible record means the object failed at the
+configured force limit.
 
 The final selector chooses the lower predicted force among feasible grippers.
 If neither is feasible, it returns `none`. The synthetic dataset has exactly one
-ground-truth winner for every object. Defensive code still handles a predicted
-tie because force quantization can make two model outputs equal even when the
-ground-truth labels are different.
+ground-truth winner for every object. Defensive code still handles the unlikely
+case of exactly equal continuous predictions.
 
 ## 5. Measured and perceived inputs
 
@@ -217,6 +218,9 @@ Current validated snapshot:
 - Current source SHA-256:
   `e0218fe46636ecd32b4f15bfb687fa72a2069cf9840c2da212ccc00813dd0b22`.
 
+The quarter-newton spacing is a historical property of this synthetic fixture,
+not a hardware constraint and not a rule applied to model predictions.
+
 The hash is recorded in saved run and benchmark artifacts. If the CSV is
 intentionally updated, derived experiences and reported hashes must be
 regenerated.
@@ -273,6 +277,26 @@ The structured `Description` checkpoint includes the retrieval description,
 contact region, contact material, visible material, visible condition, local
 geometry, patch visibility, and uncertainty. The `description` property used
 for embedding composes the relevant structured fields.
+
+### Prediction prompts by experiment
+
+Prediction prompting is explicit in `config.yaml`:
+
+```text
+prompts.prediction_system
+prompts.experiments.e1
+prompts.experiments.e2
+prompts.experiments.e3
+prompts.experiments.e5
+```
+
+Each VLM experiment references its prompt key in the `experiments` section.
+E1 explicitly states that it is zero-shot and vision-only; E2 receives measured
+inputs but no retrieval; E3 receives branch-specific same-gripper examples; and
+E5 receives one paired-object list and predicts both grippers jointly. E3b, E4,
+and E6 have no prediction prompt because they do not call a VLM for force
+prediction. Configuration validation fails if a VLM experiment lacks a valid
+prompt reference.
 
 ## 8. Embedding design
 
@@ -336,7 +360,12 @@ Current defaults:
 
 Weights are normalized automatically before use. An all-zero weight vector is
 invalid. The Streamlit controls allow the weights and sigma values to be changed
-for exploratory runs.
+for exploratory runs, with initial values loaded from `config.yaml`. The Single
+Run page also provides a `Use projected contact fraction` checkbox. Turning it
+off sets the contact retrieval weight to zero, renormalizes the remaining
+active weights, and omits contact fraction from VLM query and neighbor payloads.
+It does not remove the measured contact fraction from physics-based E4 and E6,
+whose model definitions require it.
 
 Every retrieval result exposes:
 
@@ -395,7 +424,7 @@ The request includes:
 - both force and feasibility labels for each neighbor;
 - retrieval totals and component breakdowns;
 - normalized retrieval weights and sigma constants;
-- force limits and force-grid constraints;
+- continuous force limits;
 - a schema requiring one gecko prediction and one silicone prediction.
 
 The request does not contain a physics prior. E5 is designed to isolate measured
@@ -406,12 +435,13 @@ The VLM does not make the final gripper selection. It returns two structured
 compatibility/material assessment, and a concise evidence summary. The summary
 is limited to a few sentences; it is not hidden chain-of-thought.
 
-### Step 5: Quantize and select deterministically
+### Step 5: Clamp and select deterministically
 
-Each predicted force is clamped to the configured limits and rounded upward to
-the `0.25 N` force grid. Python then selects the lower-force feasible candidate.
-If the quantized predictions tie, the selector uses predicted material
-compatibility and then stable gripper order as a final deterministic fallback.
+Each predicted force remains continuous and is only clamped to the hardware
+range from `0` to `8.0 N`. Python then selects the lower-force feasible
+candidate. If two continuous predictions are exactly equal, the selector uses
+predicted material compatibility and then stable gripper order as a final
+deterministic fallback.
 
 ### Why this replaced two E5 requests
 
@@ -454,7 +484,7 @@ a saturating adhesive contribution. The coefficient families are constrained
 to smooth forms across roughness classes rather than fitting an unrelated value
 for every class.
 
-The solver finds the minimum quantized normal force whose holding capacity
+The solver finds the continuous minimum normal force whose holding capacity
 supports the object's weight, subject to the configured force limit. Parameters
 must be calibrated only from the training fold during real evaluation.
 
@@ -488,10 +518,21 @@ residual = true_force - physics_force
 final_force = physics_force + predicted_residual
 ```
 
-The current E6 learner is a gradient-boosted tree using log mass, roughness,
-projected contact fraction, physics force, and PCA-reduced semantic text
-features. E6 may therefore need cached text embeddings, but it does not use
-retrieval and does not make a Gemini force-prediction request.
+Within each training fold, E6 first calibrates the E4 physics coefficients using
+only that fold's training objects. For each feasible training object-gripper
+row, it computes the calibrated physics force and constructs the supervised
+target `true_force - physics_force`. It then trains one residual regressor per
+gripper. The default regressor is a gradient-boosted tree whose numeric features
+are log mass, roughness class, projected contact fraction, and physics force.
+The object's semantic text embedding is reduced with a training-fold PCA and
+appended to those numeric features.
+
+At inference, E6 computes the physics force, transforms the query embedding with
+the already-fitted PCA, predicts the correction, and returns the continuous
+clamped value `physics_force + predicted_residual`. If physics declares the
+query infeasible, the residual model does not override that decision. E6 uses
+no neighbor list and makes no Gemini force-prediction request; Gemini may only
+have been used earlier to prepare the cached semantic descriptor/embedding.
 
 ### E5 versus physics
 
@@ -718,8 +759,7 @@ Force metrics include:
 - root mean squared error (RMSE);
 - median absolute error;
 - fraction within `0.25 N`;
-- fraction within `0.5 N`;
-- exact force-grid rate where applicable.
+- fraction within `0.5 N`.
 
 Selection metrics include:
 
@@ -853,7 +893,7 @@ Coverage includes:
 - descriptor and embedding checkpoint resume behavior;
 - exact cache reuse and invalidation with a counting fake backend;
 - deterministic selection, infeasibility, and predicted tie handling;
-- physics monotonicity, quantization, and force-limit behavior;
+- physics monotonicity, continuous-force behavior, and force-limit behavior;
 - grouped train/test splits for the non-viewer experiment runner.
 
 The key one-call test verifies that E5 invokes one paired retrieval and one
@@ -905,6 +945,10 @@ refer to superseded behavior:
   Cache Status, Single Run, and 129-Object Benchmark pages.
 - Saved single runs preserve enough input, model, retrieval, and hash metadata
   to reproduce or audit what was shown in the UI.
+- The Pipeline Run Inspector displays the retrieval configuration persisted
+  with each run. If a historical run's `k` differs from the current
+  `config.yaml`, the UI labels both values; new runs begin with the current
+  configured value.
 
 ## 23. What is still unknown
 
@@ -991,23 +1035,25 @@ Future changes should preserve these rules unless the research design is
 explicitly revised:
 
 1. Never mix force conventions or double stationary-finger force.
-2. Keep both gripper rows for an object in the same train/test group.
-3. Exclude a known query object from its own retrieval pool.
-4. Keep source data separate from generated artifacts.
-5. Generate one semantic descriptor and one reference embedding per object.
-6. Keep measured mass, roughness, and contact as explicit similarity terms.
-7. Keep E5 as one paired-object retrieval and one joint Gemini force request.
-8. Do not send a physics prior in E5.
-9. Make the final gripper decision deterministically from structured candidate
+2. Keep prediction outputs continuous; collection search steps must not
+   quantize model outputs.
+3. Keep both gripper rows for an object in the same train/test group.
+4. Exclude a known query object from its own retrieval pool.
+5. Keep source data separate from generated artifacts.
+6. Generate one semantic descriptor and one reference embedding per object.
+7. Keep measured mass, roughness, and contact as explicit similarity terms.
+8. Keep E5 as one paired-object retrieval and one joint Gemini force request.
+9. Do not send a physics prior in E5.
+10. Make the final gripper decision deterministically from structured candidate
    predictions.
-10. Put prompts and researcher-tunable constants in `config.yaml`.
-11. Persist source hashes, model versions, prompts/configuration, and retrieval
+11. Put prompts and researcher-tunable constants in `config.yaml`.
+12. Persist source hashes, model versions, prompts/configuration, and retrieval
    traces for reported experiments.
-12. Keep offline CI free of Gemini, hardware, and network requirements.
-13. Treat all current viewer accuracy as synthetic pipeline validation only.
-14. Do not score uploaded or sensor-modified counterfactuals against unchanged
+13. Keep offline CI free of Gemini, hardware, and network requirements.
+14. Treat all current viewer accuracy as synthetic pipeline validation only.
+15. Do not score uploaded or sensor-modified counterfactuals against unchanged
    source labels.
-15. Add or update tests whenever a cache key, experiment definition, data
+16. Add or update tests whenever a cache key, experiment definition, data
    contract, or algorithmic path changes.
 
 ## 27. Current concise system statement
@@ -1020,6 +1066,7 @@ reference object contributes both its gecko and silicone force outcomes. A
 single structured Gemini request uses the query image, authoritative measured
 properties, and paired retrieval evidence to predict the minimum force and
 feasibility for both grippers. The software then selects the lower-force
-feasible gripper deterministically. The current 129-object dataset and all
+feasible gripper deterministically without quantizing either continuous force
+estimate. The current 129-object dataset and all
 reported results are synthetic and are used to validate this complete software
 flow before the same protocol is applied to real robot data.

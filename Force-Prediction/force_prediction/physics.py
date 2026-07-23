@@ -60,8 +60,8 @@ class PhysicsParams:
 class PhysicsEstimate:
     gripper: Gripper
     feasible: bool
-    min_force_n: float | None  # quantized to the force grid; None if infeasible
-    raw_force_n: float | None  # unquantized solve; None if infeasible
+    min_force_n: float | None  # continuous command, clamped to hardware range
+    raw_force_n: float | None  # unconstrained continuous solve; None if infeasible
 
 
 def weight_n(mass_g: float, gravity: float) -> float:
@@ -111,16 +111,8 @@ class PhysicsModel:
         if not math.isfinite(raw) or raw > limit:
             return PhysicsEstimate(gripper, feasible=False, min_force_n=None, raw_force_n=None)
 
-        quantized = self._quantize(raw)
-        if quantized > limit:  # quantization pushed us over the safe limit
-            return PhysicsEstimate(gripper, feasible=False, min_force_n=None, raw_force_n=raw)
-        return PhysicsEstimate(gripper, feasible=True, min_force_n=quantized, raw_force_n=raw)
-
-    def _quantize(self, force: float) -> float:
-        inc = self.cfg.force.increment_n
-        # Round UP to the grid: you need at least this much force to lift.
-        stepped = math.ceil(force / inc) * inc
-        return round(max(self.cfg.force.min_n, stepped), 6)
+        command = max(self.cfg.force.min_n, raw)
+        return PhysicsEstimate(gripper, feasible=True, min_force_n=command, raw_force_n=raw)
 
 
 # --------------------------------------------------------------------------- #

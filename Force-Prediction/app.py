@@ -65,6 +65,7 @@ def _run_config(
     base: Config,
     *,
     live: bool,
+    use_projected_contact: bool,
     semantic: float,
     mass: float,
     roughness: float,
@@ -74,6 +75,7 @@ def _run_config(
 ) -> Config:
     cfg = base.model_copy(deep=True)
     cfg.models.dry_run = not live
+    cfg.retrieval.use_projected_contact = use_projected_contact
     cfg.retrieval.weights.semantic = semantic
     cfg.retrieval.weights.mass = mass
     cfg.retrieval.weights.roughness = roughness
@@ -93,6 +95,11 @@ def _decode_upload(uploaded) -> np.ndarray | None:  # noqa: ANN001
 
 def _rgb(image_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+
+def _format_force(value: float, *, signed: bool = False) -> str:
+    spec = "+.6g" if signed else ".6g"
+    return f"{format(value, spec)} N"
 
 
 @st.cache_data(show_spinner=False)
@@ -209,7 +216,9 @@ def _render_prediction(
     metric_cols[0].metric("Selected gripper", selected_label)
     metric_cols[1].metric(
         "Selected force",
-        f"{result.predicted_normal_force_n:.2f} N" if result.predicted_normal_force_n else "None",
+        _format_force(result.predicted_normal_force_n)
+        if result.predicted_normal_force_n is not None
+        else "None",
     )
     metric_cols[2].metric(
         "Experiment", (experiment or st.session_state.get("last_experiment", "E5")).upper()
@@ -231,7 +240,7 @@ def _render_prediction(
                 (result.predicted_normal_force_n or 0.0)
                 - (baseline.selection.predicted_normal_force_n or 0.0)
             )
-            st.metric("Selected-force change from baseline", f"{delta:+.2f} N")
+            st.metric("Selected-force change from baseline", _format_force(delta, signed=True))
     else:
         truth_values = _truth_for_display(truth)
         predicted_correct = (
@@ -245,13 +254,13 @@ def _render_prediction(
         ground_truth = st.columns(3)
         ground_truth[0].metric(
             "True gecko force",
-            f"{truth_values['true_gecko_force_n']:.2f} N"
+            _format_force(truth_values["true_gecko_force_n"])
             if truth_values["true_gecko_force_n"] is not None
             else "Infeasible",
         )
         ground_truth[1].metric(
             "True silicone force",
-            f"{truth_values['true_silicone_force_n']:.2f} N"
+            _format_force(truth_values["true_silicone_force_n"])
             if truth_values["true_silicone_force_n"] is not None
             else "Infeasible",
         )
@@ -268,9 +277,9 @@ def _render_prediction(
                 truth_force = truth_record.min_force_n if truth_record else None
             st.metric(
                 "Predicted force",
-                f"{pred.predicted_normal_force_n:.2f} N",
+                _format_force(pred.predicted_normal_force_n),
                 delta=(
-                    f"{pred.predicted_normal_force_n - truth_force:+.2f} N error"
+                    f"{_format_force(pred.predicted_normal_force_n - truth_force, signed=True)} error"
                     if truth_force is not None
                     else None
                 ),
@@ -279,11 +288,8 @@ def _render_prediction(
             physics = detailed.physics_estimates.get(gripper)
             if physics:
                 raw_force = physics.get("raw_force_n")
-                raw_label = f"{raw_force:.3f} N" if raw_force is not None else "infeasible"
-                st.caption(
-                    f"Physics model: raw {raw_label}, "
-                    f"command-grid {physics.get('min_force_n')} N"
-                )
+                raw_label = _format_force(raw_force) if raw_force is not None else "infeasible"
+                st.caption(f"Physics model: continuous estimate {raw_label}")
             else:
                 st.caption("Physics model: not used by this experiment")
             st.write(pred.reasoning_trace or "No reasoning trace for this experiment.")
@@ -378,12 +384,43 @@ def single_run_view(base_cfg: Config, rows: list) -> None:
         live_execution = mode == "Live Gemini"
 
         with st.expander("Retrieval tuning", expanded=True):
-            semantic_w = st.slider("Semantic weight", 0.0, 1.0, 0.40, 0.05)
-            mass_w = st.slider("Mass weight", 0.0, 1.0, 0.25, 0.05)
-            roughness_w = st.slider("Roughness weight", 0.0, 1.0, 0.20, 0.05)
-            contact_w = st.slider("Contact weight", 0.0, 1.0, 0.15, 0.05)
-            sigma_mass = st.slider("Mass sigma", 0.1, 3.0, 0.7, 0.1)
-            sigma_contact = st.slider("Contact sigma", 0.05, 1.0, 0.25, 0.05)
+            use_projected_contact = st.checkbox(
+                "Use projected contact fraction",
+                value=base_cfg.retrieval.use_projected_contact,
+                help=(
+                    "When disabled, contact is omitted from VLM inputs and its retrieval "
+                    "weight is set to zero; the remaining weights are renormalized. "
+                    "Physics-based E4 and E6 still require the measured contact fraction."
+                ),
+            )
+            semantic_w = st.slider(
+                "Semantic weight", 0.0, 1.0,
+                float(base_cfg.retrieval.weights.semantic), 0.05,
+            )
+            mass_w = st.slider(
+                "Mass weight", 0.0, 1.0,
+                float(base_cfg.retrieval.weights.mass), 0.05,
+            )
+            roughness_w = st.slider(
+                "Roughness weight", 0.0, 1.0,
+                float(base_cfg.retrieval.weights.roughness), 0.05,
+            )
+            configured_contact_w = st.slider(
+                "Contact weight", 0.0, 1.0,
+                float(base_cfg.retrieval.weights.contact), 0.05,
+                disabled=not use_projected_contact,
+            )
+            contact_w = configured_contact_w if use_projected_contact else 0.0
+            sigma_mass = st.slider(
+                "Mass sigma", 0.1, 3.0,
+                float(base_cfg.retrieval.sigma_mass), 0.1,
+            )
+            sigma_contact = st.slider(
+                "Contact sigma", 0.05, 1.0,
+                float(base_cfg.retrieval.sigma_contact), 0.05,
+                disabled=not use_projected_contact,
+            )
+            st.caption(f"Neighbor count comes from config.yaml: k = {base_cfg.retrieval.k}.")
 
         run = st.button("Run pipeline", type="primary", width="stretch")
 
@@ -391,6 +428,7 @@ def single_run_view(base_cfg: Config, rows: list) -> None:
         cfg = _run_config(
             base_cfg,
             live=live_execution,
+            use_projected_contact=use_projected_contact,
             semantic=semantic_w,
             mass=mass_w,
             roughness=roughness_w,
@@ -723,7 +761,13 @@ def _pipeline_run_inspector(base_cfg: Config) -> None:
         st.write(f"**Description:** {query.get('semantic_description', '')}")
         with st.expander("Retrieval parameters"):
             retrieval = run["retrieval_config"]
-            st.write(f"Top k: {retrieval['k']}")
+            st.write(f"Saved run top k: {retrieval['k']}")
+            if retrieval["k"] != base_cfg.retrieval.k:
+                st.info(
+                    "This historical run used "
+                    f"k={retrieval['k']}; the current config.yaml uses "
+                    f"k={base_cfg.retrieval.k}. New runs use the current value."
+                )
             st.write(f"Mass sigma: {retrieval['sigma_mass']}")
             st.write(f"Contact sigma: {retrieval['sigma_contact']}")
             st.json(retrieval["weights"], expanded=True)
@@ -930,6 +974,32 @@ def help_view(base_cfg: Config) -> None:
         "E4 vs E6 tests the learned residual over physics."
     )
 
+    st.subheader("Prediction prompt routing")
+    st.caption(
+        "Only VLM force-prediction experiments have prompts. All text below is loaded "
+        "directly from config.yaml."
+    )
+    with st.expander("Shared prediction system prompt"):
+        st.code(base_cfg.prompts.prediction_system, language=None)
+    for experiment in ("e1", "e2", "e3", "e5"):
+        prompt_key = base_cfg.experiment(experiment).prompt
+        assert prompt_key is not None
+        with st.expander(f"{experiment.upper()} instruction — prompts.experiments.{prompt_key}"):
+            st.code(base_cfg.prompts.experiments[prompt_key], language=None)
+    st.info("E3b, E4, and E6 do not call a VLM for force prediction, so they have no prompt.")
+
+    st.subheader("How E6 learns the physics residual")
+    st.markdown(
+        """
+E6 calibrates the E4 physics model on each training fold, then learns the target
+`measured force − physics force` separately for gecko and silicone. The default
+gradient-boosted trees use log mass, roughness, projected contact fraction, physics
+force, and PCA-reduced semantic embedding features. At inference the continuous output
+is `physics force + predicted residual`, clamped only to the 0–8 N hardware range.
+E6 retrieves no neighbors and makes no VLM force-prediction call.
+        """
+    )
+
     st.header("What E5 + Live Gemini means")
     st.markdown(
         """
@@ -939,7 +1009,7 @@ both grippers, embeds the query description, and ranks references with the displ
 similarity. It retrieves five objects once, with both gecko and silicone outcomes attached to
 each object. One Gemini request returns the two structured force estimates. E5 does not construct
 or send a physics estimate. Python selects the lower feasible
-predicted force and explicitly reports a prediction tie when quantization makes the forces equal.
+predicted force and explicitly reports a prediction tie only when the continuous estimates are equal.
 
 **Live Gemini** means Gemini-backed descriptor, embedding, and VLM stages are allowed to make
 network calls. A cached identical request makes no new call. It does not mean the labels are

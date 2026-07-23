@@ -126,7 +126,7 @@ def normalized_weights(cfg: Config) -> dict[str, float]:
         "semantic": raw.semantic,
         "mass": raw.mass,
         "roughness": raw.roughness,
-        "contact": raw.contact,
+        "contact": raw.contact if cfg.retrieval.use_projected_contact else 0.0,
     }
     total = sum(values.values())
     if total <= 0:
@@ -157,7 +157,7 @@ class RetrievedExperience(BaseModel):
     other_gripper_min_force_n: float | None = None
     other_gripper_feasible: bool | None = None
 
-    def to_payload(self, include_paired: bool) -> dict:
+    def to_payload(self, include_paired: bool, *, include_contact: bool = True) -> dict:
         r = self.record
         payload: dict = {
             "object_id": r.object_id,
@@ -174,6 +174,8 @@ class RetrievedExperience(BaseModel):
         if include_paired:
             payload["other_gripper_min_force_n"] = self.other_gripper_min_force_n
             payload["other_gripper_feasible"] = self.other_gripper_feasible
+        if not include_contact:
+            payload.pop("projected_contact_fraction")
         return payload
 
 
@@ -194,8 +196,11 @@ class RetrievedObjectExperience(BaseModel):
     rank: int = 0
     similarity: SimilarityBreakdown
 
-    def to_payload(self) -> dict:
-        return self.model_dump(mode="json", exclude={"image_path"})
+    def to_payload(self, *, include_contact: bool = True) -> dict:
+        excluded = {"image_path"}
+        if not include_contact:
+            excluded.add("projected_contact_fraction")
+        return self.model_dump(mode="json", exclude=excluded)
 
 
 # --------------------------------------------------------------------------- #

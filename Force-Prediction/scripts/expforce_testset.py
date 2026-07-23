@@ -123,7 +123,10 @@ def run(cfg, records, k: int) -> None:
                 image = cv2.imread(str(cfg.root / rec.image_path))
             cq = CandidateQuery(**q.model_dump(), candidate_gripper=Gripper.SILICONE)
             pred = vlm_predict_gripper(cfg, cq, image, retrieved, None,
-                                       include_paired=False, include_measured=True)
+                                       include_paired=False,
+                                       instruction=cfg.prompts.experiments["e3"],
+                                       include_retrieval=True,
+                                       include_measured=True)
             assert rec.min_force_n is not None
             pairs.append((rec.min_force_n, pred.predicted_normal_force_n))
             n_done += 1

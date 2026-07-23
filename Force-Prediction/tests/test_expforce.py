@@ -32,7 +32,6 @@ def test_source_validation_and_paired_conversion():
 
     assert len(rows) == 129
     assert len(records) == 258
-    assert summary["off_force_grid"] == []
     assert summary["favored_counts"].get("tie", 0) == 0
     assert set(summary["favored_counts"]) == {"gecko", "silicone"}
     assert {record.object_id for record in records} == {row.object_id for row in rows}
@@ -70,6 +69,62 @@ def test_e5_does_not_use_or_send_physics():
     assert "text embedding" in cfg.prompts.descriptor_system
 
 
+def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
+    cfg = load_config()
+
+    assert set(cfg.prompts.experiments) == {"e1", "e2", "e3", "e5"}
+    for experiment in ("e1", "e2", "e3", "e5"):
+        toggles = cfg.experiment(experiment)
+        assert toggles.use_vlm is True
+        assert toggles.prompt == experiment
+        assert cfg.prompts.experiments[experiment].strip()
+    for experiment in ("e3b", "e4", "e6"):
+        assert cfg.experiment(experiment).prompt is None
+
+
+def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = False
+    captured = {}
+
+    class FakeClient:
+        def generate_json(self, **kwargs):
+            captured.update(kwargs)
+            return PerGripperPrediction(
+                candidate_gripper=Gripper.GECKO,
+                predicted_normal_force_n=1.137,
+            ).model_dump(mode="json")
+
+    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: FakeClient())
+    query = CandidateQuery(
+        object_id="zero_shot_query",
+        image_path="",
+        mass_g=321,
+        roughness_class=4,
+        projected_contact_fraction=0.63,
+        candidate_gripper=Gripper.GECKO,
+    )
+
+    prediction = vlm_predict_gripper(
+        cfg,
+        query,
+        None,
+        [],
+        None,
+        include_paired=False,
+        instruction=cfg.prompts.experiments["e1"],
+        include_retrieval=False,
+        include_measured=False,
+    )
+
+    assert captured["instruction"].startswith("E1 ZERO-SHOT VISION-ONLY CONDITION")
+    assert set(captured["extra"]["query"]) == {"object_id", "candidate_gripper"}
+    assert "retrieved_experiences" not in captured["extra"]
+    assert "retrieval_config" not in captured["extra"]
+    assert "roughness_scale" not in captured["extra"]
+    assert prediction.predicted_normal_force_n == 1.137
+
+
 def test_vlm_payload_never_contains_physics(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = False
@@ -100,7 +155,16 @@ def test_vlm_payload_never_contains_physics(monkeypatch):
         raw_force_n=0.4,
     )
 
-    vlm_predict_gripper(cfg, query, None, [], physics, include_paired=False)
+    vlm_predict_gripper(
+        cfg,
+        query,
+        None,
+        [],
+        physics,
+        include_paired=False,
+        instruction=cfg.prompts.experiments["e3"],
+        include_retrieval=True,
+    )
 
     assert "physics_force_estimate_n" not in captured
     assert "physics_feasible" not in captured

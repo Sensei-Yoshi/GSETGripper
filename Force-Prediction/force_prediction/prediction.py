@@ -14,8 +14,6 @@ pipeline can swap them by experiment toggle without branching logic elsewhere:
 
 from __future__ import annotations
 
-import math
-
 import numpy as np
 
 from .config import Config
@@ -37,13 +35,13 @@ def _force_constraints(cfg: Config) -> dict:
     return {
         "minimum_n": cfg.force.min_n,
         "maximum_n": cfg.force.limit_n,
-        "resolution_n": cfg.force.increment_n,
+        "continuous_command": True,
     }
 
 
-def _quantize(force: float, cfg: Config) -> float:
-    inc = cfg.force.increment_n
-    return round(min(cfg.force.limit_n, max(cfg.force.min_n, math.ceil(force / inc) * inc)), 6)
+def clamp_force(force: float, cfg: Config) -> float:
+    """Keep a continuous force estimate within the hardware command range."""
+    return min(cfg.force.limit_n, max(cfg.force.min_n, float(force)))
 
 
 # --------------------------------------------------------------------------- #
@@ -56,6 +54,8 @@ def vlm_predict_gripper(
     retrieved: list[RetrievedExperience],
     physics_estimate: PhysicsEstimate | None,
     include_paired: bool,
+    instruction: str,
+    include_retrieval: bool,
     include_measured: bool = True,
 ) -> PerGripperPrediction:
     # E1 (vision-only) hides measured properties + physics so the VLM must
@@ -68,35 +68,44 @@ def vlm_predict_gripper(
         query_block.update(
             mass_g=query.mass_g,
             roughness_class=query.roughness_class,
-            projected_contact_fraction=query.projected_contact_fraction,
         )
-    payload = {
+        if cfg.retrieval.use_projected_contact:
+            query_block["projected_contact_fraction"] = query.projected_contact_fraction
+    payload: dict = {
         "query": query_block,
-        "roughness_scale": cfg.roughness.labels,
-        "retrieved_experiences": [r.to_payload(include_paired) for r in retrieved],
-        "retrieval_config": {
+        "force_constraints": _force_constraints(cfg),
+    }
+    if include_measured:
+        payload["roughness_scale"] = cfg.roughness.labels
+    if include_retrieval:
+        payload["retrieved_experiences"] = [
+            r.to_payload(
+                include_paired,
+                include_contact=cfg.retrieval.use_projected_contact,
+            )
+            for r in retrieved
+        ]
+        payload["retrieval_config"] = {
             "normalized_weights": normalized_weights(cfg),
             "sigma_mass": cfg.retrieval.sigma_mass,
             "sigma_contact": cfg.retrieval.sigma_contact,
-        },
-        "force_constraints": _force_constraints(cfg),
-    }
+        }
     if cfg.models.dry_run:
         return _stub_prediction(cfg, query, retrieved, physics_estimate)
 
-    instruction = cfg.prompts.per_gripper_instruction.format(
+    rendered_instruction = instruction.format(
         candidate_gripper=query.candidate_gripper.value
     )
     raw = get_client(cfg).generate_json(
-        system=cfg.prompts.system,
-        instruction=instruction,
+        system=cfg.prompts.prediction_system,
+        instruction=rendered_instruction,
         schema=PerGripperPrediction,
         image_bgr=image_bgr,
         extra=payload,
     )
     pred = PerGripperPrediction.model_validate(raw)
     pred.candidate_gripper = query.candidate_gripper  # trust our binding, not the model's
-    pred.predicted_normal_force_n = _quantize(pred.predicted_normal_force_n, cfg)
+    pred.predicted_normal_force_n = clamp_force(pred.predicted_normal_force_n, cfg)
     return pred
 
 
@@ -105,6 +114,7 @@ def vlm_predict_paired(
     query: Query,
     image_bgr: np.ndarray | None,
     retrieved: list[RetrievedObjectExperience],
+    instruction: str,
     include_measured: bool = True,
 ) -> dict[Gripper, PerGripperPrediction]:
     """Predict both grippers from one paired-object context and one VLM call."""
@@ -113,12 +123,16 @@ def vlm_predict_paired(
         query_block.update(
             mass_g=query.mass_g,
             roughness_class=query.roughness_class,
-            projected_contact_fraction=query.projected_contact_fraction,
         )
+        if cfg.retrieval.use_projected_contact:
+            query_block["projected_contact_fraction"] = query.projected_contact_fraction
     payload = {
         "query": query_block,
         "roughness_scale": cfg.roughness.labels,
-        "retrieved_objects": [item.to_payload() for item in retrieved],
+        "retrieved_objects": [
+            item.to_payload(include_contact=cfg.retrieval.use_projected_contact)
+            for item in retrieved
+        ],
         "retrieval_config": {
             "normalized_weights": normalized_weights(cfg),
             "sigma_mass": cfg.retrieval.sigma_mass,
@@ -133,8 +147,8 @@ def vlm_predict_paired(
         }
 
     raw = get_client(cfg).generate_json(
-        system=cfg.prompts.system,
-        instruction=cfg.prompts.paired_gripper_instruction,
+        system=cfg.prompts.prediction_system,
+        instruction=instruction,
         schema=PairedGripperPrediction,
         image_bgr=image_bgr,
         extra=payload,
@@ -146,7 +160,7 @@ def vlm_predict_paired(
     }
     for gripper, prediction in predictions.items():
         prediction.candidate_gripper = gripper
-        prediction.predicted_normal_force_n = _quantize(
+        prediction.predicted_normal_force_n = clamp_force(
             prediction.predicted_normal_force_n, cfg
         )
     return predictions
@@ -182,7 +196,7 @@ def _paired_retrieval_average_predict(
     return PerGripperPrediction(
         candidate_gripper=gripper,
         feasible=True,
-        predicted_normal_force_n=_quantize(estimate, cfg),
+        predicted_normal_force_n=clamp_force(estimate, cfg),
         reasoning_trace=(
             "offline similarity-weighted estimate from the shared paired-object neighbors"
         ),
@@ -208,7 +222,7 @@ def _stub_prediction(
         rp = retrieval_average_predict(cfg, query, retrieved)
         feasible, force = rp.feasible, rp.predicted_normal_force_n
     else:
-        feasible, force = True, _quantize(0.002 * query.mass_g + 0.25, cfg)
+        feasible, force = True, clamp_force(0.002 * query.mass_g + 0.25, cfg)
     return PerGripperPrediction(
         candidate_gripper=query.candidate_gripper,
         compatibility=Compatibility.UNKNOWN,
@@ -243,7 +257,7 @@ def retrieval_average_predict(
     return PerGripperPrediction(
         candidate_gripper=query.candidate_gripper,
         feasible=True,
-        predicted_normal_force_n=_quantize(est, cfg),
+        predicted_normal_force_n=clamp_force(est, cfg),
         reasoning_trace="similarity-weighted average of retrieved forces",
     )
 

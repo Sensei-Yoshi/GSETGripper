@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from force_prediction.config import load_config
 from force_prediction.contracts import (
     Gripper,
@@ -38,6 +40,26 @@ def test_e5_pipeline_runs_end_to_end():
     result = pipe.predict(query_input_from_object(test, cfg))
     assert result.desired_gripper in ("gecko", "silicone", "none")
     assert set(result.candidate_predictions) == {"gecko", "silicone"}
+
+
+@pytest.mark.parametrize("experiment", ["e1", "e2", "e3", "e3b", "e4", "e5", "e6"])
+def test_every_experiment_runs_offline_with_continuous_forces(experiment):
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = True
+    records = fabricate_records(cfg, 24)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+
+    result = Pipeline(cfg, cfg.experiment(experiment)).fit(train).predict(
+        query_input_from_object(test, cfg)
+    )
+
+    assert set(result.candidate_predictions) == {"gecko", "silicone"}
+    assert all(
+        cfg.force.min_n <= prediction.predicted_normal_force_n <= cfg.force.limit_n
+        for prediction in result.candidate_predictions.values()
+    )
 
 
 def test_detailed_pipeline_preserves_selection_and_exposes_trace():
@@ -106,6 +128,7 @@ def test_e5_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
 
     assert client.generation_calls == 1
     assert captured["schema"] is PairedGripperPrediction
+    assert captured["instruction"] == cfg.prompts.experiments["e5"]
     paired_payload = captured["extra"]["retrieved_objects"]
     assert len(paired_payload) == 5
     assert all("gecko_min_force_n" in item for item in paired_payload)
@@ -114,5 +137,48 @@ def test_e5_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     assert "retrieved_experiences" not in captured["extra"]
     assert detailed.selection.candidate_predictions["gecko"].candidate_gripper is Gripper.GECKO
     assert detailed.selection.candidate_predictions["silicone"].candidate_gripper is Gripper.SILICONE
-    assert detailed.selection.candidate_predictions["gecko"].predicted_normal_force_n == 1.0
-    assert detailed.selection.candidate_predictions["silicone"].predicted_normal_force_n == 1.5
+    assert detailed.selection.candidate_predictions["gecko"].predicted_normal_force_n == 0.8
+    assert detailed.selection.candidate_predictions["silicone"].predicted_normal_force_n == 1.3
+
+
+def test_e5_contact_ablation_removes_contact_from_vlm_payload(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = False
+    cfg.retrieval.embedding.provider = "mock"
+    cfg.retrieval.use_projected_contact = False
+    records = fabricate_records(cfg, 12)
+    held = records[0].object_id
+    captured = {}
+
+    class CapturingClient:
+        def generate_json(self, **kwargs):
+            captured.update(kwargs)
+            return PairedGripperPrediction(
+                gecko=PerGripperPrediction(
+                    candidate_gripper=Gripper.GECKO,
+                    predicted_normal_force_n=1.0,
+                ),
+                silicone=PerGripperPrediction(
+                    candidate_gripper=Gripper.SILICONE,
+                    predicted_normal_force_n=1.0,
+                ),
+            ).model_dump(mode="json")
+
+        def cache_stats(self):
+            return {}
+
+    client = CapturingClient()
+    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("force_prediction.pipeline.get_client", lambda _cfg: client)
+
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+    Pipeline(cfg, cfg.experiment("e5")).fit(train).predict_detailed(
+        query_input_from_object(test, cfg)
+    )
+
+    assert "projected_contact_fraction" not in captured["extra"]["query"]
+    assert all(
+        "projected_contact_fraction" not in item
+        for item in captured["extra"]["retrieved_objects"]
+    )

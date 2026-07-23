@@ -16,14 +16,18 @@ dataset, physics, prompts, predictions, and metrics.
 4. For gecko, apply the fixed seating/shear displacement (log displacement + dwell).
 5. Attempt the standardized lift (fixed speed, height, hold time).
 6. On failure: fully **release and reset** (gecko has load-history effects).
-7. Step the normal force up by one increment; repeat until lift or safe limit.
-8. Repeat the whole minimum-force measurement **3×**; store the **median**.
+7. Step the normal force according to the configured search procedure; repeat
+   until lift or safe limit.
+8. Repeat the whole minimum-force measurement the configured number of times;
+   store the **median**.
 9. If it never lifts within the safe limit → record `feasible=false`,
    `failed_at_limit_n = limit` (never store the limit as the minimum).
 
-### Coarse-to-fine staircase (≈3× fewer attempts)
-`collect.py` brackets the minimum in **1.0 N** steps, then refines in **0.25 N**
-steps within the bracketing interval. All labels land on the 0.25 N grid.
+### Coarse-to-fine search
+`collect.py` currently brackets the minimum in **1.0 N** steps, then refines in
+**0.01 N** steps within the bracketing interval. These values are configured
+under `collection` in `config.yaml`. They describe measurement resolution only:
+the controller and all model predictions remain continuous from `0` to `8 N`.
 
 ## Hold constant (and document)
 Finger geometry, pad area, object orientation, grasp height, closing speed, force
@@ -49,9 +53,9 @@ Realistic sprint target: aim for ~130 objects × 2 grippers; if throughput slips
 ```json
 {"object_id": "object_001", "image_path": "data/images/object_001.png",
  "mass_g": 420.0, "roughness_class": 2, "projected_contact_fraction": 0.83,
- "gripper": "gecko", "min_force_n": 1.25, "feasible": true,
+ "gripper": "gecko", "min_force_n": 1.27, "feasible": true,
  "failed_at_limit_n": null, "semantic_description": "smooth rigid plastic bottle",
- "meta": {"trial_forces_n": [1.25, 1.5, 1.25], "n_trials": 3, "pad_id": "g-01",
+ "meta": {"trial_forces_n": [1.27, 1.31, 1.28], "n_trials": 3, "pad_id": "g-01",
           "temp_c": 22.5, "humidity_pct": 40, "date": "2026-07-21"}}
 ```
 

@@ -4,10 +4,12 @@ Runs against real hardware or the physics-backed mock bench through the same
 `Bench` interface, so collection and ML work proceed in parallel (mock unblocks
 everything before the gripper firmware exists).
 
-Per object-gripper pair: bracket the minimum lift force in coarse (1.0 N) steps,
-refine in fine (0.25 N) steps, repeat 3x, take the median. ~3x fewer attempts
-than a pure 0.25 N staircase. Infeasible (never lifts within the safe limit) is
-recorded honestly as feasible=False with failed_at_limit_n set.
+Per object-gripper pair: bracket the minimum lift force with the configured
+coarse search step, refine with the configured fine search step, repeat the
+configured number of times, and take the median. These are measurement-protocol
+settings, not hardware command or model-output quantization. Infeasible (never
+lifts within the safe limit) is recorded honestly as feasible=False with
+failed_at_limit_n set.
 
     python -m force_prediction.collect --mock --n 30
     python -m force_prediction.collect --port /dev/cu.usbmodem1101   # real
@@ -31,7 +33,7 @@ GRIPPERS = (Gripper.GECKO, Gripper.SILICONE)
 def measure_min_force_once(devices: Bench, cfg: Config, coarse: float, fine: float) -> float | None:
     """One staircase measurement. Returns the min successful force, or None if the
     object never lifts within the safe limit."""
-    limit, start = cfg.force.limit_n, cfg.force.min_n
+    limit, start = cfg.force.limit_n, cfg.collection.start_n
 
     def lifts_at(n: float) -> bool:
         devices.gripper.close_until_contact()
@@ -131,7 +133,9 @@ def collect_mock(cfg: Config, n: int, out_path: Path, coarse: float, fine: float
         summary = []
         for gripper in GRIPPERS:
             bench.mounted_gripper = gripper
-            feasible, min_force, trials = measure_pair(devices, cfg, 3, coarse, fine)
+            feasible, min_force, trials = measure_pair(
+                devices, cfg, cfg.collection.repeats, coarse, fine
+            )
             record = _build_record(
                 cfg, obj.object_id, image_rel, mass_g, roughness, contact, gripper,
                 description, feasible, min_force, trials, pad_id="mock",
@@ -178,7 +182,9 @@ def collect_real(cfg: Config, out_path: Path, coarse: float, fine: float, port: 
         for gripper in GRIPPERS:
             input(f"Mount the {gripper.value.upper()} pad, clean it, then press Enter...")
             pad_id = input(f"{gripper.value} pad id: ").strip() or None
-            feasible, min_force, trials = measure_pair(devices, cfg, 3, coarse, fine)
+            feasible, min_force, trials = measure_pair(
+                devices, cfg, cfg.collection.repeats, coarse, fine
+            )
             record = _build_record(
                 cfg, object_id, image_rel, mass_g, roughness, contact, gripper,
                 description, feasible, min_force, trials, pad_id,
@@ -206,8 +212,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.mock or args.dry_run:
         cfg.models.dry_run = True  # mock collection is fully offline
     out_path = Path(args.out) if args.out else cfg.path("experiences")
-    coarse = 4 * cfg.force.increment_n  # 1.0 N default bracket
-    fine = cfg.force.increment_n        # 0.25 N default refine
+    coarse = cfg.collection.coarse_step_n
+    fine = cfg.collection.fine_step_n
     if args.mock:
         collect_mock(cfg, args.n, out_path, coarse, fine)
     else:

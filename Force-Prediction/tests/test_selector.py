@@ -10,7 +10,7 @@ from force_prediction.contracts import (
     SelectionResult,
 )
 from force_prediction.evaluation import EvalRow, compute_metrics
-from force_prediction.prediction import select
+from force_prediction.prediction import clamp_force, select
 
 
 def _p(gripper, force, feasible=True):
@@ -24,6 +24,14 @@ def test_picks_lowest_feasible():
     preds = {Gripper.GECKO: _p(Gripper.GECKO, 1.25), Gripper.SILICONE: _p(Gripper.SILICONE, 2.5)}
     r = select(preds)
     assert r.desired_gripper == "gecko" and r.predicted_normal_force_n == 1.25
+
+
+def test_force_clamping_preserves_continuous_values():
+    cfg = load_config()
+
+    assert clamp_force(1.01, cfg) == 1.01
+    assert clamp_force(1.234567, cfg) == 1.234567
+    assert clamp_force(9.0, cfg) == 8.0
 
 
 def test_skips_infeasible_even_if_lower():

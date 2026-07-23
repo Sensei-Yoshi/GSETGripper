@@ -7,7 +7,7 @@ synthesize gecko vs silicone forces + roughness + contact so the full pipeline
 realistic-looking data *before* our own collection exists.
 
 Modeling choices (documented so this is defensible, not made-up):
-  * SILICONE starts from the Exp-Force force and is quantized to our force grid.
+  * SILICONE starts from the Exp-Force force and is clamped to the safe range.
     It remains a synthetic proxy for this gripper embodiment, not ground truth.
   * ROUGHNESS class (1 smooth .. 5 rough) and CONTACT fraction (0..1) are inferred
     per object from material/shape keywords in its name.
@@ -116,9 +116,8 @@ def infer_contact(name: str) -> float:
     return float(np.clip(base + 0.05 * rng.standard_normal(), 0.25, 1.0))
 
 
-def _quantize(force: float, cfg) -> float:
-    inc = cfg.force.increment_n
-    return round(min(cfg.force.limit_n, max(cfg.force.min_n, math.ceil(force / inc) * inc)), 6)
+def _clamp(force: float, cfg) -> float:
+    return min(cfg.force.limit_n, max(cfg.force.min_n, float(force)))
 
 
 def gecko_force(silicone_n: float, c: int, a: float, name: str) -> float:
@@ -128,17 +127,17 @@ def gecko_force(silicone_n: float, c: int, a: float, name: str) -> float:
     return silicone_n * ratio * contact_adjust * noise
 
 
-def break_quantized_tie(
+def break_tie(
     silicone_n: float,
     gecko_n: float | None,
     roughness_class: int,
     cfg,
 ) -> tuple[float, float | None]:
-    """Give every synthetic object a strict winner by one force-grid step."""
+    """Give every synthetic object a strict winner by one collection-resolution step."""
     if gecko_n is None or not math.isclose(gecko_n, silicone_n):
         return silicone_n, gecko_n
 
-    step = cfg.force.increment_n
+    step = cfg.collection.fine_step_n
     if roughness_class <= 2:
         if gecko_n - step >= cfg.force.min_n:
             gecko_n = round(gecko_n - step, 6)
@@ -167,14 +166,14 @@ def main() -> int:
         name = r["Object"]
         oid = _slug(name)
         mass = float(r["Mass"])
-        sil = _quantize(float(r["Gripping Force"]), cfg)
+        sil = _clamp(float(r["Gripping Force"]), cfg)
         c = infer_roughness(name)
         a = round(infer_contact(name), 3)
         raw_gecko = gecko_force(sil, c, a, name)
         gecko_feasible = raw_gecko <= limit
-        gecko = _quantize(raw_gecko, cfg) if gecko_feasible else None
+        gecko = _clamp(raw_gecko, cfg) if gecko_feasible else None
         was_tied = gecko is not None and math.isclose(gecko, sil)
-        sil, gecko = break_quantized_tie(sil, gecko, c, cfg)
+        sil, gecko = break_tie(sil, gecko, c, cfg)
         n_ties_adjusted += int(was_tied)
 
         if gecko is not None:
@@ -224,7 +223,7 @@ def main() -> int:
     print(f"Wrote {out_jsonl}  ({len(records)} rows, 2 per object)")
     print(f"\ngecko-favored: {n_gecko_fav}   silicone-favored: {n_sil_fav}   "
           f"gecko-infeasible: {n_gecko_infeasible}   crossover(<=0.5N): {n_crossover}")
-    print(f"quantized ties adjusted by one force-grid step: {n_ties_adjusted}")
+    print(f"ties adjusted by one collection-resolution step: {n_ties_adjusted}")
     ro006 = [t for t in table if t["roughness_class"] in (1, 2)]
     print(f"smooth objects (class 1-2): {len(ro006)}  -> mostly gecko-favored")
     print("\nsample:")

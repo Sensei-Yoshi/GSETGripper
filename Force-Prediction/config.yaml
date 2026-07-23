@@ -22,11 +22,19 @@ paths:
 # STATIONARY finger, in newtons. Never doubled, never summed across fingers.
 force:
   limit_n: 8.0          # hardware safe limit; failure at this => infeasible
-  increment_n: 0.25     # staircase step and label quantization grid
-  min_n: 0.25           # smallest commandable / reportable force
+  min_n: 0.0            # controller accepts continuous commands from 0 to limit_n
   hold_seconds: 3.0     # required successful-lift hold time
   lift_height_mm: 50.0
   gravity: 9.81
+
+# Ground-truth search resolution is an experimental-protocol choice, not a
+# restriction on prediction or command precision. Predictions are never snapped
+# to these steps.
+collection:
+  start_n: 0.0
+  coarse_step_n: 1.0
+  fine_step_n: 0.01
+  repeats: 3
 
 # --- Geometry ----------------------------------------------------------------
 geometry:
@@ -46,6 +54,7 @@ roughness:
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
   k: 5                  # object neighbors (E5); rows per branch for E3/E3b
+  use_projected_contact: true  # UI/config ablation for retrieval and VLM inputs
   weights:              # hybrid score S = w_s*cos + w_m*Smass + w_r*Srough + w_a*Scontact
     semantic: 0.40
     mass: 0.25
@@ -124,19 +133,23 @@ prompts:
     mass, roughness class, or projected contact fraction. If the likely contact patch
     is hidden or ambiguous, say so rather than inventing material or condition.
 
-  system: |
+  prediction_system: |
     You are a robotics grasp-material selection and pre-grasp force estimation model.
 
     TASK
-    Given an object image, measured object properties, one or both candidate
-    robotic gripper embodiments, and retrieved grasping experiences, estimate the minimum
-    stationary-finger normal force
-    required to lift the object under the standardized test protocol.
+    Given the evidence supplied for the active experiment, estimate the minimum
+    stationary-finger normal force required to lift the object under the
+    standardized test protocol. Some experiments intentionally hide measurements
+    or retrieved examples. Use only evidence present in the request, and never
+    claim that an absent value was measured or retrieved.
 
     FORCE CONVENTION
     All force values are in newtons and refer exclusively to the normal force
     measured by the load cell mounted behind the stationary gripper finger.
     Do not double the force and do not convert it into a summed two-finger force.
+    The controller accepts continuous commands from 0 to 8 N. Return your best
+    continuous estimate; do not snap or round it to 0.25 N or to the force values
+    shown in retrieved examples.
 
     AVAILABLE GRIPPERS
     1. "gecko": TPU fin-ray finger with a mushroom-cap gecko-inspired dry adhesive pad.
@@ -149,23 +162,24 @@ prompts:
     oily, contaminated, or loosely coated surfaces. Silicone relies primarily on
     friction and viscoelastic surface interaction; it may need more normal force
     on smooth surfaces but can be more robust on rough or poorly adhesive ones.
-    Do not choose a gripper from roughness alone. Consider measured roughness
-    class together with mass, projected contact fraction, visible surface
-    material and condition, and the retrieved gripper-specific experiences.
+    Do not choose a gripper from roughness alone. When supplied, consider measured
+    roughness class together with mass, projected contact fraction, visible
+    surface material and condition, and retrieved gripper-specific experiences.
 
     MEASUREMENTS
-    Measured mass, roughness class, and projected contact fraction are
-    authoritative. Do not replace them with visual estimates. Use vision only for
-    properties not directly measured (material family, porosity, fibrousness,
-    contamination, visible surface condition).
+    Any supplied mass, roughness class, and projected contact fraction are
+    authoritative. Do not replace supplied measurements with visual estimates.
+    If an experiment intentionally omits them, follow its instruction and state
+    uncertainty rather than pretending they were measured.
 
     RETRIEVED EXPERIENCES
-    Retrieved experiences are empirical observations under the same force
-    convention. Paired object experiences report both gecko and silicone outcomes;
-    use the within-object force difference to reason about the material crossover.
-    Favor physically and semantically close
-    experiences, but do not copy a force without accounting for differences in
-    mass, roughness, contact fraction, and surface material.
+    When retrieved experiences are supplied, treat them as empirical observations
+    under the same force convention. Paired object experiences report both gecko
+    and silicone outcomes; use the within-object force difference to reason about
+    the material crossover. Favor physically and semantically close experiences,
+    but do not copy a force without accounting for available differences in mass,
+    roughness, contact fraction, and surface material. If no experiences are
+    supplied, do not imply that retrieval evidence was used.
 
     OUTPUT
     Return only valid JSON matching the supplied schema. "reasoning_trace" must
@@ -194,31 +208,50 @@ prompts:
     choose gecko or silicone and do not estimate force. Return only JSON matching
     the supplied schema.
 
-  per_gripper_instruction: |
-    Estimate the minimum stationary-finger normal force (newtons) to lift this
-    object with the "{candidate_gripper}" gripper under the standardized
-    protocol, and judge feasibility within the force limit. Use the measured
-    properties and the retrieved "{candidate_gripper}" experiences (including
-    their other-gripper force where present).
+  experiments:
+    e1: |
+      E1 ZERO-SHOT VISION-ONLY CONDITION.
+      Estimate the minimum stationary-finger normal force (newtons) to lift the
+      pictured object with the "{candidate_gripper}" gripper, and judge feasibility
+      within the force limit. No authoritative mass, roughness, projected contact
+      measurement, physics estimate, or retrieved grasp experience is available.
+      Reason only from visible object scale, material, condition, and geometry.
+      Explicitly reflect the resulting uncertainty and do not invent measurements.
 
-  paired_gripper_instruction: |
-    Estimate the minimum stationary-finger normal force (newtons) for both the
-    gecko and silicone grippers under the standardized protocol. Judge each
-    gripper's feasibility independently within the force limit. Use the measured
-    query properties and the single ranked list of paired object experiences,
-    where every neighbor reports both gripper outcomes when available. Return one
-    structured response containing a gecko prediction and a silicone prediction;
-    do not make the final gripper selection.
+    e2: |
+      E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.
+      Estimate the minimum stationary-finger normal force (newtons) to lift this
+      object with the "{candidate_gripper}" gripper, and judge feasibility within
+      the force limit. Use the supplied authoritative measurements and image.
+      No retrieved grasp experiences or physics estimate are available; do not
+      imply otherwise.
+
+    e3: |
+      E3 BRANCH-RETRIEVAL CONDITION.
+      Estimate the minimum stationary-finger normal force (newtons) to lift this
+      object with the "{candidate_gripper}" gripper, and judge feasibility within
+      the force limit. Use the supplied measurements, image, and ranked
+      same-gripper experiences. These are branch-specific examples, not a paired
+      object list. No physics estimate is available.
+
+    e5: |
+      E5 PAIRED-OBJECT RETRIEVAL CONDITION.
+      Estimate the minimum stationary-finger normal force (newtons) independently
+      for both gecko and silicone under the standardized protocol. Use the supplied
+      measurements, image, and one ranked object list in which each neighbor carries
+      both gripper outcomes. Return one structured response containing both
+      predictions and feasibility judgments. Do not make the final gripper
+      selection, and do not assume or invent a physics estimate.
 
 # =============================================================================
 # EXPERIMENTS  —  toggle sets over the single pipeline.
 # See docs/experiments.md for the scientific rationale of each.
 # =============================================================================
 experiments:
-  e1:   {use_measured: false, use_retrieval: false, use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false}
-  e2:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false}
-  e3:   {use_measured: true,  use_retrieval: true,  use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false}
+  e1:   {use_measured: false, use_retrieval: false, use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false, prompt: e1}
+  e2:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false, prompt: e2}
+  e3:   {use_measured: true,  use_retrieval: true,  use_paired_rows: false, use_physics: false, use_vlm: true,  use_residual: false, prompt: e3}
   e3b:  {use_measured: true,  use_retrieval: true,  use_paired_rows: false, use_physics: false, use_vlm: false, use_residual: false}
   e4:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: true,  use_vlm: false, use_residual: false}
-  e5:   {use_measured: true,  use_retrieval: true,  use_paired_rows: true,  use_physics: false, use_vlm: true,  use_residual: false}
+  e5:   {use_measured: true,  use_retrieval: true,  use_paired_rows: true,  use_physics: false, use_vlm: true,  use_residual: false, prompt: e5}
   e6:   {use_measured: true,  use_retrieval: false, use_paired_rows: false, use_physics: true,  use_vlm: false, use_residual: true}

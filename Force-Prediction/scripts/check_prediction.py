@@ -29,7 +29,16 @@ def main() -> int:
             candidate_gripper=gripper,
         )
         est = physics.min_force(gripper, cq.mass_g, cq.roughness_class, cq.projected_contact_fraction)
-        pred = vlm_predict_gripper(cfg, cq, None, [], est, include_paired=True)
+        pred = vlm_predict_gripper(
+            cfg,
+            cq,
+            None,
+            [],
+            est,
+            include_paired=False,
+            instruction=cfg.prompts.experiments["e2"],
+            include_retrieval=False,
+        )
         print(f"{gripper.value:8}: physics={est.min_force_n} -> pred={pred.predicted_normal_force_n}N "
               f"feasible={pred.feasible} :: {pred.reasoning_trace}")
     return 0
