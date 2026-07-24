@@ -2,7 +2,7 @@
 
 Edit ``IMAGE_PATH`` below, then run:
 
-    python scripts/extract_object_outline.py
+    python scripts/contact_model/extract_object_outline.py
 
 The first run may download the rembg ISNet model. Results are written beside
 the input image unless ``OUTPUT_DIR`` is changed.
