@@ -1,4 +1,6 @@
+import argparse
 import json
+import sys
 import time
 from collections import deque
 from datetime import datetime, timezone
@@ -10,14 +12,38 @@ import numpy as np
 
 from pyorbbecsdk import Config, OBSensorType, Pipeline
 
-from GSETGripper.camera.depth_closest import (
-    CENTER_ROI_RADIUS_PIXELS,
-    MAX_VALID_DEPTH_MM,
-    MIN_VALID_DEPTH_MM,
-    find_closest_point,
-    get_center_roi_mask,
-    read_depth_map_mm,
-)
+try:
+    from GSETGripper.camera.depth_closest import (
+        CENTER_ROI_RADIUS_PIXELS,
+        MAX_VALID_DEPTH_MM,
+        MIN_VALID_DEPTH_MM,
+        find_closest_point,
+        get_center_roi_mask,
+        read_depth_map_mm,
+    )
+    from GSETGripper.camera.depth_closest_read import (
+        DEFAULT_BAUD_RATE,
+        SERIAL_STARTUP_DELAY_SECONDS,
+        compute_object_height_mm,
+        find_arduino_port,
+    )
+except ImportError:
+    # Launched as `python camera/depth_closest_viewer.py` (e.g. via the macos
+    # shell script): the camera/ dir itself is on sys.path, not the repo parent.
+    from depth_closest import (
+        CENTER_ROI_RADIUS_PIXELS,
+        MAX_VALID_DEPTH_MM,
+        MIN_VALID_DEPTH_MM,
+        find_closest_point,
+        get_center_roi_mask,
+        read_depth_map_mm,
+    )
+    from depth_closest_read import (
+        DEFAULT_BAUD_RATE,
+        SERIAL_STARTUP_DELAY_SECONDS,
+        compute_object_height_mm,
+        find_arduino_port,
+    )
 
 FRAME_TIMEOUT_MS = 500
 WINDOW_NAME = "Orbbec Closest Point Viewer"
@@ -30,6 +56,66 @@ CAPTURE_FLASH_SECONDS = 1.0
 SIDEBAR_WIDTH = 260
 SMOOTHING_WINDOW_FRAMES = 5
 CAPTURE_FILE_PATH = Path(__file__).parent / "captures" / "latest_capture.json"
+REPLY_OK_COLOR = (0, 255, 0)
+REPLY_WARN_COLOR = (0, 165, 255)
+
+
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Live closest-depth viewer. Press 'c' to capture AND send the "
+        "computed object height straight to the Arduino over serial."
+    )
+    parser.add_argument(
+        "--port",
+        default=None,
+        help="Arduino serial port, such as /dev/cu.usbmodem1101. Defaults to auto-detect.",
+    )
+    parser.add_argument(
+        "--baud",
+        type=int,
+        default=DEFAULT_BAUD_RATE,
+        help=f"Arduino serial baud rate. Default: {DEFAULT_BAUD_RATE}.",
+    )
+    parser.add_argument(
+        "--no-serial",
+        action="store_true",
+        help="Capture to file only; do not connect to the Arduino.",
+    )
+    return parser.parse_args()
+
+
+def open_arduino(port_preference: Optional[str], baud: int):
+    """Open one long-lived serial connection. The board resets when the port
+    opens, so the carriage must be parked at the top of travel at this moment;
+    every later capture sends an absolute height against that zero."""
+    import serial
+
+    port = find_arduino_port(port_preference)
+    connection = serial.Serial(port, baud, timeout=0)
+    time.sleep(SERIAL_STARTUP_DELAY_SECONDS)  # allow the board to reset
+    return connection, port
+
+
+def send_object_height(connection, height_mm: float) -> None:
+    connection.write(f"Z {height_mm:.1f}\n".encode("ascii"))
+    connection.flush()
+
+
+def drain_arduino_replies(connection, buffer: bytearray) -> list:
+    """Non-blocking read of complete reply lines (DONE Z / WARN ... / ERR ...)."""
+    if connection is None:
+        return []
+    waiting = connection.in_waiting
+    if waiting:
+        buffer.extend(connection.read(waiting))
+    lines = []
+    while b"\n" in buffer:
+        raw, _, rest = bytes(buffer).partition(b"\n")
+        buffer[:] = rest
+        text = raw.decode("ascii", errors="ignore").strip()
+        if text:
+            lines.append(text)
+    return lines
 
 
 def depth_map_to_color_image(depth_map_mm: np.ndarray) -> np.ndarray:
@@ -79,6 +165,8 @@ def render_frame(
     depth_map_mm: np.ndarray,
     closest: Optional[Tuple[float, Tuple[int, int]]],
     capture_flash_active: bool = False,
+    last_sent_text: Optional[str] = None,
+    last_reply_text: Optional[str] = None,
 ) -> np.ndarray:
     depth_image = depth_map_to_color_image(depth_map_mm)
     height, width = depth_map_mm.shape
@@ -110,6 +198,12 @@ def render_frame(
         cv2.putText(sidebar, f"row: {row}", (16, 120), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
         cv2.putText(sidebar, f"col: {col}", (16, 145), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 255, 255), 1)
 
+    if last_sent_text is not None:
+        cv2.putText(sidebar, f"sent: {last_sent_text}", (16, 190), cv2.FONT_HERSHEY_SIMPLEX, 0.5, CAPTURE_FLASH_COLOR, 1)
+    if last_reply_text is not None:
+        reply_color = REPLY_OK_COLOR if last_reply_text.startswith("DONE") else REPLY_WARN_COLOR
+        cv2.putText(sidebar, last_reply_text, (16, 215), cv2.FONT_HERSHEY_SIMPLEX, 0.5, reply_color, 1)
+
     hint_text = "CAPTURED" if capture_flash_active else "Press 'c' to capture"
     hint_color = CAPTURE_FLASH_COLOR if capture_flash_active else (160, 160, 160)
     cv2.putText(sidebar, hint_text, (16, height - 24), cv2.FONT_HERSHEY_SIMPLEX, 0.55, hint_color, 2)
@@ -117,7 +211,20 @@ def render_frame(
     return np.hstack((depth_image, sidebar))
 
 
-def run() -> None:
+def run(args: argparse.Namespace) -> None:
+    connection = None
+    port = None
+    if not args.no_serial:
+        try:
+            connection, port = open_arduino(args.port, args.baud)
+            print(f"Arduino connected on {port}. The board just reset -- carriage position is now zero, "
+                  "so it must be parked at the top of travel.")
+        except Exception as error:
+            print(
+                f"Arduino not connected ({error}). Captures will still be saved, but heights will not be sent.",
+                file=sys.stderr,
+            )
+
     pipeline = Pipeline()
     config = Config()
 
@@ -127,11 +234,19 @@ def run() -> None:
 
     history: "deque[Tuple[float, Tuple[int, int]]]" = deque(maxlen=SMOOTHING_WINDOW_FRAMES)
     capture_flash_until = 0.0
+    reply_buffer = bytearray()
+    last_sent_text: Optional[str] = None
+    last_reply_text: Optional[str] = None
 
     pipeline.start(config)
     try:
         while True:
             frames = pipeline.wait_for_frames(FRAME_TIMEOUT_MS)
+
+            for reply in drain_arduino_replies(connection, reply_buffer):
+                print(f"[arduino] {reply}")
+                last_reply_text = reply
+
             if frames is None:
                 continue
 
@@ -146,26 +261,48 @@ def run() -> None:
 
             closest = smooth_closest_point(history)
             capture_flash_active = time.time() < capture_flash_until
-            frame_image = render_frame(depth_map_mm, closest, capture_flash_active)
+            frame_image = render_frame(
+                depth_map_mm, closest, capture_flash_active, last_sent_text, last_reply_text
+            )
 
             cv2.imshow(WINDOW_NAME, frame_image)
             key = cv2.waitKey(1)
             if key in (ord("q"), ESC_KEY):
                 break
             if key == CAPTURE_KEY:
-                if closest is not None:
-                    save_capture(closest)
-                    print(f"Captured: {closest[0]:.1f} mm -> {CAPTURE_FILE_PATH}")
-                    capture_flash_until = time.time() + CAPTURE_FLASH_SECONDS
-                else:
+                if closest is None:
                     print("Capture skipped: no valid closest point right now.")
+                    continue
+
+                save_capture(closest)
+                print(f"Captured: {closest[0]:.1f} mm -> {CAPTURE_FILE_PATH}")
+                capture_flash_until = time.time() + CAPTURE_FLASH_SECONDS
+
+                object_height_mm = compute_object_height_mm(closest[0])
+                if object_height_mm is None:
+                    print(
+                        f"Object height undefined: depth {closest[0]:.1f} mm is shorter than the "
+                        "fixed horizontal camera distance. Nothing sent.",
+                        file=sys.stderr,
+                    )
+                elif connection is not None:
+                    send_object_height(connection, object_height_mm)
+                    last_sent_text = f"Z {object_height_mm:.1f}"
+                    last_reply_text = None
+                    print(f"Sent: Z {object_height_mm:.1f} -> {port}")
+                else:
+                    print(
+                        f"Object height: {object_height_mm:.1f} mm (Arduino not connected; not sent)"
+                    )
     finally:
         pipeline.stop()
         cv2.destroyAllWindows()
+        if connection is not None:
+            connection.close()
 
 
 def main() -> int:
-    run()
+    run(parse_args())
     return 0
 
 

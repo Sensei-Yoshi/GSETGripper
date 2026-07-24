@@ -2,13 +2,16 @@
 
 const unsigned long BAUD_RATE = 9600;
 
-// ---- Z axis (lead screw) ----
-const int Z_A_STEP_PIN = 2;
-const int Z_A_DIR_PIN = 3;
+// ---- ZA to E0 ----
+const int Z_A_STEP_PIN = 26;
+const int Z_A_DIR_PIN  = 28;
+const int Z_A_EN_PIN   = 24;   // A8
 AccelStepper stepperZA(AccelStepper::DRIVER, Z_A_STEP_PIN, Z_A_DIR_PIN);
 
-const int Z_B_STEP_PIN = 4;
-const int Z_B_DIR_PIN = 5;
+// ZB -> E1 driver socket
+const int Z_B_STEP_PIN = 36;
+const int Z_B_DIR_PIN  = 34;
+const int Z_B_EN_PIN   = 30;
 AccelStepper stepperZB(AccelStepper::DRIVER, Z_B_STEP_PIN, Z_B_DIR_PIN);
 
 const float Z_MAX_SPEED_STEPS_PER_SEC = 2500.0;      // 12.5 mm/s
@@ -33,9 +36,10 @@ const long Z_MAX_STEPS = 70000; // 350 mm * 200 steps/mm
 
 bool zMovePending = false;
 
-// ---- SELECT axis (gecko <-> silicone gripper head) ----
-const int SELECT_STEP_PIN = 6;
-const int SELECT_DIR_PIN = 7;
+// ---- SELECT axis -> X driver socket ----
+const int SELECT_STEP_PIN = 54;   // A0
+const int SELECT_DIR_PIN  = 55;   // A1
+const int SELECT_EN_PIN   = 38;
 AccelStepper stepperSelect(AccelStepper::DRIVER, SELECT_STEP_PIN, SELECT_DIR_PIN);
 
 const float SELECT_MAX_SPEED_STEPS_PER_SEC = 1600.0;  // 1 turret rev/s (60 RPM)
@@ -49,15 +53,16 @@ const float SELECT_ACCELERATION_STEPS_PER_SEC2 = 2000.0;
 // TODO: confirm which head sits at 0 deg -- swapping these two constants is
 // the whole fix if gecko and silicone are the other way round.
 const long SELECT_GEKKO_STEPS = 0;      // head A, 0 deg
-const long SELECT_SILICONE_STEPS = 356; // head B, 80 deg
+const long SELECT_SILICONE_STEPS = 430; // head B, 
 const long SELECT_MIN_STEPS = 0;
-const long SELECT_MAX_STEPS = 356;
+const long SELECT_MAX_STEPS = 430;
 
 bool selectMovePending = false;
 
-// ---- GRIP axis (open/close the active gripper) ----
-const int GRIP_STEP_PIN = 8;
-const int GRIP_DIR_PIN = 9;
+// ---- GRIP axis -> Y driver socket ----
+const int GRIP_STEP_PIN = 60;   // A6
+const int GRIP_DIR_PIN  = 61;   // A7
+const int GRIP_EN_PIN   = 56;   // A2
 AccelStepper stepperGrip(AccelStepper::DRIVER, GRIP_STEP_PIN, GRIP_DIR_PIN);
 
 const float GRIP_MAX_SPEED_STEPS_PER_SEC = 2500.0;      // 12.5 mm/s of jaw travel
@@ -89,6 +94,15 @@ String command;
 void setup() {
   Serial.begin(BAUD_RATE);
 
+  pinMode(Z_A_EN_PIN, OUTPUT); 
+  digitalWrite(Z_A_EN_PIN, LOW);
+  pinMode(Z_B_EN_PIN, OUTPUT); 
+  digitalWrite(Z_B_EN_PIN, LOW);
+  pinMode(SELECT_EN_PIN, OUTPUT);
+  digitalWrite(SELECT_EN_PIN, LOW);
+  pinMode(GRIP_EN_PIN, OUTPUT);
+  digitalWrite(GRIP_EN_PIN, LOW);
+
   stepperZA.setMaxSpeed(Z_MAX_SPEED_STEPS_PER_SEC);
   stepperZA.setAcceleration(Z_ACCELERATION_STEPS_PER_SEC2);
 
@@ -100,6 +114,10 @@ void setup() {
 
   stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
   stepperGrip.setAcceleration(GRIP_ACCELERATION_STEPS_PER_SEC2);
+
+  stepperSelect.setPinsInverted(true, false, false);
+  stepperZA.setPinsInverted(true, false, false);
+  stepperZB.setPinsInverted(true, false, false);  
 }
 
 void loop() {
