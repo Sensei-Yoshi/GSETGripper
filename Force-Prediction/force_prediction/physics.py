@@ -1,8 +1,8 @@
-"""Reduced-order physics prior for the two grippers (James et al., IEEE #11522915).
+"""Reduced-order calibrated physics for the two grippers (James et al., IEEE #11522915).
 
-The physics supplies a deterministic numerical force prior; experiences and the
-VLM correct it. Coefficients are SMOOTH and MONOTONE in roughness class so we fit
-~5-6 parameters instead of 16 free per-class values (which would overfit ~100
+E5 emits this model directly; E6 learns a residual over the same calibrated solve.
+Coefficients are smooth and monotone in roughness class so each training fold fits
+seven parameters total instead of free per-class values (which would overfit ~100
 objects with sparse class coverage).
 
 Model (holding / tangential capacity as a function of applied normal force N):

@@ -1,135 +1,104 @@
-# CLAUDE.md — Force-Prediction (agent onboarding)
+# CLAUDE.md — Force-Prediction Agent Onboarding
 
-Read this first. It is the current, accurate state of the project. `docs/project-context.md`
-is the original *design rationale* (still useful for the "why"), but this file is the
-source of truth for the code, decisions, environment, and how to run things.
+Read this file first, then `docs/project-context.md` for the complete rationale.
 
-## What this is
-Material-aware **gripper selection + minimum-force prediction** for two soft grippers:
-**TPU–gecko** (dry adhesive) vs **TPU–silicone** (friction). Given an unseen object, predict
-`F*(o,g)` — the minimum **stationary-finger normal force** to lift it — for each gripper, and
-pick the lower-force feasible one. The method sits between **Exp-Force** (experience-conditioned
-VLM) and **DeliGrasp** (LLM-inferred physics params → controller). Physics is grounded in
-**James et al., RoboSoft 2026** (DOI 10.1109/RoboSoft67810.2026.11522915).
+## Purpose
 
-## ⚠️ Environment gotchas — READ BEFORE ANYTHING
-- **Repo path:** `/Users/premshah/Desktop/Robotics/GSET/GSETGripper/Force-Prediction`. It has
-  been moved several times; if a path is wrong, run
-  `find /Users/premshah/Desktop/Robotics -type d -name force_prediction`.
-- **iCloud trap (important):** the project sits on the iCloud-synced Desktop. This has caused
-  files to (a) get **evicted to 0-byte placeholders** mid-run (→ spurious `ImportError`, empty
-  `config.py`) and (b) **revert to older versions**, silently undoing edits. If imports fail on
-  "empty" files, or your edits vanish, this is why. Mitigate by re-materializing
-  (`find . -name '*.py' -exec cat {} + >/dev/null`) or — far better — **move the repo + venv off
-  iCloud** (e.g. `~/Developer/`) or disable iCloud "Optimize Mac Storage" and mark the folder
-  "Keep Downloaded".
-- **venv:** `/Users/premshah/Desktop/Robotics/GSET/env` (Python 3.11). Install:
-  `"$VENV"/bin/python -m pip install -r requirements.txt && "$VENV"/bin/python -m pip install -e .`
-- **API key:** put `GEMINI_API_KEY=...` in `.env` at the repo root (git-ignored, auto-loaded by
-  `force_prediction.llm.load_dotenv`). Free tier — see quota note below.
+Predict the minimum stationary-finger normal force for two compliant grippers—TPU–Gecko
+dry adhesive and TPU–silicone friction—and select the lowest-force feasible result. Force
+is an object–gripper interaction. The project combines experience-conditioned VLM
+prediction, calibrated analytical physics, and physics-residual learning.
 
-## Architecture (mental model)
-- **Flat package** `force_prediction/`, one module per concern, no sub-packages.
-- **`config.yaml` is the SINGLE source of tuning:** retrieval weights, physics coefficients,
-  model IDs, the **prompts**, and the **E1–E6 experiment toggle-sets**. Never hardcode a tunable.
-- **One `pipeline.py`** drives every experiment; conditions differ *only* by toggles
-  (`use_measured/use_retrieval/use_paired_rows/use_physics/use_vlm/use_residual`).
-- **Mock-first:** physics-backed mocks in `hardware.py` + `dry_run` LLM stubs → the whole stack
-  and all experiments run **offline with no hardware and no API key**.
-- **E5 data flow:** measured mass + LED roughness class + depth-derived contact fraction →
-  one hybrid object-level retrieval with paired gecko/silicone outcomes → one structured
-  Gemini response containing both force predictions → deterministic feasible arg-min selector.
+## Environment
+
+- Repository: `/Users/premshah/Desktop/Robotics/GSET/GSETGripper/Force-Prediction`
+- Python environment: `/Users/premshah/Desktop/Robotics/GSET/env`
+- API credentials: local `.env` or `GEMINI_API_KEY`/`GOOGLE_API_KEY`; never persist them.
+- The repository is on an iCloud-synced Desktop. If a file unexpectedly appears empty or
+  reverts, re-materialize it and verify the working tree before editing.
+
+## Architecture
+
+- `config.yaml` is the single source for tunables, method assignments, and prompts.
+- `experiments.py` is the readable canonical map and implementation for E1/E2/E4/E5/E6.
+- `pipeline.py` is deliberately thin: `Pipeline(cfg, "e4").fit(train).predict(query)`.
+- `contracts.py` owns shared Pydantic data shapes; do not create ad-hoc response dicts.
+- Every learned resource is fit inside the current object-grouped training fold.
+- Offline mocks and dry-run VLM responses keep tests free of hardware and network calls.
+
+## Active experiments
+
+| ID | Method |
+|---|---|
+| E1 | One joint image-only zero-shot VLM response and recommendation |
+| E2 | One joint image + authoritative measurements VLM response |
+| E4 | One paired-object retrieval + one joint VLM response |
+| E5 | Bounded calibration of seven reduced-order physics coefficients |
+| E6 | Identical E5 calibration + one semantic residual regressor per gripper |
+
+E3 and E3B do not exist. The numbering gap is intentional. Python always makes the final
+lowest-feasible-force choice; VLM recommendation is stored and scored separately.
+
+## Locked conventions
+
+- Force means stationary-finger load-cell normal force in newtons; never double it.
+- Hardware and predictions are continuous from `0` through `8 N`; never snap predictions
+  to the collection staircase.
+- `retrieval.k` in `config.yaml` is the default actually used by E4 and the UI.
+- Stored experiences are grouped by `object_id`; both gripper rows share every split.
+- Query objects must be excluded from their own E4 retrieval pool.
+- Embeddings contain the semantic contact-region description only. Mass, roughness, and
+  optional projected contact remain explicit hybrid-score terms.
+- E5 is calibrated physics, not an unlearned formula. E6 is E5 plus a flexible residual.
+- E5 and E6 receive no VLM force prediction and retrieve no neighbor list.
+- E4 receives no physics value.
 
 ## Module map
+
 | File | Role |
-|------|------|
-| `config.py` / `config.yaml` | typed config loader / all tunables + prompts + experiment toggles |
-| `contracts.py` | Pydantic models: records, paired object view, joint/per-gripper predictions, selection result |
-| `hardware.py` | device `Protocol`s + real serial drivers + physics-backed mocks + `fabricate_records` |
-| `physics.py` | James reduced-order model (silicone/gecko), Brent solver, per-fold calibration |
-| `retrieval.py` | embedding providers + hybrid similarity + E5 paired-object retrieval + branch baselines |
-| `perception.py` | Gemini descriptor + depth height-ratio contact-fraction proxy |
-| `llm.py` | single Gemini client (structured JSON + embeddings), disk cache, retries, `.env` loader |
-| `prediction.py` | VLM estimator + non-VLM baselines + deterministic `select()` |
-| `learning.py` | physics-residual model (E6) |
-| `evaluation.py` | GroupKFold splits + force/selection/regret metrics |
-| `pipeline.py` | the one toggle-driven orchestration |
-| `collect.py` | coarse-to-fine staircase ground-truth collector (real or `--mock`) |
-| `scripts/check_*.py` | stand-alone stage debuggers |
-| `scripts/run_experiment.py` | run E1–E6 |
-| `scripts/expforce_testset.py` | live Gemini POC on the public Exp-Force dataset |
-| `app.py` / `expforce.py` | local 100/29 synthetic validation viewer + immutable dataset adapter |
+|---|---|
+| `config.py` / `config.yaml` | Typed config and all experiment definitions/prompts |
+| `experiments.py` | Strategy catalog, fold-local fitting, experiment dispatch |
+| `pipeline.py` | Public facade and object-to-query adapter |
+| `contracts.py` | Experience, query, joint prediction, selection models |
+| `prediction.py` | Joint force request, continuous clamp, physics adapter, selector |
+| `retrieval.py` | Embedding providers and E4 paired-object retrieval |
+| `physics.py` | Analytical capacity equations, bounded calibration, root solve |
+| `learning.py` | E6 residual learner and PCA |
+| `evaluation.py` | Object-grouped splits and metrics |
+| `expforce.py` | Viewer data preparation, v3 artifacts, legacy provenance, benchmark |
+| `app.py` | Streamlit research lab |
 
-## Decisions locked (do not silently change)
-- **VLM:** `config.models.vlm`. Currently `gemini-flash-lite-latest` (best free-tier quota).
-  `gemini-flash-latest` / `gemini-3.1-pro-preview` are higher quality if quota allows;
-  Exp-Force's best was `gemini-3.1-pro`. `gemini-2.5-flash` is **blocked for new keys** — don't use it.
-- **Embedding:** `gemini-embedding-2` (or `-preview`), **semantic-description-only**, **asymmetric retrieval
-  format** — stored experiences as documents (`title: none | text: {…}`), queries as
-  `task: search result | query: {…}`. Implemented in `GeminiEmbeddingProvider`; `dim: 1536`
-  (Matryoshka). Mass, roughness, and contact are explicit hybrid-score terms, not duplicated
-  inside the vector. `gemini-embedding-2` has NO `task_type` param (that was `embedding-001`).
-- **Physics (James-grounded):** in `config.yaml physics:` — silicone friction **rises** with
-  roughness (`alpha_sil_decay` negative); gecko vdW adhesion (`beta`) **collapses** to ~0 by the
-  roughest class. Crossover ≈ class 3. Model form matches James Eq. 1/2 in the saturated regime.
-  These are a prior/mock-truth; recalibrate per fold on real data.
-- **Force convention:** stationary-finger load-cell normal force, newtons, **never doubled**.
-  Single `force.limit_n = 8` in config.
-- **Retrieval store:** in-memory **exact cosine** over content-hash-cached embeddings — **no
-  vector DB** (corpus < 1k). Consider pgvector/Supabase only if the corpus grows large or a
-  shared team DB is wanted (that's a sharing win, not a speed win at this scale).
-- **Splits:** `GroupKFold` on `object_id` (both gripper rows share a fold), frozen to `splits.json`.
+## Data and provenance
 
-## Where data & embeddings live
-```
-data/
-├── experiences.jsonl   # dataset: 1 ExperienceRecord per line
-├── images/             # object RGB
-├── splits.json         # frozen GroupKFold
-├── cache/<sha256>.json # ← every embedding vector + every VLM response, content-hash keyed
-└── expforce/           # synthetic source + 129-object experience pool + viewer artifacts
-```
-Embeddings are computed on demand, cached to `data/cache/`, and loaded into an in-memory dict
-for exact search during a run. No database.
+`data/expforce/dataset_2gripper.csv` is a synthetic 129-object validation fixture, not
+physical evidence. Derived descriptors, experience rows, cache entries, runs, and results
+stay separate from the source CSV. New run artifacts use schema v3 with
+`experiment_method` and `experiment_definition_version`. Old artifacts are never rewritten;
+the inspector labels old E5 paired-VLM and old E4 physics runs as legacy meanings.
 
-## How to run
+## Commands
+
 ```bash
 VENV=/Users/premshah/Desktop/Robotics/GSET/env/bin/python
-$VENV -m pytest                                             # unit tests (offline)
-$VENV -m force_prediction.collect --mock --n 40            # synthetic dataset (no hardware/API)
-$VENV scripts/run_experiment.py --all --dry-run           # E1–E6 offline
-$VENV scripts/check_pipeline.py                            # full E5 on one object, offline
-$VENV scripts/expforce_testset.py --live --limit 6 --k 3  # live Gemini POC (needs .env key)
-$VENV tests/test_gemini_live.py                            # single live call smoke
-$VENV scripts/prepare_expforce_viewer.py                   # checkpointed descriptors + records
-$VENV -m streamlit run app.py                              # local validation viewer
+$VENV -m pytest
+$VENV -m ruff check .
+$VENV -m mypy force_prediction
+$VENV scripts/run_experiment.py --all --dry-run
+$VENV scripts/check_pipeline.py
+$VENV scripts/prepare_expforce_viewer.py
+$VENV -m streamlit run app.py
 ```
 
-## Status — what's proven vs pending
-- **Offline:** every module + all configured experiments run; **34 offline pytest green** plus Streamlit UI smoke.
-- **Synthetic viewer:** the paired Exp-Force fixture has one strict winner per object, a 129-object
-  experience pool with leave-one-out evaluation, detailed top-5 retrieval traces, cache telemetry,
-  and persisted JSON/CSV benchmark results. It validates plumbing, not physical performance.
-- **Prior live POC:** full Gemini stack ran on provisional **Exp-Force** fixture data (descriptor + `gemini-embedding-2`
-  asymmetric retrieval + structured force prediction + GroupKFold). 6-object POC **MAE 0.083 N**
-  (tiny synthetic/provisional sample; do not treat as a scientific result).
-- **Tested live:** semantic retrieval + mass similarity + VLM force. **NOT yet live:**
-  roughness/contact/physics/gripper-selection — the Exp-Force set has no roughness/contact labels
-  (held constant), so those are validated **offline on synthetic data** and await our own
-  2-gripper collection.
-- **Free-tier quota** (`429 RESOURCE_EXHAUSTED`, ~20 requests) caps batch size; the disk cache
-  makes re-runs resume for free. Space runs out or use a paid tier for the full 129 objects.
+The installed mypy 2.3.0 currently may exit with its own internal error; preserve the
+command in verification and distinguish a tool crash from project diagnostics.
 
-## Outstanding work / TODO
-- Collect the real 2-gripper gecko/silicone dataset (`docs/data_collection_sop.md`); fill in
-  gripper firmware pins/gains (`firmware/gripper_force`).
-- Plots: parity (pred vs true) + k-sweep from the cached Exp-Force run; physical-relationship
-  plots (force vs mass/roughness/contact + crossover map) — a sub-agent was drafting these under
-  `docs/relationships/` (may or may not have landed; check).
-- Integrate the sibling `../material-segmenter/` (Gemini segmentation + rembg + Marigold) as the
-  descriptor / contact-fraction source (see `docs/backlog.md`).
-- Full future-work list: `docs/backlog.md`.
+## Remaining scientific work
 
-## Reference
-`docs/experiments.md` (experiment protocol), `docs/backlog.md`, `docs/data_collection_sop.md`,
-`docs/project-context.md` (original design rationale), `README.md`.
+- Collect and calibrate the real two-gripper dataset under the standardized protocol.
+- Validate roughness sensing and projected-contact estimation.
+- Tune retrieval weights, physics coefficients, and residual hyperparameters only inside
+  training folds.
+- Compare E1, E2, E4, E5, and E6 on frozen real object-grouped splits with confidence
+  intervals and subgroup analysis.
+- Treat all existing viewer accuracy as synthetic pipeline validation only.

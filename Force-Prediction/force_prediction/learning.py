@@ -20,8 +20,20 @@ from sklearn.linear_model import Ridge
 from .config import Config
 
 
-def base_features(mass_g: float, roughness_class: int, contact: float, physics_force: float) -> list[float]:
-    return [math.log(mass_g), float(roughness_class), float(contact), float(physics_force)]
+def base_features(
+    mass_g: float,
+    roughness_class: int,
+    contact: float,
+    physics_force: float,
+    *,
+    include_contact: bool = True,
+) -> list[float]:
+    """Physically meaningful residual features, with contact as an explicit ablation."""
+    features = [math.log(mass_g), float(roughness_class)]
+    if include_contact:
+        features.append(float(contact))
+    features.append(float(physics_force))
+    return features
 
 
 class ResidualForceModel:

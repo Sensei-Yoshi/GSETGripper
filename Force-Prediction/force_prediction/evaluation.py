@@ -78,9 +78,15 @@ class Metrics:
     force: dict = field(default_factory=dict)
     feasibility: dict = field(default_factory=dict)
     selection: dict = field(default_factory=dict)
+    model_recommendation: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
-        return {"force": self.force, "feasibility": self.feasibility, "selection": self.selection}
+        return {
+            "force": self.force,
+            "feasibility": self.feasibility,
+            "selection": self.selection,
+            "model_recommendation": self.model_recommendation,
+        }
 
 
 def _force_stats(pairs: list[tuple[float, float]], cfg: Config) -> dict:
@@ -164,6 +170,34 @@ def compute_metrics(rows: list[EvalRow], cfg: Config) -> Metrics:
         "mean_regret_n": float(statistics.mean(regrets)) if regrets else 0.0,
         "median_regret_n": float(statistics.median(regrets)) if regrets else 0.0,
         "worst_regret_n": float(max(regrets)) if regrets else 0.0,
+    }
+
+    # Raw VLM recommendation is scored separately from the authoritative selector.
+    recommendation_rows = [
+        row for row in rows if row.result.model_recommended_gripper is not None
+    ]
+    recommendation_correct = 0
+    selector_agreement = 0
+    for row in recommendation_rows:
+        optimal, _ = row.truth.optimal_grippers()
+        recommendation = row.result.model_recommended_gripper
+        if recommendation in {gripper.value for gripper in optimal}:
+            recommendation_correct += 1
+        if recommendation == row.result.desired_gripper:
+            selector_agreement += 1
+    recommendation_count = len(recommendation_rows)
+    m.model_recommendation = {
+        "n": recommendation_count,
+        "accuracy": (
+            recommendation_correct / recommendation_count
+            if recommendation_count
+            else float("nan")
+        ),
+        "selector_agreement": (
+            selector_agreement / recommendation_count
+            if recommendation_count
+            else float("nan")
+        ),
     }
     return m
 

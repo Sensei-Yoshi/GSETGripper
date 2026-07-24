@@ -7,20 +7,25 @@ import numpy as np
 import pytest
 
 from force_prediction import expforce
-from force_prediction.config import load_config
-from force_prediction.contracts import CandidateQuery, Gripper, PerGripperPrediction
+from force_prediction.config import EXPERIMENT_IDS, ExperimentMethod, load_config
+from force_prediction.contracts import (
+    Gripper,
+    JointGripperPrediction,
+    PerGripperPrediction,
+    Query,
+)
 from force_prediction.expforce import (
     load_experience_pool,
     load_rows,
     prepare_dataset,
     run_benchmark,
+    saved_run_experiment_label,
     source_path,
     to_experiences,
     validation_summary,
 )
 from force_prediction.perception import Description
-from force_prediction.physics import PhysicsEstimate
-from force_prediction.prediction import vlm_predict_gripper
+from force_prediction.prediction import vlm_predict_joint
 
 
 def test_source_validation_and_paired_conversion():
@@ -57,14 +62,17 @@ def test_all_objects_form_the_experience_pool(tmp_path):
     assert len({record.object_id for record in records}) == 129
 
 
-def test_e5_does_not_use_or_send_physics():
+def test_config_exposes_only_the_final_explicit_experiment_methods():
     cfg = load_config().model_copy(deep=True)
-    e5 = cfg.experiment("e5")
 
-    assert e5.use_vlm is True
-    assert e5.use_retrieval is True
-    assert e5.use_paired_rows is True
-    assert e5.use_physics is False
+    assert tuple(cfg.experiments) == EXPERIMENT_IDS
+    assert cfg.experiment("e1").method is ExperimentMethod.JOINT_VLM
+    assert cfg.experiment("e2").method is ExperimentMethod.JOINT_VLM_MEASURED
+    assert cfg.experiment("e4").method is ExperimentMethod.PAIRED_RETRIEVAL_VLM
+    assert cfg.experiment("e5").method is ExperimentMethod.CALIBRATED_PHYSICS
+    assert cfg.experiment("e6").method is ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL
+    with pytest.raises(KeyError, match="unknown experiment"):
+        cfg.experiment("e3")
     assert "surface patches" in cfg.prompts.descriptor_system
     assert "text embedding" in cfg.prompts.descriptor_system
 
@@ -72,13 +80,12 @@ def test_e5_does_not_use_or_send_physics():
 def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
     cfg = load_config()
 
-    assert set(cfg.prompts.experiments) == {"e1", "e2", "e3", "e5"}
-    for experiment in ("e1", "e2", "e3", "e5"):
-        toggles = cfg.experiment(experiment)
-        assert toggles.use_vlm is True
-        assert toggles.prompt == experiment
+    assert set(cfg.prompts.experiments) == {"e1", "e2", "e4"}
+    for experiment in ("e1", "e2", "e4"):
+        definition = cfg.experiment(experiment)
+        assert definition.prompt == experiment
         assert cfg.prompts.experiments[experiment].strip()
-    for experiment in ("e3b", "e4", "e6"):
+    for experiment in ("e5", "e6"):
         assert cfg.experiment(experiment).prompt is None
 
 
@@ -88,86 +95,130 @@ def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
     captured = {}
 
     class FakeClient:
+        calls = 0
+
         def generate_json(self, **kwargs):
+            self.calls += 1
             captured.update(kwargs)
-            return PerGripperPrediction(
-                candidate_gripper=Gripper.GECKO,
-                predicted_normal_force_n=1.137,
+            return JointGripperPrediction(
+                gecko=PerGripperPrediction(
+                    candidate_gripper=Gripper.GECKO,
+                    predicted_normal_force_n=1.137,
+                ),
+                silicone=PerGripperPrediction(
+                    candidate_gripper=Gripper.SILICONE,
+                    predicted_normal_force_n=1.731,
+                ),
+                recommended_gripper="gecko",
             ).model_dump(mode="json")
 
-    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: FakeClient())
-    query = CandidateQuery(
+    client = FakeClient()
+    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    query = Query(
         object_id="zero_shot_query",
         image_path="",
         mass_g=321,
         roughness_class=4,
         projected_contact_fraction=0.63,
-        candidate_gripper=Gripper.GECKO,
     )
 
-    prediction = vlm_predict_gripper(
+    prediction = vlm_predict_joint(
         cfg,
         query,
         None,
         [],
-        None,
-        include_paired=False,
         instruction=cfg.prompts.experiments["e1"],
         include_retrieval=False,
         include_measured=False,
     )
 
+    assert client.calls == 1
     assert captured["instruction"].startswith("E1 ZERO-SHOT VISION-ONLY CONDITION")
-    assert set(captured["extra"]["query"]) == {"object_id", "candidate_gripper"}
-    assert "retrieved_experiences" not in captured["extra"]
+    assert captured["extra"]["query"] == {}
+    assert "retrieved_objects" not in captured["extra"]
     assert "retrieval_config" not in captured["extra"]
     assert "roughness_scale" not in captured["extra"]
-    assert prediction.predicted_normal_force_n == 1.137
+    assert prediction.gecko.predicted_normal_force_n == 1.137
+    assert prediction.silicone.predicted_normal_force_n == 1.731
+    assert prediction.recommended_gripper == "gecko"
 
 
-def test_vlm_payload_never_contains_physics(monkeypatch):
+def test_e2_joint_payload_contains_measurements_but_no_retrieval_or_physics(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = False
     captured = {}
 
     class FakeClient:
+        calls = 0
+
         def generate_json(self, **kwargs):
+            self.calls += 1
             captured.update(kwargs["extra"])
-            return PerGripperPrediction(
-                candidate_gripper=Gripper.GECKO,
-                predicted_normal_force_n=1.0,
+            return JointGripperPrediction(
+                gecko=PerGripperPrediction(
+                    candidate_gripper=Gripper.GECKO, predicted_normal_force_n=1.0
+                ),
+                silicone=PerGripperPrediction(
+                    candidate_gripper=Gripper.SILICONE, predicted_normal_force_n=1.2
+                ),
+                recommended_gripper="gecko",
             ).model_dump(mode="json")
 
-    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: FakeClient())
-    query = CandidateQuery(
+    client = FakeClient()
+    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    query = Query(
         object_id="query",
         image_path="",
         mass_g=100,
         roughness_class=2,
         projected_contact_fraction=0.8,
         semantic_description="smooth sidewall",
-        candidate_gripper=Gripper.GECKO,
-    )
-    physics = PhysicsEstimate(
-        gripper=Gripper.GECKO,
-        feasible=True,
-        min_force_n=0.5,
-        raw_force_n=0.4,
     )
 
-    vlm_predict_gripper(
+    vlm_predict_joint(
         cfg,
         query,
         None,
         [],
-        physics,
-        include_paired=False,
-        instruction=cfg.prompts.experiments["e3"],
-        include_retrieval=True,
+        instruction=cfg.prompts.experiments["e2"],
+        include_retrieval=False,
+        include_measured=True,
     )
 
+    assert client.calls == 1
+    assert captured["query"]["mass_g"] == 100
+    assert captured["query"]["roughness_class"] == 2
+    assert captured["query"]["projected_contact_fraction"] == 0.8
+    assert "retrieved_objects" not in captured
     assert "physics_force_estimate_n" not in captured
     assert "physics_feasible" not in captured
+
+
+def test_legacy_e4_e5_artifact_labels_preserve_old_meanings():
+    assert saved_run_experiment_label(
+        {
+            "experiment": "e5",
+            "experiment_toggles": {
+                "use_retrieval": True,
+                "use_paired_rows": True,
+                "use_vlm": True,
+                "use_physics": False,
+                "use_residual": False,
+            },
+        }
+    ) == "Legacy E5 — paired retrieval VLM"
+    assert saved_run_experiment_label(
+        {
+            "experiment": "e4",
+            "experiment_toggles": {
+                "use_retrieval": False,
+                "use_paired_rows": False,
+                "use_vlm": False,
+                "use_physics": True,
+                "use_residual": False,
+            },
+        }
+    ) == "Legacy E4 — calibrated physics"
 
 
 def test_full_129_object_leave_one_out_benchmark_runs_offline(tmp_path):
@@ -179,13 +230,15 @@ def test_full_129_object_leave_one_out_benchmark_runs_offline(tmp_path):
     source.parent.mkdir(parents=True)
     shutil.copyfile(source_path(source_cfg), source)
 
-    benchmark = run_benchmark(cfg, "e5")
+    benchmark = run_benchmark(cfg, "e4")
 
     assert len(benchmark.rows) == 129
     assert benchmark.metrics["force"]["overall"]["n"] == 258
     assert benchmark.metrics["selection"]["n"] == 129
     assert benchmark.run_metadata["evaluation_protocol"] == "leave-one-object-out"
     assert benchmark.run_metadata["training_objects_per_run"] == 128
+    assert benchmark.run_metadata["experiment_method"] == "paired_retrieval_vlm"
+    assert benchmark.metrics["model_recommendation"]["n"] == 129
 
 
 def test_live_preparation_checkpoints_and_resumes(tmp_path, monkeypatch):

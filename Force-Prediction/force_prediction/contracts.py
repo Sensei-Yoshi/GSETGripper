@@ -12,16 +12,16 @@ from __future__ import annotations
 
 from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
+
+GripperChoice = Literal["gecko", "silicone", "none"]
 
 
 class Gripper(StrEnum):
     GECKO = "gecko"
     SILICONE = "silicone"
-
-    def other(self) -> Gripper:
-        return Gripper.SILICONE if self is Gripper.GECKO else Gripper.GECKO
 
 
 class Compatibility(StrEnum):
@@ -79,9 +79,8 @@ class ExperienceRecord(BaseModel):
 class ObjectRecord(BaseModel):
     """Paired view of one object's two gripper rows.
 
-    Either side may be None (only one gripper tested). `other_gripper_force`
-    supplies the cross-material force used by the paired-row enhancement and the
-    selection oracle.
+    Either side may be None (only one gripper tested). The paired view powers
+    object-level retrieval and the selection oracle.
     """
 
     object_id: str
@@ -90,11 +89,6 @@ class ObjectRecord(BaseModel):
 
     def get(self, gripper: Gripper) -> ExperienceRecord | None:
         return self.gecko if gripper is Gripper.GECKO else self.silicone
-
-    def other_gripper_force(self, gripper: Gripper) -> float | None:
-        """Feasible min force of the *other* gripper for this same object."""
-        rec = self.get(gripper.other())
-        return rec.min_force_n if (rec is not None and rec.feasible) else None
 
     def oracle(self) -> tuple[Gripper | None, float | None]:
         """Best (lowest-force feasible) gripper and its force; (None, None) if neither feasible."""
@@ -131,12 +125,6 @@ class Query(BaseModel):
     semantic_description: str = ""
 
 
-class CandidateQuery(Query):
-    """A query bound to one candidate gripper for a per-gripper prediction."""
-
-    candidate_gripper: Gripper
-
-
 class PerGripperPrediction(BaseModel):
     """VLM (or non-VLM) prediction for a single candidate gripper."""
 
@@ -149,22 +137,27 @@ class PerGripperPrediction(BaseModel):
     reasoning_trace: str = ""
 
 
-class PairedGripperPrediction(BaseModel):
-    """One structured VLM response containing both candidate force estimates."""
+class JointGripperPrediction(BaseModel):
+    """One VLM response containing both estimates and its explicit recommendation."""
 
     gecko: PerGripperPrediction
     silicone: PerGripperPrediction
+    recommended_gripper: GripperChoice
+    recommendation_summary: str = ""
 
 
 class SelectionResult(BaseModel):
     """Final deterministic selection across candidate grippers."""
 
-    desired_gripper: str  # "gecko" | "silicone" | "none"
+    desired_gripper: GripperChoice
     predicted_normal_force_n: float | None = None
     candidate_predictions: dict[str, PerGripperPrediction] = Field(default_factory=dict)
     reasoning_trace: str = ""
     prediction_tie: bool = False
     tie_break_reason: str | None = None
+    model_recommended_gripper: GripperChoice | None = None
+    model_recommendation_summary: str | None = None
+    recommendation_agrees_with_selector: bool | None = None
 
 
 # --------------------------------------------------------------------------- #

@@ -1,8 +1,8 @@
-"""Hybrid retrieval over semantic descriptions and measured object properties.
+"""Paired-object retrieval over semantics and measured object properties.
 
-E5 ranks paired objects once and returns both gripper labels for every neighbor.
-E3/E3b retain gripper-branch retrieval as experimental baselines. Exact search is
-appropriate for this dataset (<1k objects), so no vector database is required.
+E4 ranks each object once and returns both gripper labels for every neighbor.
+Exact search is appropriate for this dataset (<1k objects), so no vector database
+is required.
 """
 
 from __future__ import annotations
@@ -17,7 +17,6 @@ from pydantic import BaseModel, Field
 from .config import Config
 from .contracts import (
     ExperienceRecord,
-    Gripper,
     ObjectRecord,
     Query,
     group_by_object,
@@ -126,7 +125,7 @@ def normalized_weights(cfg: Config) -> dict[str, float]:
         "semantic": raw.semantic,
         "mass": raw.mass,
         "roughness": raw.roughness,
-        "contact": raw.contact if cfg.retrieval.use_projected_contact else 0.0,
+        "contact": raw.contact if cfg.inputs.use_projected_contact else 0.0,
     }
     total = sum(values.values())
     if total <= 0:
@@ -147,36 +146,6 @@ class SimilarityBreakdown(BaseModel):
     roughness_contribution: float
     contact_contribution: float
     total: float
-
-
-class RetrievedExperience(BaseModel):
-    record: ExperienceRecord
-    score: float
-    rank: int = 0
-    similarity: SimilarityBreakdown | None = None
-    other_gripper_min_force_n: float | None = None
-    other_gripper_feasible: bool | None = None
-
-    def to_payload(self, include_paired: bool, *, include_contact: bool = True) -> dict:
-        r = self.record
-        payload: dict = {
-            "object_id": r.object_id,
-            "mass_g": r.mass_g,
-            "roughness_class": r.roughness_class,
-            "projected_contact_fraction": r.projected_contact_fraction,
-            "min_force_n": r.min_force_n,
-            "feasible": r.feasible,
-            "gripper": r.gripper.value,
-            "semantic_description": r.semantic_description,
-            "retrieval_rank": self.rank,
-            "similarity": self.similarity.model_dump() if self.similarity else None,
-        }
-        if include_paired:
-            payload["other_gripper_min_force_n"] = self.other_gripper_min_force_n
-            payload["other_gripper_feasible"] = self.other_gripper_feasible
-        if not include_contact:
-            payload.pop("projected_contact_fraction")
-        return payload
 
 
 class RetrievedObjectExperience(BaseModel):
@@ -212,31 +181,23 @@ class ExperienceIndex:
     def __init__(self, cfg: Config, provider: EmbeddingProvider | None = None) -> None:
         self.cfg = cfg
         self.provider = provider or get_embedding_provider(cfg)
-        self.records: list[ExperienceRecord] = []
         self.objects: dict[str, ObjectRecord] = {}
-        self.vectors: dict[str, np.ndarray] = {}
         self.object_vectors: dict[str, np.ndarray] = {}
 
-    @staticmethod
-    def _key(rec: ExperienceRecord) -> str:
-        return f"{rec.object_id}:{rec.gripper.value}"
-
     def fit(self, records: list[ExperienceRecord]) -> ExperienceIndex:
-        self.records = records
         self.objects = group_by_object(records)
         embedded: dict[str, np.ndarray] = {}
-        for rec in records:
+        for object_id, obj in self.objects.items():
+            rec = obj.gecko or obj.silicone
+            if rec is None:
+                continue
             text = build_embedding_text(
                 rec.semantic_description, rec.mass_g, rec.roughness_class,
                 rec.projected_contact_fraction, self.cfg,
             )
             if text not in embedded:
                 embedded[text] = self.provider.embed(text)
-            self.vectors[self._key(rec)] = embedded[text]
-        for object_id, obj in self.objects.items():
-            representative = obj.gecko or obj.silicone
-            if representative is not None:
-                self.object_vectors[object_id] = self.vectors[self._key(representative)]
+            self.object_vectors[object_id] = embedded[text]
         return self
 
     def _score(
@@ -278,40 +239,6 @@ class ExperienceIndex:
             query.projected_contact_fraction, self.cfg,
         )
         return self.provider.embed(text, is_query=True)
-
-    def retrieve(
-        self,
-        query: Query,
-        query_vec: np.ndarray,
-        gripper: Gripper,
-        k: int | None = None,
-        exclude_object_id: str | None = None,
-    ) -> list[RetrievedExperience]:
-        k = k or self.cfg.retrieval.k
-        scored: list[RetrievedExperience] = []
-        for rec in self.records:
-            if rec.gripper is not gripper:  # HARD gripper-branch filter
-                continue
-            if exclude_object_id is not None and rec.object_id == exclude_object_id:
-                continue
-            breakdown = self._score(query, query_vec, rec, self.vectors[self._key(rec)])
-            obj = self.objects.get(rec.object_id)
-            other_force = obj.other_gripper_force(rec.gripper) if obj else None
-            other = obj.get(rec.gripper.other()) if obj else None
-            scored.append(
-                RetrievedExperience(
-                    record=rec,
-                    score=breakdown.total,
-                    similarity=breakdown,
-                    other_gripper_min_force_n=other_force,
-                    other_gripper_feasible=(other.feasible if other else None),
-                )
-            )
-        scored.sort(key=lambda x: x.score, reverse=True)
-        top = scored[:k]
-        for rank, item in enumerate(top, start=1):
-            item.rank = rank
-        return top
 
     def retrieve_objects(
         self,

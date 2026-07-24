@@ -9,8 +9,9 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from force_prediction.config import Config, load_config
+from force_prediction.config import EXPERIMENT_IDS, Config, load_config
 from force_prediction.contracts import Gripper, group_by_object
+from force_prediction.experiments import EXPERIMENT_CATALOG, experiment_display_name
 from force_prediction.expforce import (
     PREPARATION_RELATIVE,
     RESULTS_RELATIVE,
@@ -75,7 +76,7 @@ def _run_config(
 ) -> Config:
     cfg = base.model_copy(deep=True)
     cfg.models.dry_run = not live
-    cfg.retrieval.use_projected_contact = use_projected_contact
+    cfg.inputs.use_projected_contact = use_projected_contact
     cfg.retrieval.weights.semantic = semantic
     cfg.retrieval.weights.mass = mass
     cfg.retrieval.weights.roughness = roughness
@@ -100,6 +101,10 @@ def _rgb(image_bgr: np.ndarray) -> np.ndarray:
 def _format_force(value: float, *, signed: bool = False) -> str:
     spec = "+.6g" if signed else ".6g"
     return f"{format(value, spec)} N"
+
+
+def _format_experiment(value: str) -> str:
+    return experiment_display_name(value) if value.lower() in EXPERIMENT_CATALOG else value
 
 
 @st.cache_data(show_spinner=False)
@@ -136,29 +141,6 @@ def _truth_payload(obj) -> dict:  # noqa: ANN001
         "gecko_feasible": obj.gecko.feasible if obj.gecko else None,
         "silicone_feasible": obj.silicone.feasible if obj.silicone else None,
     }
-
-
-def _retrieval_table(result: PipelineRunResult, gripper: str) -> pd.DataFrame:
-    rows = []
-    for item in result.retrieved.get(gripper, []):
-        sim = item.similarity
-        rows.append(
-            {
-                "rank": item.rank,
-                "object": item.record.object_id.replace("_", " "),
-                "score": item.score,
-                "semantic": sim.semantic if sim else None,
-                "mass": sim.mass if sim else None,
-                "roughness": sim.roughness if sim else None,
-                "contact": sim.contact if sim else None,
-                "mass_g": item.record.mass_g,
-                "roughness_class": item.record.roughness_class,
-                "contact_fraction": item.record.projected_contact_fraction,
-                f"{gripper}_force_n": item.record.min_force_n,
-                "paired_force_n": item.other_gripper_min_force_n,
-            }
-        )
-    return pd.DataFrame(rows)
 
 
 def _paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
@@ -209,7 +191,7 @@ def _render_prediction(
     experiment: str | None = None,
 ) -> None:
     result = detailed.selection
-    metric_cols = st.columns(3)
+    metric_cols = st.columns(4)
     selected_label = result.desired_gripper.title()
     if result.prediction_tie:
         selected_label += " (tie-break)"
@@ -221,8 +203,19 @@ def _render_prediction(
         else "None",
     )
     metric_cols[2].metric(
-        "Experiment", (experiment or st.session_state.get("last_experiment", "E5")).upper()
+        "VLM recommendation",
+        result.model_recommended_gripper.title()
+        if result.model_recommended_gripper is not None
+        else "Not applicable",
     )
+    active_experiment = experiment or st.session_state.get("last_experiment", "e4")
+    metric_cols[3].metric("Experiment", _format_experiment(active_experiment))
+
+    if result.recommendation_agrees_with_selector is False:
+        st.warning(
+            "The VLM recommendation disagreed with the authoritative Python selector. "
+            "The displayed command uses the lowest feasible predicted force."
+        )
 
     if result.prediction_tie:
         st.warning(
@@ -298,12 +291,12 @@ def _render_prediction(
     if detailed.retrieved_objects:
         if cfg.models.dry_run:
             st.caption(
-                "E5 retrieves each object once with both gripper outcomes. Offline mode "
+                "E4 retrieves each object once with both gripper outcomes. Offline mode "
                 "uses the deterministic paired-neighbor stand-in and makes no VLM request."
             )
         else:
             st.caption(
-                "E5 retrieves each object once. Both gripper outcomes come from the same "
+                "E4 retrieves each object once. Both gripper outcomes come from the same "
                 "paired experience and are sent together in one VLM request."
             )
         st.dataframe(
@@ -314,26 +307,6 @@ def _render_prediction(
                 "score", "semantic", "mass", "roughness", "contact"
             )},
         )
-    elif any(detailed.retrieved.values()):
-        gecko_tab, silicone_tab = st.tabs(["Gecko branch", "Silicone branch"])
-        with gecko_tab:
-            st.dataframe(
-                _retrieval_table(detailed, "gecko"),
-                hide_index=True,
-                width="stretch",
-                column_config={key: st.column_config.NumberColumn(format="%.3f") for key in (
-                    "score", "semantic", "mass", "roughness", "contact"
-                )},
-            )
-        with silicone_tab:
-            st.dataframe(
-                _retrieval_table(detailed, "silicone"),
-                hide_index=True,
-                width="stretch",
-                column_config={key: st.column_config.NumberColumn(format="%.3f") for key in (
-                    "score", "semantic", "mass", "roughness", "contact"
-                )},
-            )
     else:
         st.info("This experiment does not use retrieval.")
     _render_formula(cfg)
@@ -377,20 +350,21 @@ def single_run_view(base_cfg: Config, rows: list) -> None:
         )
         experiment = st.selectbox(
             "Experiment profile",
-            ["e5", "e3", "e3b", "e4", "e6", "e2", "e1"],
-            format_func=lambda value: value.upper(),
+            list(EXPERIMENT_IDS),
+            index=2,
+            format_func=_format_experiment,
         )
         mode = st.segmented_control("Execution", ["Offline", "Live Gemini"], default="Offline")
         live_execution = mode == "Live Gemini"
 
-        with st.expander("Retrieval tuning", expanded=True):
+        with st.expander("Input and retrieval tuning", expanded=True):
             use_projected_contact = st.checkbox(
                 "Use projected contact fraction",
-                value=base_cfg.retrieval.use_projected_contact,
+                value=base_cfg.inputs.use_projected_contact,
                 help=(
                     "When disabled, contact is omitted from VLM inputs and its retrieval "
                     "weight is set to zero; the remaining weights are renormalized. "
-                    "Physics-based E4 and E6 still require the measured contact fraction."
+                    "Physics-based E5 and E6 still require the measured contact fraction."
                 ),
             )
             semantic_w = st.slider(
@@ -461,7 +435,7 @@ def single_run_view(base_cfg: Config, rows: list) -> None:
             None if uploaded is not None else prepared_text or sample.semantic_description
         )
         with output, st.spinner("Running the shared pipeline..."):
-            pipe = Pipeline(cfg, cfg.experiment(experiment)).fit(training)
+            pipe = Pipeline(cfg, experiment).fit(training)
             detailed = pipe.predict_detailed(
                 QueryInput(
                     object_id=f"custom_{object_id}" if counterfactual else object_id,
@@ -475,7 +449,7 @@ def single_run_view(base_cfg: Config, rows: list) -> None:
             )
             baseline = None
             if counterfactual:
-                baseline_pipe = Pipeline(cfg, cfg.experiment(experiment)).fit(
+                baseline_pipe = Pipeline(cfg, experiment).fit(
                     [record for record in records if record.object_id != object_id]
                 )
                 baseline = baseline_pipe.predict_detailed(
@@ -552,8 +526,9 @@ def benchmark_view(base_cfg: Config) -> None:
         st.subheader("Benchmark run")
         experiment = st.selectbox(
             "Experiment",
-            ["e5", "e3", "e3b", "e4", "e6", "e2", "e1"],
-            format_func=str.upper,
+            list(EXPERIMENT_IDS),
+            index=2,
+            format_func=_format_experiment,
             key="benchmark_experiment",
         )
         mode = st.segmented_control(
@@ -587,11 +562,16 @@ def benchmark_view(base_cfg: Config) -> None:
         benchmark, paths = st.session_state["benchmark_result"]
         force = benchmark.metrics["force"]["overall"]
         selection = benchmark.metrics["selection"]
-        metrics = st.columns(4)
+        recommendation = benchmark.metrics["model_recommendation"]
+        metrics = st.columns(5)
         metrics[0].metric("Force MAE", f"{force.get('mae', float('nan')):.3f} N")
         metrics[1].metric("Force RMSE", f"{force.get('rmse', float('nan')):.3f} N")
         metrics[2].metric("Selection accuracy", f"{selection['accuracy']:.1%}")
         metrics[3].metric("Mean regret", f"{selection['mean_regret_n']:.3f} N")
+        metrics[4].metric(
+            "VLM recommendation accuracy",
+            f"{recommendation['accuracy']:.1%}" if recommendation["n"] else "N/A",
+        )
         result_frame = pd.DataFrame(benchmark.rows)
         plot_frame = pd.concat(
             [
@@ -610,6 +590,7 @@ def benchmark_view(base_cfg: Config) -> None:
             "true_gecko_force_n", "pred_gecko_force_n", "true_silicone_force_n",
             "pred_silicone_force_n", "true_favored", "predicted_gripper",
             "selection_correct", "regret_n",
+            "model_recommended_gripper", "recommendation_agrees_with_selector",
         ]
         st.dataframe(result_frame[display_columns], hide_index=True, width="stretch")
         st.caption(f"Saved: {paths[0].name} and {paths[1].name}")
@@ -724,7 +705,7 @@ def _pipeline_run_inspector(base_cfg: Config) -> None:
     labels = {
         (
             f"{run['created_at'][:19]} | {run['query'].get('object_name', run['query']['object_id'])} "
-            f"| {run['experiment'].upper()} | {run['execution_mode']}"
+            f"| {run['experiment_display_name']} | {run['execution_mode']}"
         ): run
         for run in runs
     }
@@ -753,7 +734,11 @@ def _pipeline_run_inspector(base_cfg: Config) -> None:
         sensor_cols[0].metric("Roughness", query["roughness_class"])
         sensor_cols[1].metric("Contact", f"{query['projected_contact_fraction']:.3f}")
         st.subheader("Run configuration")
-        st.write(f"**Experiment:** {run['experiment'].upper()}")
+        st.write(f"**Experiment:** {run['experiment_display_name']}")
+        st.write(
+            f"**Method/version:** {run.get('experiment_method', 'legacy')} / "
+            f"{run.get('experiment_definition_version', 'legacy')}"
+        )
         st.write(f"**Execution:** {run['execution_mode']}")
         st.write(f"**VLM:** {run['models']['vlm']}")
         st.write(f"**Text embedding:** {run['models']['embedding']}")
@@ -761,6 +746,12 @@ def _pipeline_run_inspector(base_cfg: Config) -> None:
         st.write(f"**Description:** {query.get('semantic_description', '')}")
         with st.expander("Retrieval parameters"):
             retrieval = run["retrieval_config"]
+            saved_inputs = run.get("inputs", {})
+            contact_enabled = saved_inputs.get(
+                "use_projected_contact",
+                retrieval.get("use_projected_contact", True),
+            )
+            st.write(f"Projected contact enabled: {contact_enabled}")
             st.write(f"Saved run top k: {retrieval['k']}")
             if retrieval["k"] != base_cfg.retrieval.k:
                 st.info(
@@ -771,8 +762,11 @@ def _pipeline_run_inspector(base_cfg: Config) -> None:
             st.write(f"Mass sigma: {retrieval['sigma_mass']}")
             st.write(f"Contact sigma: {retrieval['sigma_contact']}")
             st.json(retrieval["weights"], expanded=True)
-        with st.expander("Experiment toggles"):
-            st.json(run["experiment_toggles"], expanded=True)
+        with st.expander("Experiment definition"):
+            st.json(
+                run.get("experiment_definition", run.get("experiment_toggles", {})),
+                expanded=True,
+            )
         truth = run.get("truth")
         if truth:
             st.subheader("Saved synthetic truth")
@@ -789,6 +783,10 @@ def _pipeline_run_inspector(base_cfg: Config) -> None:
         cfg = base_cfg.model_copy(deep=True)
         cfg.models.dry_run = run["execution_mode"] != "Live Gemini"
         cfg.retrieval = type(cfg.retrieval).model_validate(run["retrieval_config"])
+        cfg.inputs.use_projected_contact = run.get("inputs", {}).get(
+            "use_projected_contact",
+            run["retrieval_config"].get("use_projected_contact", True),
+        )
         detailed = pipeline_result_from_dict(run["result"])
         baseline = (
             pipeline_result_from_dict(run["baseline"]) if run.get("baseline") else None
@@ -808,7 +806,7 @@ def _pipeline_run_inspector(base_cfg: Config) -> None:
             counterfactual=not score_as_current,
             baseline=baseline,
             cfg=cfg,
-            experiment=run["experiment"],
+            experiment=run["experiment_display_name"],
         )
 
 
@@ -928,50 +926,27 @@ def help_view(base_cfg: Config) -> None:
     )
 
     st.header("Experiment definitions")
+    uses = {
+        "e1": "Image + joint VLM",
+        "e2": "Image + sensors + joint VLM",
+        "e4": "Sensors + paired retrieval + joint VLM",
+        "e5": "Sensors + calibrated physics",
+        "e6": "Sensors + calibrated physics + semantic residual",
+    }
     experiments = pd.DataFrame(
         [
             {
-                "Experiment": "E1",
-                "Uses": "Image + VLM",
-                "Meaning": "Vision-only zero-shot baseline; measured sensors, retrieval, and physics are hidden.",
-            },
-            {
-                "Experiment": "E2",
-                "Uses": "Sensors + VLM",
-                "Meaning": "Tests whether authoritative mass, roughness, and contact improve the VLM.",
-            },
-            {
-                "Experiment": "E3",
-                "Uses": "Sensors + retrieval + VLM",
-                "Meaning": "Adds top-k same-gripper experiences, without paired rows or physics.",
-            },
-            {
-                "Experiment": "E3b",
-                "Uses": "Sensors + retrieval",
-                "Meaning": "Pure similarity-weighted retrieval baseline; no VLM and no physics.",
-            },
-            {
-                "Experiment": "E4",
-                "Uses": "Sensors + physics",
-                "Meaning": "Calibrated physics-only baseline; no retrieval and no VLM.",
-            },
-            {
-                "Experiment": "E5",
-                "Uses": "Sensors + paired-object retrieval + one VLM call",
-                "Meaning": "Retrieves objects once with both force labels. Python selects the lower feasible prediction.",
-            },
-            {
-                "Experiment": "E6",
-                "Uses": "Sensors + physics + learned residual",
-                "Meaning": "Classical learned correction to physics; no VLM decision or retrieval list.",
-            },
+                "Experiment": experiment_id.upper(),
+                "Uses": uses[experiment_id],
+                "Meaning": EXPERIMENT_CATALOG[experiment_id].summary,
+            }
+            for experiment_id in EXPERIMENT_IDS
         ]
     )
     st.dataframe(experiments, hide_index=True, width="stretch")
     st.caption(
-        "Useful comparisons: E5 vs E3 tests the complete paired-object method against "
-        "same-gripper experiential retrieval; E3 vs E3b tests the VLM contribution; "
-        "E4 vs E6 tests the learned residual over physics."
+        "Useful comparisons: E1 vs E2 isolates authoritative measurements; E2 vs E4 "
+        "isolates paired experience retrieval; E5 vs E6 isolates the learned residual."
     )
 
     st.subheader("Prediction prompt routing")
@@ -981,17 +956,17 @@ def help_view(base_cfg: Config) -> None:
     )
     with st.expander("Shared prediction system prompt"):
         st.code(base_cfg.prompts.prediction_system, language=None)
-    for experiment in ("e1", "e2", "e3", "e5"):
+    for experiment in ("e1", "e2", "e4"):
         prompt_key = base_cfg.experiment(experiment).prompt
         assert prompt_key is not None
         with st.expander(f"{experiment.upper()} instruction — prompts.experiments.{prompt_key}"):
             st.code(base_cfg.prompts.experiments[prompt_key], language=None)
-    st.info("E3b, E4, and E6 do not call a VLM for force prediction, so they have no prompt.")
+    st.info("E5 and E6 do not call a VLM for force prediction, so they have no prompt.")
 
     st.subheader("How E6 learns the physics residual")
     st.markdown(
         """
-E6 calibrates the E4 physics model on each training fold, then learns the target
+E6 calibrates the same physics model as E5 on each training fold, then learns the target
 `measured force − physics force` separately for gecko and silicone. The default
 gradient-boosted trees use log mass, roughness, projected contact fraction, physics
 force, and PCA-reduced semantic embedding features. At inference the continuous output
@@ -1000,14 +975,15 @@ E6 retrieves no neighbors and makes no VLM force-prediction call.
         """
     )
 
-    st.header("What E5 + Live Gemini means")
+    st.header("What E4 + Live Gemini means")
     st.markdown(
         """
 For a known dataset object, the pipeline excludes that object and uses the other 128 objects.
 For a custom query, it uses all 129. It reuses one cached text embedding per reference object for
 both grippers, embeds the query description, and ranks references with the displayed hybrid
 similarity. It retrieves five objects once, with both gecko and silicone outcomes attached to
-each object. One Gemini request returns the two structured force estimates. E5 does not construct
+each object. One Gemini request returns both force estimates and an explicit recommendation.
+E4 does not construct
 or send a physics estimate. Python selects the lower feasible
 predicted force and explicitly reports a prediction tie only when the continuous estimates are equal.
 

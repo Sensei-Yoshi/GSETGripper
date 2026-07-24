@@ -50,7 +50,6 @@ def test_group_and_oracle():
     ]
     objects = group_by_object(recs)
     obj = objects["o1"]
-    assert obj.other_gripper_force(Gripper.GECKO) == 2.5
     g, f = obj.oracle()
     assert g is Gripper.GECKO and f == 1.25
 

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from force_prediction.config import load_config
 from force_prediction.contracts import Gripper
+from force_prediction.learning import base_features
 from force_prediction.physics import PhysicsModel, PhysicsParams, weight_n
 
 CFG = load_config()
@@ -37,3 +38,10 @@ def test_physics_returns_continuous_solution():
     est = MODEL.min_force(Gripper.GECKO, 250, 1, 0.9)
     if est.feasible:
         assert est.min_force_n == est.raw_force_n
+
+
+def test_residual_contact_feature_is_an_explicit_ablation():
+    with_contact = base_features(250, 2, 0.7, 1.3, include_contact=True)
+    without_contact = base_features(250, 2, 0.7, 1.3, include_contact=False)
+
+    assert with_contact == [*without_contact[:2], 0.7, without_contact[-1]]

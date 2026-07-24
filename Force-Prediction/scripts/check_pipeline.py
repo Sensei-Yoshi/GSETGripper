@@ -1,4 +1,4 @@
-"""Stage check: the full pipeline (E5) on a single held-out object, offline.
+"""Stage check: the paired-retrieval VLM pipeline (E4), offline.
 
 Prints every stage: per-gripper physics estimate, prediction, and the final
 deterministic selection.
@@ -28,7 +28,7 @@ def main() -> int:
     train = [r for r in records if r.object_id != held_out]
     test = [r for r in records if r.object_id == held_out]
 
-    pipe = Pipeline(cfg, cfg.experiment("e5")).fit(train)
+    pipe = Pipeline(cfg, "e4").fit(train)
     result = pipe.predict(query_input_from_object(test, cfg))
 
     print(f"held-out object: {held_out}")

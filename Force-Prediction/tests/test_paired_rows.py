@@ -1,48 +1,21 @@
 from __future__ import annotations
 
+import numpy as np
 import pytest
 
-from force_prediction.config import load_config
+from force_prediction.config import EXPERIMENT_IDS, load_config
 from force_prediction.contracts import (
     Gripper,
-    PairedGripperPrediction,
+    JointGripperPrediction,
     PerGripperPrediction,
-    Query,
-    group_by_object,
 )
 from force_prediction.hardware import fabricate_records
 from force_prediction.pipeline import Pipeline, query_input_from_object
-from force_prediction.retrieval import ExperienceIndex, build_embedding_text
+from force_prediction.prediction import clamp_force
+from force_prediction.retrieval import ExperienceIndex
 
 
-def test_paired_delta_matches_truth():
-    cfg = load_config()
-    cfg.models.dry_run = True
-    records = fabricate_records(cfg, 20)
-    objects = group_by_object(records)
-    index = ExperienceIndex(cfg).fit(records)
-    q = Query(object_id="probe", image_path="", mass_g=300, roughness_class=2,
-              projected_contact_fraction=0.8, semantic_description="x")
-    qv = index.provider.embed(build_embedding_text("x", 300, 2, 0.8, cfg))
-    for r in index.retrieve(q, qv, Gripper.GECKO):
-        truth_other = objects[r.record.object_id].other_gripper_force(Gripper.GECKO)
-        assert r.other_gripper_min_force_n == truth_other
-
-
-def test_e5_pipeline_runs_end_to_end():
-    cfg = load_config()
-    cfg.models.dry_run = True
-    records = fabricate_records(cfg, 30)
-    held = records[0].object_id
-    train = [r for r in records if r.object_id != held]
-    test = [r for r in records if r.object_id == held]
-    pipe = Pipeline(cfg, cfg.experiment("e5")).fit(train)
-    result = pipe.predict(query_input_from_object(test, cfg))
-    assert result.desired_gripper in ("gecko", "silicone", "none")
-    assert set(result.candidate_predictions) == {"gecko", "silicone"}
-
-
-@pytest.mark.parametrize("experiment", ["e1", "e2", "e3", "e3b", "e4", "e5", "e6"])
+@pytest.mark.parametrize("experiment", EXPERIMENT_IDS)
 def test_every_experiment_runs_offline_with_continuous_forces(experiment):
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = True
@@ -51,9 +24,7 @@ def test_every_experiment_runs_offline_with_continuous_forces(experiment):
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
-    result = Pipeline(cfg, cfg.experiment(experiment)).fit(train).predict(
-        query_input_from_object(test, cfg)
-    )
+    result = Pipeline(cfg, experiment).fit(train).predict(query_input_from_object(test, cfg))
 
     assert set(result.candidate_predictions) == {"gecko", "silicone"}
     assert all(
@@ -62,35 +33,32 @@ def test_every_experiment_runs_offline_with_continuous_forces(experiment):
     )
 
 
-def test_detailed_pipeline_preserves_selection_and_exposes_trace():
+def test_e4_detailed_result_contains_one_shared_top_k_list():
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = True
-    cfg.retrieval.k = 5
     records = fabricate_records(cfg, 30)
     held = records[0].object_id
-    train = [r for r in records if r.object_id != held]
-    test = [r for r in records if r.object_id == held]
-    pipe = Pipeline(cfg, cfg.experiment("e5")).fit(train)
-    query = query_input_from_object(test, cfg)
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
 
-    detailed = pipe.predict_detailed(query)
-    ordinary = pipe.predict(query)
+    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+        query_input_from_object(test, cfg)
+    )
 
-    assert detailed.selection == ordinary
-    assert set(detailed.retrieved) == {"gecko", "silicone"}
-    assert all(not items for items in detailed.retrieved.values())
-    assert len(detailed.retrieved_objects) == 5
-    assert len({item.object_id for item in detailed.retrieved_objects}) == 5
+    assert detailed.experiment_id == "e4"
+    assert detailed.experiment_method == "paired_retrieval_vlm"
+    assert len(detailed.retrieved_objects) == cfg.retrieval.k
+    assert len({item.object_id for item in detailed.retrieved_objects}) == cfg.retrieval.k
+    assert all(item.object_id != held for item in detailed.retrieved_objects)
     assert all(item.gecko_min_force_n is not None for item in detailed.retrieved_objects)
     assert all(item.silicone_min_force_n is not None for item in detailed.retrieved_objects)
-    assert set(detailed.physics_estimates) == {"gecko", "silicone"}
+    assert detailed.physics_estimates == {}
 
 
-def test_e5_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
+def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = False
     cfg.retrieval.embedding.provider = "mock"
-    cfg.retrieval.k = 5
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
@@ -103,7 +71,7 @@ def test_e5_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
         def generate_json(self, **kwargs):
             self.generation_calls += 1
             captured.update(kwargs)
-            return PairedGripperPrediction(
+            return JointGripperPrediction(
                 gecko=PerGripperPrediction(
                     candidate_gripper=Gripper.SILICONE,
                     predicted_normal_force_n=0.8,
@@ -114,38 +82,50 @@ def test_e5_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
                     predicted_normal_force_n=1.3,
                     reasoning_trace="joint silicone evidence",
                 ),
+                recommended_gripper="silicone",
+                recommendation_summary="model preferred silicone",
             ).model_dump(mode="json")
 
         def cache_stats(self):
             return {"backend_attempts": {"generation": self.generation_calls, "embedding": 0}}
 
     client = CountingClient()
-    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
-    monkeypatch.setattr("force_prediction.pipeline.get_client", lambda _cfg: client)
+    retrieval_calls = 0
+    original_retrieve = ExperienceIndex.retrieve_objects
 
-    pipe = Pipeline(cfg, cfg.experiment("e5")).fit(train)
-    detailed = pipe.predict_detailed(query_input_from_object(test, cfg))
+    def counted_retrieve(self, *args, **kwargs):
+        nonlocal retrieval_calls
+        retrieval_calls += 1
+        return original_retrieve(self, *args, **kwargs)
+
+    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("force_prediction.experiments.get_client", lambda _cfg: client)
+    monkeypatch.setattr(ExperienceIndex, "retrieve_objects", counted_retrieve)
+
+    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+        query_input_from_object(test, cfg)
+    )
 
     assert client.generation_calls == 1
-    assert captured["schema"] is PairedGripperPrediction
-    assert captured["instruction"] == cfg.prompts.experiments["e5"]
+    assert retrieval_calls == 1
+    assert captured["schema"] is JointGripperPrediction
+    assert captured["instruction"] == cfg.prompts.experiments["e4"]
     paired_payload = captured["extra"]["retrieved_objects"]
-    assert len(paired_payload) == 5
+    assert len(paired_payload) == cfg.retrieval.k
     assert all("gecko_min_force_n" in item for item in paired_payload)
     assert all("silicone_min_force_n" in item for item in paired_payload)
     assert all("image_path" not in item for item in paired_payload)
     assert "retrieved_experiences" not in captured["extra"]
-    assert detailed.selection.candidate_predictions["gecko"].candidate_gripper is Gripper.GECKO
-    assert detailed.selection.candidate_predictions["silicone"].candidate_gripper is Gripper.SILICONE
-    assert detailed.selection.candidate_predictions["gecko"].predicted_normal_force_n == 0.8
-    assert detailed.selection.candidate_predictions["silicone"].predicted_normal_force_n == 1.3
+    assert detailed.selection.desired_gripper == "gecko"
+    assert detailed.selection.model_recommended_gripper == "silicone"
+    assert detailed.selection.recommendation_agrees_with_selector is False
 
 
-def test_e5_contact_ablation_removes_contact_from_vlm_payload(monkeypatch):
+def test_e4_contact_ablation_removes_contact_from_joint_payload(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = False
     cfg.retrieval.embedding.provider = "mock"
-    cfg.retrieval.use_projected_contact = False
+    cfg.inputs.use_projected_contact = False
     records = fabricate_records(cfg, 12)
     held = records[0].object_id
     captured = {}
@@ -153,7 +133,7 @@ def test_e5_contact_ablation_removes_contact_from_vlm_payload(monkeypatch):
     class CapturingClient:
         def generate_json(self, **kwargs):
             captured.update(kwargs)
-            return PairedGripperPrediction(
+            return JointGripperPrediction(
                 gecko=PerGripperPrediction(
                     candidate_gripper=Gripper.GECKO,
                     predicted_normal_force_n=1.0,
@@ -162,6 +142,7 @@ def test_e5_contact_ablation_removes_contact_from_vlm_payload(monkeypatch):
                     candidate_gripper=Gripper.SILICONE,
                     predicted_normal_force_n=1.0,
                 ),
+                recommended_gripper="gecko",
             ).model_dump(mode="json")
 
         def cache_stats(self):
@@ -169,16 +150,96 @@ def test_e5_contact_ablation_removes_contact_from_vlm_payload(monkeypatch):
 
     client = CapturingClient()
     monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
-    monkeypatch.setattr("force_prediction.pipeline.get_client", lambda _cfg: client)
-
+    monkeypatch.setattr("force_prediction.experiments.get_client", lambda _cfg: client)
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
-    Pipeline(cfg, cfg.experiment("e5")).fit(train).predict_detailed(
-        query_input_from_object(test, cfg)
-    )
+
+    Pipeline(cfg, "e4").fit(train).predict_detailed(query_input_from_object(test, cfg))
 
     assert "projected_contact_fraction" not in captured["extra"]["query"]
     assert all(
         "projected_contact_fraction" not in item
         for item in captured["extra"]["retrieved_objects"]
     )
+    assert captured["extra"]["retrieval_config"]["k"] == cfg.retrieval.k
+
+
+def test_e5_loads_only_calibrated_physics(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    records = fabricate_records(cfg, 20)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError("E5 must not initialize VLM, retrieval, or embedding resources")
+
+    monkeypatch.setattr("force_prediction.experiments.get_embedding_provider", unexpected)
+    monkeypatch.setattr("force_prediction.experiments.vlm_predict_joint", unexpected)
+    monkeypatch.setattr("force_prediction.experiments.describe", unexpected)
+    detailed = Pipeline(cfg, "e5").fit(train).predict_detailed(
+        query_input_from_object(test, cfg)
+    )
+
+    assert detailed.experiment_method == "calibrated_physics"
+    assert detailed.retrieved_objects == []
+    assert set(detailed.physics_estimates) == {"gecko", "silicone"}
+    assert detailed.selection.model_recommended_gripper is None
+
+
+def test_e6_is_the_same_e5_physics_plus_the_learned_residual(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.learning.embedding_pca_dims = 0
+    records = fabricate_records(cfg, 24)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+    query = query_input_from_object(test, cfg)
+
+    class ConstantResidual:
+        def __init__(self, _cfg):
+            pass
+
+        def fit(self, base, embeddings, residuals):
+            assert len(base) == len(residuals)
+            assert embeddings.shape[1] == 0
+            return self
+
+        def predict_residual(self, base, embeddings):
+            assert len(base) == 1
+            assert embeddings.shape == (1, 0)
+            return np.asarray([0.2])
+
+    monkeypatch.setattr("force_prediction.experiments.ResidualForceModel", ConstantResidual)
+    e5 = Pipeline(cfg, "e5").fit(train).predict_detailed(query)
+    e6 = Pipeline(cfg, "e6").fit(train).predict_detailed(query)
+
+    assert e6.physics_estimates == e5.physics_estimates
+    for gripper in ("gecko", "silicone"):
+        e5_prediction = e5.selection.candidate_predictions[gripper]
+        e6_prediction = e6.selection.candidate_predictions[gripper]
+        if e5_prediction.feasible:
+            assert e6_prediction.predicted_normal_force_n == pytest.approx(
+                clamp_force(e5_prediction.predicted_normal_force_n + 0.2, cfg)
+            )
+
+
+def test_e6_keeps_semantic_embeddings_without_vlm_force_or_retrieval(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = True
+    records = fabricate_records(cfg, 24)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError("E6 must not initialize retrieval or call the force VLM")
+
+    monkeypatch.setattr("force_prediction.experiments.ExperienceIndex", unexpected)
+    monkeypatch.setattr("force_prediction.experiments.vlm_predict_joint", unexpected)
+    pipeline = Pipeline(cfg, "e6").fit(train)
+    detailed = pipeline.predict_detailed(query_input_from_object(test, cfg))
+
+    assert pipeline.strategy.provider is not None
+    assert detailed.retrieved_objects == []
+    assert detailed.selection.model_recommended_gripper is None

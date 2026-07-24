@@ -2,15 +2,16 @@
 
 Single-embodiment public set (image, mass, min grasp force). Purpose: exercise the
 ENTIRE live Gemini pipeline on real data before our own collection exists:
-descriptor -> Gemini Embedding 2 (asymmetric retrieval) -> hybrid retrieval ->
-structured per-gripper force prediction -> force MAE, sanity-checked vs Exp-Force's
+descriptor -> Gemini Embedding 2 (asymmetric retrieval) -> hybrid object retrieval ->
+structured joint force prediction -> silicone force MAE, sanity-checked vs Exp-Force's
 reported ~0.43 N.
 
     python scripts/expforce_testset.py --limit 20            # offline stub
     python scripts/expforce_testset.py --live --limit 20 --k 5   # real Gemini (needs .env key)
 
-Roughness/contact are unknown here, held constant (class 3, a=1.0), so this tests
-the retrieval + VLM force pathway (our E3), not physics. Cost bounded by --limit;
+Roughness/contact are unknown here, held constant (class 3, a=1.0), so this is a
+single-embodiment compatibility check of the E4 interface, not a full E4 evaluation.
+Cost is bounded by --limit;
 all calls disk-cached.
 """
 
@@ -27,7 +28,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from force_prediction.config import load_config  # noqa: E402
 from force_prediction.contracts import (  # noqa: E402
-    CandidateQuery,
     ExperienceRecord,
     Gripper,
     Meta,
@@ -37,7 +37,7 @@ from force_prediction.contracts import (  # noqa: E402
 )
 from force_prediction.evaluation import _force_stats, make_folds  # noqa: E402
 from force_prediction.perception import describe  # noqa: E402
-from force_prediction.prediction import vlm_predict_gripper  # noqa: E402
+from force_prediction.prediction import vlm_predict_joint  # noqa: E402
 from force_prediction.retrieval import ExperienceIndex  # noqa: E402
 
 BASE = "https://raw.githubusercontent.com/expforcesubmission/Exp-Force-Website/main"
@@ -115,18 +115,22 @@ def run(cfg, records, k: int) -> None:
                       projected_contact_fraction=rec.projected_contact_fraction,
                       semantic_description=rec.semantic_description)
             qv = index.embed_query(q)  # asymmetric: query-side template
-            retrieved = index.retrieve(q, qv, Gripper.SILICONE, k=k, exclude_object_id=oid)
+            retrieved = index.retrieve_objects(q, qv, k=k, exclude_object_id=oid)
             image = None
             if rec.image_path and (cfg.root / rec.image_path).exists():
                 import cv2
 
                 image = cv2.imread(str(cfg.root / rec.image_path))
-            cq = CandidateQuery(**q.model_dump(), candidate_gripper=Gripper.SILICONE)
-            pred = vlm_predict_gripper(cfg, cq, image, retrieved, None,
-                                       include_paired=False,
-                                       instruction=cfg.prompts.experiments["e3"],
-                                       include_retrieval=True,
-                                       include_measured=True)
+            joint = vlm_predict_joint(
+                cfg,
+                q,
+                image,
+                retrieved,
+                instruction=cfg.prompts.experiments["e4"],
+                include_retrieval=True,
+                include_measured=True,
+            )
+            pred = joint.silicone
             assert rec.min_force_n is not None
             pairs.append((rec.min_force_n, pred.predicted_normal_force_n))
             n_done += 1
@@ -143,7 +147,7 @@ def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--live", action="store_true")
-    ap.add_argument("--k", type=int, default=5)
+    ap.add_argument("--k", type=int, default=None, help="Override config.yaml retrieval.k.")
     ap.add_argument("--rebuild", action="store_true")
     args = ap.parse_args()
 
@@ -160,9 +164,11 @@ def main() -> int:
     records = load_experiences(exp_path)
     if args.limit:
         records = records[: args.limit]
+    k = args.k if args.k is not None else cfg.retrieval.k
+    cfg.retrieval.k = k
     print(f"Running {'LIVE Gemini' if args.live else 'offline (dry-run stub)'} "
-          f"on {len(records)} objects, k={args.k}\n")
-    run(cfg, records, args.k)
+          f"on {len(records)} objects, k={k}\n")
+    run(cfg, records, k)
     return 0
 
 

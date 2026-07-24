@@ -64,6 +64,23 @@ def test_prediction_tie_is_explicit_and_uses_compatibility():
     assert result.tie_break_reason == "higher predicted material compatibility"
 
 
+def test_model_recommendation_is_diagnostic_not_authoritative():
+    predictions = {
+        Gripper.GECKO: _p(Gripper.GECKO, 0.8),
+        Gripper.SILICONE: _p(Gripper.SILICONE, 1.2),
+    }
+
+    result = select(
+        predictions,
+        model_recommended_gripper="silicone",
+        model_recommendation_summary="model preferred silicone",
+    )
+
+    assert result.desired_gripper == "gecko"
+    assert result.model_recommended_gripper == "silicone"
+    assert result.recommendation_agrees_with_selector is False
+
+
 def test_evaluation_accepts_either_gripper_for_true_force_tie():
     truth = ObjectRecord(
         object_id="tie",

@@ -1,8 +1,8 @@
 """Run one (or all) experiments under frozen GroupKFold splits and print metrics.
 
-    python scripts/run_experiment.py --exp e5
+    python scripts/run_experiment.py --exp e4
     python scripts/run_experiment.py --all
-    python scripts/run_experiment.py --exp e3 --dry-run     # no paid calls
+    python scripts/run_experiment.py --exp e6 --dry-run     # no paid calls
 
 Leak-safe by construction: the pipeline is re-fit on each fold's training objects
 (physics calibration, residual model, retrieval index all fold-local), and both
@@ -18,7 +18,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.config import load_config  # noqa: E402
+from force_prediction.config import EXPERIMENT_IDS, load_config  # noqa: E402
 from force_prediction.contracts import group_by_object, load_experiences  # noqa: E402
 from force_prediction.evaluation import (  # noqa: E402
     EvalRow,
@@ -28,8 +28,6 @@ from force_prediction.evaluation import (  # noqa: E402
     make_folds,
 )
 from force_prediction.pipeline import Pipeline, query_input_from_object  # noqa: E402
-
-ALL_EXPERIMENTS = ["e1", "e2", "e3", "e3b", "e4", "e5", "e6"]
 
 
 def get_or_make_splits(records, cfg, refresh: bool):
@@ -46,12 +44,11 @@ def get_or_make_splits(records, cfg, refresh: bool):
 
 
 def run_experiment(name: str, records, cfg, folds) -> dict:
-    toggles = cfg.experiment(name)
     by_object = group_by_object(records)
     rows: list[EvalRow] = []
     for fold in folds:
         train = [r for r in records if r.object_id in set(fold["train"])]
-        pipe = Pipeline(cfg, toggles).fit(train)
+        pipe = Pipeline(cfg, name).fit(train)
         for oid in fold["test"]:
             obj_records = [r for r in records if r.object_id == oid]
             if not obj_records:
@@ -63,7 +60,7 @@ def run_experiment(name: str, records, cfg, folds) -> dict:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--exp", default="e5", help="Experiment id (e1..e6, including e3b).")
+    p.add_argument("--exp", choices=EXPERIMENT_IDS, default="e4", help="Experiment ID.")
     p.add_argument("--all", action="store_true", help="Run every experiment.")
     p.add_argument("--dry-run", action="store_true", help="Force offline (no paid calls).")
     p.add_argument("--refresh-splits", action="store_true", help="Regenerate splits.json.")
@@ -81,7 +78,7 @@ def main() -> int:
         print("No experiences found. Run: python -m force_prediction.collect --mock --n 40")
         return 1
     folds = get_or_make_splits(records, cfg, args.refresh_splits)
-    names = ALL_EXPERIMENTS if args.all else [args.exp]
+    names = EXPERIMENT_IDS if args.all else [args.exp]
 
     results = {}
     for name in names:

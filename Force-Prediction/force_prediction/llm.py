@@ -1,7 +1,7 @@
 """Single Gemini access point: structured generation + multimodal embeddings.
 
 One client, used by perception (descriptor), retrieval (embeddings), and
-prediction (per-gripper force). Every call is content-hash cached on disk and
+prediction (joint two-gripper force response). Every call is content-hash cached on disk and
 wrapped with retries. This is the only module that imports google-genai, and it
 is imported lazily so mock / dry-run runs need neither the package nor a key.
 

@@ -16,9 +16,10 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
 
-from .config import Config
+from .config import EXPERIMENT_DEFINITION_VERSION, Config, ExperimentMethod
 from .contracts import ExperienceRecord, Gripper, Meta, group_by_object, save_experiences
 from .evaluation import EvalRow, compute_metrics
+from .experiments import EXPERIMENT_CATALOG, experiment_display_name
 from .perception import Description, describe
 from .pipeline import Pipeline, PipelineRunResult, QueryInput
 from .retrieval import build_embedding_text, get_embedding_provider
@@ -454,22 +455,17 @@ class BenchmarkResult:
     run_metadata: dict
 
 
-def _retrieval_payload(detailed: PipelineRunResult) -> dict:
-    return {
-        gripper: [item.model_dump(mode="json") for item in items]
-        for gripper, items in detailed.retrieved.items()
-    }
-
-
 def _object_retrieval_payload(detailed: PipelineRunResult) -> list[dict]:
     return [item.model_dump(mode="json") for item in detailed.retrieved_objects]
 
 
 def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
     return {
+        "experiment_id": detailed.experiment_id,
+        "experiment_method": detailed.experiment_method,
+        "experiment_definition_version": detailed.experiment_definition_version,
         "selection": detailed.selection.model_dump(mode="json"),
         "semantic_description": detailed.semantic_description,
-        "retrieved": _retrieval_payload(detailed),
         "retrieved_objects": _object_retrieval_payload(detailed),
         "physics_estimates": detailed.physics_estimates,
         "cache_stats": detailed.cache_stats,
@@ -478,15 +474,14 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
 
 def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
     from .contracts import SelectionResult
-    from .retrieval import RetrievedExperience, RetrievedObjectExperience
+    from .retrieval import RetrievedObjectExperience
 
     return PipelineRunResult(
+        experiment_id=payload.get("experiment_id", "legacy"),
+        experiment_method=payload.get("experiment_method", "legacy"),
+        experiment_definition_version=payload.get("experiment_definition_version", 0),
         selection=SelectionResult.model_validate(payload["selection"]),
         semantic_description=payload.get("semantic_description", ""),
-        retrieved={
-            gripper: [RetrievedExperience.model_validate(item) for item in items]
-            for gripper, items in payload.get("retrieved", {}).items()
-        },
         retrieved_objects=[
             RetrievedObjectExperience.model_validate(item)
             for item in payload.get("retrieved_objects", [])
@@ -508,6 +503,10 @@ def save_pipeline_run(
     image_bgr=None,  # noqa: ANN001
     baseline: PipelineRunResult | None = None,
 ) -> Path:
+    if detailed.experiment_id != experiment:
+        raise ValueError(
+            f"result experiment {detailed.experiment_id!r} does not match artifact {experiment!r}"
+        )
     created_at = datetime.now(UTC)
     image_path = None
     image_digest = None
@@ -529,8 +528,8 @@ def save_pipeline_run(
         image_path = str(destination.relative_to(cfg.root))
 
     run_id = f"{created_at.strftime('%Y%m%dT%H%M%S%fZ')}_{experiment}_{query['object_id']}"
-    toggles = cfg.experiment(experiment)
-    prompt_key = toggles.prompt
+    definition = cfg.experiment(experiment)
+    prompt_key = definition.prompt
     prediction_prompts = None
     if prompt_key is not None:
         prediction_prompts = {
@@ -539,7 +538,7 @@ def save_pipeline_run(
             "instruction": cfg.prompts.experiments[prompt_key],
         }
     artifact = {
-        "schema_version": 2,
+        "schema_version": 3,
         "run_id": run_id,
         "created_at": created_at.isoformat(),
         "source_sha256": source_sha256(cfg),
@@ -547,7 +546,9 @@ def save_pipeline_run(
             "leave-one-object-out" if truth is not None and not counterfactual else "custom"
         ),
         "experiment": experiment,
-        "experiment_toggles": toggles.model_dump(mode="json"),
+        "experiment_method": definition.method.value,
+        "experiment_definition_version": EXPERIMENT_DEFINITION_VERSION,
+        "experiment_definition": definition.model_dump(mode="json"),
         "prediction_prompts": prediction_prompts,
         "execution_mode": execution_mode,
         "models": {
@@ -555,6 +556,7 @@ def save_pipeline_run(
             "embedding": cfg.retrieval.embedding.model,
             "embedding_dim": cfg.retrieval.embedding.dim,
         },
+        "inputs": cfg.inputs.model_dump(mode="json"),
         "retrieval_config": cfg.retrieval.model_dump(mode="json"),
         "query": {
             **query,
@@ -581,9 +583,50 @@ def load_saved_runs(cfg: Config) -> list[dict]:
             run = json.loads(path.read_text())
         except (OSError, json.JSONDecodeError):
             continue
+        run.setdefault("experiment_method", _legacy_experiment_method(run))
+        run.setdefault("experiment_definition_version", 0)
         run["artifact_path"] = str(path)
+        run["experiment_display_name"] = saved_run_experiment_label(run)
         runs.append(run)
     return runs
+
+
+def _legacy_experiment_method(run: dict) -> str:
+    toggles = run.get("experiment_toggles", {})
+    if toggles.get("use_residual"):
+        return ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL.value
+    if toggles.get("use_physics"):
+        return ExperimentMethod.CALIBRATED_PHYSICS.value
+    if (
+        toggles.get("use_paired_rows")
+        and toggles.get("use_retrieval")
+        and toggles.get("use_vlm")
+    ):
+        return ExperimentMethod.PAIRED_RETRIEVAL_VLM.value
+    if toggles.get("use_vlm"):
+        return "legacy_per_gripper_vlm"
+    if toggles.get("use_retrieval"):
+        return "legacy_branch_retrieval_average"
+    return "legacy_unknown"
+
+
+def saved_run_experiment_label(run: dict) -> str:
+    """Human-readable provenance that prevents old E4/E5 IDs from being misread."""
+    experiment = str(run.get("experiment", "unknown")).lower()
+    version = int(run.get("experiment_definition_version", 0) or 0)
+    if version >= EXPERIMENT_DEFINITION_VERSION and experiment in EXPERIMENT_CATALOG:
+        return experiment_display_name(experiment)
+
+    method = str(run.get("experiment_method") or _legacy_experiment_method(run))
+    legacy_labels = {
+        ExperimentMethod.PAIRED_RETRIEVAL_VLM.value: "paired retrieval VLM",
+        ExperimentMethod.CALIBRATED_PHYSICS.value: "calibrated physics",
+        ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL.value: "physics + semantic residual",
+        "legacy_per_gripper_vlm": "per-gripper VLM",
+        "legacy_branch_retrieval_average": "branch retrieval average",
+        "legacy_unknown": "unknown method",
+    }
+    return f"Legacy {experiment.upper()} — {legacy_labels.get(method, method)}"
 
 
 def run_benchmark(
@@ -600,7 +643,7 @@ def run_benchmark(
 
     for index, object_id in enumerate(object_ids, start=1):
         train = [record for record in records if record.object_id != object_id]
-        pipe = Pipeline(cfg, cfg.experiment(experiment)).fit(train)
+        pipe = Pipeline(cfg, experiment).fit(train)
         truth = by_object[object_id]
         sample = truth.gecko or truth.silicone
         assert sample is not None
@@ -637,8 +680,9 @@ def run_benchmark(
             "predicted_gripper": chosen,
             "selection_correct": chosen in {gripper.value for gripper in optimal},
             "regret_n": regret,
+            "model_recommended_gripper": result.model_recommended_gripper,
+            "recommendation_agrees_with_selector": result.recommendation_agrees_with_selector,
             "semantic_description": detailed.semantic_description,
-            "retrieval": _retrieval_payload(detailed),
             "retrieved_objects": _object_retrieval_payload(detailed),
             "physics_estimates": detailed.physics_estimates,
             "cache_stats": detailed.cache_stats,
@@ -648,7 +692,8 @@ def run_benchmark(
             progress(index, len(object_ids), object_id)
 
     metrics = compute_metrics(eval_rows, cfg).to_dict()
-    prompt_key = cfg.experiment(experiment).prompt
+    definition = cfg.experiment(experiment)
+    prompt_key = definition.prompt
     prediction_prompts = None
     if prompt_key is not None:
         prediction_prompts = {
@@ -657,8 +702,12 @@ def run_benchmark(
             "instruction": cfg.prompts.experiments[prompt_key],
         }
     metadata = {
+        "schema_version": 3,
         "created_at": datetime.now(UTC).isoformat(),
         "experiment": experiment,
+        "experiment_method": definition.method.value,
+        "experiment_definition_version": EXPERIMENT_DEFINITION_VERSION,
+        "experiment_definition": definition.model_dump(mode="json"),
         "dry_run": cfg.models.dry_run,
         "source_sha256": source_sha256(cfg),
         "evaluation_protocol": "leave-one-object-out",
@@ -667,6 +716,7 @@ def run_benchmark(
         "model": cfg.models.vlm,
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,
+        "inputs": cfg.inputs.model_dump(mode="json"),
         "retrieval": cfg.retrieval.model_dump(mode="json"),
         "prediction_prompts": prediction_prompts,
     }
@@ -695,7 +745,7 @@ def save_benchmark(cfg: Config, benchmark: BenchmarkResult) -> tuple[Path, Path]
     flat_fields = [
         key
         for key in benchmark.rows[0]
-        if key not in {"retrieval", "retrieved_objects", "cache_stats"}
+        if key not in {"retrieved_objects", "cache_stats"}
     ]
     with csv_path.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.DictWriter(fh, fieldnames=flat_fields, extrasaction="ignore")

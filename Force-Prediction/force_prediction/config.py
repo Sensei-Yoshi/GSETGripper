@@ -2,7 +2,7 @@
 
 `config.yaml` is the single source of tuning: force conventions, retrieval
 weights, physics coefficients/bounds, model IDs, prompts, and the experiment
-toggle sets. This module parses it into validated Pydantic models so the rest
+method definitions. This module parses it into validated Pydantic models so the rest
 of the codebase gets attribute access and fail-fast validation instead of raw
 dict lookups.
 
@@ -14,6 +14,7 @@ Usage:
 
 from __future__ import annotations
 
+from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
 from typing import Literal
@@ -54,6 +55,10 @@ class CollectionConfig(BaseModel):
         return self
 
 
+class InputsConfig(BaseModel):
+    use_projected_contact: bool = True
+
+
 class GeometryConfig(BaseModel):
     pad_height_mm: float = Field(gt=0)
 
@@ -90,7 +95,6 @@ class RetrievalConfig(BaseModel):
     sigma_mass: float = Field(gt=0)
     sigma_contact: float = Field(gt=0)
     embedding: EmbeddingConfig
-    use_projected_contact: bool = True
 
 
 class PhysicsBounds(BaseModel):
@@ -141,13 +145,22 @@ class Prompts(BaseModel):
     experiments: dict[str, str]
 
 
-class ExperimentToggles(BaseModel):
-    use_measured: bool
-    use_retrieval: bool
-    use_paired_rows: bool
-    use_physics: bool
-    use_vlm: bool
-    use_residual: bool
+class ExperimentMethod(StrEnum):
+    """Supported estimators; each maps to one explicit strategy implementation."""
+
+    JOINT_VLM = "joint_vlm"
+    JOINT_VLM_MEASURED = "joint_vlm_measured"
+    PAIRED_RETRIEVAL_VLM = "paired_retrieval_vlm"
+    CALIBRATED_PHYSICS = "calibrated_physics"
+    PHYSICS_SEMANTIC_RESIDUAL = "physics_semantic_residual"
+
+
+EXPERIMENT_IDS = ("e1", "e2", "e4", "e5", "e6")
+EXPERIMENT_DEFINITION_VERSION = 3
+
+
+class ExperimentConfig(BaseModel):
+    method: ExperimentMethod
     prompt: str | None = None
 
 
@@ -156,6 +169,7 @@ class Config(BaseModel):
     paths: Paths
     force: ForceConfig
     collection: CollectionConfig
+    inputs: InputsConfig
     geometry: GeometryConfig
     roughness: RoughnessConfig
     retrieval: RetrievalConfig
@@ -164,30 +178,43 @@ class Config(BaseModel):
     learning: LearningConfig
     evaluation: EvaluationConfig
     prompts: Prompts
-    experiments: dict[str, ExperimentToggles]
+    experiments: dict[str, ExperimentConfig]
 
     # Resolved at load time so callers get absolute paths regardless of cwd.
     root: Path = REPO_ROOT
 
     @model_validator(mode="after")
-    def _vlm_experiments_have_prompts(self) -> Config:
-        for name, toggles in self.experiments.items():
-            if toggles.use_vlm:
-                if toggles.prompt is None:
+    def _validate_experiments(self) -> Config:
+        if set(self.experiments) != set(EXPERIMENT_IDS):
+            raise ValueError(f"experiments keys must be exactly {list(EXPERIMENT_IDS)}")
+
+        vlm_methods = {
+            ExperimentMethod.JOINT_VLM,
+            ExperimentMethod.JOINT_VLM_MEASURED,
+            ExperimentMethod.PAIRED_RETRIEVAL_VLM,
+        }
+        for name, experiment in self.experiments.items():
+            if experiment.method in vlm_methods:
+                if experiment.prompt is None:
                     raise ValueError(f"VLM experiment {name!r} requires a prompt key")
-                if toggles.prompt not in self.prompts.experiments:
+                if experiment.prompt not in self.prompts.experiments:
                     raise ValueError(
-                        f"experiment {name!r} references missing prompt {toggles.prompt!r}"
+                        f"experiment {name!r} references missing prompt {experiment.prompt!r}"
                     )
-            elif toggles.prompt is not None:
+            elif experiment.prompt is not None:
                 raise ValueError(f"non-VLM experiment {name!r} must not configure a prompt")
+        unused_prompts = set(self.prompts.experiments) - {
+            experiment.prompt for experiment in self.experiments.values() if experiment.prompt
+        }
+        if unused_prompts:
+            raise ValueError(f"unused experiment prompts: {sorted(unused_prompts)}")
         return self
 
     def path(self, key: Literal["experiences", "images", "splits", "cache"]) -> Path:
         """Absolute path for a configured data location."""
         return (self.root / getattr(self.paths, key)).resolve()
 
-    def experiment(self, name: str) -> ExperimentToggles:
+    def experiment(self, name: str) -> ExperimentConfig:
         key = name.lower()
         if key not in self.experiments:
             raise KeyError(f"unknown experiment {name!r}; have {sorted(self.experiments)}")

@@ -18,8 +18,8 @@ test:
 collect:
 	$(PY) -m force_prediction.collect --mock --n 40
 
-# Run the full method (E5) offline. Use E=e3 etc. to run another experiment.
-E ?= e5
+# Run the paired-retrieval VLM method (E4) offline. Use E=e5 for calibrated physics.
+E ?= e4
 run:
 	$(PY) scripts/run_experiment.py --exp $(E) --dry-run
 

@@ -1,7 +1,7 @@
 """Live Gemini smoke test: image input + JSON-schema structured output.
 
 This exercises the REAL calls the pipeline makes (perception.describe and
-prediction.vlm_predict_gripper) against the model in config.yaml, using a photo.
+prediction.vlm_predict_joint) against the model in config.yaml, using a photo.
 
 Run it directly to see output:
     python tests/test_gemini_live.py
@@ -30,12 +30,11 @@ import pytest  # noqa: E402
 
 from force_prediction.config import load_config  # noqa: E402
 from force_prediction.contracts import (  # noqa: E402
-    CandidateQuery,
-    Gripper,
-    PerGripperPrediction,
+    JointGripperPrediction,
+    Query,
 )
 from force_prediction.perception import describe  # noqa: E402
-from force_prediction.prediction import vlm_predict_gripper  # noqa: E402
+from force_prediction.prediction import vlm_predict_joint  # noqa: E402
 
 DEFAULT_IMAGE = (
     "/Users/premshah/Desktop/Robotics/Other/Research/waymo_subset/"
@@ -65,26 +64,26 @@ def _load_image(path: str):  # noqa: ANN202
     reason="set RUN_LIVE_GEMINI_TESTS=1 with an API key and image to run live",
 )
 def test_gemini_structured_image() -> None:
-    """One real structured-output call with an image -> valid PerGripperPrediction."""
+    """One real structured-output call with an image -> valid joint prediction."""
     cfg = load_config()
     img = _load_image(DEFAULT_IMAGE)
-    cq = CandidateQuery(
+    query = Query(
         object_id="probe", image_path=DEFAULT_IMAGE, mass_g=420.0,
         roughness_class=2, projected_contact_fraction=0.83,
-        semantic_description="", candidate_gripper=Gripper.GECKO,
+        semantic_description="",
     )
-    pred = vlm_predict_gripper(
+    prediction = vlm_predict_joint(
         cfg,
-        cq,
+        query,
         img,
         [],
-        None,
-        include_paired=False,
         instruction=cfg.prompts.experiments["e1"],
         include_retrieval=False,
+        include_measured=False,
     )
-    assert isinstance(pred, PerGripperPrediction)
-    assert pred.predicted_normal_force_n >= 0
+    assert isinstance(prediction, JointGripperPrediction)
+    assert prediction.gecko.predicted_normal_force_n >= 0
+    assert prediction.silicone.predicted_normal_force_n >= 0
 
 
 def main() -> int:
@@ -109,27 +108,27 @@ def main() -> int:
     print(f"  material   : {desc.visible_surface_material}")
     print(f"  condition  : {desc.visible_surface_condition}\n")
 
-    # (2) Full structured per-gripper force prediction (what the pipeline calls).
-    print("── vlm_predict_gripper() [note: this photo is not a graspable object] ──")
-    for gripper in (Gripper.GECKO, Gripper.SILICONE):
-        cq = CandidateQuery(
-            object_id="probe", image_path=image_path, mass_g=420.0,
-            roughness_class=2, projected_contact_fraction=0.83,
-            semantic_description=desc.description, candidate_gripper=gripper,
-        )
-        pred = vlm_predict_gripper(
-            cfg,
-            cq,
-            img,
-            [],
-            None,
-            include_paired=False,
-            instruction=cfg.prompts.experiments["e1"],
-            include_retrieval=False,
-        )
-        print(f"  {gripper.value:8}: force={pred.predicted_normal_force_n} N  "
+    # (2) One joint structured force prediction (what E1 calls).
+    print("── vlm_predict_joint() [note: this photo is not a graspable object] ──")
+    query = Query(
+        object_id="probe", image_path=image_path, mass_g=420.0,
+        roughness_class=2, projected_contact_fraction=0.83,
+        semantic_description=desc.description,
+    )
+    prediction = vlm_predict_joint(
+        cfg,
+        query,
+        img,
+        [],
+        instruction=cfg.prompts.experiments["e1"],
+        include_retrieval=False,
+        include_measured=False,
+    )
+    for name, pred in (("gecko", prediction.gecko), ("silicone", prediction.silicone)):
+        print(f"  {name:8}: force={pred.predicted_normal_force_n} N  "
               f"feasible={pred.feasible}  compat={pred.compatibility.value}")
         print(f"            reason: {pred.reasoning_trace}")
+    print(f"  recommendation: {prediction.recommended_gripper}")
 
     # (3) Optional: text embedding smoke. Retrieval never embeds image pixels.
     print("\n── embedding smoke ───────────────────────────────────────")

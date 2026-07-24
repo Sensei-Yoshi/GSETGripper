@@ -1,7 +1,7 @@
-"""Stage check: one per-gripper VLM structured prediction.
+"""Stage check: one joint E2 VLM response for both grippers.
 
-    python scripts/check_prediction.py            # dry-run stub, no network
-    python scripts/check_prediction.py --live      # real Gemini call (needs GEMINI_API_KEY)
+    python scripts/check_prediction.py         # dry-run stub, no network
+    python scripts/check_prediction.py --live  # one real Gemini call
 """
 
 from __future__ import annotations
@@ -12,35 +12,36 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import CandidateQuery, Gripper  # noqa: E402
-from force_prediction.physics import PhysicsModel, PhysicsParams  # noqa: E402
-from force_prediction.prediction import vlm_predict_gripper  # noqa: E402
+from force_prediction.contracts import Query  # noqa: E402
+from force_prediction.prediction import vlm_predict_joint  # noqa: E402
 
 
 def main() -> int:
-    cfg = load_config()
+    cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = "--live" not in sys.argv
-
-    physics = PhysicsModel(PhysicsParams.from_config(cfg), cfg)
-    for gripper in (Gripper.GECKO, Gripper.SILICONE):
-        cq = CandidateQuery(
-            object_id="probe", image_path="", mass_g=420.0, roughness_class=2,
-            projected_contact_fraction=0.83, semantic_description="smooth rigid plastic bottle",
-            candidate_gripper=gripper,
+    query = Query(
+        object_id="probe",
+        image_path="",
+        mass_g=420.0,
+        roughness_class=2,
+        projected_contact_fraction=0.83,
+        semantic_description="smooth rigid plastic bottle",
+    )
+    prediction = vlm_predict_joint(
+        cfg,
+        query,
+        None,
+        [],
+        instruction=cfg.prompts.experiments["e2"],
+        include_measured=True,
+        include_retrieval=False,
+    )
+    for gripper, result in (("gecko", prediction.gecko), ("silicone", prediction.silicone)):
+        print(
+            f"{gripper:8}: pred={result.predicted_normal_force_n}N "
+            f"feasible={result.feasible} :: {result.reasoning_trace}"
         )
-        est = physics.min_force(gripper, cq.mass_g, cq.roughness_class, cq.projected_contact_fraction)
-        pred = vlm_predict_gripper(
-            cfg,
-            cq,
-            None,
-            [],
-            est,
-            include_paired=False,
-            instruction=cfg.prompts.experiments["e2"],
-            include_retrieval=False,
-        )
-        print(f"{gripper.value:8}: physics={est.min_force_n} -> pred={pred.predicted_normal_force_n}N "
-              f"feasible={pred.feasible} :: {pred.reasoning_trace}")
+    print(f"model recommendation: {prediction.recommended_gripper}")
     return 0
 
 
