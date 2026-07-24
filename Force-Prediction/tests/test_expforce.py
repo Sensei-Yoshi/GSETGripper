@@ -89,6 +89,20 @@ def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
         assert cfg.experiment(experiment).prompt is None
 
 
+def test_vlm_prompts_require_concise_quantitative_evidence_without_invented_constants():
+    cfg = load_config()
+    shared = " ".join(cfg.prompts.prediction_system.lower().split())
+    e1_prompt = " ".join(cfg.prompts.experiments["e1"].lower().split())
+    e2_prompt = " ".join(cfg.prompts.experiments["e2"].lower().split())
+
+    assert "three to four sentences" in shared
+    assert "equation/calculation summary" in shared
+    assert "do not invent" in shared
+    assert "rough visual approximations" in e1_prompt
+    assert "authoritative measurements" in e2_prompt
+    assert "do not infer hidden" in e2_prompt
+
+
 def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = False

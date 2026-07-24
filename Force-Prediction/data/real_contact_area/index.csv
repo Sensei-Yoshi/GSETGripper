@@ -1,0 +1,2 @@
+timestamp,name,px_per_mm,k_max,delta,L,w_pad,object_type,contact_L_mm,contact_R_mm,total_area_mm2,mean_fraction,antipodal,folder
+2026-07-24T13:58:19,plastic_cup,8.0,2.0,0.3,4.0,12.0,axisymmetric,4.219,4.219,38.931,0.3845,True,plastic_cup_20260724-135814

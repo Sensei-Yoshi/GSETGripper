@@ -186,12 +186,22 @@ prompts:
     roughness, contact fraction, and surface material. If no experiences are
     supplied, do not imply that retrieval evidence was used.
 
+    QUANTITATIVE JUSTIFICATION
+    Use quantitative checks when the available evidence supports them. If you
+    use a mathematical relationship, name the relationship and summarize the
+    substituted values or scaling that affected the force estimate. Do not invent
+    calibrated friction, adhesion, or contact coefficients. A simple relationship
+    such as object weight m*g may be used as a sanity check, but it is not itself
+    the required gripper normal force.
+
     OUTPUT
     Return only valid JSON matching the supplied schema, including an explicit
-    recommended_gripper. "reasoning_trace" and "recommendation_summary" must be
-    concise evidence summaries of at most three sentences identifying the most
-    important available visual, measured, and retrieved evidence. They must not
-    contain extended hidden chain-of-thought.
+    recommended_gripper. Each gripper's "reasoning_trace" must be one complete
+    sentence supporting its prediction. "recommendation_summary" must be one or
+    two complete sentences comparing the candidates and explaining the recommendation.
+    Across those fields, provide a useful total of three to four sentences. Include
+    a concise equation/calculation summary when mathematical reasoning was used;
+    do not provide extended hidden chain-of-thought.
 
   descriptor: |
     Inspect the likely opposing finger-contact patches in the centered grasp band.
@@ -223,7 +233,10 @@ prompts:
       then explicitly recommend gecko, silicone, or none. No authoritative mass,
       roughness, projected contact measurement, physics estimate, or retrieved
       experience is available. Reason only from visible object scale, material,
-      condition, and geometry. Reflect the uncertainty and do not invent measurements.
+      condition, and geometry. The resulting mass, roughness, and contact judgments
+      are necessarily rough visual approximations, so reflect that uncertainty.
+      Predict forces directly from the available evidence; do not invent physical
+      constants or pretend to run the calibrated E5 physics model.
 
     e2: |
       E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.
@@ -231,7 +244,9 @@ prompts:
       stationary-finger normal force (newtons) for both gecko and silicone. Judge
       each gripper's feasibility and compatibility, then explicitly recommend gecko,
       silicone, or none. No retrieved experiences or physics estimate are available;
-      do not imply otherwise.
+      do not imply otherwise. Predict forces directly from these measured and visual
+      inputs. You may use dimensional or weight-based sanity checks, but do not infer
+      hidden friction/adhesion constants or claim to run the calibrated E5 equations.
 
     e4: |
       E4 PAIRED-OBJECT RETRIEVAL CONDITION.
@@ -239,7 +254,9 @@ prompts:
       for both gecko and silicone under the standardized protocol. Use the supplied
       measurements, image, and one ranked object list in which each neighbor carries
       both gripper outcomes. Judge feasibility and compatibility, then explicitly
-      recommend gecko, silicone, or none. Do not assume or invent a physics estimate.
+      recommend gecko, silicone, or none. Explain how the closest paired outcomes and
+      any quantitative mass/contact scaling support the estimates. Do not assume or
+      invent a physics estimate or calibrated physical constants.
 
 # =============================================================================
 # EXPERIMENTS  —  explicit estimator methods dispatched by experiments.py.

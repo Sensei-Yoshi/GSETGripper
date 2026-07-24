@@ -133,8 +133,17 @@ class PerGripperPrediction(BaseModel):
     visible_surface_condition: str = "unknown"
     compatibility: Compatibility = Compatibility.UNKNOWN
     feasible: bool = True
-    predicted_normal_force_n: float = Field(ge=0)
-    reasoning_trace: str = ""
+    predicted_normal_force_n: float = Field(
+        ge=0,
+        description="Best continuous stationary-finger normal-force estimate in newtons.",
+    )
+    reasoning_trace: str = Field(
+        default="",
+        description=(
+            "One complete sentence supporting this gripper estimate, including a concise "
+            "calculation summary if mathematical reasoning was used."
+        ),
+    )
 
 
 class JointGripperPrediction(BaseModel):
@@ -143,7 +152,13 @@ class JointGripperPrediction(BaseModel):
     gecko: PerGripperPrediction
     silicone: PerGripperPrediction
     recommended_gripper: GripperChoice
-    recommendation_summary: str = ""
+    recommendation_summary: str = Field(
+        default="",
+        description=(
+            "One or two complete sentences comparing both candidates and explaining the "
+            "recommendation; combined with both reasoning traces, total three to four sentences."
+        ),
+    )
 
 
 class SelectionResult(BaseModel):

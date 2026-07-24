@@ -23,6 +23,7 @@ image ──extract_object_outline.py──▶ spline CSV (px)
 | `viz.py` | Module 6 — overlay figure (contact, bridges, wrap arcs, κ profile) |
 | `run_synthetic_tests.py` | accuracy harness + κ_max ranking-stability sweep |
 | `run_on_outline.py` | run on a real extracted outline CSV |
+| `capture_and_analyze.py` | **end-to-end**: camera SPACE-capture (or `--image`) → rembg + spline → contact model → one organized folder per object under `data/real_contact_area/` (raw photo, cutout, mask, spline overlay, CSV, SVG, contact figure, `summary.json` with all numbers incl. κ_max sweep) + a master `index.csv` |
 
 ## Algorithm (draping walk)
 
@@ -77,6 +78,14 @@ $VENV scripts/contact_model/run_synthetic_tests.py
 $VENV scripts/contact_model/run_on_outline.py \
     data/MatForce/outline_outputs/plastic_cup_spline_points.csv \
     --px-per-mm 8.4 --object-type axisymmetric --k-max 2.0 --w-pad 12
+
+# live end-to-end: SPACE = capture, click the edges of a 50 mm fiducial
+$VENV scripts/contact_model/capture_and_analyze.py --ref-width-mm 50 \
+    --object-type axisymmetric
+
+# same pipeline on an existing photo
+$VENV scripts/contact_model/capture_and_analyze.py \
+    --image data/MatForce/plastic_cup.png --px-per-mm 8.0 --no-show
 ```
 
 ## Parameters

@@ -121,6 +121,63 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     assert detailed.selection.recommendation_agrees_with_selector is False
 
 
+def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
+    """E4 adds paired experience retrieval; neither path may invoke E5/E6 physics."""
+    cfg = load_config().model_copy(deep=True)
+    cfg.models.dry_run = False
+    cfg.retrieval.embedding.provider = "mock"
+    records = fabricate_records(cfg, 20)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+    query = query_input_from_object(test, cfg)
+    payloads = []
+
+    class CapturingClient:
+        def generate_json(self, **kwargs):
+            payloads.append(kwargs["extra"])
+            return JointGripperPrediction(
+                gecko=PerGripperPrediction(
+                    candidate_gripper=Gripper.GECKO,
+                    predicted_normal_force_n=1.0,
+                ),
+                silicone=PerGripperPrediction(
+                    candidate_gripper=Gripper.SILICONE,
+                    predicted_normal_force_n=1.2,
+                ),
+                recommended_gripper="gecko",
+            ).model_dump(mode="json")
+
+        def cache_stats(self):
+            return {}
+
+    def unexpected(*_args, **_kwargs):
+        raise AssertionError("E2/E4 must not initialize or invoke the physics models")
+
+    client = CapturingClient()
+    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("force_prediction.experiments.get_client", lambda _cfg: client)
+    monkeypatch.setattr("force_prediction.experiments.calibrate", unexpected)
+    monkeypatch.setattr("force_prediction.experiments.PhysicsModel", unexpected)
+    monkeypatch.setattr("force_prediction.experiments.physics_predict", unexpected)
+    monkeypatch.setattr("force_prediction.experiments.ResidualForceModel", unexpected)
+
+    e2 = Pipeline(cfg, "e2").fit(train).predict_detailed(query)
+    e4 = Pipeline(cfg, "e4").fit(train).predict_detailed(query)
+
+    assert e2.physics_estimates == e4.physics_estimates == {}
+    assert len(payloads) == 2
+    e2_payload, e4_payload = payloads
+    assert e4_payload["query"] == e2_payload["query"]
+    assert e4_payload["force_constraints"] == e2_payload["force_constraints"]
+    assert e4_payload["roughness_scale"] == e2_payload["roughness_scale"]
+    assert set(e4_payload) - set(e2_payload) == {
+        "retrieved_objects",
+        "retrieval_config",
+    }
+    assert len(e4_payload["retrieved_objects"]) == cfg.retrieval.k
+
+
 def test_e4_contact_ablation_removes_contact_from_joint_payload(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.models.dry_run = False

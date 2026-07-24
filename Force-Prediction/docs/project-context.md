@@ -1,6 +1,6 @@
 # Project Context: Material-Aware Gripper Selection and Force Prediction
 
-Last updated: 2026-07-23
+Last updated: 2026-07-24
 
 This is the comprehensive current context for `GSETGripper/Force-Prediction`.
 `config.yaml` is the source of truth for tunables, prompts, and experiment method
@@ -186,6 +186,12 @@ E2 uses the same one-call joint schema but additionally sends authoritative mass
 roughness, and contact when contact is enabled. It sends no retrieved examples and no
 physics estimate. Comparing E1 with E2 isolates the value of measurements.
 
+E2 does not ask the VLM to estimate friction, adhesion, or other physical constants and
+does not run the E5 equation. E1 and E2 are both direct VLM force predictors: E1 must make
+rough visual judgments about object scale, mass, surface, and contact, while E2 replaces
+the available judgments with measured inputs. The contrast is measurement availability,
+not "informal physics" versus "formal physics."
+
 ### E4: paired experience-conditioned VLM
 
 E4 generates or reuses one contact-region description, embeds it once, ranks paired
@@ -197,6 +203,12 @@ One structured VLM request receives the image, measurements, hybrid retrieval tr
 continuous force constraints, and both outcomes for every neighbor. It returns two
 predictions and an explicit recommendation. No physics estimate is calculated or sent.
 Python remains the final selector.
+
+E2 and E4 otherwise use the same measured query fields, force constraints, joint response
+schema, and deterministic selector. The retrieval score is not a modified physics model:
+it only ranks neighbors from semantic cosine similarity and measured-property closeness.
+It never computes a force. E4's additional force evidence is the paired observed outcomes
+carried by those neighbors.
 
 ### E5: calibrated physics
 
@@ -269,6 +281,13 @@ candidate to the correct gripper and continuously clamps force to the configured
 recommendation, plus `recommendation_agrees_with_selector`. This supports direct evaluation
 of zero-shot/model gripper classification without allowing free-form model choice to bypass
 the force/feasibility rule.
+
+The shared prediction prompt requires a concise evidence and calculation summary rather
+than an unsupported number: one complete sentence for Gecko, one for silicone, and one or
+two sentences comparing them and explaining the recommendation (three to four sentences
+total). When mathematical reasoning is used, the response names the relationship and the
+values or scaling applied. It may use object weight as a sanity check, but must not invent
+calibrated coefficients or treat weight as the required gripper normal force.
 
 ## 9. Hybrid paired-object retrieval
 

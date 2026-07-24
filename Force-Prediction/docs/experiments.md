@@ -26,10 +26,20 @@ separately.
 
 ## E4 paired-object retrieval
 
+E2 and E4 receive the same image, measured-property fields, force constraints, and
+joint-output schema. E4's only estimator-level addition is experiential learning: a
+retrieved list of paired object outcomes and the retrieval metadata needed to interpret
+that list.
+
 E4 embeds the query's contact-region description once, ranks objects once, and retrieves
 the configured `retrieval.k` objects. Every neighbor carries its Gecko and silicone force
 and feasibility outcomes. One structured VLM request receives this shared list and returns
 both predictions plus its recommendation. No physics estimate is constructed or sent.
+
+The hybrid retrieval score is not a modified physics equation and does not predict force.
+It only ranks candidate neighbors using semantic cosine similarity and closeness in mass,
+roughness, and optional projected contact. The force evidence comes from the measured
+Gecko/silicone outcomes attached to the retrieved objects.
 
 Projected contact is an explicit Streamlit/config ablation. When disabled, its retrieval
 weight becomes zero, the remaining weights are renormalized, and the field is omitted from

@@ -2,7 +2,8 @@
 
 E4 ranks each object once and returns both gripper labels for every neighbor.
 Exact search is appropriate for this dataset (<1k objects), so no vector database
-is required.
+is required. The hybrid score is only a neighbor-ranking heuristic: it never
+evaluates the E5 holding-force equations and never produces a force prediction.
 """
 
 from __future__ import annotations
