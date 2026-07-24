@@ -23,6 +23,7 @@ dependencies = [
 
 [project.optional-dependencies]
 gemini = ["google-genai>=0.3"]
+segmentation = ["rembg[cpu]>=2.0.50"]
 viewer = ["streamlit>=1.40", "pandas>=2.0"]
 dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.9", "types-PyYAML", "types-pyserial"]
 

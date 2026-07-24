@@ -19,6 +19,9 @@ google-genai>=0.3
 # --- plots for the physical-relationships analysis (docs/relationships) ---
 matplotlib>=3.7
 
+# --- background removal + object-outline utility ---
+rembg[cpu]>=2.0.50
+
 # --- local research viewer ---
 streamlit>=1.40
 pandas>=2.0
