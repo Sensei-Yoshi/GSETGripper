@@ -88,13 +88,19 @@ def drape(
     b: Boundary,
     anchor: int,
     direction: int,
-    half_pts: int,
+    max_steps: int,
     k_max: float,
     delta: float,
     reachable: np.ndarray,
+    side_sign: float = 0.0,
+    y_min: float | None = None,
 ) -> tuple[dict[int, tuple[bool, float]], list[WrapArc]]:
-    """Walk ``half_pts`` samples from ``anchor`` in ``direction`` (+1/-1).
+    """Walk ``max_steps`` samples from ``anchor`` in ``direction`` (+1/-1).
 
+    ``side_sign`` (+1 right finger, -1 left) stops the walk once the surface
+    normal turns away from the closing direction (pad wrapped past a pole -
+    the straight-backboned finger cannot follow over the top). ``y_min``
+    stops it below the fingertip height (nothing exists below the tip).
     Returns {boundary index: (in_contact, gap_mm)} and the wrap arcs taken.
     """
     n = len(b)
@@ -105,8 +111,13 @@ def drape(
     last = anchor
     arc: WrapArc | None = None
 
-    for step in range(half_pts + 1):
+    for step in range(max_steps + 1):
         idx = (anchor + direction * step) % n
+        if step > 0:
+            if y_min is not None and b.pts[idx, 1] < y_min:
+                break
+            if side_sign and side_sign * b.N[idx, 0] < -0.1:
+                break
         if state == "contact":
             if step == 0 or reachable[idx]:
                 record[idx] = (True, 0.0)

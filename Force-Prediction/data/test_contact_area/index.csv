@@ -1,2 +1,1 @@
 timestamp,name,px_per_mm,k_max,delta,L,w_pad,object_type,feasible,contact_L_mm,contact_R_mm,total_area_mm2,mean_fraction,antipodal,folder
-2026-07-24T20:28:10,apple,8.0,2.0,0.3,40.0,12.0,axisymmetric,True,13.918,14.651,102.9,0.1072,True,apple_20260724-202806

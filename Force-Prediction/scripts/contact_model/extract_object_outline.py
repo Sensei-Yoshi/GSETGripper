@@ -131,14 +131,19 @@ def write_svg(path: Path, curve: np.ndarray, width: int, height: int) -> None:
     path.write_text(svg, encoding="utf-8")
 
 
-def process_image(image_path: Path, output_dir: Path) -> list[Path]:
-    """Run rembg, fit the outline spline, and save all result artifacts."""
+def process_image(image_path: Path, output_dir: Path, session=None) -> list[Path]:
+    """Run rembg, fit the outline spline, and save all result artifacts.
+
+    Pass a pre-built ``session`` (from ``rembg.new_session``) to skip the
+    per-call model load; callers such as the Streamlit page cache it.
+    """
     image_bgr = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
     if image_bgr is None:
         raise FileNotFoundError(f"could not read image: {image_path}")
 
-    print(f"Loading rembg model: {REMBG_MODEL}")
-    session = new_session(REMBG_MODEL)
+    if session is None:
+        print(f"Loading rembg model: {REMBG_MODEL}")
+        session = new_session(REMBG_MODEL)
     image_rgb = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
     rgba = np.asarray(remove(image_rgb, session=session))
     if rgba.ndim != 3 or rgba.shape[2] != 4:

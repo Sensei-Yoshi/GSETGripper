@@ -43,7 +43,25 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
             zorder=2, label="unreachable",
         )
 
+    if est.finger is not None and est.pad_band is not None:
+        pad_lo, pad_hi = est.pad_band
+        for yv, style, col, lab in (
+            (b.pts[:, 1].min(), "-", "0.4", "table"),
+            (est.tip_height, ":", "0.4", "fingertip"),
+            (pad_lo, "--", "purple", "pad band"),
+            (pad_hi, "--", "purple", None),
+        ):
+            ax.axhline(yv, ls=style, color=col, lw=1.1, label=lab, zorder=0)
+        if not est.feasible:
+            ax.text(
+                0.5, 0.5, "INFEASIBLE\npad band above object",
+                transform=ax.transAxes, ha="center", va="center",
+                fontsize=13, color="crimson", fontweight="bold",
+            )
+
     for f, col in ((est.left, "tab:blue"), (est.right, "tab:cyan")):
+        if len(f.window_idx) == 0:
+            continue
         w = b.pts[f.window_idx]
         ax.plot(w[:, 0], w[:, 1], color=col, lw=6, alpha=0.18, zorder=2)
         for run in _contact_runs(f):
@@ -68,13 +86,15 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
         f"antipodal = {est.pair.antipodal}",
         fontsize=9,
     )
-    if bad.any():
+    if bad.any() or est.finger is not None:
         ax.legend(loc="upper right", fontsize=7)
 
     axk.plot(b.s, b.kappa, lw=0.9, color="0.3")
     axk.axhline(est.k_max, color="crimson", ls=":", lw=1)
     axk.axhline(0.0, color="0.8", lw=0.8)
     for f in (est.left, est.right):
+        if len(f.window_idx) == 0:
+            continue
         axk.axvspan(
             b.s[f.window_idx[0]], b.s[f.window_idx[-1]],
             color="tab:blue", alpha=0.12,

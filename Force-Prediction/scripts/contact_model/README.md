@@ -23,7 +23,9 @@ image ──extract_object_outline.py──▶ spline CSV (px)
 | `viz.py` | Module 6 — overlay figure (contact, bridges, wrap arcs, κ profile) |
 | `run_synthetic_tests.py` | accuracy harness + κ_max ranking-stability sweep |
 | `run_on_outline.py` | run on a real extracted outline CSV |
-| `capture_and_analyze.py` | **end-to-end**: camera SPACE-capture (or `--image`) → rembg + spline → contact model → one organized folder per object under `data/real_contact_area/` (raw photo, cutout, mask, spline overlay, CSV, SVG, contact figure, `summary.json` with all numbers incl. κ_max sweep) + a master `index.csv` |
+| `pipeline_core.py` | **shared analysis core** — `ContactParams` + `analyze_image()`: one image file → all artifacts + `summary.json` (+ optional `index.csv`). Used by both the CLI and the Streamlit page so they cannot drift. |
+| `capture_and_analyze.py` | **CLI end-to-end**: camera SPACE-capture (or `--image`) → `analyze_image` → one organized folder per object under `data/real_contact_area/` + a master `index.csv` |
+| `../../pages/1_Contact_Area_Test.py` | **Streamlit page** (sidebar of `streamlit run app.py`): live `st.camera_input` feed → Take Photo → enter object name → Save & Analyze → results into `data/test_contact_area/<name>/` (image = `<name>.png`) + `index.csv`, with the contact figure, overlay, metrics, and `summary.json` shown inline |
 
 ## Algorithm (draping walk)
 
@@ -51,12 +53,36 @@ the corrected axisymmetric transverse radius `R_t = r_parallel / |N_x|`
 (Meusnier; exactly R everywhere on a sphere — the naive `r_parallel` alone
 underestimates off-equator). Prismatic: `R_t = ∞ → w_eff = w_pad`.
 
-**Contact fraction** (per finger) = area / (window_length × w_pad).
+**Contact fraction** (per finger) = area / (pad_length × w_pad).
+
+### Drop-depth model (`FingerGeometry`)
+
+The pad's height band is **not freely placeable** — the gripper descends
+from above. With the table at the silhouette's min-y:
+
+```
+h_tip    = table + max(tip_clearance, object_height + palm_standoff − finger_length)
+pad band = [h_tip + pad_start, h_tip + pad_start + pad_length]
+```
+
+Anchors are restricted to the band, walk budgets are the pad material
+above/below the anchor (asymmetric — an anchor at the band edge has zero
+budget on one side), the walk clamps at the fingertip height and when the
+surface normal turns past a pole, and a band entirely above the object is
+reported as an **infeasible grasp (zero contact)**. Enabled by
+`--finger-length` (plus `--pad-start`, `--tip-clearance`,
+`--palm-standoff`); without it the legacy free-placement behaviour is kept
+(pad centred wherever antipodality is best — fine for relative comparisons
+of similar-height objects, wrong for short objects like fruit).
 
 ## Validation status
 
-`run_synthetic_tests.py` — all 14 quantitative checks pass against
-closed-form truths (worst error 1.8 mm on the waist, tol 2.5):
+`run_synthetic_tests.py` — all 22 quantitative checks pass against
+closed-form truths (worst error 1.8 mm on the waist, tol 2.5), including
+four finger drop-depth cases: pad-at-equator (full contact), pad-above-
+equator (contact truncated to the pad above the anchor — the "orange"
+case), object-below-pad (infeasible, zero), and tall-object top grasp
+(palm-limited drop, band clips the waist notch):
 
 - gentle circle → full-window contact (exact)
 - tight bulge (κ > κ_max) → δ-patch `2√(2δ/(1/R − κ_max))` (+0.09 mm)

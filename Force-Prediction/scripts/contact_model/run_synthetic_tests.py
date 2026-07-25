@@ -17,7 +17,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from contact_area import estimate_contact
+from contact_area import FingerGeometry, estimate_contact
 from synthetic_shapes import (
     add_noise, circle, pentagon, rounded_rect,
     truth_circle, truth_square, truth_waist,
@@ -76,6 +76,57 @@ CASES = [
     ),
 ]
 
+# ---------------------------------------------------------------------------
+# Finger drop-depth cases: circle = "orange" of radius 30 resting on the
+# table (centre at y=30, top at 60). Truths per finger, k_max=0.05.
+# ---------------------------------------------------------------------------
+
+ORANGE = circle(30.0) + np.array([0.0, 30.0])
+BALL = circle(8.0) + np.array([0.0, 8.0])
+TALL = rounded_rect(50.0, 150.0, 8.0, notch_r=5.0) + np.array([0.0, 75.0])
+
+FINGER_CASES = [
+    dict(
+        # long finger, pad reaches the equator: full-pad conformal contact
+        name="F1_orange_pad_at_equator",
+        pts=ORANGE,
+        finger=FingerGeometry(finger_length=100.0, pad_length=40.0),
+        truth=40.0, tol=0.8, feasible=True,
+    ),
+    dict(
+        # the user's issue: pad band sits ABOVE the equator (band 32..62 vs
+        # equator 30) -> anchor at band bottom, zero pad below it, contact
+        # limited to the 30 mm of pad above -> 30, not the free-model 40
+        name="F2_orange_pad_above_equator",
+        pts=ORANGE,
+        finger=FingerGeometry(
+            finger_length=100.0, pad_length=30.0, pad_start=30.0
+        ),
+        truth=30.0, tol=1.0, feasible=True,
+    ),
+    dict(
+        # object top (16) entirely below the pad's lower edge (22): the
+        # grasp is infeasible and must report zero, not invent contact
+        name="F3_ball_below_pad",
+        pts=BALL,
+        finger=FingerGeometry(
+            finger_length=100.0, pad_length=30.0, pad_start=20.0
+        ),
+        truth=0.0, tol=0.01, feasible=False,
+    ),
+    dict(
+        # tall object: palm hits the top first -> h_tip = 150+5-80 = 75,
+        # band 75..115 grasps the upper region and clips the notch top:
+        # 20 mm up-wall + 15 mm down-wall + corner fringe past the notch rim
+        name="F4_tall_waist_top_grasp",
+        pts=TALL,
+        finger=FingerGeometry(
+            finger_length=80.0, pad_length=40.0
+        ),
+        truth=35.5, tol=2.5, feasible=True,
+    ),
+]
+
 SWEEP_K = [1.0 / 30.0, 0.05, 0.10]
 SWEEP_CASES = ["gentle_circle_R40", "tight_circle_R8", "square30_rc4", "waist_notch5"]
 
@@ -126,6 +177,27 @@ def main() -> int:
             print(f"{case['name']:24s} {name:6s} {got:8.2f} {truth:8.2f} "
                   f"{err:+7.2f} {case['tol']:5.1f}  "
                   f"{'PASS' if ok else 'FAIL'} ({unit})")
+
+    # ------------------------------------------------------------------
+    # finger drop-depth cases
+    # ------------------------------------------------------------------
+    print("\nfinger drop-depth cases (pad placement constrained by geometry):")
+    for case in FINGER_CASES:
+        est = estimate_contact(
+            case["pts"], k_max=K_MAX, delta=DELTA, w_pad=W_PAD, ds=DS,
+            smoothing_mm=0.0, object_type="prismatic", finger=case["finger"],
+        )
+        plot_estimate(est, OUT / f"{case['name']}.png",
+                      f"{case['name']}  (k_max={K_MAX}/mm)")
+        feas_ok = est.feasible == case["feasible"]
+        for name, f in (("L", est.left), ("R", est.right)):
+            err = f.contact_length - case["truth"]
+            ok = abs(err) <= case["tol"] and feas_ok
+            failures += 0 if ok else 1
+            print(f"{case['name']:28s} {name:3s} {f.contact_length:8.2f} "
+                  f"{case['truth']:8.2f} {err:+7.2f} {case['tol']:5.1f}  "
+                  f"{'PASS' if ok else 'FAIL'} "
+                  f"(feasible={est.feasible})")
 
     # ------------------------------------------------------------------
     # k_max sweep: is the ranking of shapes by contact fraction stable?

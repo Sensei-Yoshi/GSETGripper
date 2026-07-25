@@ -35,8 +35,6 @@ largest foreground component), jaws closing along the image x axis.
 from __future__ import annotations
 
 import argparse
-import csv
-import json
 import sys
 import time
 from datetime import datetime
@@ -47,9 +45,8 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-import extract_object_outline as outline
-from contact_area import ContactEstimate, estimate_contact
-from viz import plot_estimate
+from contact_area import ContactEstimate, FingerGeometry
+from pipeline_core import ContactParams, analyze_image
 
 DEFAULT_OUT_ROOT = (
     Path(__file__).resolve().parents[2] / "data" / "real_contact_area"
@@ -141,112 +138,34 @@ def show_image(path: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def outline_csv_to_mm(
-    csv_path: Path, px_per_mm: float, closing_axis: str
-) -> np.ndarray:
-    with csv_path.open() as f:
-        reader = csv.reader(f)
-        next(reader)
-        pts_px = np.array([[float(x), float(y)] for x, y in reader])
-    pts_mm = pts_px / px_per_mm
-    pts_mm[:, 1] = pts_mm[:, 1].max() - pts_mm[:, 1]  # image y-down -> y-up
-    if closing_axis == "y":
-        pts_mm = pts_mm[:, ::-1].copy()
-    return pts_mm
-
-
-def finger_summary(f) -> dict:
-    return {
-        "contact_mm": round(f.contact_length, 3),
-        "window_mm": round(f.window_length, 3),
-        "area_mm2": round(f.area, 3),
-        "fraction": round(f.fraction, 4),
-    }
-
-
 def analyze_capture(
     name: str, image_path: Path, run_dir: Path, args
 ) -> ContactEstimate:
     print(f"\n=== {name} -> {run_dir}")
-    outputs = outline.process_image(image_path, run_dir)
-    csv_path = run_dir / f"{image_path.stem}_spline_points.csv"
-    if csv_path not in outputs:
-        raise RuntimeError(f"extractor did not produce {csv_path}")
-
-    pts_mm = outline_csv_to_mm(csv_path, args.px_per_mm, args.closing_axis)
-
-    est = estimate_contact(
-        pts_mm, k_max=args.k_max, delta=args.delta, L=args.L,
-        w_pad=args.w_pad, ds=args.ds, smoothing_mm=args.smoothing,
-        object_type=args.object_type,
-    )
-    fig_path = run_dir / f"{image_path.stem}_contact.png"
-    plot_estimate(
-        est, fig_path,
-        f"{name}  (k_max={args.k_max}/mm, delta={args.delta} mm, "
-        f"L={args.L} mm, {args.object_type})",
-    )
-
-    sweep = {}
-    for k in [float(v) for v in args.sweep_k.split(",") if v.strip()]:
-        e = est if abs(k - args.k_max) < 1e-12 else estimate_contact(
-            pts_mm, k_max=k, delta=args.delta, L=args.L, w_pad=args.w_pad,
-            ds=args.ds, smoothing_mm=args.smoothing,
-            object_type=args.object_type,
+    finger = None
+    if args.finger_length is not None:
+        finger = FingerGeometry(
+            finger_length=args.finger_length, pad_length=args.L,
+            pad_start=args.pad_start, tip_clearance=args.tip_clearance,
+            palm_standoff=args.palm_standoff,
         )
-        sweep[f"{k:g}"] = round(e.mean_fraction, 4)
-
-    summary = {
-        "name": name,
-        "timestamp": datetime.now().isoformat(timespec="seconds"),
-        "image": image_path.name,
-        "px_per_mm": args.px_per_mm,
-        "params": {
-            "k_max_per_mm": args.k_max, "delta_mm": args.delta,
-            "L_mm": args.L, "w_pad_mm": args.w_pad, "ds_mm": args.ds,
-            "smoothing_mm": args.smoothing, "object_type": args.object_type,
-            "closing_axis": args.closing_axis,
-        },
-        "results": {
-            "perimeter_mm": round(est.boundary.length, 2),
-            "antipodal_grasp": est.pair.antipodal,
-            "left": finger_summary(est.left),
-            "right": finger_summary(est.right),
-            "total_area_mm2": round(est.total_area, 3),
-            "mean_fraction": round(est.mean_fraction, 4),
-        },
-        "k_max_sweep_mean_fraction": sweep,
-    }
-    (run_dir / "summary.json").write_text(
-        json.dumps(summary, indent=2), encoding="utf-8"
+    params = ContactParams(
+        px_per_mm=args.px_per_mm, object_type=args.object_type,
+        closing_axis=args.closing_axis, k_max=args.k_max, delta=args.delta,
+        L=args.L, w_pad=args.w_pad, ds=args.ds, smoothing=args.smoothing,
+        sweep_k=tuple(float(v) for v in args.sweep_k.split(",") if v.strip()),
+        finger=finger,
     )
-
-    index = args.out_root / "index.csv"
-    new_file = not index.exists()
-    with index.open("a", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
-        if new_file:
-            w.writerow([
-                "timestamp", "name", "px_per_mm", "k_max", "delta", "L",
-                "w_pad", "object_type", "contact_L_mm", "contact_R_mm",
-                "total_area_mm2", "mean_fraction", "antipodal", "folder",
-            ])
-        w.writerow([
-            summary["timestamp"], name, args.px_per_mm, args.k_max,
-            args.delta, args.L, args.w_pad, args.object_type,
-            summary["results"]["left"]["contact_mm"],
-            summary["results"]["right"]["contact_mm"],
-            summary["results"]["total_area_mm2"],
-            summary["results"]["mean_fraction"],
-            est.pair.antipodal, run_dir.name,
-        ])
+    est, summary, paths = analyze_image(
+        image_path, run_dir, name, params, index_csv=args.out_root / "index.csv"
+    )
 
     print(f"contact L/R : {est.left.contact_length:.2f} / "
           f"{est.right.contact_length:.2f} mm")
     print(f"total area  : {est.total_area:.2f} mm^2")
     print(f"fraction    : {est.mean_fraction:.4f}   "
-          f"(sweep {sweep})")
-    print(f"figure      : {fig_path}")
+          f"(sweep {summary['k_max_sweep_mean_fraction']})")
+    print(f"figure      : {paths['contact_fig']}")
     return est
 
 
@@ -272,8 +191,19 @@ def main() -> int:
     ap.add_argument("--closing-axis", choices=["x", "y"], default="x")
     ap.add_argument("--k-max", type=float, default=2.0)
     ap.add_argument("--delta", type=float, default=0.3)
-    ap.add_argument("--L", type=float, default=4.0)
+    ap.add_argument("--L", type=float, default=4.0,
+                    help="pad length; = FingerGeometry.pad_length when "
+                         "--finger-length is set")
     ap.add_argument("--w-pad", type=float, default=12.0)
+    ap.add_argument("--finger-length", type=float, default=None,
+                    help="palm-to-tip length, mm; enables the drop-depth "
+                         "model (pad placement constrained by geometry)")
+    ap.add_argument("--pad-start", type=float, default=0.0,
+                    help="fingertip to pad lower edge, mm")
+    ap.add_argument("--tip-clearance", type=float, default=2.0,
+                    help="min fingertip height above the table, mm")
+    ap.add_argument("--palm-standoff", type=float, default=5.0,
+                    help="palm clearance above the object top, mm")
     ap.add_argument("--ds", type=float, default=0.25)
     ap.add_argument("--smoothing", type=float, default=0.2)
     ap.add_argument("--sweep-k", default=SWEEP_K_DEFAULT,

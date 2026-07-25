@@ -25,7 +25,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from contact_area import estimate_contact
+from contact_area import FingerGeometry, estimate_contact
 from viz import plot_estimate
 
 
@@ -51,6 +51,11 @@ def main() -> int:
     ap.add_argument("--ds", type=float, default=0.25, help="mm")
     ap.add_argument("--smoothing", type=float, default=0.2,
                     help="mm smoothing before differentiating")
+    ap.add_argument("--finger-length", type=float, default=None,
+                    help="palm-to-tip length, mm; enables the drop-depth model")
+    ap.add_argument("--pad-start", type=float, default=0.0)
+    ap.add_argument("--tip-clearance", type=float, default=2.0)
+    ap.add_argument("--palm-standoff", type=float, default=5.0)
     ap.add_argument("--out", type=Path, default=None)
     args = ap.parse_args()
 
@@ -60,11 +65,22 @@ def main() -> int:
     if args.closing_axis == "y":
         pts_mm = pts_mm[:, ::-1].copy()  # mirror; orientation re-fixed later
 
+    finger = None
+    if args.finger_length is not None:
+        finger = FingerGeometry(
+            finger_length=args.finger_length, pad_length=args.L,
+            pad_start=args.pad_start, tip_clearance=args.tip_clearance,
+            palm_standoff=args.palm_standoff,
+        )
     est = estimate_contact(
         pts_mm, k_max=args.k_max, delta=args.delta, L=args.L,
         w_pad=args.w_pad, ds=args.ds, smoothing_mm=args.smoothing,
-        object_type=args.object_type,
+        object_type=args.object_type, finger=finger,
     )
+    if finger is not None:
+        print(f"tip height        : {est.tip_height:.1f} mm, "
+              f"pad band {est.pad_band[0]:.1f}..{est.pad_band[1]:.1f} mm, "
+              f"feasible={est.feasible}")
 
     out = args.out or args.csv.parent
     fig_path = out / f"{args.csv.stem}_contact.png"
