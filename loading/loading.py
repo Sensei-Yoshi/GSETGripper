@@ -165,9 +165,11 @@ if __name__ == "__main__":
        
         cv2.imwrite(os.path.join(OS_IMAGES_DIR, f"crop_brightfield_{bf_num}.jpg"), crop_bf)
         cv2.imwrite(os.path.join(OS_IMAGES_DIR, f"crop_darkfield_{df_num}.jpg"), crop_df)
+        normalized_surface = np.where(crop_bf > 0, (crop_df.astype(float) / crop_bf.astype(float)) * 255.0, 0)
+        normalized_surface = np.clip(normalized_surface, 0, 255).astype(np.uint8)
        
         # Perform Spatial Frequency Analysis on the Darkfield sample
-        roughness_index = calculate_fft_roughness(crop_df)
+        roughness_index = calculate_fft_roughness(normalized_surface)
         print(f"\nCalculated High-Frequency Scattering Index: {roughness_index:.2f}")
        
         # Classification thresholds calibrated for high-frequency optical energy
