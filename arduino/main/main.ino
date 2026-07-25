@@ -21,18 +21,60 @@ const float Z_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2; reaches full 
 // lead screw (4-start, 8 mm lead), TMC2209 driver in standalone mode at 1/8
 // microstepping (MS1/MS2 both low).
 //   (200 steps/rev * 8 microsteps) / 8 mm per rev = 200 steps/mm
-//
-// Z 0 is wherever the arm physically is when the board powers on/resets --
-// there's no homing routine or limit switch yet, so it is not tied to any
-// fixed real-world height until one is added. For reference: the motor is
-// mounted 127 mm (5 in) above the ground, so the nut's reachable band sits
-// roughly 127-527 mm above ground.
 const float Z_STEPS_PER_MM = 200.0;
+const int Z_DOWN_SIGN = -1;
+
+// ---- Z geometry, measured 2026-07-24 (all imperial values * 25.4) ----
+//
+//   floor ---------------------------------------------- 0 mm
+//     |  8.20 in = 208.28 mm   bottom of usable screw travel
+//     |  screw travel 12.00 in = 304.80 mm
+//   carriage top of travel ---------------------------- 513.08 mm (20.20 in)
+//   gripper hangs 10.25 in = 260.35 mm below the cross bar, so with the
+//   carriage at the top the gripper bottom sits at 252.73 mm (9.95 in).
+//
+// The gripper bottom would reach the floor with the carriage still 52.07 mm
+// above the bottom of the screw (208.28 - 260.35 = -52.07), so the bottom
+// 52 mm of screw travel is mechanically unusable -- driving into it puts the
+// gripper through the floor. Z_MAX_STEPS below is the hard cap that prevents
+// that; there is no limit switch to catch it in hardware.
+const float Z_SCREW_TRAVEL_MM = 304.8;               // 12.00 in usable screw length
+const float Z_SCREW_BOTTOM_ABOVE_FLOOR_MM = 208.28;  //  8.20 in
+const float Z_GRIPPER_BELOW_CARRIAGE_MM = 260.35;    // 10.25 in cross bar to gripper bottom
+const float Z_CARRIAGE_MAX_ABOVE_FLOOR_MM =
+    Z_SCREW_BOTTOM_ABOVE_FLOOR_MM + Z_SCREW_TRAVEL_MM;  // 513.08 mm (20.20 in)
+
+// Extra stand-off kept between the gripper bottom and the floor. The gripper
+// never descends below this, so it doubles as the parking height for objects
+// too short to grasp at full suction depth.
+const float Z_FLOOR_CLEARANCE_MM = 10.0;
+
+// Reachable band for the GRIPPER BOTTOM above the floor. Note this is not what
+// "Z <mm>" carries -- see the grasp placement block below.
+const float Z_MAX_GRIPPER_HEIGHT_MM =
+    Z_CARRIAGE_MAX_ABOVE_FLOOR_MM - Z_GRIPPER_BELOW_CARRIAGE_MM;  // 252.73 mm (9.95 in)
+const float Z_MIN_GRIPPER_HEIGHT_MM = Z_FLOOR_CLEARANCE_MM;
+
+// Step 0 is the TOP of travel, not the floor: there is no homing routine or
+// limit switch, so the firmware assumes the carriage is parked at the top of
+// the screw when the board powers on/resets. Park it there before plugging in
+// or opening the serial port (opening the port resets the board). Steps count
+// downward from there, so a bigger step count = a lower gripper.
 const long Z_MIN_STEPS = 0;
-// TODO: measure actual usable travel. The screw is 400 mm long, but the nut
-// block's own length plus motor-end clearance eat into that -- expect 355-375
-// mm. 350 mm is a conservative placeholder until measured.
-const long Z_MAX_STEPS = 70000; // 350 mm * 200 steps/mm
+const long Z_MAX_STEPS =
+    (long)((Z_MAX_GRIPPER_HEIGHT_MM - Z_MIN_GRIPPER_HEIGHT_MM) * Z_STEPS_PER_MM);  // 48546
+
+// ---- Grasp placement ----
+// "Z <mm>" carries the height of the TOP OF THE OBJECT above the floor -- that
+// is what the depth camera measures and sends. The firmware, not the camera
+// script, turns that into a carriage position.
+//
+// The suction strip runs 4.25 in up from the bottom of the gripper, so the
+// gripper bottom is placed that far below the top of the object to put the
+// whole strip in contact. Objects shorter than this cannot fit the full strip,
+// so they are grasped from Z_MIN_GRIPPER_HEIGHT_MM instead -- as low as the
+// gripper is allowed to go, which maximises the contact that does fit.
+const float GRASP_DEPTH_BELOW_TOP_MM = 107.95;  // 4.25 in suction strip length
 
 bool zMovePending = false;
 
@@ -47,13 +89,13 @@ const float SELECT_ACCELERATION_STEPS_PER_SEC2 = 2000.0;
 
 // Rotary turret, direct drive (no gearbox or belt), same 1.8 deg motor and 1/8
 // microstepping as Z: 200 steps/rev * 8 = 1600 microsteps per turret rev.
-// The two gripper heads are mounted 80 deg apart:
-//   1600 * (80 / 360) = 355.6 steps -> rounded to 356 (+0.1 deg). Moves are
-//   absolute, so that rounding offset is fixed and never accumulates.
+// The two gripper heads are mounted 430 steps apart (measured), which is
+//   430 / 1600 * 360 = 96.75 deg.
+// Moves are absolute, so no rounding error accumulates across selections.
 // TODO: confirm which head sits at 0 deg -- swapping these two constants is
 // the whole fix if gecko and silicone are the other way round.
 const long SELECT_GEKKO_STEPS = 0;      // head A, 0 deg
-const long SELECT_SILICONE_STEPS = 430; // head B, 
+const long SELECT_SILICONE_STEPS = 430; // head B, 96.75 deg
 const long SELECT_MIN_STEPS = 0;
 const long SELECT_MAX_STEPS = 430;
 
@@ -116,8 +158,6 @@ void setup() {
   stepperGrip.setAcceleration(GRIP_ACCELERATION_STEPS_PER_SEC2);
 
   stepperSelect.setPinsInverted(true, false, false);
-  stepperZA.setPinsInverted(true, false, false);
-  stepperZB.setPinsInverted(true, false, false);  
 }
 
 void loop() {
@@ -161,12 +201,12 @@ void processCommand(const String& message) {
   if (message.startsWith("Z ")) {
     String arg = message.substring(2);
     arg.trim();
-    float targetHeightMM;
-    if (!parseFloatStrict(arg, targetHeightMM)) {
+    float objectTopHeightMM;
+    if (!parseFloatStrict(arg, objectTopHeightMM)) {
       sendErr("bad value");
       return;
     }
-    moveZTo(targetHeightMM);
+    moveZForGrasp(objectTopHeightMM);
   } else if (message.startsWith("SELECT ")) {
     String arg = message.substring(7);
     arg.trim();
@@ -199,11 +239,44 @@ void processCommand(const String& message) {
   }
 }
 
+// Internal axis move -- reached through moveZForGrasp, not directly from the
+// serial protocol. targetHeightMM is the desired height of the gripper bottom
+// above the floor. It is clamped in millimetres first so the WARN reports a
+// real-world height, then converted to a downward step count from the
+// top-of-travel origin.
 void moveZTo(float targetHeightMM) {
-  long targetSteps = clampSteps((long)(targetHeightMM * Z_STEPS_PER_MM), Z_MIN_STEPS, Z_MAX_STEPS, "Z");
-  stepperZA.moveTo(targetSteps);
-  stepperZB.moveTo(targetSteps);
+  float clampedHeightMM = targetHeightMM;
+  if (clampedHeightMM < Z_MIN_GRIPPER_HEIGHT_MM) {
+    clampedHeightMM = Z_MIN_GRIPPER_HEIGHT_MM;
+  } else if (clampedHeightMM > Z_MAX_GRIPPER_HEIGHT_MM) {
+    clampedHeightMM = Z_MAX_GRIPPER_HEIGHT_MM;
+  }
+  if (clampedHeightMM != targetHeightMM) {
+    Serial.print("WARN Z clamped to ");
+    Serial.print(clampedHeightMM, 1);
+    Serial.println(" mm above floor");
+  }
+
+  float descentMM = Z_MAX_GRIPPER_HEIGHT_MM - clampedHeightMM;
+  // clampSteps is a redundant backstop -- the mm clamp above already keeps this
+  // in range -- but it catches any future arithmetic slip before the motor moves.
+  long targetSteps = clampSteps((long)(descentMM * Z_STEPS_PER_MM), Z_MIN_STEPS, Z_MAX_STEPS, "Z");
+  stepperZA.moveTo(Z_DOWN_SIGN * targetSteps);
+  stepperZB.moveTo(Z_DOWN_SIGN * targetSteps);
   zMovePending = true;
+}
+
+// Handles "Z <mm>". objectTopHeightMM is the height of the TOP of the object
+// above the floor -- what the camera sends. Places the gripper bottom one suction-strip
+// length below that so the whole strip contacts the object; if the object is
+// too short for that to clear the floor, grasps from the lowest allowed height
+// instead. Both branches still pass through moveZTo's clamp.
+void moveZForGrasp(float objectTopHeightMM) {
+  float targetHeightMM = objectTopHeightMM - GRASP_DEPTH_BELOW_TOP_MM;
+  if (targetHeightMM < Z_MIN_GRIPPER_HEIGHT_MM) {
+    targetHeightMM = Z_MIN_GRIPPER_HEIGHT_MM;
+  }
+  moveZTo(targetHeightMM);
 }
 
 void moveSelectTo(long targetSteps) {
