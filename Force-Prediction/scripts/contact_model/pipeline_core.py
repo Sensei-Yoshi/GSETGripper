@@ -12,13 +12,12 @@ from __future__ import annotations
 
 import csv
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
-import numpy as np
-
 import extract_object_outline as outline
+import numpy as np
 from contact_area import ContactEstimate, FingerGeometry, estimate_contact
 from viz import plot_estimate
 
@@ -37,7 +36,10 @@ class ContactParams:
     ds: float = 0.25                         # resample step, mm
     smoothing: float = 0.2                   # pre-differentiation smoothing, mm
     sweep_k: tuple[float, ...] = (1.0, 2.0, 4.0)
-    finger: FingerGeometry | None = None     # None -> free placement
+    finger: FingerGeometry | None = None     # set -> drop-depth model
+    # Pad hangs from the object top: contact band = top L, below disregarded.
+    # Ignored when ``finger`` is set (drop-depth wins).
+    pad_top_anchored: bool = True
 
 
 def outline_csv_to_mm(
@@ -69,6 +71,9 @@ def build_summary(
     sweep: dict[str, float],
 ) -> dict:
     finger = p.finger
+    pts = est.boundary.pts
+    object_height_mm = float(pts[:, 1].max() - pts[:, 1].min())
+    object_width_mm = float(pts[:, 0].max() - pts[:, 0].min())
     return {
         "name": name,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
@@ -90,6 +95,8 @@ def build_summary(
             "grasp_feasible": bool(est.feasible),
         },
         "results": {
+            "object_height_mm": round(object_height_mm, 2),
+            "object_width_mm": round(object_width_mm, 2),
             "perimeter_mm": round(est.boundary.length, 2),
             "antipodal_grasp": bool(est.pair.antipodal),
             "left": _finger_summary(est.left),
@@ -110,13 +117,15 @@ def append_index(index_csv: Path, name: str, est: ContactEstimate,
         if new_file:
             w.writerow([
                 "timestamp", "name", "px_per_mm", "k_max", "delta", "L",
-                "w_pad", "object_type", "feasible", "contact_L_mm",
-                "contact_R_mm", "total_area_mm2", "mean_fraction",
-                "antipodal", "folder",
+                "w_pad", "object_type", "object_height_mm", "object_width_mm",
+                "feasible", "contact_L_mm", "contact_R_mm", "total_area_mm2",
+                "mean_fraction", "antipodal", "folder",
             ])
         w.writerow([
             summary["timestamp"], name, p.px_per_mm, p.k_max, p.delta, p.L,
-            p.w_pad, p.object_type, bool(est.feasible),
+            p.w_pad, p.object_type,
+            summary["results"]["object_height_mm"],
+            summary["results"]["object_width_mm"], bool(est.feasible),
             summary["results"]["left"]["contact_mm"],
             summary["results"]["right"]["contact_mm"],
             summary["results"]["total_area_mm2"],
@@ -151,6 +160,7 @@ def analyze_image(
         pts_mm, k_max=params.k_max, delta=params.delta, L=params.L,
         w_pad=params.w_pad, ds=params.ds, smoothing_mm=params.smoothing,
         object_type=params.object_type, finger=params.finger,
+        pad_top_anchored=params.pad_top_anchored,
     )
 
     fig_path = run_dir / f"{stem}_contact.png"
@@ -166,6 +176,7 @@ def analyze_image(
             pts_mm, k_max=k, delta=params.delta, L=params.L,
             w_pad=params.w_pad, ds=params.ds, smoothing_mm=params.smoothing,
             object_type=params.object_type, finger=params.finger,
+            pad_top_anchored=params.pad_top_anchored,
         )
         sweep[f"{k:g}"] = round(e.mean_fraction, 4)
 

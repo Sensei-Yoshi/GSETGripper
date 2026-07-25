@@ -82,6 +82,34 @@ largest foreground blob — keep the gripper and clutter out of frame), jaws
 closing along the image **x**-axis, and include a known-width fiducial in the
 scene if you need real millimetre scale (`px per mm`) for the contact model.
 
+### Scale calibration (`px per mm`) — `scripts/calibrate_scale.py`
+
+The contact model is in millimetres, so it needs a pixels-per-millimetre
+scale. A single camera's scale is only valid at **one depth plane**, so the
+whole rig hinges on one rule:
+
+> **Every object's front face must sit at the same camera distance as the
+> reference you calibrate on.** Tape a line on the table for the object fronts;
+> calibrate with a known-size reference on that same line; keep the camera
+> level (not tilted) and objects centred.
+
+The scale is stored in **`config.yaml` → `geometry.px_per_mm`** (the single
+source of truth; the Contact Area tab loads it as the default `px per mm`).
+
+```bash
+$VENV scripts/calibrate_scale.py --camera 0
+```
+SPACE freezes a frame. Press **s** to segment the object and read its
+height/width in px and mm using the config scale. To re-measure the scale,
+click two points of known real separation (best: the base and top of a
+vertical object of known height — vertical measurement has no depth
+ambiguity), press **d**, and type the distance in mm. The tool then **writes
+the new value straight into `geometry.px_per_mm` in `config.yaml`**
+automatically (only that number changes; comments are preserved) and prints
+the old → new update.
+
+Re-measure whenever the camera or the object-placement line moves.
+
 ## Dataset format (`data/experiences.jsonl`, one row per object-gripper)
 ```json
 {"object_id": "object_001", "image_path": "data/images/object_001.png",

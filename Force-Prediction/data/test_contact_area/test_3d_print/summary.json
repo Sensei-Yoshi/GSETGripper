@@ -1,0 +1,42 @@
+{
+  "name": "test_3d_print",
+  "timestamp": "2026-07-24T22:59:20",
+  "image": "test_3d_print.png",
+  "px_per_mm": 2.1852,
+  "params": {
+    "k_max_per_mm": 2.0,
+    "delta_mm": 0.3,
+    "L_mm": 106.68,
+    "w_pad_mm": 12.0,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "object_type": "prismatic",
+    "closing_axis": "x"
+  },
+  "finger": null,
+  "results": {
+    "object_height_mm": 60.39,
+    "object_width_mm": 43.57,
+    "perimeter_mm": 184.54,
+    "antipodal_grasp": true,
+    "left": {
+      "contact_mm": 87.296,
+      "window_mm": 106.68,
+      "area_mm2": 1047.552,
+      "fraction": 0.8183
+    },
+    "right": {
+      "contact_mm": 88.291,
+      "window_mm": 106.68,
+      "area_mm2": 1059.489,
+      "fraction": 0.8276
+    },
+    "total_area_mm2": 2107.041,
+    "mean_fraction": 0.823
+  },
+  "k_max_sweep_mean_fraction": {
+    "1": 0.823,
+    "2": 0.823,
+    "4": 0.823
+  }
+}

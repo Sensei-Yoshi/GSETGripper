@@ -11,7 +11,6 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-
 from contact_area import ContactEstimate, FingerResult
 
 
@@ -43,14 +42,18 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
             zorder=2, label="unreachable",
         )
 
-    if est.finger is not None and est.pad_band is not None:
+    if est.pad_band is not None:
         pad_lo, pad_hi = est.pad_band
-        for yv, style, col, lab in (
-            (b.pts[:, 1].min(), "-", "0.4", "table"),
-            (est.tip_height, ":", "0.4", "fingertip"),
+        band_lines = [
             (pad_lo, "--", "purple", "pad band"),
             (pad_hi, "--", "purple", None),
-        ):
+        ]
+        if est.finger is not None:  # drop-depth also shows table + fingertip
+            band_lines = [
+                (b.pts[:, 1].min(), "-", "0.4", "table"),
+                (est.tip_height, ":", "0.4", "fingertip"),
+            ] + band_lines
+        for yv, style, col, lab in band_lines:
             ax.axhline(yv, ls=style, color=col, lw=1.1, label=lab, zorder=0)
         if not est.feasible:
             ax.text(
@@ -76,17 +79,20 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
                 ls="--", lw=1.2, color="darkorange", zorder=3,
             )
 
+    obj_h = float(b.pts[:, 1].max() - b.pts[:, 1].min())
+    obj_w = float(b.pts[:, 0].max() - b.pts[:, 0].min())
     ax.set_aspect("equal")
     ax.set_title(
         f"{title}\n"
+        f"object H x W = {obj_h:.1f} x {obj_w:.1f} mm   "
         f"contact L/R = {est.left.contact_length:.2f} / "
-        f"{est.right.contact_length:.2f} mm   "
+        f"{est.right.contact_length:.2f} mm\n"
         f"area = {est.total_area:.1f} mm$^2$   "
         f"fraction = {est.mean_fraction:.3f}   "
         f"antipodal = {est.pair.antipodal}",
         fontsize=9,
     )
-    if bad.any() or est.finger is not None:
+    if bad.any() or est.pad_band is not None:
         ax.legend(loc="upper right", fontsize=7)
 
     axk.plot(b.s, b.kappa, lw=0.9, color="0.3")

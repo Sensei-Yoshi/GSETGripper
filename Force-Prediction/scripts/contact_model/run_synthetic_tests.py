@@ -19,8 +19,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from contact_area import FingerGeometry, estimate_contact
 from synthetic_shapes import (
-    add_noise, circle, pentagon, rounded_rect,
-    truth_circle, truth_square, truth_waist,
+    add_noise,
+    circle,
+    pentagon,
+    rounded_rect,
+    truth_circle,
+    truth_square,
+    truth_waist,
 )
 from viz import plot_estimate
 

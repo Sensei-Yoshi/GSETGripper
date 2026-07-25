@@ -25,8 +25,14 @@ the table (table = min y of the silhouette):
 Anchors are restricted to the band, walk budgets are the pad material above
 and below the anchor (asymmetric), the walk clamps at the fingertip height,
 and a band entirely above the object top is an INFEASIBLE grasp (zero
-contact) rather than an invented one. ``finger=None`` keeps the legacy
-free-placement behaviour (pad centred wherever antipodality is best).
+contact) rather than an invented one.
+
+Top-anchored placement (``pad_top_anchored=True``, the application default):
+the pad hangs from the object's highest point, so the contact band is the top
+``L`` of the object ([y_top - L, y_top]) and everything below is disregarded
+- the finger approaches from above and cannot reach or wrap under the base.
+``finger=None`` and ``pad_top_anchored=False`` keeps the free-placement
+behaviour (pad centred wherever antipodality is best).
 
 Contact fraction (per finger) = area / (pad_length * w_pad).
 """
@@ -36,7 +42,6 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 import numpy as np
-
 from contact_geometry import Boundary, build_boundary
 from finger_drape import WrapArc, drape, reachability_mask
 from grasp_selection import GraspPair, anchor_in_band, select_grasp_pair
@@ -178,6 +183,50 @@ def _analyze_finger(
     )
 
 
+def _analyze_band(
+    b: Boundary,
+    reachable: np.ndarray,
+    pad_lo: float,
+    pad_hi: float,
+    pad_L: float,
+    k_max: float,
+    delta: float,
+    w_pad: float,
+    object_type: str,
+    axis_x: float,
+    y_min: float,
+) -> tuple[GraspPair, FingerResult, FingerResult, bool]:
+    """Grasp + drape restricted to the vertical pad band [pad_lo, pad_hi].
+
+    Anchors are chosen inside the band; each finger's walk is budgeted by the
+    pad material above/below its anchor and clamped at ``y_min`` so contact
+    never runs below the band (e.g. it cannot wrap under the object base).
+    """
+    y = b.pts[:, 1]
+    band_idx = np.where((y >= pad_lo) & (y <= pad_hi))[0]
+    if len(band_idx) == 0:
+        return (
+            GraspPair(-1, -1, False, -1, -1, 0.0),
+            _empty_finger("left", pad_L), _empty_finger("right", pad_L), False,
+        )
+    pad_center = 0.5 * (pad_lo + pad_hi)
+    la = anchor_in_band(b, band_idx, "left", reachable, pad_center)
+    ra = anchor_in_band(b, band_idx, "right", reachable, pad_center)
+    antip = -float(b.N[la] @ b.N[ra])
+    pair = GraspPair(
+        la, ra, bool(antip >= np.cos(np.radians(40.0))), la, ra, antip
+    )
+    out = []
+    for anchor, side in ((la, "left"), (ra, "right")):
+        y_a = float(b.pts[anchor, 1])
+        steps = _steps_by_direction(b, anchor, pad_hi - y_a, y_a - pad_lo)
+        out.append(_analyze_finger(
+            b, anchor, side, steps, k_max, delta, reachable,
+            w_pad, object_type, axis_x, pad_L, y_min,
+        ))
+    return pair, out[0], out[1], True
+
+
 def estimate_contact(
     pts_mm: np.ndarray,
     k_max: float,
@@ -189,75 +238,68 @@ def estimate_contact(
     object_type: str = "prismatic",
     y_target: float | None = None,
     finger: FingerGeometry | None = None,
+    pad_top_anchored: bool = False,
 ) -> ContactEstimate:
     """End-to-end estimate: boundary -> grasp -> drape -> area.
 
-    With ``finger`` set, pad placement follows the drop-depth model and
-    ``finger.pad_length`` supersedes ``L``.
+    Placement precedence:
+      1. ``finger`` set  -> drop-depth model (pad band from finger geometry;
+         ``finger.pad_length`` supersedes ``L``).
+      2. ``pad_top_anchored`` -> the pad hangs from the object's highest point:
+         the contact band is the top ``L`` of the object ([y_top - L, y_top])
+         and everything below is disregarded, since the finger approaches from
+         above and cannot reach or wrap under the base.
+      3. otherwise -> free placement (pad centred on the best antipodal band).
     """
     b = build_boundary(pts_mm, ds=ds, smoothing_mm=smoothing_mm)
     reachable = reachability_mask(b, k_max)
     axis_x = float(b.pts[:, 0].mean())
+    y_top = float(b.pts[:, 1].max())
 
-    if finger is None:
-        pair = select_grasp_pair(b, reachable, y_target=y_target)
-        half_pts = min(int(round((L / 2) / b.ds)), len(b) // 2 - 1)
-        steps = {+1: half_pts, -1: half_pts}
-        denom = (2 * half_pts + 1) * b.ds
-        left = _analyze_finger(
-            b, pair.left_anchor, "left", steps, k_max, delta, reachable,
-            w_pad, object_type, axis_x, denom, None,
+    # 1) finger drop-depth model
+    if finger is not None:
+        table_y = float(b.pts[:, 1].min())
+        h_tip = table_y + max(
+            finger.tip_clearance,
+            (y_top - table_y) + finger.palm_standoff - finger.finger_length,
         )
-        right = _analyze_finger(
-            b, pair.right_anchor, "right", steps, k_max, delta, reachable,
-            w_pad, object_type, axis_x, denom, None,
+        pad_lo = h_tip + finger.pad_start
+        pad_hi = pad_lo + finger.pad_length
+        pair, left, right, feasible = _analyze_band(
+            b, reachable, pad_lo, pad_hi, finger.pad_length, k_max, delta,
+            w_pad, object_type, axis_x, h_tip,
+        )
+        return ContactEstimate(
+            b, reachable, pair, left, right, k_max, delta, finger.pad_length,
+            w_pad, object_type, finger, (pad_lo, pad_hi), h_tip, feasible,
+        )
+
+    # 2) top-anchored pad: contact band = top L of the object
+    if pad_top_anchored:
+        pad_hi = y_top
+        pad_lo = y_top - L
+        pair, left, right, feasible = _analyze_band(
+            b, reachable, pad_lo, pad_hi, L, k_max, delta, w_pad,
+            object_type, axis_x, pad_lo,
         )
         return ContactEstimate(
             b, reachable, pair, left, right, k_max, delta, L, w_pad,
-            object_type,
+            object_type, None, (pad_lo, pad_hi), pad_lo, feasible,
         )
 
-    # ------------------------------------------------------------------
-    # drop-depth model
-    # ------------------------------------------------------------------
-    y = b.pts[:, 1]
-    table_y = float(y.min())
-    y_top = float(y.max())
-    h_tip = table_y + max(
-        finger.tip_clearance,
-        (y_top - table_y) + finger.palm_standoff - finger.finger_length,
+    # 3) free placement (low-level default; CLI/synthetic tests)
+    pair = select_grasp_pair(b, reachable, y_target=y_target)
+    half_pts = min(int(round((L / 2) / b.ds)), len(b) // 2 - 1)
+    steps = {+1: half_pts, -1: half_pts}
+    denom = (2 * half_pts + 1) * b.ds
+    left = _analyze_finger(
+        b, pair.left_anchor, "left", steps, k_max, delta, reachable,
+        w_pad, object_type, axis_x, denom, None,
     )
-    pad_lo = h_tip + finger.pad_start
-    pad_hi = pad_lo + finger.pad_length
-    pad_center = 0.5 * (pad_lo + pad_hi)
-    pad_L = finger.pad_length
-
-    band_idx = np.where((y >= pad_lo) & (y <= pad_hi))[0]
-    if len(band_idx) == 0 or pad_lo > y_top:
-        pair = GraspPair(-1, -1, False, -1, -1, 0.0)
-        return ContactEstimate(
-            b, reachable, pair, _empty_finger("left", pad_L),
-            _empty_finger("right", pad_L), k_max, delta, pad_L, w_pad,
-            object_type, finger, (pad_lo, pad_hi), h_tip, False,
-        )
-
-    la = anchor_in_band(b, band_idx, "left", reachable, pad_center)
-    ra = anchor_in_band(b, band_idx, "right", reachable, pad_center)
-    antip = -float(b.N[la] @ b.N[ra])
-    pair = GraspPair(
-        la, ra, bool(antip >= np.cos(np.radians(40.0))), la, ra, antip
+    right = _analyze_finger(
+        b, pair.right_anchor, "right", steps, k_max, delta, reachable,
+        w_pad, object_type, axis_x, denom, None,
     )
-
-    fingers = []
-    for anchor, side in ((la, "left"), (ra, "right")):
-        y_a = float(b.pts[anchor, 1])
-        steps = _steps_by_direction(b, anchor, pad_hi - y_a, y_a - pad_lo)
-        fingers.append(_analyze_finger(
-            b, anchor, side, steps, k_max, delta, reachable,
-            w_pad, object_type, axis_x, pad_L, h_tip,
-        ))
-
     return ContactEstimate(
-        b, reachable, pair, fingers[0], fingers[1], k_max, delta, pad_L,
-        w_pad, object_type, finger, (pad_lo, pad_hi), h_tip, True,
+        b, reachable, pair, left, right, k_max, delta, L, w_pad, object_type,
     )

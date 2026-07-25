@@ -37,9 +37,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
-from scipy.spatial import cKDTree
-
 from contact_geometry import Boundary
+from scipy.spatial import cKDTree
 
 ARC_CAP_RAD = 2.0  # max wrap angle followed on one departure arc (~115 deg)
 

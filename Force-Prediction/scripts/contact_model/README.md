@@ -63,6 +63,19 @@ covered by the `sphere_R40_area` synthetic test, but is dormant.
 
 **Contact fraction** (per finger) = area / (pad_length × w_pad).
 
+### Pad placement
+
+Three modes, in precedence order (`estimate_contact`):
+
+1. **Drop-depth** (`finger=FingerGeometry`) — band from full finger geometry.
+2. **Top-anchored** (`pad_top_anchored=True`, the **application default** in
+   `ContactParams`) — the pad hangs from the object's highest point: the
+   contact band is the **top `L`** of the object (`[y_top − L, y_top]`) and
+   **everything below is disregarded**, since the finger comes from above and
+   cannot reach or wrap under the base. The drape clamps at `y_top − L`.
+3. **Free** (`pad_top_anchored=False`, no finger) — pad centred on the best
+   antipodal band; used by the synthetic tests and the low-level default.
+
 ### Drop-depth model (`FingerGeometry`)
 
 The pad's height band is **not freely placeable** — the gripper descends

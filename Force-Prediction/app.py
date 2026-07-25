@@ -120,6 +120,8 @@ def _slugify(name: str) -> str:
     return slug or "object"
 
 
+
+
 def _run_config(
     base: Config,
     *,
@@ -1121,23 +1123,31 @@ def contact_area_view(cfg: Config) -> None:
 
     p = st.columns(3)
     px_per_mm = p[0].number_input(
-        "px per mm (required)", min_value=0.0, value=8.0, step=0.1,
-        help="From a known-width fiducial in the scene. Every mm-valued "
-             "parameter is meaningless without a real scale.",
+        "px per mm (required)", min_value=0.0,
+        value=float(cfg.geometry.px_per_mm), step=0.01, format="%.4f",
+        help="Camera scale. Default comes from geometry.px_per_mm in "
+             "config.yaml; re-measure with scripts/calibrate_scale.py.",
     )
     k_max = p[1].number_input("k_max (1/mm)", min_value=0.01, value=2.0, step=0.5)
     delta = p[2].number_input("delta (mm)", min_value=0.0, value=0.3, step=0.1)
+    p[0].caption("default from config.yaml (geometry.px_per_mm)")
 
     with st.expander("Advanced parameters"):
         a = st.columns(3)
-        L = a[0].number_input("pad length L (mm)", min_value=0.5, value=4.0, step=0.5)
+        L = a[0].number_input(
+            "pad length L (mm)", min_value=0.5,
+            value=float(cfg.geometry.pad_length_mm), step=1.0,
+            help="Vertical extent of the finger pad. Default from "
+                 "geometry.pad_length_mm in config.yaml.")
         w_pad = a[1].number_input("pad width (mm)", min_value=0.5, value=12.0, step=1.0)
         sweep_str = a[2].text_input("k_max sweep (logged)", value="1,2,4")
         use_finger = st.checkbox(
             "Finger drop-depth model", value=False,
-            help="Constrain the pad's height band by finger geometry instead "
-                 "of free placement. Needed for short objects (fruit) whose "
-                 "pad cannot reach the equator.",
+            help="Default (off): the pad hangs from the object's top — the "
+                 "contact band is the top L of the object and everything below "
+                 "is disregarded (finger approaches from above). On: derive the "
+                 "band from full finger geometry (length, tip clearance, palm "
+                 "standoff) instead.",
         )
         finger = None
         if use_finger:
@@ -1251,6 +1261,12 @@ def contact_area_view(cfg: Config) -> None:
             "Contact L / R",
             f"{r['left']['contact_mm']:.1f} / {r['right']['contact_mm']:.1f} mm")
         m[3].metric("Antipodal grasp", "yes" if r["antipodal_grasp"] else "no")
+
+        d = st.columns(4)
+        d[0].metric("Object height", f"{r['object_height_mm']:.1f} mm")
+        d[1].metric("Object width", f"{r['object_width_mm']:.1f} mm")
+        d[2].metric("Pad length L", f"{res['summary']['params']['L_mm']:.1f} mm")
+        d[3].metric("Perimeter", f"{r['perimeter_mm']:.1f} mm")
 
         cols = st.columns(2)
         cols[0].image(res["paths"]["contact_fig"],

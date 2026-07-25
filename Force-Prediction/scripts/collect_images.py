@@ -19,7 +19,6 @@ from pathlib import Path
 
 import cv2
 
-
 DEFAULT_OUTPUT_DIR = Path(
     "/Users/premshah/Desktop/Robotics/GSET/GSETGripper/Force-Prediction/"
     "data/real_chosen_objects"
