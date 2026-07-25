@@ -100,6 +100,81 @@ a = min(1, h_available / h_pad)
 
 with the current nominal pad height configured as `65 mm`.
 
+The standalone Streamlit **Contact Fraction** tab now computes a separate
+schema-v2 projected two-pad contact fraction from the RGB silhouette:
+
+```text
+f_geometric = (left_side_contact_length + right_side_contact_length)
+              / (2 * 106.68 mm)
+
+f_contact = max(0.05, f_geometric) for an antipodal grasp; otherwise 0
+```
+
+It assumes constant pad width, which cancels from the ratio, and reports no
+absolute mm² area. Contact must be contiguous, within 30 degrees of the jaw
+direction, and conformable under a default 20 mm minimum bend radius. This
+geometric estimator is not yet wired into E1–E6 and must not be confused with
+the current 65 mm `projected_contact_fraction` input.
+
+### Contact-fraction mathematics
+
+The outline is modeled as a closed planar boundary `p(s)` in millimeters, with
+outward unit normal `N(s)` and signed curvature `kappa(s)`. The camera plane is
+the longitudinal plane of the gripper: `x` is the jaw-closing direction and
+`y` points upward.
+
+For pad length `L = 106.68 mm`, only the top-aligned window
+`[object_top - L, object_top]` is active. A left-side point is eligible when
+`-N_x >= cos(30°)` and a right-side point is eligible when
+`N_x >= cos(30°)`. This is the formal reason horizontal top and bottom surfaces
+cannot become green contact paths.
+
+The outwardmost eligible point on each side becomes its first-touch anchor.
+The anchor pair is accepted only when its normals are sufficiently opposed:
+
+```text
+-N_left dot N_right >= cos(40°)
+```
+
+Conformability is controlled by minimum bend radius `R_min`, not an arbitrary
+curvature slider. Positive convex curvature must satisfy:
+
+```text
+kappa <= 1 / R_min
+```
+
+At the default `R_min = 20 mm`, the maximum convex curvature is therefore
+`0.05 1/mm`. An exterior rolling disk of radius `R_min` also rejects concave
+pockets that a finite-radius pad cannot enter.
+
+Starting at each anchor, contact is one contiguous boundary walk. Angle,
+curvature, rolling-disk accessibility, pad-window, and material-length tests
+must pass at every step. The first failure stops that direction permanently;
+there is no gap bridging or re-contact farther along the outline. Accepted
+Euclidean segment lengths are integrated, including a partial final segment
+when necessary, and each pad is capped at `L`.
+
+```text
+ell_left, ell_right in [0, L]
+f_geometric = clip((ell_left + ell_right) / (2L), 0, 1)
+
+f_contact = max(0.05, f_geometric)  if the anchor pair is antipodal
+f_contact = 0                       otherwise
+```
+
+If the anchors fail the antipodal test, the authoritative fraction is zero.
+For a valid antipodal pair, `geometry.minimum_contact_fraction` supplies a
+default `0.05` floor representing unavoidable TPU seating contact below the
+resolution of the macroscopic green-path model. The geometric fraction and a
+`contact_floor_applied` flag are retained separately so the assumption is
+visible and can later be calibrated from physical data.
+The 10/20/30 mm bend-radius sweep is a sensitivity check; increasing minimum
+bend radius must not increase predicted contact on the committed regression
+fixtures.
+
+For Python entry points, returned fields, schema-v2 JSON/CSV paths, and safe
+integration examples, see [`contact-fraction-integration.md`](contact-fraction-integration.md).
+
 Streamlit provides a `Use projected contact fraction` checkbox:
 
 - enabled: contact participates in E2/E4 VLM payloads, E4 retrieval, and the direct E6
@@ -393,6 +468,8 @@ The application provides:
 - **Single Run:** known leave-one-out or custom query with all five experiments;
 - **129-Object Benchmark:** leave-one-object-out evaluation and saved JSON/CSV;
 - **Data Viewer:** descriptor catalog and exact saved-run inspector;
+- **Contact Fraction:** capture an RGB image and estimate the combined projected
+  side-contact fraction of both 4.2-inch pads;
 - **Data Preparation:** resumable image download, descriptors, rows, and embeddings;
 - **Cache Status:** response/cache counts and latest telemetry;
 - **Help & Experiments:** current definitions and prompts loaded from configuration.

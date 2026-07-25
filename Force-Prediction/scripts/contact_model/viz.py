@@ -1,6 +1,4 @@
-"""Module 6 - overlay figures: boundary, reachability, windows, contact
-segments, wrap arcs, and the curvature profile. The overlay is the sanity
-check that the model behaves before trusting the numbers."""
+"""Diagnostic overlay for the projected two-pad contact fraction."""
 
 from __future__ import annotations
 
@@ -11,20 +9,7 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
-from contact_area import ContactEstimate, FingerResult
-
-
-def _contact_runs(f: FingerResult) -> list[np.ndarray]:
-    runs, cur = [], []
-    for k, idx in enumerate(f.window_idx):
-        if f.contact[k]:
-            cur.append(idx)
-        elif cur:
-            runs.append(np.array(cur))
-            cur = []
-    if cur:
-        runs.append(np.array(cur))
-    return runs
+from contact_area import ContactEstimate
 
 
 def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
@@ -38,46 +23,41 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
     bad = ~est.reachable
     if bad.any():
         ax.scatter(
-            b.pts[bad, 0], b.pts[bad, 1], s=2, color="crimson", alpha=0.5,
-            zorder=2, label="unreachable",
+            b.pts[bad, 0], b.pts[bad, 1], s=3, color="crimson", alpha=0.5,
+            zorder=2, label="curvature/concavity unreachable",
         )
 
-    if est.pad_band is not None:
-        pad_lo, pad_hi = est.pad_band
-        band_lines = [
-            (pad_lo, "--", "purple", "pad band"),
-            (pad_hi, "--", "purple", None),
-        ]
-        if est.finger is not None:  # drop-depth also shows table + fingertip
-            band_lines = [
-                (b.pts[:, 1].min(), "-", "0.4", "table"),
-                (est.tip_height, ":", "0.4", "fingertip"),
-            ] + band_lines
-        for yv, style, col, lab in band_lines:
-            ax.axhline(yv, ls=style, color=col, lw=1.1, label=lab, zorder=0)
-        if not est.feasible:
-            ax.text(
-                0.5, 0.5, "INFEASIBLE\npad band above object",
-                transform=ax.transAxes, ha="center", va="center",
-                fontsize=13, color="crimson", fontweight="bold",
-            )
+    pad_lo, pad_hi = est.pad_band
+    ax.axhline(pad_lo, ls="--", color="purple", lw=1.1,
+               label="4.2-inch pad window", zorder=0)
+    ax.axhline(pad_hi, ls="--", color="purple", lw=1.1, zorder=0)
 
     for f, col in ((est.left, "tab:blue"), (est.right, "tab:cyan")):
-        if len(f.window_idx) == 0:
-            continue
-        w = b.pts[f.window_idx]
-        ax.plot(w[:, 0], w[:, 1], color=col, lw=6, alpha=0.18, zorder=2)
-        for run in _contact_runs(f):
-            seg = b.pts[run]
-            ax.plot(seg[:, 0], seg[:, 1], color="limegreen", lw=4, zorder=4)
-        ax.plot(*b.pts[f.anchor], "o", color="red", ms=6, zorder=6)
-        for arc in f.arcs:
-            phi = arc.phi0 + arc.sweep * np.linspace(0.0, arc.max_phi, 60)
+        if f.anchor >= 0:
+            ax.plot(*b.pts[f.anchor], "o", color="red", ms=6, zorder=6)
+        if len(f.contact_points) >= 2:
             ax.plot(
-                arc.center[0] + arc.r * np.cos(phi),
-                arc.center[1] + arc.r * np.sin(phi),
-                ls="--", lw=1.2, color="darkorange", zorder=3,
+                f.contact_points[:, 0], f.contact_points[:, 1],
+                color="limegreen", lw=4, zorder=4,
             )
+        elif len(f.contact_points) == 1:
+            ax.plot(*f.contact_points[0], ".", color=col, ms=4, zorder=4)
+
+    if not est.pair.antipodal:
+        ax.text(
+            0.5, 0.5, "INFEASIBLE\nnon-antipodal side anchors",
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=13, color="crimson", fontweight="bold",
+        )
+    elif est.contact_floor_applied:
+        ax.text(
+            0.5, 0.5,
+            f"MINIMUM CONTACT FLOOR APPLIED\n"
+            f"geometric={est.geometric_contact_fraction:.3f}, "
+            f"floor={est.minimum_contact_fraction:.3f}",
+            transform=ax.transAxes, ha="center", va="center",
+            fontsize=10, color="darkorange", fontweight="bold",
+        )
 
     obj_h = float(b.pts[:, 1].max() - b.pts[:, 1].min())
     obj_w = float(b.pts[:, 0].max() - b.pts[:, 0].min())
@@ -87,28 +67,29 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
         f"object H x W = {obj_h:.1f} x {obj_w:.1f} mm   "
         f"contact L/R = {est.left.contact_length:.2f} / "
         f"{est.right.contact_length:.2f} mm\n"
-        f"area = {est.total_area:.1f} mm$^2$   "
-        f"fraction = {est.mean_fraction:.3f}   "
+        f"geometric fraction = {est.geometric_contact_fraction:.3f}   "
+        f"reported fraction = {est.combined_contact_fraction:.3f}   "
         f"antipodal = {est.pair.antipodal}",
         fontsize=9,
     )
-    if bad.any() or est.pad_band is not None:
-        ax.legend(loc="upper right", fontsize=7)
+    ax.legend(loc="upper right", fontsize=7)
 
     axk.plot(b.s, b.kappa, lw=0.9, color="0.3")
-    axk.axhline(est.k_max, color="crimson", ls=":", lw=1)
+    axk.axhline(est.k_max_per_mm, color="crimson", ls=":", lw=1,
+                label="maximum convex curvature")
     axk.axhline(0.0, color="0.8", lw=0.8)
     for f in (est.left, est.right):
-        if len(f.window_idx) == 0:
-            continue
-        axk.axvspan(
-            b.s[f.window_idx[0]], b.s[f.window_idx[-1]],
-            color="tab:blue", alpha=0.12,
-        )
+        if len(f.contact_idx):
+            axk.scatter(
+                b.s[f.contact_idx], b.kappa[f.contact_idx],
+                s=5, color="limegreen", alpha=0.55,
+            )
     axk.set_xlabel("arc length s (mm)")
     axk.set_ylabel(r"$\kappa$ (1/mm)")
-    lim = max(2.5 * est.k_max, 0.05)
-    axk.set_ylim(-lim, lim)
+    curvature_extent = float(np.percentile(np.abs(b.kappa), 99))
+    limit = max(1.5 * est.k_max_per_mm, 1.2 * curvature_extent, 0.02)
+    axk.set_ylim(-limit, limit)
+    axk.legend(loc="upper right", fontsize=7)
 
     fig.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)

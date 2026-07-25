@@ -1,35 +1,11 @@
-"""End-to-end contact-fraction pipeline: SPACE to capture -> analysis folder.
+"""Capture or load an image and estimate projected two-pad contact fraction.
 
-Live camera preview; press SPACE to capture an object, Q/ESC to quit. Each
-capture runs background removal + spline extraction + the contact model and
-writes one self-contained folder under data/real_contact_area/:
+The primary result is dimensionless:
 
-    <name>_<YYYYmmdd-HHMMSS>/
-        <name>.png                  raw capture
-        <name>_cutout.png           rembg cutout
-        <name>_mask.png             foreground mask
-        <name>_spline_overlay.png   fitted outline over the photo
-        <name>_spline_points.csv    outline points (px)
-        <name>_spline.svg           outline vector
-        <name>_contact.png          contact visualization + numbers
-        summary.json                every parameter and every number
-    index.csv                       one row per run, master log
+    (left contact length + right contact length) / (2 * pad length)
 
-Scale: pass --px-per-mm directly, or pass --ref-width-mm W and click the two
-edges of a known-width reference in the frozen capture. Without a real scale
-every mm-valued parameter is meaningless.
-
-Examples:
-    # live camera, click-to-scale against a 50 mm wide fiducial
-    $VENV scripts/contact_model/capture_and_analyze.py --ref-width-mm 50
-
-    # process an existing photo instead of the camera
-    $VENV scripts/contact_model/capture_and_analyze.py \
-        --image data/MatForce/plastic_cup.png --px-per-mm 8.4 \
-        --object-type axisymmetric
-
-Capture tips: object alone against a plain background (rembg keeps the
-largest foreground component), jaws closing along the image x axis.
+Pad width is constant and cancels.  Results use schema v2 and are appended to
+``data/real_contact_area/index_v2.csv``; legacy artifacts remain untouched.
 """
 
 from __future__ import annotations
@@ -45,185 +21,155 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from contact_area import ContactEstimate, FingerGeometry
+from contact_area import ContactEstimate
 from pipeline_core import ContactParams, analyze_image
 
-DEFAULT_OUT_ROOT = (
-    Path(__file__).resolve().parents[2] / "data" / "real_contact_area"
-)
-SWEEP_K_DEFAULT = "1,2,4"
-
-
-# ---------------------------------------------------------------------------
-# Camera / interaction
-# ---------------------------------------------------------------------------
+DEFAULT_OUT_ROOT = Path(__file__).resolve().parents[2] / "data" / "real_contact_area"
+SWEEP_RADII_DEFAULT = "10,20,30"
 
 
 def preview_and_capture(camera: int) -> np.ndarray | None:
     cap = cv2.VideoCapture(camera)
     if not cap.isOpened():
         raise SystemExit(f"could not open camera {camera}")
-    win = "capture  [SPACE = shoot, Q/ESC = quit]"
+    window = "capture  [SPACE = shoot, Q/ESC = quit]"
     frame = None
     try:
         while True:
             ok, live = cap.read()
             if not ok:
                 raise SystemExit("camera stopped delivering frames")
-            cv2.imshow(win, live)
+            cv2.imshow(window, live)
             key = cv2.waitKey(1) & 0xFF
-            if key == 32:  # SPACE
+            if key == 32:
                 frame = live.copy()
                 break
             if key in (27, ord("q")):
                 break
     finally:
         cap.release()
-        cv2.destroyWindow(win)
+        cv2.destroyWindow(window)
         cv2.waitKey(1)
     return frame
 
 
-def click_scale(frame: np.ndarray, ref_width_mm: float) -> float | None:
-    """Click the two edges of a known-width reference; returns px/mm."""
-    win = f"scale: click BOTH edges of the {ref_width_mm:g} mm reference (ESC = abort)"
-    pts: list[tuple[int, int]] = []
+def click_scale(frame: np.ndarray, reference_width_mm: float) -> float | None:
+    """Click the two reference edges and return pixels per millimetre."""
+    window = (
+        f"scale: click both edges of the {reference_width_mm:g} mm reference "
+        "(ESC = abort)"
+    )
+    points: list[tuple[int, int]] = []
 
-    def on_mouse(event, x, y, flags, param):
-        if event == cv2.EVENT_LBUTTONDOWN and len(pts) < 2:
-            pts.append((x, y))
+    def on_mouse(event, x, y, flags, param):  # noqa: ANN001, ARG001
+        if event == cv2.EVENT_LBUTTONDOWN and len(points) < 2:
+            points.append((x, y))
 
-    cv2.namedWindow(win)
-    cv2.setMouseCallback(win, on_mouse)
+    cv2.namedWindow(window)
+    cv2.setMouseCallback(window, on_mouse)
     try:
         while True:
             shown = frame.copy()
-            for p in pts:
-                cv2.circle(shown, p, 6, (0, 255, 0), 2)
-            if len(pts) == 2:
-                cv2.line(shown, pts[0], pts[1], (0, 255, 0), 2)
-            cv2.imshow(win, shown)
+            for point in points:
+                cv2.circle(shown, point, 6, (0, 255, 0), 2)
+            if len(points) == 2:
+                cv2.line(shown, points[0], points[1], (0, 255, 0), 2)
+            cv2.imshow(window, shown)
             key = cv2.waitKey(30) & 0xFF
             if key == 27:
                 return None
-            if len(pts) == 2:
+            if len(points) == 2:
                 cv2.waitKey(400)
                 break
     finally:
-        cv2.destroyWindow(win)
+        cv2.destroyWindow(window)
         cv2.waitKey(1)
 
-    px = float(np.hypot(pts[0][0] - pts[1][0], pts[0][1] - pts[1][1]))
-    if px < 5:
+    pixels = float(np.hypot(
+        points[0][0] - points[1][0], points[0][1] - points[1][1]
+    ))
+    if pixels < 5:
         print("clicked points nearly coincide; aborting scale", file=sys.stderr)
         return None
-    ppm = px / ref_width_mm
-    print(f"scale: {px:.1f} px over {ref_width_mm:g} mm -> {ppm:.3f} px/mm")
-    return ppm
+    return pixels / reference_width_mm
 
 
 def show_image(path: Path) -> None:
-    img = cv2.imread(str(path))
-    if img is None:
+    image = cv2.imread(str(path))
+    if image is None:
         return
-    win = f"{path.name}  [any key to continue]"
-    cv2.imshow(win, img)
+    window = f"{path.name}  [any key to continue]"
+    cv2.imshow(window, image)
     cv2.waitKey(0)
-    cv2.destroyWindow(win)
+    cv2.destroyWindow(window)
     cv2.waitKey(1)
 
 
-# ---------------------------------------------------------------------------
-# Analysis
-# ---------------------------------------------------------------------------
-
-
 def analyze_capture(
-    name: str, image_path: Path, run_dir: Path, args
+    name: str, image_path: Path, run_dir: Path, args: argparse.Namespace
 ) -> ContactEstimate:
-    print(f"\n=== {name} -> {run_dir}")
-    finger = None
-    if args.finger_length is not None:
-        finger = FingerGeometry(
-            finger_length=args.finger_length, pad_length=args.L,
-            pad_start=args.pad_start, tip_clearance=args.tip_clearance,
-            palm_standoff=args.palm_standoff,
-        )
     params = ContactParams(
-        px_per_mm=args.px_per_mm, object_type=args.object_type,
-        closing_axis=args.closing_axis, k_max=args.k_max, delta=args.delta,
-        L=args.L, w_pad=args.w_pad, ds=args.ds, smoothing=args.smoothing,
-        sweep_k=tuple(float(v) for v in args.sweep_k.split(",") if v.strip()),
-        finger=finger,
+        px_per_mm=args.px_per_mm,
+        closing_axis=args.closing_axis,
+        pad_length_mm=args.pad_length_mm,
+        minimum_bend_radius_mm=args.minimum_bend_radius_mm,
+        side_angle_deg=args.side_angle_deg,
+        minimum_contact_fraction=args.minimum_contact_fraction,
+        ds=args.ds,
+        smoothing=args.smoothing,
+        sweep_radii_mm=tuple(
+            float(value) for value in args.sweep_radii_mm.split(",")
+            if value.strip()
+        ),
     )
-    est, summary, paths = analyze_image(
-        image_path, run_dir, name, params, index_csv=args.out_root / "index.csv"
+    estimate, summary, paths = analyze_image(
+        image_path,
+        run_dir,
+        name,
+        params,
+        index_csv=args.out_root / "index_v2.csv",
     )
-
-    print(f"contact L/R : {est.left.contact_length:.2f} / "
-          f"{est.right.contact_length:.2f} mm")
-    print(f"total area  : {est.total_area:.2f} mm^2")
-    print(f"fraction    : {est.mean_fraction:.4f}   "
-          f"(sweep {summary['k_max_sweep_mean_fraction']})")
-    print(f"figure      : {paths['contact_fig']}")
-    return est
-
-
-# ---------------------------------------------------------------------------
-# Main
-# ---------------------------------------------------------------------------
+    print(
+        f"contact L/R : {estimate.left.contact_length:.2f} / "
+        f"{estimate.right.contact_length:.2f} mm"
+    )
+    print(f"combined     : {estimate.combined_contact_fraction:.4f}")
+    print(
+        "radius sweep: "
+        f"{summary['bend_radius_sweep_combined_fraction']}"
+    )
+    print(f"figure       : {paths['contact_fig']}")
+    return estimate
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(
-        description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
-    )
-    ap.add_argument("--image", type=Path, default=None,
-                    help="process this photo instead of using the camera")
-    ap.add_argument("--name", default=None,
-                    help="object name (default: image stem, or asked per capture)")
-    ap.add_argument("--camera", type=int, default=0)
-    ap.add_argument("--px-per-mm", type=float, default=None)
-    ap.add_argument("--ref-width-mm", type=float, default=None,
-                    help="known reference width; click its edges to set scale")
-    ap.add_argument("--object-type", choices=["prismatic", "axisymmetric"],
-                    default="prismatic")
-    ap.add_argument("--closing-axis", choices=["x", "y"], default="x")
-    ap.add_argument("--k-max", type=float, default=2.0)
-    ap.add_argument("--delta", type=float, default=0.3)
-    ap.add_argument("--L", type=float, default=4.0,
-                    help="pad length; = FingerGeometry.pad_length when "
-                         "--finger-length is set")
-    ap.add_argument("--w-pad", type=float, default=12.0)
-    ap.add_argument("--finger-length", type=float, default=None,
-                    help="palm-to-tip length, mm; enables the drop-depth "
-                         "model (pad placement constrained by geometry)")
-    ap.add_argument("--pad-start", type=float, default=0.0,
-                    help="fingertip to pad lower edge, mm")
-    ap.add_argument("--tip-clearance", type=float, default=2.0,
-                    help="min fingertip height above the table, mm")
-    ap.add_argument("--palm-standoff", type=float, default=5.0,
-                    help="palm clearance above the object top, mm")
-    ap.add_argument("--ds", type=float, default=0.25)
-    ap.add_argument("--smoothing", type=float, default=0.2)
-    ap.add_argument("--sweep-k", default=SWEEP_K_DEFAULT,
-                    help="comma list of k_max values logged in summary.json")
-    ap.add_argument("--out-root", type=Path, default=DEFAULT_OUT_ROOT)
-    ap.add_argument("--no-show", action="store_true",
-                    help="skip result windows (headless)")
-    args = ap.parse_args()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--image", type=Path, default=None)
+    parser.add_argument("--name", default=None)
+    parser.add_argument("--camera", type=int, default=0)
+    parser.add_argument("--px-per-mm", type=float, default=None)
+    parser.add_argument("--ref-width-mm", type=float, default=None)
+    parser.add_argument("--closing-axis", choices=["x", "y"], default="x")
+    parser.add_argument("--pad-length-mm", type=float, default=106.68)
+    parser.add_argument("--minimum-bend-radius-mm", type=float, default=20.0)
+    parser.add_argument("--side-angle-deg", type=float, default=30.0)
+    parser.add_argument("--minimum-contact-fraction", type=float, default=0.05)
+    parser.add_argument("--ds", type=float, default=0.25)
+    parser.add_argument("--smoothing", type=float, default=0.2)
+    parser.add_argument("--sweep-radii-mm", default=SWEEP_RADII_DEFAULT)
+    parser.add_argument("--out-root", type=Path, default=DEFAULT_OUT_ROOT)
+    parser.add_argument("--no-show", action="store_true")
+    args = parser.parse_args()
 
     if args.px_per_mm is None and args.ref_width_mm is None:
-        ap.error("scale required: pass --px-per-mm or --ref-width-mm")
-
+        parser.error("scale required: pass --px-per-mm or --ref-width-mm")
     args.out_root.mkdir(parents=True, exist_ok=True)
 
-    def run_one(frame: np.ndarray | None, image_src: Path | None) -> None:
-        name = args.name or (image_src.stem if image_src else None)
+    def run_one(frame: np.ndarray | None, image_source: Path | None) -> None:
+        name = args.name or (image_source.stem if image_source else None)
         if name is None:
             name = input("object name: ").strip() or "object"
         name = name.replace(" ", "_")
-
         stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
         run_dir = args.out_root / f"{name}_{stamp}"
         run_dir.mkdir(parents=True, exist_ok=False)
@@ -233,19 +179,19 @@ def main() -> int:
             if not cv2.imwrite(str(image_path), frame):
                 raise OSError(f"could not write {image_path}")
         else:
-            image_bgr = cv2.imread(str(image_src))
-            if image_bgr is None:
-                raise SystemExit(f"could not read {image_src}")
-            image_path = run_dir / f"{name}{image_src.suffix}"
-            cv2.imwrite(str(image_path), image_bgr)
+            image = cv2.imread(str(image_source))
+            if image is None:
+                raise SystemExit(f"could not read {image_source}")
+            image_path = run_dir / f"{name}{image_source.suffix}"
+            if not cv2.imwrite(str(image_path), image):
+                raise OSError(f"could not write {image_path}")
 
         if args.px_per_mm is None:
-            shown = frame if frame is not None else cv2.imread(str(image_path))
-            ppm = click_scale(shown, args.ref_width_mm)
-            if ppm is None:
+            scale_image = frame if frame is not None else cv2.imread(str(image_path))
+            args.px_per_mm = click_scale(scale_image, args.ref_width_mm)
+            if args.px_per_mm is None:
                 print("no scale set; run discarded", file=sys.stderr)
                 return
-            args.px_per_mm = ppm
 
         analyze_capture(name, image_path, run_dir, args)
         if not args.no_show:
@@ -255,14 +201,13 @@ def main() -> int:
         run_one(None, args.image)
         return 0
 
-    # camera session: capture objects until Q/ESC
     while True:
         frame = preview_and_capture(args.camera)
         if frame is None:
             break
         run_one(frame, None)
-        args.name = None  # ask again for the next object
-        print("\nback to preview - SPACE for next object, Q to finish")
+        args.name = None
+        print("back to preview - SPACE for next object, Q to finish")
         time.sleep(0.3)
     return 0
 

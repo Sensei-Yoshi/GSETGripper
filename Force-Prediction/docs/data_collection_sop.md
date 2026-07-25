@@ -70,7 +70,7 @@ Two capture tools, both `cv2.VideoCapture` based:
    Live OpenCV window: **SPACE** saves `image_NNNN.png`, **q/ESC** quits.
    Use the `--camera` index to pick the Orbbec feed if it is not device 0.
 
-2. **Contact-area test capture** — the **"Contact Area"** tab in
+2. **Contact-fraction test capture** — the **"Contact Fraction"** tab in
    `streamlit run app.py`. Live preview + Capture, with a **camera index**
    selector (try 0/1 to find the Orbbec RGB feed). Each capture runs the
    geometric contact model and writes `data/test_contact_area/<name>/` (image
@@ -94,7 +94,7 @@ whole rig hinges on one rule:
 > level (not tilted) and objects centred.
 
 The scale is stored in **`config.yaml` → `geometry.px_per_mm`** (the single
-source of truth; the Contact Area tab loads it as the default `px per mm`).
+source of truth; the Contact Fraction tab loads it as the default `px per mm`).
 
 ```bash
 $VENV scripts/calibrate_scale.py --camera 0

@@ -7,6 +7,9 @@ choices; each item below is a concrete upgrade path with the file it touches.
 The MVP uses the height-ratio proxy `a = min(1, h_available / h_pad)`, where
 `h_available` comes from the near-object vertical span in the depth frame. This
 is a geometric proxy, **not** microscopic contact area (especially for gecko).
+The separate Streamlit contact-model testbed now provides a width-free,
+side-facing two-pad length fraction, but it is deliberately not wired into the
+force experiments until it is validated on physical contact measurements.
 Upgrade path:
 1. **Segmentation overlap** — segment the object and compute pad-rectangle ∩
    object overlap instead of a full-frame vertical span (removes the "object

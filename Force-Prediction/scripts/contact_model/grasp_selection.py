@@ -1,16 +1,4 @@
-"""Module 2 - grasp anchor selection.
-
-Jaws close along +/-x, so each finger's physical first touch is the
-object's extremal-x *conformable* point - the widest point the pad can
-seat on, NOT a preferred height. Exact ties (flat walls, where the whole
-face touches simultaneously) break toward ``center_y`` (pad centre in
-finger mode, ``y_target``/centroid in free mode). A true vertex that
-protrudes more than ``seat_tol`` beyond every conformable point wins
-anyway (pentagon corner: the jaw really does stop there).
-
-Antipodality is *reported*, not enforced: parallel jaws close where the
-geometry says they close, even on a face-vs-vertex pentagon grasp.
-"""
+"""Select the physical first-touch anchors for a parallel-jaw grasp."""
 
 from __future__ import annotations
 
@@ -30,48 +18,65 @@ class GraspPair:
     score: float
 
 
+def side_alignment(b: Boundary, side: str) -> np.ndarray:
+    """Cosine alignment of each outward normal with its jaw direction."""
+    side_sign = -1.0 if side == "left" else 1.0
+    return side_sign * b.N[:, 0]
+
+
 def anchor_in_band(
     b: Boundary,
-    cand_idx: np.ndarray,
+    band_idx: np.ndarray,
     side: str,
-    reachable: np.ndarray,
     center_y: float,
-    seat_tol: float = 1.0,
+    side_angle_deg: float,
+    reachable: np.ndarray,
+    seat_tolerance_mm: float = 1.0,
 ) -> int:
-    """First-touch anchor within a candidate index set: the extremal-x
-    conformable point (spline overshoot at sharp corners can make an
-    unreachable corner the raw extremum by a hair - seating there would
-    lose the adjacent flat), unless the raw extremum protrudes more than
-    ``seat_tol`` beyond every conformable point (a true vertex). Ties
-    break toward ``center_y``."""
-    sgn = -1.0 if side == "left" else 1.0
-    proj = sgn * b.pts[cand_idx, 0]
-    ext = proj.max()
+    """Return the outwardmost side-facing sample in the active pad band.
 
-    reach_local = reachable[cand_idx]
-    if reach_local.any():
-        ext_r = proj[reach_local].max()
-        if ext - ext_r <= seat_tol:
-            ties = cand_idx[reach_local & (proj >= ext_r - 0.05)]
+    Flat-face spline overshoot is suppressed when the raw extremum is within
+    ``seat_tolerance_mm`` of a reachable side sample. A genuinely protruding
+    nonconformable feature still wins and produces a zero-length patch
+    downstream. Ties within 0.05 mm resolve toward the pad-window centre.
+    """
+    if not 0.0 < side_angle_deg < 90.0:
+        raise ValueError("side_angle_deg must be between 0 and 90 degrees")
+
+    threshold = float(np.cos(np.radians(side_angle_deg)))
+    eligible = band_idx[side_alignment(b, side)[band_idx] >= threshold]
+    if len(eligible) == 0:
+        return -1
+
+    side_sign = -1.0 if side == "left" else 1.0
+    projection = side_sign * b.pts[eligible, 0]
+    extremum = float(projection.max())
+    reachable_local = reachable[eligible]
+    if reachable_local.any():
+        reachable_extremum = float(projection[reachable_local].max())
+        if extremum - reachable_extremum <= seat_tolerance_mm:
+            ties = eligible[
+                reachable_local & (projection >= reachable_extremum - 0.05)
+            ]
             return int(ties[np.argmin(np.abs(b.pts[ties, 1] - center_y))])
 
-    ties = cand_idx[proj >= ext - 0.05]
+    ties = eligible[projection >= extremum - 0.05]
     return int(ties[np.argmin(np.abs(b.pts[ties, 1] - center_y))])
 
 
-def select_grasp_pair(
-    b: Boundary,
-    reachable: np.ndarray,
-    y_target: float | None = None,
+def pair_from_anchors(
+    b: Boundary, left_anchor: int, right_anchor: int,
+    antipodal_tolerance_deg: float = 40.0,
 ) -> GraspPair:
-    """Free-placement anchors: the global extremal-x conformable point per
-    side - the jaw's first touch anywhere on the object. Identical rule to
-    the finger drop-depth mode, just with the whole boundary as the band."""
-    if y_target is None:
-        y_target = float(b.pts[:, 1].mean())
-    all_idx = np.arange(len(b))
-    la = anchor_in_band(b, all_idx, "left", reachable, y_target)
-    ra = anchor_in_band(b, all_idx, "right", reachable, y_target)
-    antip = -float(b.N[la] @ b.N[ra])
-    antipodal = bool(antip >= np.cos(np.radians(40.0)))
-    return GraspPair(la, ra, antipodal, la, ra, antip)
+    """Build a pair and apply the existing opposed-normal criterion."""
+    if left_anchor < 0 or right_anchor < 0:
+        return GraspPair(
+            left_anchor, right_anchor, False,
+            left_anchor, right_anchor, 0.0,
+        )
+    score = -float(b.N[left_anchor] @ b.N[right_anchor])
+    antipodal = bool(score >= np.cos(np.radians(antipodal_tolerance_deg)))
+    return GraspPair(
+        left_anchor, right_anchor, antipodal,
+        left_anchor, right_anchor, score,
+    )

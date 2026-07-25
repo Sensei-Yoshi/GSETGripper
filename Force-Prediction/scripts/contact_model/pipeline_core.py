@@ -1,12 +1,4 @@
-"""Shared contact-analysis core used by both the CLI (capture_and_analyze.py)
-and the Streamlit test page. One code path so the two cannot drift.
-
-``analyze_image`` takes a saved image file plus a ``ContactParams`` bundle,
-runs outline extraction + the contact model, writes every artifact into
-``run_dir`` (spline overlay, CSV, SVG, cutout, mask, contact figure,
-summary.json), optionally appends a master index.csv, and returns the
-estimate and the summary dict.
-"""
+"""Shared image-to-contact-fraction pipeline for CLI and Streamlit."""
 
 from __future__ import annotations
 
@@ -18,40 +10,37 @@ from pathlib import Path
 
 import extract_object_outline as outline
 import numpy as np
-from contact_area import ContactEstimate, FingerGeometry, estimate_contact
+from contact_area import ContactEstimate, estimate_contact
 from viz import plot_estimate
+
+SUMMARY_SCHEMA_VERSION = 2
 
 
 @dataclass
 class ContactParams:
-    """Every knob the contact model needs, with paper-default values."""
+    """Calibrated knobs for projected two-pad contact estimation."""
 
     px_per_mm: float
-    object_type: str = "prismatic"          # or "axisymmetric"
-    closing_axis: str = "x"                  # jaw closing axis in the image
-    k_max: float = 2.0                       # 1/mm
-    delta: float = 0.3                       # mm
-    L: float = 4.0                           # pad length, mm
-    w_pad: float = 12.0                      # pad width, mm
-    ds: float = 0.25                         # resample step, mm
-    smoothing: float = 0.2                   # pre-differentiation smoothing, mm
-    sweep_k: tuple[float, ...] = (1.0, 2.0, 4.0)
-    finger: FingerGeometry | None = None     # set -> drop-depth model
-    # Pad hangs from the object top: contact band = top L, below disregarded.
-    # Ignored when ``finger`` is set (drop-depth wins).
-    pad_top_anchored: bool = True
+    closing_axis: str = "x"
+    pad_length_mm: float = 106.68
+    minimum_bend_radius_mm: float = 20.0
+    side_angle_deg: float = 30.0
+    minimum_contact_fraction: float = 0.05
+    ds: float = 0.25
+    smoothing: float = 0.2
+    sweep_radii_mm: tuple[float, ...] = (10.0, 20.0, 30.0)
 
 
 def outline_csv_to_mm(
     csv_path: Path, px_per_mm: float, closing_axis: str
 ) -> np.ndarray:
-    """Load a spline_points.csv (px, image y-down) as mm points, y-up."""
+    """Load a spline CSV in image pixels as millimetres with y pointing up."""
     with csv_path.open() as f:
         reader = csv.reader(f)
         next(reader)
         pts_px = np.array([[float(x), float(y)] for x, y in reader])
     pts_mm = pts_px / px_per_mm
-    pts_mm[:, 1] = pts_mm[:, 1].max() - pts_mm[:, 1]  # image y-down -> y-up
+    pts_mm[:, 1] = pts_mm[:, 1].max() - pts_mm[:, 1]
     if closing_axis == "y":
         pts_mm = pts_mm[:, ::-1].copy()
     return pts_mm
@@ -59,78 +48,110 @@ def outline_csv_to_mm(
 
 def _finger_summary(f) -> dict:
     return {
-        "contact_mm": round(f.contact_length, 3),
-        "window_mm": round(f.window_length, 3),
-        "area_mm2": round(f.area, 3),
-        "fraction": round(f.fraction, 4),
+        "contact_length_mm": round(f.contact_length, 3),
+        "pad_length_mm": round(f.pad_length, 3),
+        "contact_fraction": round(f.fraction, 4),
     }
 
 
 def build_summary(
-    name: str, image_name: str, est: ContactEstimate, p: ContactParams,
+    name: str,
+    image_name: str,
+    est: ContactEstimate,
+    params: ContactParams,
     sweep: dict[str, float],
 ) -> dict:
-    finger = p.finger
     pts = est.boundary.pts
-    object_height_mm = float(pts[:, 1].max() - pts[:, 1].min())
-    object_width_mm = float(pts[:, 0].max() - pts[:, 0].min())
     return {
+        "schema_version": SUMMARY_SCHEMA_VERSION,
+        "metric": "projected_two_pad_contact_fraction",
+        "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
         "name": name,
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "image": image_name,
-        "px_per_mm": p.px_per_mm,
+        "px_per_mm": params.px_per_mm,
         "params": {
-            "k_max_per_mm": p.k_max, "delta_mm": p.delta, "L_mm": p.L,
-            "w_pad_mm": p.w_pad, "ds_mm": p.ds, "smoothing_mm": p.smoothing,
-            "object_type": p.object_type, "closing_axis": p.closing_axis,
-        },
-        "finger": None if finger is None else {
-            "finger_length_mm": finger.finger_length,
-            "pad_length_mm": finger.pad_length,
-            "pad_start_mm": finger.pad_start,
-            "tip_clearance_mm": finger.tip_clearance,
-            "palm_standoff_mm": finger.palm_standoff,
-            "tip_height_mm": round(est.tip_height, 2),
-            "pad_band_mm": [round(v, 2) for v in est.pad_band],
-            "grasp_feasible": bool(est.feasible),
+            "pad_length_mm": params.pad_length_mm,
+            "minimum_bend_radius_mm": params.minimum_bend_radius_mm,
+            "k_max_per_mm": round(1.0 / params.minimum_bend_radius_mm, 8),
+            "side_angle_deg": params.side_angle_deg,
+            "minimum_contact_fraction": params.minimum_contact_fraction,
+            "ds_mm": params.ds,
+            "smoothing_mm": params.smoothing,
+            "closing_axis": params.closing_axis,
+            "placement": "pad_top_aligned_to_object_top",
         },
         "results": {
-            "object_height_mm": round(object_height_mm, 2),
-            "object_width_mm": round(object_width_mm, 2),
+            "object_height_mm": round(float(np.ptp(pts[:, 1])), 2),
+            "object_width_mm": round(float(np.ptp(pts[:, 0])), 2),
             "perimeter_mm": round(est.boundary.length, 2),
+            "grasp_feasible": bool(est.feasible),
             "antipodal_grasp": bool(est.pair.antipodal),
             "left": _finger_summary(est.left),
             "right": _finger_summary(est.right),
-            "total_area_mm2": round(est.total_area, 3),
-            "mean_fraction": round(est.mean_fraction, 4),
+            "combined_contact_length_mm": round(est.combined_contact_length, 3),
+            "geometric_contact_fraction": round(est.geometric_contact_fraction, 4),
+            "contact_floor_applied": bool(est.contact_floor_applied),
+            "combined_contact_fraction": round(est.combined_contact_fraction, 4),
         },
-        "k_max_sweep_mean_fraction": sweep,
+        "bend_radius_sweep_combined_fraction": sweep,
     }
 
 
-def append_index(index_csv: Path, name: str, est: ContactEstimate,
-                 p: ContactParams, summary: dict, folder: str) -> None:
+def append_index_v2(
+    index_csv: Path,
+    name: str,
+    est: ContactEstimate,
+    params: ContactParams,
+    summary: dict,
+    folder: str,
+) -> None:
+    """Append one schema-v2 row, rejecting incompatible existing headers."""
+    header = [
+        "schema_version", "timestamp", "name", "px_per_mm",
+        "pad_length_mm", "minimum_bend_radius_mm", "side_angle_deg",
+        "minimum_contact_fraction",
+        "object_height_mm", "object_width_mm", "feasible", "antipodal",
+        "contact_left_mm", "contact_right_mm", "combined_contact_mm",
+        "geometric_contact_fraction", "contact_floor_applied",
+        "combined_contact_fraction", "folder",
+    ]
     index_csv.parent.mkdir(parents=True, exist_ok=True)
     new_file = not index_csv.exists()
+    if not new_file:
+        with index_csv.open(newline="", encoding="utf-8") as f:
+            existing = next(csv.reader(f), [])
+        if existing != header:
+            raise ValueError(
+                f"{index_csv} is not a contact-fraction v2 index; "
+                "use a new index path"
+            )
+
     with index_csv.open("a", newline="", encoding="utf-8") as f:
-        w = csv.writer(f)
+        writer = csv.writer(f)
         if new_file:
-            w.writerow([
-                "timestamp", "name", "px_per_mm", "k_max", "delta", "L",
-                "w_pad", "object_type", "object_height_mm", "object_width_mm",
-                "feasible", "contact_L_mm", "contact_R_mm", "total_area_mm2",
-                "mean_fraction", "antipodal", "folder",
-            ])
-        w.writerow([
-            summary["timestamp"], name, p.px_per_mm, p.k_max, p.delta, p.L,
-            p.w_pad, p.object_type,
-            summary["results"]["object_height_mm"],
-            summary["results"]["object_width_mm"], bool(est.feasible),
-            summary["results"]["left"]["contact_mm"],
-            summary["results"]["right"]["contact_mm"],
-            summary["results"]["total_area_mm2"],
-            summary["results"]["mean_fraction"],
-            bool(est.pair.antipodal), folder,
+            writer.writerow(header)
+        results = summary["results"]
+        writer.writerow([
+            SUMMARY_SCHEMA_VERSION,
+            summary["timestamp"],
+            name,
+            params.px_per_mm,
+            params.pad_length_mm,
+            params.minimum_bend_radius_mm,
+            params.side_angle_deg,
+            params.minimum_contact_fraction,
+            results["object_height_mm"],
+            results["object_width_mm"],
+            bool(est.feasible),
+            bool(est.pair.antipodal),
+            results["left"]["contact_length_mm"],
+            results["right"]["contact_length_mm"],
+            results["combined_contact_length_mm"],
+            results["geometric_contact_fraction"],
+            results["contact_floor_applied"],
+            results["combined_contact_fraction"],
+            folder,
         ])
 
 
@@ -142,10 +163,7 @@ def analyze_image(
     session=None,
     index_csv: Path | None = None,
 ) -> tuple[ContactEstimate, dict, dict[str, Path]]:
-    """Full pipeline for one saved image. Returns (estimate, summary, paths).
-
-    ``paths`` maps logical artifact names to files for easy display.
-    """
+    """Extract an outline, estimate contact fraction, and save v2 artifacts."""
     run_dir.mkdir(parents=True, exist_ok=True)
     stem = image_path.stem
 
@@ -154,39 +172,46 @@ def analyze_image(
     if csv_path not in outputs:
         raise RuntimeError(f"extractor did not produce {csv_path}")
 
-    pts_mm = outline_csv_to_mm(csv_path, params.px_per_mm, params.closing_axis)
-
+    pts_mm = outline_csv_to_mm(
+        csv_path, params.px_per_mm, params.closing_axis
+    )
+    estimate_kwargs = {
+        "pad_length_mm": params.pad_length_mm,
+        "side_angle_deg": params.side_angle_deg,
+        "minimum_contact_fraction": params.minimum_contact_fraction,
+        "ds": params.ds,
+        "smoothing_mm": params.smoothing,
+    }
     est = estimate_contact(
-        pts_mm, k_max=params.k_max, delta=params.delta, L=params.L,
-        w_pad=params.w_pad, ds=params.ds, smoothing_mm=params.smoothing,
-        object_type=params.object_type, finger=params.finger,
-        pad_top_anchored=params.pad_top_anchored,
+        pts_mm,
+        minimum_bend_radius_mm=params.minimum_bend_radius_mm,
+        **estimate_kwargs,
     )
 
     fig_path = run_dir / f"{stem}_contact.png"
     plot_estimate(
-        est, fig_path,
-        f"{name}  (k_max={params.k_max}/mm, delta={params.delta} mm, "
-        f"L={params.L} mm, {params.object_type})",
+        est,
+        fig_path,
+        f"{name}  (R_min={params.minimum_bend_radius_mm:g} mm, "
+        f"side tolerance={params.side_angle_deg:g} deg, "
+        f"L={params.pad_length_mm:g} mm)",
     )
 
-    sweep = {}
-    for k in params.sweep_k:
-        e = est if abs(k - params.k_max) < 1e-12 else estimate_contact(
-            pts_mm, k_max=k, delta=params.delta, L=params.L,
-            w_pad=params.w_pad, ds=params.ds, smoothing_mm=params.smoothing,
-            object_type=params.object_type, finger=params.finger,
-            pad_top_anchored=params.pad_top_anchored,
+    sweep: dict[str, float] = {}
+    for radius in params.sweep_radii_mm:
+        candidate = est if abs(radius - params.minimum_bend_radius_mm) < 1e-12 else estimate_contact(
+            pts_mm,
+            minimum_bend_radius_mm=radius,
+            **estimate_kwargs,
         )
-        sweep[f"{k:g}"] = round(e.mean_fraction, 4)
+        sweep[f"{radius:g}"] = round(candidate.combined_contact_fraction, 4)
 
     summary = build_summary(name, image_path.name, est, params, sweep)
-    (run_dir / "summary.json").write_text(
-        json.dumps(summary, indent=2), encoding="utf-8"
-    )
+    summary_path = run_dir / "summary.json"
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
 
     if index_csv is not None:
-        append_index(index_csv, name, est, params, summary, run_dir.name)
+        append_index_v2(index_csv, name, est, params, summary, run_dir.name)
 
     paths = {
         "raw": image_path,
@@ -196,6 +221,6 @@ def analyze_image(
         "spline_csv": csv_path,
         "spline_svg": run_dir / f"{stem}_spline.svg",
         "contact_fig": fig_path,
-        "summary": run_dir / "summary.json",
+        "summary": summary_path,
     }
     return est, summary, paths

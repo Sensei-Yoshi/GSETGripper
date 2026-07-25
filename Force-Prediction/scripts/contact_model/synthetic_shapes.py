@@ -1,9 +1,4 @@
-"""Analytic test shapes (mm, y-up, ~CCW) with closed-form contact truths.
-
-The suite runs at "structure scale" (r_min ~ 10-30 mm) purely for numerical
-resolution; the mathematics is scale-free, so validation here transfers
-directly to the pad-scale defaults (k_max ~ 1-4 /mm) used on real outlines.
-"""
+"""Analytic test shapes in millimetres, y-up and approximately CCW."""
 
 from __future__ import annotations
 
@@ -76,37 +71,3 @@ def pentagon(side: float) -> np.ndarray:
 def add_noise(pts: np.ndarray, sigma: float, seed: int = 0) -> np.ndarray:
     rng = np.random.default_rng(seed)
     return pts + rng.normal(0.0, sigma, pts.shape)
-
-
-# ---------------------------------------------------------------------------
-# Closed-form per-finger contact-length truths (quadratic small-gap forms)
-# ---------------------------------------------------------------------------
-
-
-def truth_circle(R: float, k_max: float, delta: float, L: float) -> float:
-    if 1.0 / R <= k_max:
-        return min(L, np.pi * R)  # fully conformable inside the window
-    dk = 1.0 / R - k_max
-    return min(2.0 * np.sqrt(2.0 * delta / dk), L)
-
-
-def truth_square(
-    side: float, rc: float, k_max: float, delta: float, L: float
-) -> float:
-    flat = side - 2.0 * rc
-    if flat >= L:
-        return L
-    dk = 1.0 / rc - k_max
-    fringe = np.sqrt(2.0 * delta / dk) if dk > 0 else np.pi * rc / 2.0
-    return flat + 2.0 * fringe
-
-
-def truth_waist(
-    notch_r: float, k_max: float, delta: float, L: float
-) -> float:
-    if k_max >= 1.0 / notch_r:
-        return L  # dip fully reachable
-    # semicircular notch joins the wall at 90-degree corners, so the
-    # delta-fringe past each corner is O(delta), not the tangent-continuous
-    # quadratic fringe; ~1 mm covers both fringes plus re-land chatter.
-    return L - np.pi * notch_r + 1.0

@@ -1,162 +1,98 @@
-# contact_model — geometric contact-area estimation for the Fin-Ray gripper
+# contact_model — projected two-pad contact fraction
 
-Standalone mathematical testbed (deliberately **not** wired into the
-Force-Prediction pipeline yet) that estimates the finger–object contact area
-and contact fraction from a 2D object silhouette, for the compliant TPU
-parallel-jaw Fin-Ray gripper.
+Standalone geometric estimator for the TPU Fin-Ray parallel-jaw gripper. It
+uses a calibrated 2D object silhouette to estimate the fraction of the two
+4.2-inch pads covered by contiguous side contact:
+
+```text
+f_geometric = (left_contact_length + right_contact_length) / (2 * 106.68 mm)
+f = max(minimum_contact_fraction, f_geometric)  for an antipodal grasp
+```
+
+The output is a dimensionless macroscopic geometry proxy. It is not physical
+area in mm² and not microscopic Gecko adhesive contact area. Constant pad width
+is assumed to be available wherever longitudinal contact exists, so width
+cancels from the ratio.
+
+This testbed remains separate from the E1–E6 force-prediction experiments.
+For the stable Python fields, JSON/CSV schema, and examples for other code,
+see [`docs/contact-fraction-integration.md`](../../docs/contact-fraction-integration.md).
 
 ## Pipeline
 
-```
-image ──extract_object_outline.py──▶ spline CSV (px)
-      ──run_on_outline.py──▶ contact length / area / fraction + overlay
-```
-
-| file | role |
-|---|---|
-| `extract_object_outline.py` | rembg + periodic spline outline extraction (moved here from `scripts/`) |
-| `contact_geometry.py` | Module 1 — mm scaling, CCW orientation, resampling, spline frames, signed curvature |
-| `grasp_selection.py` | Module 2 — antipodal band pairing, pad window, first-touch anchor |
-| `finger_drape.py` | Modules 3+4 — reachability (convex κ-test + rolling-disk closing test) and the draping walk with max-wrap arcs and δ-gap fringes |
-| `contact_area.py` | Module 5 + orchestration — transverse width `w_eff`, area, contact fraction; public API `estimate_contact(...)` |
-| `synthetic_shapes.py` | analytic shapes with closed-form contact truths |
-| `viz.py` | Module 6 — overlay figure (contact, bridges, wrap arcs, κ profile) |
-| `run_synthetic_tests.py` | accuracy harness + κ_max ranking-stability sweep |
-| `run_on_outline.py` | run on a real extracted outline CSV |
-| `pipeline_core.py` | **shared analysis core** — `ContactParams` + `analyze_image()`: one image file → all artifacts + `summary.json` (+ optional `index.csv`). Used by both the CLI and the Streamlit page so they cannot drift. |
-| `capture_and_analyze.py` | **CLI end-to-end**: camera SPACE-capture (or `--image`) → `analyze_image` → one organized folder per object under `data/real_contact_area/` + a master `index.csv` |
-| `../../app.py` → **"Contact Area" tab** | Streamlit tab (`streamlit run app.py`): captures a frame from the **camera via `cv2.VideoCapture`** (same as `scripts/collect_images.py`; the Orbbec RGB feed enumerates as a normal USB webcam — `pyorbbecsdk`/depth is not used). Selectable camera index + opt-in live preview → enter object name → Capture & Analyze → results into `data/test_contact_area/<name>/` (image = `<name>.png`) + `index.csv`, with the contact figure, overlay, metrics, and `summary.json` shown inline. Full-width transverse model (`object_type="prismatic"`) and closing axis (`x`) are fixed constants in `app.py`, not UI selectors. |
-
-## Algorithm (draping walk)
-
-A point is **reachable** iff (1) κ ≤ κ_max (the pad cannot hug a bulge
-tighter than its minimum bend radius r_min = 1/κ_max) and (2) the external
-disk of radius r_min tangent there contains no other boundary point (the
-rolling-ball / morphological-closing test — catches waists locally *and*
-globally via KD-tree). The two tests are complementary: a rolling external
-disk touches every point of a convex region regardless of curvature, so
-closing alone cannot represent the convex failure case.
-
-Per finger, the pad **anchors** at the extremal-x conformable point in the
-window (the jaw's first touch; a true vertex protruding > `seat_tol` wins,
-as on a pentagon corner), then the walk proceeds outward both ways:
-
-- **contact** while reachable;
-- on failure the finger **departs** on its max-wrap arc (radius r_min,
-  tangent-continuous, curving toward the object);
-- airborne gap `g = r_min − |b − c|` gives tolerance contact for `g ≤ δ`
-  (the Hertz-like fringe falls out of the exact arc geometry) and a
-  **re-landing** when the surface rises back through the arc (`g ≤ 0`).
-
-Transverse width per contact point: `w_eff = min(w_pad, 2√(2 R_t δ))` with
-the corrected axisymmetric transverse radius `R_t = r_parallel / |N_x|`
-(Meusnier; exactly R everywhere on a sphere — the naive `r_parallel` alone
-underestimates off-equator). Prismatic: `R_t = ∞ → w_eff = w_pad`.
-
-**Production decision (2026-07):** the app/pipeline assumes the pad contacts
-its **full width on every object** — i.e. `object_type="prismatic"`,
-`w_eff = w_pad` — so contact fraction reduces to `contact_length / pad_length`
-and `w_pad` only scales the absolute mm² area. Depth-based / axisymmetric
-`R_t` estimation is deliberately not used (kept complexity down; no depth in
-this path). The axisymmetric branch above remains in the library and stays
-covered by the `sphere_R40_area` synthetic test, but is dormant.
-
-**Contact fraction** (per finger) = area / (pad_length × w_pad).
-
-### Pad placement
-
-Three modes, in precedence order (`estimate_contact`):
-
-1. **Drop-depth** (`finger=FingerGeometry`) — band from full finger geometry.
-2. **Top-anchored** (`pad_top_anchored=True`, the **application default** in
-   `ContactParams`) — the pad hangs from the object's highest point: the
-   contact band is the **top `L`** of the object (`[y_top − L, y_top]`) and
-   **everything below is disregarded**, since the finger comes from above and
-   cannot reach or wrap under the base. The drape clamps at `y_top − L`.
-3. **Free** (`pad_top_anchored=False`, no finger) — pad centred on the best
-   antipodal band; used by the synthetic tests and the low-level default.
-
-### Drop-depth model (`FingerGeometry`)
-
-The pad's height band is **not freely placeable** — the gripper descends
-from above. With the table at the silhouette's min-y:
-
-```
-h_tip    = table + max(tip_clearance, object_height + palm_standoff − finger_length)
-pad band = [h_tip + pad_start, h_tip + pad_start + pad_length]
+```text
+RGB image → rembg mask → periodic outline spline → millimetre boundary
+          → top-aligned pad window → side anchors → contiguous contact walk
+          → combined fraction + diagnostic overlay
 ```
 
-Anchors are restricted to the band, walk budgets are the pad material
-above/below the anchor (asymmetric — an anchor at the band edge has zero
-budget on one side), the walk clamps at the fingertip height and when the
-surface normal turns past a pole, and a band entirely above the object is
-reported as an **infeasible grasp (zero contact)**. Enabled by
-`--finger-length` (plus `--pad-start`, `--tip-clearance`,
-`--palm-standoff`); without it the legacy free-placement behaviour is kept
-(pad centred wherever antipodality is best — fine for relative comparisons
-of similar-height objects, wrong for short objects like fruit).
+The CLI and Streamlit Contact Fraction tab both call `pipeline_core.analyze_image`,
+so extraction, estimation, summaries, and v2 indexing share one code path.
 
-## Validation status
+## Physical rules
 
-`run_synthetic_tests.py` — all 22 quantitative checks pass against
-closed-form truths (worst error 1.8 mm on the waist, tol 2.5), including
-four finger drop-depth cases: pad-at-equator (full contact), pad-above-
-equator (contact truncated to the pad above the anchor — the "orange"
-case), object-below-pad (infeasible, zero), and tall-object top grasp
-(palm-limited drop, band clips the waist notch):
+1. The pad window is `[object_top − 106.68 mm, object_top]`.
+2. Left and right anchors are the outwardmost side-facing samples inside that
+   window. Minor spline overshoot within 1 mm falls back to the reachable flat
+   face; a genuinely protruding nonconformable feature still wins.
+3. Both anchors must satisfy the 40° opposed-normal antipodal criterion.
+4. A point is side-facing when
+   `side_sign * N_x >= cos(side_angle_deg)`, with a 30° default.
+5. A point is conformable when positive curvature is at most
+   `1 / minimum_bend_radius` and the exterior rolling disk of that radius does
+   not intersect another part of the boundary.
+6. Contact walks outward from each anchor while pad material, side orientation,
+   and conformability remain. The first failure ends the patch permanently;
+   there is no idealized bridge or re-landing.
+7. Actual boundary-segment lengths are integrated and capped at one pad length,
+   preventing endpoint sampling from producing a fraction above one.
+8. A valid antipodal grasp has a configurable minimum authoritative fraction
+   of 0.05. This represents unresolved TPU seating contact; it does not invent
+   green-path length. Non-antipodal grasps remain zero.
 
-- gentle circle → full-window contact (exact)
-- tight bulge (κ > κ_max) → δ-patch `2√(2δ/(1/R − κ_max))` (+0.09 mm)
-- flat faces → face length + corner fringes (+0.01…0.26 mm)
-- waist notch → bridged, rims contacted (−0.3…−1.8 mm)
-- sphere area with corrected R_t (+0.7 %)
-- noisy outline (σ = 0.05 mm) with smoothing → no false κ-trips (+0.12 mm)
-- pentagon → face vs. vertex grasp; vertex collapses to a ~2.7 mm patch
+## Defaults
 
-κ_max sweep (r_min = 10/20/30 mm): well-separated shapes never change rank;
-near-ties (square vs. waist, Δfraction < 0.03) can swap — that is the
-sweep's job: report ranking gaps, not just orderings.
+| Parameter | Default | Meaning |
+|---|---:|---|
+| `pad_length_mm` | 106.68 | active 4.2-inch pad length |
+| `minimum_bend_radius_mm` | 20 | assembled-finger longitudinal bend limit |
+| `side_angle_deg` | 30 | maximum normal deviation from jaw direction |
+| `minimum_contact_fraction` | 0.05 | assumed seating-contact floor for an antipodal grasp |
+| `ds` | 0.25 mm | boundary resampling target |
+| `smoothing` | 0.2 mm | spline smoothing before curvature differentiation |
+| radius sweep | 10, 20, 30 mm | sensitivity analysis; larger is more conservative |
+
+`px_per_mm` remains mandatory and is valid only while the object-to-camera
+geometry is unchanged.
+
+## Outputs and persistence
+
+Each new run writes the raw/cutout/mask/spline/contact artifacts plus a
+schema-v2 `summary.json`. New master rows go to `index_v2.csv`; the mixed legacy
+`index.csv` and existing summaries are never rewritten. The primary result is
+`combined_contact_fraction`; per-pad lengths and fractions remain diagnostics.
+The summary also preserves `geometric_contact_fraction` and
+`contact_floor_applied`, making the configured floor visible.
+
+## Validation
+
+```bash
+../../env/bin/python -m pytest tests/test_contact_fraction.py
+../../env/bin/python scripts/contact_model/run_synthetic_tests.py
+```
+
+The pytest suite covers analytic rectangles/circles, curvature rejection,
+antipodality, contiguity, resampling stability, and the committed water-bottle
+and 3D-print outlines under `data/test_contact_area/`. Raw-image rembg coverage
+is opt-in with `RUN_CONTACT_IMAGE_INTEGRATION=1` so normal tests stay offline.
 
 ## Usage
 
 ```bash
-VENV=/Users/premshah/Desktop/Robotics/GSET/env/bin/python
-$VENV scripts/contact_model/run_synthetic_tests.py
-$VENV scripts/contact_model/run_on_outline.py \
-    data/MatForce/outline_outputs/plastic_cup_spline_points.csv \
-    --px-per-mm 8.4 --object-type axisymmetric --k-max 2.0 --w-pad 12
+../../env/bin/python scripts/contact_model/run_on_outline.py \
+  data/test_contact_area/water_bottle/water_bottle_spline_points.csv \
+  --px-per-mm 2.1852
 
-# live end-to-end: SPACE = capture, click the edges of a 50 mm fiducial
-$VENV scripts/contact_model/capture_and_analyze.py --ref-width-mm 50 \
-    --object-type axisymmetric
-
-# same pipeline on an existing photo
-$VENV scripts/contact_model/capture_and_analyze.py \
-    --image data/MatForce/plastic_cup.png --px-per-mm 8.0 --no-show
+../../env/bin/python scripts/contact_model/capture_and_analyze.py \
+  --image data/MatForce/plastic_cup.png --px-per-mm 2.1852 --no-show
 ```
-
-## Parameters
-
-| name | default | meaning |
-|---|---|---|
-| `k_max` | 2.0 /mm | max conformable curvature — free parameter, sweep {1, 2, 4} |
-| `delta` | 0.3 mm | gap tolerance ≈ TPU indentation at nominal grip force |
-| `L` | 4.0 mm | pad contact length along the boundary |
-| `w_pad` | from CAD | pad width (out of plane) |
-| `ds` | 0.25 mm | resample step |
-| `smoothing` | 0.2 mm | pre-differentiation smoothing for extracted outlines |
-
-## Caveats (read before trusting numbers)
-
-1. **px_per_mm is not optional.** Every mm parameter is meaningless without
-   a fiducial-derived scale. Photograph a known-width reference in-scene.
-2. **δ is the force proxy.** The whole model is geometry at one implied
-   grip force; output is "projected contact at nominal force", and δ must
-   scale if force does. At pad scale δ/r_min ≈ 0.6 is not small — sweep
-   δ ∈ {0.1, 0.3} alongside κ_max.
-3. **Bridged intervals use the optimistic max-wrap arc**, not beam
-   mechanics; real Fin-Ray inversion can wrap more on convex objects
-   (underestimate) and bow less into dips (overestimate). Relative
-   rankings are the supported use, per the κ_max sweep.
-4. The synthetic suite runs at structure scale (r_min ≈ 20 mm) purely for
-   numerical resolution; the mathematics is scale-free.

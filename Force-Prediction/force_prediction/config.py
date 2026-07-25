@@ -63,6 +63,9 @@ class GeometryConfig(BaseModel):
     pad_height_mm: float = Field(gt=0)
     px_per_mm: float = Field(gt=0)
     pad_length_mm: float = Field(gt=0)
+    minimum_bend_radius_mm: float = Field(gt=0)
+    side_angle_deg: float = Field(gt=0, lt=90)
+    minimum_contact_fraction: float = Field(ge=0, le=1)
 
 
 class RoughnessConfig(BaseModel):

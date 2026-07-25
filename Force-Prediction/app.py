@@ -34,8 +34,8 @@ from force_prediction.expforce import (
 from force_prediction.pipeline import Pipeline, PipelineRunResult, QueryInput
 from force_prediction.retrieval import normalized_weights
 
-# The geometric contact-area model lives outside the package, under scripts/;
-# add it to the path so the Contact-Area tab's lazy imports resolve.
+# The geometric contact-fraction model lives outside the package, under scripts/;
+# add it to the path so the Contact Fraction tab's lazy imports resolve.
 _CONTACT_MODEL_DIR = Path(__file__).resolve().parent / "scripts" / "contact_model"
 if str(_CONTACT_MODEL_DIR) not in sys.path:
     sys.path.insert(0, str(_CONTACT_MODEL_DIR))
@@ -72,14 +72,11 @@ def _load_static() -> tuple[list, dict]:
 
 
 # --------------------------------------------------------------------------- #
-# Contact-Area tab: fixed modeling assumptions.
+# Contact Fraction tab: fixed modeling assumptions.
 # --------------------------------------------------------------------------- #
 TEST_CONTACT_ROOT = Path(__file__).resolve().parent / "data" / "test_contact_area"
-# The pad is assumed to contact its full width on every object (no out-of-plane
-# width reduction), so contact fraction = contact length / pad length. This is
-# the "prismatic" transverse model (w_eff = w_pad). The jaws close along the
-# image x-axis, a fixed property of the camera/gripper mount.
-CONTACT_OBJECT_TYPE = "prismatic"
+# Constant pad width cancels from the projected two-pad contact fraction. The
+# jaws close along the image x-axis, a fixed property of the camera mount.
 CONTACT_CLOSING_AXIS = "x"
 
 
@@ -1112,7 +1109,7 @@ descriptions; that is the job of live Data Preparation.
 
 
 def contact_area_view(cfg: Config) -> None:
-    st.subheader("Contact-Area Capture")
+    st.subheader("Projected Contact-Fraction Capture")
     st.caption(
         "Capture a real object from the camera (the Orbbec's RGB stream shows "
         "up as a normal USB webcam), extract its outline, and estimate the "
@@ -1128,52 +1125,41 @@ def contact_area_view(cfg: Config) -> None:
         help="Camera scale. Default comes from geometry.px_per_mm in "
              "config.yaml; re-measure with scripts/calibrate_scale.py.",
     )
-    k_max = p[1].number_input("k_max (1/mm)", min_value=0.01, value=2.0, step=0.5)
-    delta = p[2].number_input("delta (mm)", min_value=0.0, value=0.3, step=0.1)
+    minimum_bend_radius_mm = p[1].number_input(
+        "minimum bend radius (mm)", min_value=1.0,
+        value=float(cfg.geometry.minimum_bend_radius_mm), step=1.0,
+        help="Smallest longitudinal radius the assembled Fin-Ray finger is "
+             "allowed to follow. Larger values are more conservative.",
+    )
+    side_angle_deg = p[2].number_input(
+        "side-normal tolerance (deg)", min_value=1.0, max_value=89.0,
+        value=float(cfg.geometry.side_angle_deg), step=1.0,
+        help="A surface counts only when its outward normal is this close to "
+             "the horizontal jaw-closing direction.",
+    )
     p[0].caption("default from config.yaml (geometry.px_per_mm)")
 
     with st.expander("Advanced parameters"):
-        a = st.columns(3)
-        L = a[0].number_input(
-            "pad length L (mm)", min_value=0.5,
-            value=float(cfg.geometry.pad_length_mm), step=1.0,
-            help="Vertical extent of the finger pad. Default from "
-                 "geometry.pad_length_mm in config.yaml.")
-        w_pad = a[1].number_input("pad width (mm)", min_value=0.5, value=12.0, step=1.0)
-        sweep_str = a[2].text_input("k_max sweep (logged)", value="1,2,4")
-        use_finger = st.checkbox(
-            "Finger drop-depth model", value=False,
-            help="Default (off): the pad hangs from the object's top — the "
-                 "contact band is the top L of the object and everything below "
-                 "is disregarded (finger approaches from above). On: derive the "
-                 "band from full finger geometry (length, tip clearance, palm "
-                 "standoff) instead.",
+        sweep_str = st.text_input(
+            "bend-radius sweep (mm, logged)", value="10,20,30"
         )
-        finger = None
-        if use_finger:
-            g = st.columns(4)
-            finger = _build_finger_geometry(
-                finger_length=g[0].number_input(
-                    "finger length (mm)", min_value=1.0, value=100.0),
-                pad_length=L,
-                pad_start=g[1].number_input(
-                    "pad start (mm)", min_value=0.0, value=0.0),
-                tip_clearance=g[2].number_input(
-                    "tip clearance (mm)", min_value=0.0, value=2.0),
-                palm_standoff=g[3].number_input(
-                    "palm standoff (mm)", min_value=0.0, value=5.0),
-            )
+        st.caption(
+            f"Pad length is fixed to L={cfg.geometry.pad_length_mm:.2f} mm "
+            "(4.2 inches) from config.yaml. The pad top is aligned to the "
+            "detected object top. Constant pad width cancels from the fraction. "
+            f"Valid antipodal grasps use a minimum contact fraction of "
+            f"{cfg.geometry.minimum_contact_fraction:.3f}."
+        )
 
     st.divider()
     name_in = st.text_input("Object name", placeholder="e.g. water_bottle")
-    controls = st.columns([1, 1, 1, 1])
+    controls = st.columns([1, 1, 1])
     cam_index = int(controls[0].number_input(
         "camera index", min_value=0, value=0, step=1,
         help="Which USB video device to use. The Orbbec RGB feed is often 0 "
              "or 1; change it if the wrong camera appears."))
     live = controls[1].toggle("Live preview", value=False)
     capture = controls[2].button("Capture & Analyze", type="primary")
-    overwrite = controls[3].checkbox("Overwrite if name exists", value=False)
 
     if live:
         @st.fragment(run_every=0.7)
@@ -1200,9 +1186,11 @@ def contact_area_view(cfg: Config) -> None:
 
         name = _slugify(name_in)
         run_dir = TEST_CONTACT_ROOT / name
-        if run_dir.exists() and not overwrite:
-            st.error(f"`{run_dir.name}` already exists. Enable 'Overwrite' or "
-                     "choose another name.")
+        if run_dir.exists():
+            st.error(
+                f"`{run_dir.name}` already exists. Choose a new run name; "
+                "existing captures and summaries are preserved."
+            )
             st.stop()
 
         try:
@@ -1221,18 +1209,24 @@ def contact_area_view(cfg: Config) -> None:
         from pipeline_core import ContactParams, analyze_image
 
         params = ContactParams(
-            px_per_mm=px_per_mm, object_type=CONTACT_OBJECT_TYPE,
-            closing_axis=CONTACT_CLOSING_AXIS, k_max=k_max, delta=delta,
-            L=L, w_pad=w_pad,
-            sweep_k=tuple(float(v) for v in sweep_str.split(",") if v.strip()),
-            finger=finger,
+            px_per_mm=px_per_mm,
+            closing_axis=CONTACT_CLOSING_AXIS,
+            pad_length_mm=float(cfg.geometry.pad_length_mm),
+            minimum_bend_radius_mm=minimum_bend_radius_mm,
+            side_angle_deg=side_angle_deg,
+            minimum_contact_fraction=float(
+                cfg.geometry.minimum_contact_fraction
+            ),
+            sweep_radii_mm=tuple(
+                float(v) for v in sweep_str.split(",") if v.strip()
+            ),
         )
         try:
-            with st.spinner("Extracting outline and computing contact area..."):
+            with st.spinner("Extracting outline and computing contact fraction..."):
                 est, summary, paths = analyze_image(
                     image_path, run_dir, name, params,
                     session=_rembg_session(),
-                    index_csv=TEST_CONTACT_ROOT / "index.csv",
+                    index_csv=TEST_CONTACT_ROOT / "index_v2.csv",
                 )
         except Exception as exc:
             st.exception(exc)
@@ -1250,23 +1244,42 @@ def contact_area_view(cfg: Config) -> None:
         st.markdown(f"**Results — {res['name']}**")
         r = res["summary"]["results"]
 
-        if res["summary"].get("finger") and not res["feasible"]:
-            st.error("Grasp INFEASIBLE: the pad's height band sits above the "
-                     "object top. Reported contact is zero.")
+        if not res["feasible"]:
+            st.error(
+                "No feasible antipodal side-contact patch under the current "
+                "angle and bend-radius limits."
+            )
+        elif r["contact_floor_applied"]:
+            st.info(
+                "The configured minimum-contact floor was applied because "
+                "the resolved continuous green-path fraction was smaller."
+            )
 
         m = st.columns(4)
-        m[0].metric("Mean contact fraction", f"{r['mean_fraction']:.3f}")
-        m[1].metric("Total area", f"{r['total_area_mm2']:.1f} mm2")
-        m[2].metric(
-            "Contact L / R",
-            f"{r['left']['contact_mm']:.1f} / {r['right']['contact_mm']:.1f} mm")
+        m[0].metric(
+            "Combined contact fraction",
+            f"{r['combined_contact_fraction']:.3f}",
+        )
+        m[1].metric(
+            "Geometric contact length",
+            f"{r['combined_contact_length_mm']:.1f} mm",
+        )
+        m[2].metric("Contact L / R", f"{r['left']['contact_length_mm']:.1f} / "
+                    f"{r['right']['contact_length_mm']:.1f} mm")
         m[3].metric("Antipodal grasp", "yes" if r["antipodal_grasp"] else "no")
 
         d = st.columns(4)
         d[0].metric("Object height", f"{r['object_height_mm']:.1f} mm")
         d[1].metric("Object width", f"{r['object_width_mm']:.1f} mm")
-        d[2].metric("Pad length L", f"{res['summary']['params']['L_mm']:.1f} mm")
-        d[3].metric("Perimeter", f"{r['perimeter_mm']:.1f} mm")
+        d[2].metric(
+            "Per-pad fraction L / R",
+            f"{r['left']['contact_fraction']:.3f} / "
+            f"{r['right']['contact_fraction']:.3f}",
+        )
+        d[3].metric(
+            "Pad length L",
+            f"{res['summary']['params']['pad_length_mm']:.1f} mm",
+        )
 
         cols = st.columns(2)
         cols[0].image(res["paths"]["contact_fig"],
@@ -1276,19 +1289,16 @@ def contact_area_view(cfg: Config) -> None:
                       caption="Fitted outline over the capture",
                       use_container_width=True)
 
-        st.caption("k_max sweep (mean fraction): "
-                   f"{res['summary']['k_max_sweep_mean_fraction']}")
+        st.caption(
+            f"Geometric fraction: {r['geometric_contact_fraction']:.4f}; "
+            f"configured minimum: "
+            f"{res['summary']['params']['minimum_contact_fraction']:.4f}. "
+            "Minimum-bend-radius sweep (combined fraction): "
+            f"{res['summary']['bend_radius_sweep_combined_fraction']}"
+        )
         with st.expander("summary.json"):
             st.json(res["summary"])
         st.success(f"Saved to `{res['run_dir']}`")
-
-
-def _build_finger_geometry(**kwargs):
-    """Lazy import keeps rembg/contact_model off the app-startup path."""
-    from contact_area import FingerGeometry
-
-    return FingerGeometry(**kwargs)
-
 
 def main() -> None:
     base_cfg = load_config().model_copy(deep=True)
@@ -1307,7 +1317,7 @@ def main() -> None:
             "Single Run",
             "129-Object Benchmark",
             "Data Viewer",
-            "Contact Area",
+            "Contact Fraction",
             "Data Preparation",
             "Cache Status",
             "Help & Experiments",
