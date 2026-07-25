@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "metric": "projected_two_pad_contact_fraction",
+  "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
+  "name": "plastic_cup",
+  "timestamp": "2026-07-25T16:06:23",
+  "image": "plastic_cup.png",
+  "px_per_mm": 1.9173,
+  "params": {
+    "pad_length_mm": 106.68,
+    "minimum_bend_radius_mm": 20.0,
+    "k_max_per_mm": 0.05,
+    "side_angle_deg": 30.0,
+    "minimum_contact_fraction": 0.05,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "closing_axis": "x",
+    "placement": "pad_top_aligned_to_object_top"
+  },
+  "results": {
+    "object_height_mm": 163.0,
+    "object_width_mm": 59.13,
+    "perimeter_mm": 401.49,
+    "grasp_feasible": true,
+    "antipodal_grasp": true,
+    "left": {
+      "contact_length_mm": 98.882,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.9269
+    },
+    "right": {
+      "contact_length_mm": 97.73,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.9161
+    },
+    "combined_contact_length_mm": 196.612,
+    "geometric_contact_fraction": 0.9215,
+    "contact_floor_applied": false,
+    "combined_contact_fraction": 0.9215
+  },
+  "bend_radius_sweep_combined_fraction": {
+    "10": 0.9305,
+    "20": 0.9215,
+    "30": 0.8951
+  }
+}

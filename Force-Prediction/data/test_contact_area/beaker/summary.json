@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "metric": "projected_two_pad_contact_fraction",
+  "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
+  "name": "beaker",
+  "timestamp": "2026-07-25T16:08:05",
+  "image": "beaker.png",
+  "px_per_mm": 1.9173,
+  "params": {
+    "pad_length_mm": 106.68,
+    "minimum_bend_radius_mm": 20.0,
+    "k_max_per_mm": 0.05,
+    "side_angle_deg": 30.0,
+    "minimum_contact_fraction": 0.05,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "closing_axis": "x",
+    "placement": "pad_top_aligned_to_object_top"
+  },
+  "results": {
+    "object_height_mm": 94.97,
+    "object_width_mm": 56.8,
+    "perimeter_mm": 278.37,
+    "grasp_feasible": true,
+    "antipodal_grasp": true,
+    "left": {
+      "contact_length_mm": 76.001,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.7124
+    },
+    "right": {
+      "contact_length_mm": 70.962,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.6652
+    },
+    "combined_contact_length_mm": 146.963,
+    "geometric_contact_fraction": 0.6888,
+    "contact_floor_applied": false,
+    "combined_contact_fraction": 0.6888
+  },
+  "bend_radius_sweep_combined_fraction": {
+    "10": 0.7544,
+    "20": 0.6888,
+    "30": 0.6418
+  }
+}

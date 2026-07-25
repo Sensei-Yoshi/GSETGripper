@@ -45,7 +45,7 @@ inputs:
 # --- Geometry ----------------------------------------------------------------
 geometry:
   pad_height_mm: 65.0   # h_pad in a = min(1, h_available / h_pad)
-  px_per_mm: 2.1852     # camera scale for the contact-fraction model (see
+  px_per_mm: 1.9173     # camera scale for the contact-fraction model (see
                         # scripts/calibrate_scale.py); valid only while the
                         # object-front-to-camera distance is unchanged
   pad_length_mm: 106.68 # fin-ray finger contact-pad length (4.2 in) = L in

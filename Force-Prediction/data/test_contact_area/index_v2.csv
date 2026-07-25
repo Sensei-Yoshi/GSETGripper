@@ -1,0 +1,17 @@
+schema_version,timestamp,name,px_per_mm,pad_length_mm,minimum_bend_radius_mm,side_angle_deg,minimum_contact_fraction,object_height_mm,object_width_mm,feasible,antipodal,contact_left_mm,contact_right_mm,combined_contact_mm,geometric_contact_fraction,contact_floor_applied,combined_contact_fraction,folder
+2,2026-07-25T15:49:36,waterbottle_cardboard,1.9173,106.68,20.0,30.0,0.05,297.33,83.42,True,True,96.708,97.0,193.708,0.9079,False,0.9079,waterbottle_cardboard
+2,2026-07-25T15:57:12,people_s_hopsital_book,1.9173,106.68,20.0,30.0,0.05,246.99,167.55,True,True,94.75,93.863,188.614,0.884,False,0.884,people_s_hopsital_book
+2,2026-07-25T16:03:07,beaker,1.9173,106.68,20.0,30.0,0.05,94.68,57.48,True,True,77.075,73.965,151.04,0.7079,False,0.7079,beaker
+2,2026-07-25T16:05:05,beaker,1.9173,106.68,20.0,30.0,0.05,94.2,61.59,True,True,78.73,0.0,78.73,0.369,False,0.369,beaker
+2,2026-07-25T16:05:54,plastic_cup,1.9173,106.68,20.0,30.0,0.05,16.95,24.39,True,True,0.0,0.0,0.0,0.0,True,0.05,plastic_cup
+2,2026-07-25T16:06:23,plastic_cup,1.9173,106.68,20.0,30.0,0.05,163.0,59.13,True,True,98.882,97.73,196.612,0.9215,False,0.9215,plastic_cup
+2,2026-07-25T16:08:05,beaker,1.9173,106.68,20.0,30.0,0.05,94.97,56.8,True,True,76.001,70.962,146.963,0.6888,False,0.6888,beaker
+2,2026-07-25T16:10:33,toilet_paper,1.9173,106.68,20.0,30.0,0.05,122.69,126.22,True,True,62.533,60.083,122.616,0.5747,False,0.5747,toilet_paper
+2,2026-07-25T16:12:48,plastic_cup,1.9173,106.68,20.0,30.0,0.05,118.55,69.47,True,True,98.411,96.102,194.513,0.9117,False,0.9117,plastic_cup
+2,2026-07-25T16:15:12,cetaphil,1.9173,106.68,20.0,30.0,0.05,101.24,91.36,True,True,72.522,70.79,143.311,0.6717,False,0.6717,cetaphil
+2,2026-07-25T16:18:32,leather_wallet,1.9173,106.68,20.0,30.0,0.05,117.71,29.39,True,True,100.337,95.053,195.39,0.9158,False,0.9158,leather_wallet
+2,2026-07-25T16:22:55,deodorant,1.9173,106.68,20.0,30.0,0.05,181.55,154.33,True,True,92.646,98.282,190.928,0.8949,False,0.8949,deodorant
+2,2026-07-25T16:25:59,Deodorant_2,1.9173,106.68,20.0,30.0,0.05,298.03,330.84,False,False,0.0,0.0,0.0,0.0,False,0.0,Deodorant_2
+2,2026-07-25T16:26:43,Deodorant_2,1.9173,106.68,20.0,30.0,0.05,116.11,42.12,True,True,97.484,93.48,190.964,0.895,False,0.895,Deodorant_2
+2,2026-07-25T16:28:14,sparkling_water,1.9173,106.68,20.0,30.0,0.05,125.07,66.63,True,True,97.984,98.354,196.338,0.9202,False,0.9202,sparkling_water
+2,2026-07-25T16:29:47,airpods,1.9173,106.68,20.0,30.0,0.05,263.64,89.54,True,True,0.0,0.0,0.0,0.0,True,0.05,airpods

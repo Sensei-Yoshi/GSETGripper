@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "metric": "projected_two_pad_contact_fraction",
+  "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
+  "name": "sparkling_water",
+  "timestamp": "2026-07-25T16:28:14",
+  "image": "sparkling_water.png",
+  "px_per_mm": 1.9173,
+  "params": {
+    "pad_length_mm": 106.68,
+    "minimum_bend_radius_mm": 20.0,
+    "k_max_per_mm": 0.05,
+    "side_angle_deg": 30.0,
+    "minimum_contact_fraction": 0.05,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "closing_axis": "x",
+    "placement": "pad_top_aligned_to_object_top"
+  },
+  "results": {
+    "object_height_mm": 125.07,
+    "object_width_mm": 66.63,
+    "perimeter_mm": 343.57,
+    "grasp_feasible": true,
+    "antipodal_grasp": true,
+    "left": {
+      "contact_length_mm": 97.984,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.9185
+    },
+    "right": {
+      "contact_length_mm": 98.354,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.922
+    },
+    "combined_contact_length_mm": 196.338,
+    "geometric_contact_fraction": 0.9202,
+    "contact_floor_applied": false,
+    "combined_contact_fraction": 0.9202
+  },
+  "bend_radius_sweep_combined_fraction": {
+    "10": 0.9225,
+    "20": 0.9202,
+    "30": 0.8854
+  }
+}
