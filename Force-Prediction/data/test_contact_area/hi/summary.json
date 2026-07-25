@@ -1,0 +1,40 @@
+{
+  "name": "hi",
+  "timestamp": "2026-07-24T21:09:58",
+  "image": "hi.png",
+  "px_per_mm": 8.0,
+  "params": {
+    "k_max_per_mm": 2.0,
+    "delta_mm": 0.3,
+    "L_mm": 4.0,
+    "w_pad_mm": 12.0,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "object_type": "prismatic",
+    "closing_axis": "x"
+  },
+  "finger": null,
+  "results": {
+    "perimeter_mm": 172.46,
+    "antipodal_grasp": true,
+    "left": {
+      "contact_mm": 3.539,
+      "window_mm": 4.011,
+      "area_mm2": 42.467,
+      "fraction": 0.8824
+    },
+    "right": {
+      "contact_mm": 4.011,
+      "window_mm": 4.011,
+      "area_mm2": 48.13,
+      "fraction": 1.0
+    },
+    "total_area_mm2": 90.597,
+    "mean_fraction": 0.9412
+  },
+  "k_max_sweep_mean_fraction": {
+    "1": 0.9706,
+    "2": 0.9412,
+    "4": 1.0
+  }
+}

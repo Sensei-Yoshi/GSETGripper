@@ -13,9 +13,7 @@ prediction, calibrated analytical physics, and physics-residual learning.
 
 - Repository: `/Users/premshah/Desktop/Robotics/GSET/GSETGripper/Force-Prediction`
 - Python environment: `/Users/premshah/Desktop/Robotics/GSET/env`
-- API credentials: local `.env` or `GEMINI_API_KEY`/`GOOGLE_API_KEY`; never persist them.
-- The repository is on an iCloud-synced Desktop. If a file unexpectedly appears empty or
-  reverts, re-materialize it and verify the working tree before editing.
+- API credentials: local `.env` or `GEMINI_API_KEY`; never persist them.
 
 ## Architecture
 

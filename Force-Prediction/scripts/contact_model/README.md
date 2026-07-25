@@ -25,7 +25,7 @@ image ──extract_object_outline.py──▶ spline CSV (px)
 | `run_on_outline.py` | run on a real extracted outline CSV |
 | `pipeline_core.py` | **shared analysis core** — `ContactParams` + `analyze_image()`: one image file → all artifacts + `summary.json` (+ optional `index.csv`). Used by both the CLI and the Streamlit page so they cannot drift. |
 | `capture_and_analyze.py` | **CLI end-to-end**: camera SPACE-capture (or `--image`) → `analyze_image` → one organized folder per object under `data/real_contact_area/` + a master `index.csv` |
-| `../../pages/1_Contact_Area_Test.py` | **Streamlit page** (sidebar of `streamlit run app.py`): live `st.camera_input` feed → Take Photo → enter object name → Save & Analyze → results into `data/test_contact_area/<name>/` (image = `<name>.png`) + `index.csv`, with the contact figure, overlay, metrics, and `summary.json` shown inline |
+| `../../app.py` → **"Contact Area" tab** | Streamlit tab (`streamlit run app.py`): captures a frame from the **camera via `cv2.VideoCapture`** (same as `scripts/collect_images.py`; the Orbbec RGB feed enumerates as a normal USB webcam — `pyorbbecsdk`/depth is not used). Selectable camera index + opt-in live preview → enter object name → Capture & Analyze → results into `data/test_contact_area/<name>/` (image = `<name>.png`) + `index.csv`, with the contact figure, overlay, metrics, and `summary.json` shown inline. Full-width transverse model (`object_type="prismatic"`) and closing axis (`x`) are fixed constants in `app.py`, not UI selectors. |
 
 ## Algorithm (draping walk)
 
@@ -52,6 +52,14 @@ Transverse width per contact point: `w_eff = min(w_pad, 2√(2 R_t δ))` with
 the corrected axisymmetric transverse radius `R_t = r_parallel / |N_x|`
 (Meusnier; exactly R everywhere on a sphere — the naive `r_parallel` alone
 underestimates off-equator). Prismatic: `R_t = ∞ → w_eff = w_pad`.
+
+**Production decision (2026-07):** the app/pipeline assumes the pad contacts
+its **full width on every object** — i.e. `object_type="prismatic"`,
+`w_eff = w_pad` — so contact fraction reduces to `contact_length / pad_length`
+and `w_pad` only scales the absolute mm² area. Depth-based / axisymmetric
+`R_t` estimation is deliberately not used (kept complexity down; no depth in
+this path). The axisymmetric branch above remains in the library and stays
+covered by the `sphere_R40_area` synthetic test, but is dormant.
 
 **Contact fraction** (per finger) = area / (pad_length × w_pad).
 

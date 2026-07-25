@@ -49,6 +49,39 @@ include borderline objects** where the two grippers should be close in force
 Realistic sprint target: aim for ~130 objects × 2 grippers; if throughput slips,
 60–100 objects × 2 with good coverage still supports the study.
 
+## Image capture
+
+Object images are captured with the **Orbbec camera's RGB stream**, which the
+OS exposes as a **standard USB (UVC) webcam** — so it is read with
+`cv2.VideoCapture`, *not* `pyorbbecsdk`. The SDK is only needed for the depth
+stream, which the current pipeline does not use; do **not** install or import
+`pyorbbecsdk` for image collection. If a camera call ever fails with
+`No module named 'pyorbbecsdk'`, something is wrongly going through the depth
+path (`force_prediction.hardware.OrbbecCamera`) instead of `cv2.VideoCapture`.
+
+Two capture tools, both `cv2.VideoCapture` based:
+
+1. **Bulk dataset images** — `scripts/collect_images.py`
+   ```bash
+   VENV=/Users/premshah/Desktop/Robotics/GSET/env/bin/python
+   $VENV scripts/collect_images.py                 # camera 0 -> data/real_chosen_objects/
+   $VENV scripts/collect_images.py --camera 1 --width 1920 --height 1080
+   ```
+   Live OpenCV window: **SPACE** saves `image_NNNN.png`, **q/ESC** quits.
+   Use the `--camera` index to pick the Orbbec feed if it is not device 0.
+
+2. **Contact-area test capture** — the **"Contact Area"** tab in
+   `streamlit run app.py`. Live preview + Capture, with a **camera index**
+   selector (try 0/1 to find the Orbbec RGB feed). Each capture runs the
+   geometric contact model and writes `data/test_contact_area/<name>/` (image
+   named `<name>.png`, plus outline overlay, CSV, contact figure, and
+   `summary.json`). See `scripts/contact_model/README.md`.
+
+Capture tips: object alone on a plain background (background removal keeps the
+largest foreground blob — keep the gripper and clutter out of frame), jaws
+closing along the image **x**-axis, and include a known-width fiducial in the
+scene if you need real millimetre scale (`px per mm`) for the contact model.
+
 ## Dataset format (`data/experiences.jsonl`, one row per object-gripper)
 ```json
 {"object_id": "object_001", "image_path": "data/images/object_001.png",

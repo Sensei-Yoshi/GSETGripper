@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 import json
+import re
+import sys
+from pathlib import Path
 
 import cv2
 import numpy as np
@@ -30,6 +33,12 @@ from force_prediction.expforce import (
 )
 from force_prediction.pipeline import Pipeline, PipelineRunResult, QueryInput
 from force_prediction.retrieval import normalized_weights
+
+# The geometric contact-area model lives outside the package, under scripts/;
+# add it to the path so the Contact-Area tab's lazy imports resolve.
+_CONTACT_MODEL_DIR = Path(__file__).resolve().parent / "scripts" / "contact_model"
+if str(_CONTACT_MODEL_DIR) not in sys.path:
+    sys.path.insert(0, str(_CONTACT_MODEL_DIR))
 
 st.set_page_config(page_title="Force Pipeline Lab", page_icon="FP", layout="wide")
 
@@ -60,6 +69,55 @@ def _load_static() -> tuple[list, dict]:
     cfg = load_config().model_copy(deep=True)
     rows = load_rows(cfg)
     return rows, validation_summary(cfg, rows)
+
+
+# --------------------------------------------------------------------------- #
+# Contact-Area tab: fixed modeling assumptions.
+# --------------------------------------------------------------------------- #
+TEST_CONTACT_ROOT = Path(__file__).resolve().parent / "data" / "test_contact_area"
+# The pad is assumed to contact its full width on every object (no out-of-plane
+# width reduction), so contact fraction = contact length / pad length. This is
+# the "prismatic" transverse model (w_eff = w_pad). The jaws close along the
+# image x-axis, a fixed property of the camera/gripper mount.
+CONTACT_OBJECT_TYPE = "prismatic"
+CONTACT_CLOSING_AXIS = "x"
+
+
+@st.cache_resource(show_spinner="Loading background-removal model...")
+def _rembg_session():
+    """Load the rembg model once per Streamlit process."""
+    import extract_object_outline as outline_mod
+    from rembg import new_session
+
+    return new_session(outline_mod.REMBG_MODEL)
+
+
+@st.cache_resource(show_spinner="Opening camera...")
+def _video_capture(index: int, width: int, height: int):
+    """Open the camera once and keep it open across reruns.
+
+    The Orbbec's RGB stream enumerates as a standard USB (UVC) video device,
+    so it is opened with cv2.VideoCapture exactly like scripts/collect_images.py
+    (pyorbbecsdk is only needed for depth, which this pipeline does not use).
+    """
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "scripts"))
+    from collect_images import open_camera
+
+    return open_camera(index, width, height)
+
+
+def _read_camera_frame(index: int, width: int = 1280, height: int = 720) -> np.ndarray:
+    """Grab one BGR frame from the cached capture device."""
+    cap = _video_capture(int(index), width, height)
+    ok, frame = cap.read()
+    if not ok or frame is None:
+        raise RuntimeError(f"camera index {index} returned no frame")
+    return frame
+
+
+def _slugify(name: str) -> str:
+    slug = re.sub(r"[^A-Za-z0-9._-]+", "_", name.strip()).strip("._-")
+    return slug or "object"
 
 
 def _run_config(
@@ -1051,6 +1109,171 @@ descriptions; that is the job of live Data Preparation.
     )
 
 
+def contact_area_view(cfg: Config) -> None:
+    st.subheader("Contact-Area Capture")
+    st.caption(
+        "Capture a real object from the camera (the Orbbec's RGB stream shows "
+        "up as a normal USB webcam), extract its outline, and estimate the "
+        "finger-contact fraction. Each capture is saved under "
+        "`data/test_contact_area/<name>/` with the image named `<name>.png`. "
+        "If the wrong feed appears, change the camera index below."
+    )
+
+    p = st.columns(3)
+    px_per_mm = p[0].number_input(
+        "px per mm (required)", min_value=0.0, value=8.0, step=0.1,
+        help="From a known-width fiducial in the scene. Every mm-valued "
+             "parameter is meaningless without a real scale.",
+    )
+    k_max = p[1].number_input("k_max (1/mm)", min_value=0.01, value=2.0, step=0.5)
+    delta = p[2].number_input("delta (mm)", min_value=0.0, value=0.3, step=0.1)
+
+    with st.expander("Advanced parameters"):
+        a = st.columns(3)
+        L = a[0].number_input("pad length L (mm)", min_value=0.5, value=4.0, step=0.5)
+        w_pad = a[1].number_input("pad width (mm)", min_value=0.5, value=12.0, step=1.0)
+        sweep_str = a[2].text_input("k_max sweep (logged)", value="1,2,4")
+        use_finger = st.checkbox(
+            "Finger drop-depth model", value=False,
+            help="Constrain the pad's height band by finger geometry instead "
+                 "of free placement. Needed for short objects (fruit) whose "
+                 "pad cannot reach the equator.",
+        )
+        finger = None
+        if use_finger:
+            g = st.columns(4)
+            finger = _build_finger_geometry(
+                finger_length=g[0].number_input(
+                    "finger length (mm)", min_value=1.0, value=100.0),
+                pad_length=L,
+                pad_start=g[1].number_input(
+                    "pad start (mm)", min_value=0.0, value=0.0),
+                tip_clearance=g[2].number_input(
+                    "tip clearance (mm)", min_value=0.0, value=2.0),
+                palm_standoff=g[3].number_input(
+                    "palm standoff (mm)", min_value=0.0, value=5.0),
+            )
+
+    st.divider()
+    name_in = st.text_input("Object name", placeholder="e.g. water_bottle")
+    controls = st.columns([1, 1, 1, 1])
+    cam_index = int(controls[0].number_input(
+        "camera index", min_value=0, value=0, step=1,
+        help="Which USB video device to use. The Orbbec RGB feed is often 0 "
+             "or 1; change it if the wrong camera appears."))
+    live = controls[1].toggle("Live preview", value=False)
+    capture = controls[2].button("Capture & Analyze", type="primary")
+    overwrite = controls[3].checkbox("Overwrite if name exists", value=False)
+
+    if live:
+        @st.fragment(run_every=0.7)
+        def _preview() -> None:
+            try:
+                frame = _read_camera_frame(cam_index)
+            except Exception as exc:  # device busy or wrong index
+                st.warning(f"Camera preview unavailable: {exc}")
+                return
+            st.image(
+                cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), channels="RGB",
+                use_container_width=True, caption="Live preview",
+            )
+
+        _preview()
+
+    if capture:
+        if not name_in.strip():
+            st.warning("Enter an object name.")
+            st.stop()
+        if px_per_mm <= 0:
+            st.warning("Set a real px-per-mm scale.")
+            st.stop()
+
+        name = _slugify(name_in)
+        run_dir = TEST_CONTACT_ROOT / name
+        if run_dir.exists() and not overwrite:
+            st.error(f"`{run_dir.name}` already exists. Enable 'Overwrite' or "
+                     "choose another name.")
+            st.stop()
+
+        try:
+            frame = _read_camera_frame(cam_index)
+        except Exception as exc:
+            st.error("Could not read a frame from the camera. Check the USB "
+                     "connection, that no other process holds it, and that the "
+                     "camera index is correct.")
+            st.exception(exc)
+            st.stop()
+
+        run_dir.mkdir(parents=True, exist_ok=True)
+        image_path = run_dir / f"{name}.png"
+        cv2.imwrite(str(image_path), frame)
+
+        from pipeline_core import ContactParams, analyze_image
+
+        params = ContactParams(
+            px_per_mm=px_per_mm, object_type=CONTACT_OBJECT_TYPE,
+            closing_axis=CONTACT_CLOSING_AXIS, k_max=k_max, delta=delta,
+            L=L, w_pad=w_pad,
+            sweep_k=tuple(float(v) for v in sweep_str.split(",") if v.strip()),
+            finger=finger,
+        )
+        try:
+            with st.spinner("Extracting outline and computing contact area..."):
+                est, summary, paths = analyze_image(
+                    image_path, run_dir, name, params,
+                    session=_rembg_session(),
+                    index_csv=TEST_CONTACT_ROOT / "index.csv",
+                )
+        except Exception as exc:
+            st.exception(exc)
+            st.stop()
+
+        st.session_state["contact_last"] = {
+            "name": name, "run_dir": str(run_dir), "summary": summary,
+            "paths": {k: str(v) for k, v in paths.items()},
+            "feasible": bool(est.feasible),
+        }
+
+    res = st.session_state.get("contact_last")
+    if res:
+        st.divider()
+        st.markdown(f"**Results — {res['name']}**")
+        r = res["summary"]["results"]
+
+        if res["summary"].get("finger") and not res["feasible"]:
+            st.error("Grasp INFEASIBLE: the pad's height band sits above the "
+                     "object top. Reported contact is zero.")
+
+        m = st.columns(4)
+        m[0].metric("Mean contact fraction", f"{r['mean_fraction']:.3f}")
+        m[1].metric("Total area", f"{r['total_area_mm2']:.1f} mm2")
+        m[2].metric(
+            "Contact L / R",
+            f"{r['left']['contact_mm']:.1f} / {r['right']['contact_mm']:.1f} mm")
+        m[3].metric("Antipodal grasp", "yes" if r["antipodal_grasp"] else "no")
+
+        cols = st.columns(2)
+        cols[0].image(res["paths"]["contact_fig"],
+                      caption="Contact model (numbers at top)",
+                      use_container_width=True)
+        cols[1].image(res["paths"]["spline_overlay"],
+                      caption="Fitted outline over the capture",
+                      use_container_width=True)
+
+        st.caption("k_max sweep (mean fraction): "
+                   f"{res['summary']['k_max_sweep_mean_fraction']}")
+        with st.expander("summary.json"):
+            st.json(res["summary"])
+        st.success(f"Saved to `{res['run_dir']}`")
+
+
+def _build_finger_geometry(**kwargs):
+    """Lazy import keeps rembg/contact_model off the app-startup path."""
+    from contact_area import FingerGeometry
+
+    return FingerGeometry(**kwargs)
+
+
 def main() -> None:
     base_cfg = load_config().model_copy(deep=True)
     rows, summary = _load_static()
@@ -1060,11 +1283,15 @@ def main() -> None:
         'These results test software behavior and model integration, not physical gripper performance.</div>',
         unsafe_allow_html=True,
     )
-    single_tab, benchmark_tab, viewer_tab, preparation_tab, cache_tab, help_tab = st.tabs(
+    (
+        single_tab, benchmark_tab, viewer_tab, contact_tab, preparation_tab,
+        cache_tab, help_tab,
+    ) = st.tabs(
         [
             "Single Run",
             "129-Object Benchmark",
             "Data Viewer",
+            "Contact Area",
             "Data Preparation",
             "Cache Status",
             "Help & Experiments",
@@ -1076,6 +1303,8 @@ def main() -> None:
         benchmark_view(base_cfg)
     with viewer_tab:
         data_viewer(base_cfg, rows)
+    with contact_tab:
+        contact_area_view(base_cfg)
     with preparation_tab:
         preparation_view(base_cfg, summary)
     with cache_tab:
