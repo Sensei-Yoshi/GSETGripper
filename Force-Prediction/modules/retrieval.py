@@ -1,6 +1,7 @@
-"""Paired-object retrieval over semantics and measured object properties.
+"""Paired-object retrieval over semantics and optional measured properties.
 
-E4 ranks each object once and returns both gripper labels for every neighbor.
+E3 ranks by semantic cosine only; E4 uses the configured hybrid score. Both return
+the paired gripper labels for every neighbor.
 Exact search is appropriate for this dataset (<1k objects), so no vector database
 is required. The hybrid score is only a neighbor-ranking heuristic: it never
 evaluates the E5 holding-force equations and never produces a force prediction.
@@ -10,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import math
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 import numpy as np
@@ -22,7 +24,7 @@ from .contracts import (
     Query,
     group_by_object,
 )
-from .llm import get_client
+from .models.gemini import get_client
 
 
 # --------------------------------------------------------------------------- #
@@ -137,15 +139,21 @@ def normalized_weights(cfg: Config) -> dict[str, float]:
 # --------------------------------------------------------------------------- #
 # Retrieved experience (payload-ready)
 # --------------------------------------------------------------------------- #
+class RetrievalMode(StrEnum):
+    SEMANTIC_ONLY = "semantic_only"
+    HYBRID = "hybrid"
+
+
 class SimilarityBreakdown(BaseModel):
+    mode: RetrievalMode = RetrievalMode.HYBRID
     semantic: float = Field(ge=-1.0, le=1.0)
-    mass: float = Field(ge=0.0, le=1.0)
-    roughness: float = Field(ge=0.0, le=1.0)
-    contact: float = Field(ge=0.0, le=1.0)
+    mass: float | None = Field(default=None, ge=0.0, le=1.0)
+    roughness: float | None = Field(default=None, ge=0.0, le=1.0)
+    contact: float | None = Field(default=None, ge=0.0, le=1.0)
     semantic_contribution: float
-    mass_contribution: float
-    roughness_contribution: float
-    contact_contribution: float
+    mass_contribution: float | None = None
+    roughness_contribution: float | None = None
+    contact_contribution: float | None = None
     total: float
 
 
@@ -153,10 +161,10 @@ class RetrievedObjectExperience(BaseModel):
     """One object-level neighbor with its paired gecko and silicone labels."""
 
     object_id: str
-    image_path: str
-    mass_g: float
-    roughness_class: int
-    projected_contact_fraction: float
+    image_path: str = ""
+    mass_g: float | None = None
+    roughness_class: int | None = None
+    projected_contact_fraction: float | None = None
     semantic_description: str
     gecko_min_force_n: float | None = None
     gecko_feasible: bool | None = None
@@ -166,7 +174,24 @@ class RetrievedObjectExperience(BaseModel):
     rank: int = 0
     similarity: SimilarityBreakdown
 
-    def to_payload(self, *, include_contact: bool = True) -> dict:
+    def to_payload(
+        self,
+        *,
+        mode: RetrievalMode = RetrievalMode.HYBRID,
+        include_contact: bool = True,
+    ) -> dict:
+        if mode is RetrievalMode.SEMANTIC_ONLY:
+            return {
+                "rank": self.rank,
+                "object_id": self.object_id,
+                "semantic_description": self.semantic_description,
+                "semantic_similarity": self.similarity.semantic,
+                "score": self.score,
+                "gecko_min_force_n": self.gecko_min_force_n,
+                "gecko_feasible": self.gecko_feasible,
+                "silicone_min_force_n": self.silicone_min_force_n,
+                "silicone_feasible": self.silicone_feasible,
+            }
         excluded = {"image_path"}
         if not include_contact:
             excluded.add("projected_contact_fraction")
@@ -207,9 +232,17 @@ class ExperienceIndex:
         query_vec: np.ndarray,
         rec: ExperienceRecord,
         reference_vec: np.ndarray,
+        mode: RetrievalMode,
     ) -> SimilarityBreakdown:
-        w = normalized_weights(self.cfg)
         semantic = cosine(query_vec, reference_vec)
+        if mode is RetrievalMode.SEMANTIC_ONLY:
+            return SimilarityBreakdown(
+                mode=mode,
+                semantic=semantic,
+                semantic_contribution=semantic,
+                total=semantic,
+            )
+        w = normalized_weights(self.cfg)
         mass = s_mass(query.mass_g, rec.mass_g, self.cfg.retrieval.sigma_mass)
         roughness = s_roughness(query.roughness_class, rec.roughness_class, self.cfg)
         contact = s_contact(
@@ -218,6 +251,7 @@ class ExperienceIndex:
             self.cfg.retrieval.sigma_contact,
         )
         return SimilarityBreakdown(
+            mode=mode,
             semantic=semantic,
             mass=mass,
             roughness=roughness,
@@ -247,6 +281,7 @@ class ExperienceIndex:
         query_vec: np.ndarray,
         k: int | None = None,
         exclude_object_id: str | None = None,
+        mode: RetrievalMode = RetrievalMode.HYBRID,
     ) -> list[RetrievedObjectExperience]:
         """Rank each object once and expose both gripper outcomes in one result."""
         k = k or self.cfg.retrieval.k
@@ -258,15 +293,21 @@ class ExperienceIndex:
             if rec is None:
                 continue
             breakdown = self._score(
-                query, query_vec, rec, self.object_vectors[object_id]
+                query, query_vec, rec, self.object_vectors[object_id], mode
             )
             scored.append(
                 RetrievedObjectExperience(
                     object_id=object_id,
-                    image_path=rec.image_path,
-                    mass_g=rec.mass_g,
-                    roughness_class=rec.roughness_class,
-                    projected_contact_fraction=rec.projected_contact_fraction,
+                    image_path=rec.image_path if mode is RetrievalMode.HYBRID else "",
+                    mass_g=rec.mass_g if mode is RetrievalMode.HYBRID else None,
+                    roughness_class=(
+                        rec.roughness_class if mode is RetrievalMode.HYBRID else None
+                    ),
+                    projected_contact_fraction=(
+                        rec.projected_contact_fraction
+                        if mode is RetrievalMode.HYBRID
+                        else None
+                    ),
                     semantic_description=rec.semantic_description,
                     gecko_min_force_n=obj.gecko.min_force_n if obj.gecko else None,
                     gecko_feasible=obj.gecko.feasible if obj.gecko else None,

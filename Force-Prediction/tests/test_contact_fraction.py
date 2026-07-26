@@ -47,10 +47,7 @@ def _line(start, end, count: int = 600) -> np.ndarray:
 
 
 def _load_fixture_outline(name: str) -> np.ndarray:
-    csv_path = (
-        ROOT / "data" / "test_contact_area" / name
-        / f"{name}_spline_points.csv"
-    )
+    csv_path = CONTACT_MODEL / "test_contact_area" / name / f"{name}_spline_points.csv"
     with csv_path.open() as file:
         reader = csv.reader(file)
         next(reader)
@@ -252,10 +249,7 @@ def test_v2_summary_and_index_exclude_pad_width_and_area(tmp_path: Path):
 def test_saved_raw_image_end_to_end(tmp_path: Path):
     from pipeline_core import ContactParams, analyze_image
 
-    image = (
-        ROOT / "data" / "test_contact_area" / "water_bottle"
-        / "water_bottle.png"
-    )
+    image = CONTACT_MODEL / "test_contact_area" / "water_bottle" / "water_bottle.png"
     params = ContactParams(px_per_mm=2.1852)
     estimate, summary, paths = analyze_image(
         image, tmp_path, "water_bottle", params

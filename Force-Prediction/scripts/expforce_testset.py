@@ -26,8 +26,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import (  # noqa: E402
+from modules.config import load_config  # noqa: E402
+from modules.contracts import (  # noqa: E402
     ExperienceRecord,
     Gripper,
     Meta,
@@ -35,10 +35,10 @@ from force_prediction.contracts import (  # noqa: E402
     load_experiences,
     save_experiences,
 )
-from force_prediction.evaluation import _force_stats, make_folds  # noqa: E402
-from force_prediction.perception import describe  # noqa: E402
-from force_prediction.prediction import vlm_predict_joint  # noqa: E402
-from force_prediction.retrieval import ExperienceIndex  # noqa: E402
+from modules.evaluation import _force_stats, make_folds  # noqa: E402
+from modules.perception import describe  # noqa: E402
+from modules.prediction import vlm_predict_joint  # noqa: E402
+from modules.retrieval import ExperienceIndex  # noqa: E402
 
 BASE = "https://raw.githubusercontent.com/expforcesubmission/Exp-Force-Website/main"
 

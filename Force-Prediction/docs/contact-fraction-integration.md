@@ -57,7 +57,8 @@ plane.
 - the returned boundary is normalized to counter-clockwise order.
 
 The contact-model files are scripts rather than an installed Python package,
-so callers outside that directory must add it to `sys.path`, as `app.py` does:
+so callers outside that directory must add it to `sys.path`, as
+`streamlit_app/tabs/contact_fraction.py` does:
 
 ```python
 from pathlib import Path

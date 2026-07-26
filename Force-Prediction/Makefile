@@ -6,17 +6,17 @@ setup:
 	$(PY) -m pip install -e ".[dev]"
 
 lint:
-	ruff check force_prediction scripts tests
+	ruff check modules scripts tests
 
 typecheck:
-	mypy force_prediction
+	mypy modules
 
 test:
 	pytest
 
 # Generate a synthetic dataset on the mock bench (no hardware, no API).
 collect:
-	$(PY) -m force_prediction.collect --mock --n 40
+	$(PY) -m modules.collect --mock --n 40
 
 # Run the paired-retrieval VLM method (E4) offline. Use E=e5 for calibrated physics.
 E ?= e4

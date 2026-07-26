@@ -18,16 +18,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.config import EXPERIMENT_IDS, load_config  # noqa: E402
-from force_prediction.contracts import group_by_object, load_experiences  # noqa: E402
-from force_prediction.evaluation import (  # noqa: E402
+from modules.config import EXPERIMENT_IDS, load_config  # noqa: E402
+from modules.contracts import group_by_object, load_experiences  # noqa: E402
+from modules.evaluation import (  # noqa: E402
     EvalRow,
     compute_metrics,
     freeze_splits,
     load_splits,
     make_folds,
 )
-from force_prediction.pipeline import Pipeline, query_input_from_object  # noqa: E402
+from modules.pipeline import Pipeline, query_input_from_object  # noqa: E402
 
 
 def get_or_make_splits(records, cfg, refresh: bool):
@@ -75,7 +75,7 @@ def main() -> int:
         cfg.models.dry_run = True
     records = load_experiences(cfg.path("experiences"))
     if not records:
-        print("No experiences found. Run: python -m force_prediction.collect --mock --n 40")
+        print("No experiences found. Run: python -m modules.collect --mock --n 40")
         return 1
     folds = get_or_make_splits(records, cfg, args.refresh_splits)
     names = EXPERIMENT_IDS if args.all else [args.exp]

@@ -2,9 +2,9 @@ from __future__ import annotations
 
 import numpy as np
 
-from force_prediction.config import load_config
-from force_prediction.contracts import Gripper, JointGripperPrediction, PerGripperPrediction
-from force_prediction.llm import GeminiClient
+from modules.config import load_config
+from modules.contracts import Gripper, JointGripperPrediction, PerGripperPrediction
+from modules.models.gemini import GeminiClient
 
 
 class CountingClient(GeminiClient):

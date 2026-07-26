@@ -22,19 +22,19 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.llm import get_client, load_dotenv  # noqa: E402
+from modules.models.gemini import get_client, load_dotenv  # noqa: E402
 
 load_dotenv()  # so both pytest's skipif and direct runs see the .env key
 
 import pytest  # noqa: E402
 
-from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import (  # noqa: E402
+from modules.config import load_config  # noqa: E402
+from modules.contracts import (  # noqa: E402
     JointGripperPrediction,
     Query,
 )
-from force_prediction.perception import describe  # noqa: E402
-from force_prediction.prediction import vlm_predict_joint  # noqa: E402
+from modules.perception import describe  # noqa: E402
+from modules.prediction import vlm_predict_joint  # noqa: E402
 
 DEFAULT_IMAGE = (
     "/Users/premshah/Desktop/Robotics/Other/Research/waymo_subset/"

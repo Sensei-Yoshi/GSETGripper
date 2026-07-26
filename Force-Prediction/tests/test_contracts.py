@@ -3,13 +3,13 @@ from __future__ import annotations
 import pytest
 from pydantic import ValidationError
 
-from force_prediction.config import load_config
-from force_prediction.contracts import (
+from modules.config import load_config
+from modules.contracts import (
     ExperienceRecord,
     Gripper,
     group_by_object,
 )
-from force_prediction.hardware import (
+from modules.hardware import (
     CameraSource,
     GripperController,
     LoadCell,

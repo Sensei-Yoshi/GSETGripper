@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from force_prediction.config import load_config
-from force_prediction.contracts import (
+from modules.config import load_config
+from modules.contracts import (
     Compatibility,
     ExperienceRecord,
     Gripper,
@@ -9,8 +9,8 @@ from force_prediction.contracts import (
     PerGripperPrediction,
     SelectionResult,
 )
-from force_prediction.evaluation import EvalRow, compute_metrics
-from force_prediction.prediction import clamp_force, select
+from modules.evaluation import EvalRow, compute_metrics
+from modules.prediction import clamp_force, select
 
 
 def _p(gripper, force, feasible=True):

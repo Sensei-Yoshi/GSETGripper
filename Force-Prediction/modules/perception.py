@@ -16,7 +16,7 @@ import numpy as np
 from pydantic import BaseModel
 
 from .config import Config
-from .llm import get_client
+from .models.gemini import get_client
 
 
 class Description(BaseModel):

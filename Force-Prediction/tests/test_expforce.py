@@ -6,15 +6,15 @@ import cv2
 import numpy as np
 import pytest
 
-from force_prediction import expforce
-from force_prediction.config import EXPERIMENT_IDS, ExperimentMethod, load_config
-from force_prediction.contracts import (
+from modules import expforce
+from modules.config import EXPERIMENT_IDS, ExperimentMethod, load_config
+from modules.contracts import (
     Gripper,
     JointGripperPrediction,
     PerGripperPrediction,
     Query,
 )
-from force_prediction.expforce import (
+from modules.expforce import (
     load_experience_pool,
     load_rows,
     prepare_dataset,
@@ -24,8 +24,8 @@ from force_prediction.expforce import (
     to_experiences,
     validation_summary,
 )
-from force_prediction.perception import Description
-from force_prediction.prediction import vlm_predict_joint
+from modules.perception import Description
+from modules.prediction import vlm_predict_joint
 
 
 def test_source_validation_and_paired_conversion():
@@ -68,11 +68,10 @@ def test_config_exposes_only_the_final_explicit_experiment_methods():
     assert tuple(cfg.experiments) == EXPERIMENT_IDS
     assert cfg.experiment("e1").method is ExperimentMethod.JOINT_VLM
     assert cfg.experiment("e2").method is ExperimentMethod.JOINT_VLM_MEASURED
+    assert cfg.experiment("e3").method is ExperimentMethod.SEMANTIC_RETRIEVAL_VLM
     assert cfg.experiment("e4").method is ExperimentMethod.PAIRED_RETRIEVAL_VLM
     assert cfg.experiment("e5").method is ExperimentMethod.CALIBRATED_PHYSICS
     assert cfg.experiment("e6").method is ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL
-    with pytest.raises(KeyError, match="unknown experiment"):
-        cfg.experiment("e3")
     assert "surface patches" in cfg.prompts.descriptor_system
     assert "text embedding" in cfg.prompts.descriptor_system
 
@@ -80,8 +79,8 @@ def test_config_exposes_only_the_final_explicit_experiment_methods():
 def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
     cfg = load_config()
 
-    assert set(cfg.prompts.experiments) == {"e1", "e2", "e4"}
-    for experiment in ("e1", "e2", "e4"):
+    assert set(cfg.prompts.experiments) == {"e1", "e2", "e3", "e4"}
+    for experiment in ("e1", "e2", "e3", "e4"):
         definition = cfg.experiment(experiment)
         assert definition.prompt == experiment
         assert cfg.prompts.experiments[experiment].strip()
@@ -89,15 +88,18 @@ def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
         assert cfg.experiment(experiment).prompt is None
 
 
-def test_vlm_prompts_require_concise_quantitative_evidence_without_invented_constants():
+def test_vlm_prompts_require_auditable_evidence_without_invented_constants():
     cfg = load_config()
     shared = " ".join(cfg.prompts.prediction_system.lower().split())
     e1_prompt = " ".join(cfg.prompts.experiments["e1"].lower().split())
     e2_prompt = " ".join(cfg.prompts.experiments["e2"].lower().split())
 
-    assert "three to four sentences" in shared
-    assert "equation/calculation summary" in shared
+    assert "evidence_used" in shared
+    assert "calculation_summary" in shared
+    assert "assumptions_and_uncertainty" in shared
     assert "do not invent" in shared
+    assert "hidden chain-of-thought" not in shared
+    assert "side-view" not in shared
     assert "rough visual approximations" in e1_prompt
     assert "authoritative measurements" in e2_prompt
     assert "do not infer hidden" in e2_prompt
@@ -127,7 +129,7 @@ def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
             ).model_dump(mode="json")
 
     client = FakeClient()
-    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
     query = Query(
         object_id="zero_shot_query",
         image_path="",
@@ -152,6 +154,9 @@ def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
     assert "retrieved_objects" not in captured["extra"]
     assert "retrieval_config" not in captured["extra"]
     assert "roughness_scale" not in captured["extra"]
+    assert set(captured["extra"]["gripper_embodiments"]) == {"gecko", "silicone"}
+    assert "context_images" not in captured
+    assert "require_context_images" not in captured
     assert prediction.gecko.predicted_normal_force_n == 1.137
     assert prediction.silicone.predicted_normal_force_n == 1.731
     assert prediction.recommended_gripper == "gecko"
@@ -179,7 +184,7 @@ def test_e2_joint_payload_contains_measurements_but_no_retrieval_or_physics(monk
             ).model_dump(mode="json")
 
     client = FakeClient()
-    monkeypatch.setattr("force_prediction.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
     query = Query(
         object_id="query",
         image_path="",
@@ -233,8 +238,6 @@ def test_legacy_e4_e5_artifact_labels_preserve_old_meanings():
             },
         }
     ) == "Legacy E4 — calibrated physics"
-
-
 def test_full_129_object_leave_one_out_benchmark_runs_offline(tmp_path):
     source_cfg = load_config().model_copy(deep=True)
     cfg = source_cfg.model_copy(deep=True)

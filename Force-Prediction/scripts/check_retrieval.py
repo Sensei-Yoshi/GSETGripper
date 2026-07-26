@@ -7,10 +7,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import Query, load_experiences  # noqa: E402
-from force_prediction.hardware import fabricate_records  # noqa: E402
-from force_prediction.retrieval import ExperienceIndex  # noqa: E402
+from modules.config import load_config  # noqa: E402
+from modules.contracts import Query, load_experiences  # noqa: E402
+from modules.hardware import fabricate_records  # noqa: E402
+from modules.retrieval import ExperienceIndex  # noqa: E402
 
 
 def main() -> int:

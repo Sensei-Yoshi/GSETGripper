@@ -1,8 +1,8 @@
 from __future__ import annotations
 
-from force_prediction.config import load_config
-from force_prediction.evaluation import make_folds
-from force_prediction.hardware import fabricate_records
+from modules.config import load_config
+from modules.evaluation import make_folds
+from modules.hardware import fabricate_records
 
 CFG = load_config()
 

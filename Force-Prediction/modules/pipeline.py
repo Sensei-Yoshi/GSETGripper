@@ -5,8 +5,8 @@ Usage per evaluation fold::
     pipe = Pipeline(cfg, "e4").fit(train_records)
     result = pipe.predict(query_input)
 
-All fold-local fitting and experiment-specific behavior lives in
-``force_prediction/experiments.py`` so the public lifecycle stays uniform.
+All fold-local fitting and experiment-specific behavior lives in the
+``modules/experiments/`` package so the public lifecycle stays uniform.
 """
 
 from __future__ import annotations

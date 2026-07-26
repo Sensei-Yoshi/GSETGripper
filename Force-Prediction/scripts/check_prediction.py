@@ -11,9 +11,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import Query  # noqa: E402
-from force_prediction.prediction import vlm_predict_joint  # noqa: E402
+from modules.config import load_config  # noqa: E402
+from modules.contracts import Query  # noqa: E402
+from modules.prediction import vlm_predict_joint  # noqa: E402
 
 
 def main() -> int:

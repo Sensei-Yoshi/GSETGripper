@@ -1,11 +1,12 @@
 # =============================================================================
-# config.yaml  —  THE single place to tune this system.
+# config.yaml  —  primary numerical and experiment configuration.
 #
 # Everything a researcher would want to sweep lives here: retrieval weights,
-# physics bounds, force limits, model IDs, the LLM PROMPTS, and the EXPERIMENT
-# definitions (E1, E2, E4, E5, E6 as explicit methods). No tunable is hard-coded in Python.
+# physics bounds, force limits, model IDs, and the EXPERIMENT definitions
+# (E1–E6 as explicit methods). Editable prompts and fixed gripper embodiment
+# context live in prompts.yaml. No tunable is hard-coded in Python.
 #
-# Loaded and validated by force_prediction/config.py into typed objects.
+# Loaded and validated by modules/config.py into typed objects.
 # =============================================================================
 
 seed: 20260721
@@ -131,149 +132,18 @@ evaluation:
   n_folds: 5
   within_thresholds_n: [0.25, 0.5]
 
-# =============================================================================
-# PROMPTS  —  edit here, never in code. Rendered by prediction.py with payload.
-# =============================================================================
-prompts:
-  descriptor_system: |
-    You create contact-region records for a robotic grasp-experience retrieval system.
-    Analyze only visible evidence in the supplied object image. The robot uses two
-    opposing compliant fingers at a fixed, centered grasp band around the object's
-    lateral surfaces. Focus on the surface patches those pads are most likely to touch.
-
-    The record will be converted into a text embedding and used to retrieve objects
-    with similar pad-to-object interfaces. Describe discriminating contact evidence;
-    do not recommend a gripper, predict force, infer a force label, or restate measured
-    mass, roughness class, or projected contact fraction. If the likely contact patch
-    is hidden or ambiguous, say so rather than inventing material or condition.
-
-  prediction_system: |
-    You are a robotics grasp-material selection and pre-grasp force estimation model.
-
-    TASK
-    Given the evidence supplied for the active experiment, estimate the minimum
-    stationary-finger normal force required to lift the object under the
-    standardized test protocol. Some experiments intentionally hide measurements
-    or retrieved examples. Use only evidence present in the request, and never
-    claim that an absent value was measured or retrieved.
-
-    FORCE CONVENTION
-    All force values are in newtons and refer exclusively to the normal force
-    measured by the load cell mounted behind the stationary gripper finger.
-    Do not double the force and do not convert it into a summed two-finger force.
-    The controller accepts continuous commands from 0 to 8 N. Return your best
-    continuous estimate; do not snap or round it to 0.25 N or to the force values
-    shown in retrieved examples.
-
-    AVAILABLE GRIPPERS
-    1. "gecko": TPU fin-ray finger with a mushroom-cap gecko-inspired dry adhesive pad.
-    2. "silicone": TPU fin-ray finger with a non-adhesive high-friction silicone pad.
-
-    MATERIAL REASONING
-    Gecko adhesion depends on intimate surface contact. It is generally more
-    favorable on clean, dry, smooth, nonporous surfaces with broad projected
-    contact. Its benefit may decrease on rough, porous, fibrous, dusty, wet,
-    oily, contaminated, or loosely coated surfaces. Silicone relies primarily on
-    friction and viscoelastic surface interaction; it may need more normal force
-    on smooth surfaces but can be more robust on rough or poorly adhesive ones.
-    Do not choose a gripper from roughness alone. When supplied, consider measured
-    roughness class together with mass, projected contact fraction, visible
-    surface material and condition, and retrieved gripper-specific experiences.
-
-    MEASUREMENTS
-    Any supplied mass, roughness class, and projected contact fraction are
-    authoritative. Do not replace supplied measurements with visual estimates.
-    If an experiment intentionally omits them, follow its instruction and state
-    uncertainty rather than pretending they were measured.
-
-    RETRIEVED EXPERIENCES
-    When retrieved experiences are supplied, treat them as empirical observations
-    under the same force convention. Paired object experiences report both gecko
-    and silicone outcomes; use the within-object force difference to reason about
-    the material crossover. Favor physically and semantically close experiences,
-    but do not copy a force without accounting for available differences in mass,
-    roughness, contact fraction, and surface material. If no experiences are
-    supplied, do not imply that retrieval evidence was used.
-
-    QUANTITATIVE JUSTIFICATION
-    Use quantitative checks when the available evidence supports them. If you
-    use a mathematical relationship, name the relationship and summarize the
-    substituted values or scaling that affected the force estimate. Do not invent
-    calibrated friction, adhesion, or contact coefficients. A simple relationship
-    such as object weight m*g may be used as a sanity check, but it is not itself
-    the required gripper normal force.
-
-    OUTPUT
-    Return only valid JSON matching the supplied schema, including an explicit
-    recommended_gripper. Each gripper's "reasoning_trace" must be one complete
-    sentence supporting its prediction. "recommendation_summary" must be one or
-    two complete sentences comparing the candidates and explaining the recommendation.
-    Across those fields, provide a useful total of three to four sentences. Include
-    a concise equation/calculation summary when mathematical reasoning was used;
-    do not provide extended hidden chain-of-thought.
-
-  descriptor: |
-    Inspect the likely opposing finger-contact patches in the centered grasp band.
-    Return the requested structured JSON with:
-    - the likely contact region and whether it is clearly visible;
-    - the material actually touching the pads, distinguishing substrate from a
-      label, wrapper, coating, sleeve, or exposed contents;
-    - visible condition such as clean, dry, dusty, wet, oily, worn, or unknown;
-    - local geometry, including curvature, broad continuous area, seams, ridges,
-      edges, lobes, or other interruptions;
-    - an uncertainty statement grounded in what the image does or does not show;
-    - a concise retrieval_description containing the most discriminating
-      pad-to-object interface evidence in 1-2 sentences. Roughly follow this template: [Material/object form]. The intended contact region is [surface condition], [geometry], and [other relevant properties].
-
-    Good retrieval_description examples:
-    1. "Transparent cylindrical glass object with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has no visible seams, texture, or contamination."
-    2. "Small curved snack chip with a porous, visibly textured surface and a thin, brittle structure. Its irregular geometry provides only a small, uneven contact region."
-
-    Do not
-    choose gecko or silicone and do not estimate force. Return only JSON matching
-    the supplied schema.
-
-  experiments:
-    e1: |
-      E1 ZERO-SHOT VISION-ONLY CONDITION.
-      From the image and the two gripper embodiment descriptions in the system
-      prompt, estimate the minimum stationary-finger normal force (newtons) for
-      both gecko and silicone. Judge each gripper's feasibility and compatibility,
-      then explicitly recommend gecko, silicone, or none. No authoritative mass,
-      roughness, projected contact measurement, physics estimate, or retrieved
-      experience is available. Reason only from visible object scale, material,
-      condition, and geometry. The resulting mass, roughness, and contact judgments
-      are necessarily rough visual approximations, so reflect that uncertainty.
-      Predict forces directly from the available evidence; do not invent physical
-      constants or pretend to run the calibrated E5 physics model.
-
-    e2: |
-      E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.
-      Use the image and supplied authoritative measurements to estimate the minimum
-      stationary-finger normal force (newtons) for both gecko and silicone. Judge
-      each gripper's feasibility and compatibility, then explicitly recommend gecko,
-      silicone, or none. No retrieved experiences or physics estimate are available;
-      do not imply otherwise. Predict forces directly from these measured and visual
-      inputs. You may use dimensional or weight-based sanity checks, but do not infer
-      hidden friction/adhesion constants or claim to run the calibrated E5 equations.
-
-    e4: |
-      E4 PAIRED-OBJECT RETRIEVAL CONDITION.
-      Estimate the minimum stationary-finger normal force (newtons) independently
-      for both gecko and silicone under the standardized protocol. Use the supplied
-      measurements, image, and one ranked object list in which each neighbor carries
-      both gripper outcomes. Judge feasibility and compatibility, then explicitly
-      recommend gecko, silicone, or none. Explain how the closest paired outcomes and
-      any quantitative mass/contact scaling support the estimates. Do not assume or
-      invent a physics estimate or calibrated physical constants.
+# Editable prompt text and fixed gripper embodiment context live separately so
+# Streamlit can update them without rewriting this commented tuning file.
+prompts_file: prompts.yaml
 
 # =============================================================================
-# EXPERIMENTS  —  explicit estimator methods dispatched by experiments.py.
+# EXPERIMENTS  —  explicit estimator methods dispatched by experiments/.
 # See docs/experiments.md for the scientific rationale of each.
 # =============================================================================
 experiments:
   e1: {method: joint_vlm, prompt: e1}
   e2: {method: joint_vlm_measured, prompt: e2}
+  e3: {method: semantic_retrieval_vlm, prompt: e3}
   e4: {method: paired_retrieval_vlm, prompt: e4}
   e5: {method: calibrated_physics}
   e6: {method: physics_semantic_residual}

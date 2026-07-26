@@ -13,10 +13,8 @@ full pipeline runs with no network. This module is exercised only for live calls
 from __future__ import annotations
 
 import base64
-import hashlib
 import json
 import os
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -24,7 +22,8 @@ import numpy as np
 from pydantic import BaseModel
 from tenacity import retry, stop_after_attempt, wait_exponential
 
-from .config import REPO_ROOT, Config
+from ..cache import DiskCache
+from ..config import REPO_ROOT, Config
 
 
 def load_dotenv(path: Path | None = None) -> None:
@@ -44,56 +43,6 @@ def load_dotenv(path: Path | None = None) -> None:
         os.environ.setdefault(key.strip(), value.strip().strip("'\""))
 
 
-class _DiskCache:
-    """Tiny content-addressed JSON cache under paths.cache."""
-
-    VERSION = "v2"
-
-    def __init__(self, root: Path) -> None:
-        self.root = root
-        self.root.mkdir(parents=True, exist_ok=True)
-        self.hits = 0
-        self.misses = 0
-        self.writes = 0
-        self.read_errors = 0
-
-    @staticmethod
-    def key(*parts: Any) -> str:
-        blob = json.dumps((_DiskCache.VERSION, *parts), sort_keys=True, default=str).encode("utf-8")
-        return hashlib.sha256(blob).hexdigest()
-
-    def get(self, key: str) -> Any | None:
-        path = self.root / f"{key}.json"
-        if path.exists():
-            try:
-                value = json.loads(path.read_text())
-            except (OSError, json.JSONDecodeError):
-                self.read_errors += 1
-                self.misses += 1
-                return None
-            self.hits += 1
-            return value
-        self.misses += 1
-        return None
-
-    def put(self, key: str, value: Any) -> None:
-        destination = self.root / f"{key}.json"
-        payload = json.dumps(value)
-        with tempfile.NamedTemporaryFile("w", dir=self.root, delete=False) as fh:
-            fh.write(payload)
-            temporary = Path(fh.name)
-        temporary.replace(destination)
-        self.writes += 1
-
-    def stats(self) -> dict[str, int]:
-        return {
-            "hits": self.hits,
-            "misses": self.misses,
-            "writes": self.writes,
-            "read_errors": self.read_errors,
-        }
-
-
 def _encode_image(image_bgr: np.ndarray | None) -> str | None:
     if image_bgr is None:
         return None
@@ -110,14 +59,32 @@ class GeminiClient:
 
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
-        self.cache = _DiskCache(cfg.path("cache")) if cfg.models.cache else None
+        cache_root = cfg.path("cache")
+        legacy_root = cfg.root / "data/cache" if cfg.dataset_id == "expforce" else None
+        self.generation_cache = (
+            DiskCache(cache_root / "generation", legacy_root=legacy_root)
+            if cfg.models.cache
+            else None
+        )
+        self.embedding_cache = (
+            DiskCache(cache_root / "embeddings", legacy_root=legacy_root)
+            if cfg.models.cache
+            else None
+        )
         self._client: Any = None  # lazy
         self.backend_attempts = {"generation": 0, "embedding": 0}
 
     def cache_stats(self) -> dict[str, Any]:
+        caches = [cache for cache in (self.generation_cache, self.embedding_cache) if cache]
+        keys = ("hits", "misses", "writes", "read_errors", "legacy_hits")
         return {
-            "enabled": self.cache is not None,
-            **(self.cache.stats() if self.cache is not None else {}),
+            "enabled": bool(caches),
+            **{
+                key: sum(cache.stats()[key] for cache in caches)
+                for key in keys
+            },
+            "generation": self.generation_cache.stats() if self.generation_cache else {},
+            "embeddings": self.embedding_cache.stats() if self.embedding_cache else {},
             "backend_attempts": dict(self.backend_attempts),
         }
 
@@ -144,17 +111,17 @@ class GeminiClient:
     ) -> dict:
         img_b64 = _encode_image(image_bgr)
         cache_key = None
-        if self.cache is not None:
-            cache_key = self.cache.key(
+        if self.generation_cache is not None:
+            cache_key = self.generation_cache.key(
                 "gen", self.cfg.models.vlm, system, instruction,
                 schema.model_json_schema(), img_b64, extra,
             )
-            hit = self.cache.get(cache_key)
+            hit = self.generation_cache.get(cache_key)
             if hit is not None:
                 return hit
         result = self._generate_json_live(system, instruction, schema, img_b64, extra)
-        if self.cache is not None and cache_key is not None:
-            self.cache.put(cache_key, result)
+        if self.generation_cache is not None and cache_key is not None:
+            self.generation_cache.put(cache_key, result)
         return result
 
     @retry(stop=stop_after_attempt(8), wait=wait_exponential(min=2, max=60))
@@ -169,6 +136,7 @@ class GeminiClient:
         if extra:
             parts.append(json.dumps(extra))
         if img_b64 is not None:
+            parts.append("QUERY OBJECT IMAGE")
             parts.append(types.Part.from_bytes(data=base64.b64decode(img_b64), mime_type="image/png"))
         resp = self._sdk().models.generate_content(
             model=self.cfg.models.vlm,
@@ -186,17 +154,17 @@ class GeminiClient:
     def embed(self, *, text: str, image_bgr: np.ndarray | None = None) -> np.ndarray:
         img_b64 = _encode_image(image_bgr)
         cache_key = None
-        if self.cache is not None:
-            cache_key = self.cache.key(
+        if self.embedding_cache is not None:
+            cache_key = self.embedding_cache.key(
                 "embed", self.cfg.retrieval.embedding.model,
                 self.cfg.retrieval.embedding.dim, text, img_b64,
             )
-            hit = self.cache.get(cache_key)
+            hit = self.embedding_cache.get(cache_key)
             if hit is not None:
                 return np.asarray(hit, dtype=np.float32)
         vec = self._embed_live(text, img_b64)
-        if self.cache is not None and cache_key is not None:
-            self.cache.put(cache_key, vec.tolist())
+        if self.embedding_cache is not None and cache_key is not None:
+            self.embedding_cache.put(cache_key, vec.tolist())
         return vec
 
     @retry(stop=stop_after_attempt(8), wait=wait_exponential(min=2, max=60))

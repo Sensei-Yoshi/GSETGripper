@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from force_prediction.config import load_config
-from force_prediction.contracts import Query
-from force_prediction.hardware import fabricate_records
-from force_prediction.retrieval import (
+from modules.config import load_config
+from modules.contracts import Query
+from modules.hardware import fabricate_records
+from modules.retrieval import (
     ExperienceIndex,
     build_embedding_text,
     normalized_weights,

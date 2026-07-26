@@ -16,6 +16,8 @@ data/splits.json
 data/images/*.png
 data/cache/*.json
 results.json
+test_data/marigold_tests/*
+!test_data/marigold_tests/.gitkeep
 
 # Exp-Force viewer artifacts
 data/expforce/preparation_manifest.json

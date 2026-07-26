@@ -1,79 +1,94 @@
 # Experiment Protocol
 
-The active suite intentionally contains E1, E2, E4, E5, and E6. E3 and E3B were
-removed; the gap is preserved so saved results and research notes are not silently
-renumbered.
+The active implementation contains E1–E6. E1–E4 form the primary VLM ablation suite;
+E5 and E6 remain complementary physics baselines. Every condition runs through
+`Pipeline(cfg, experiment_id)` under identical frozen, object-grouped splits. Both gripper
+rows for an object remain in the same fold, and every fitted resource uses training
+objects only.
 
-Every condition runs through `Pipeline(cfg, experiment_id)` under identical frozen,
-object-grouped splits. Both gripper rows for an object always remain in the same fold.
-All fold-local resources—retrieval indexes, physics calibration, PCA, and residual
-regressors—are fit only on training objects.
+## Primary ablation suite
 
-## Conditions
+All four VLM conditions receive the query-object image plus fixed written embodiment
+descriptions for Gecko and silicone. These descriptions define the hardware being
+predicted and are not object-specific sensor measurements. Gripper images are not sent.
 
-| ID | Inputs and estimator | Force-generation calls | Research question |
-|---|---|---:|---|
-| **E1** | Image-only joint VLM | 1 | Can the VLM estimate both forces and recommend a gripper zero-shot from vision plus embodiment descriptions? |
-| **E2** | Image, authoritative measurements, joint VLM | 1 | How much do mass, roughness, and optional projected contact improve the zero-shot result? |
-| **E4** | Measurements, one paired-object retrieval, joint VLM | 1 | Does empirical paired-gripper experience improve on measured-input zero-shot prediction? |
-| **E5** | Fold-calibrated reduced-order physics | 0 | How well do constrained analytical equations with learned physical coefficients perform? |
-| **E6** | E5 physics plus a learned semantic residual | 0 | Does flexible residual learning improve on the identical calibrated physics baseline? |
+| ID | Object-specific evidence | Retrieval score | Research question |
+|---|---|---|---|
+| **E1** | Object image only | None | How accurately can the VLM predict both grippers zero-shot? |
+| **E2** | Image + mass + roughness + optional projected contact | None | What is the isolated benefit of measured physical inputs? |
+| **E3** | Image + semantic descriptor + paired retrieved outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval modeled after Exp-Force? |
+| **E4** | Image + measurements + semantic descriptor + paired retrieved outcomes | Semantic and physical fusion | What is the performance of the complete proposed pipeline? |
 
-E1, E2, and E4 return both force/feasibility predictions and an explicit VLM
-recommendation. The final command is always selected in Python from the lowest feasible
-predicted force. Recommendation accuracy and agreement with that selector are reported
-separately.
+E1–E4 each produce both gripper force/feasibility predictions and an explicit VLM
+recommendation. The commanded gripper is still selected deterministically in Python as
+the lowest-force feasible prediction; recommendation accuracy and agreement with the
+selector are reported separately.
 
-## E4 paired-object retrieval
+## E3: strictly semantic experience retrieval
 
-E2 and E4 receive the same image, measured-property fields, force constraints, and
-joint-output schema. E4's only estimator-level addition is experiential learning: a
-retrieved list of paired object outcomes and the retrieval metadata needed to interpret
-that list.
+E3 is the semantic-only retrieval ablation. It generates or reuses the query's visible
+contact-region description, embeds that text, and ranks training objects using only
 
-E4 embeds the query's contact-region description once, ranks objects once, and retrieves
-the configured `retrieval.k` objects. Every neighbor carries its Gecko and silicone force
-and feasibility outcomes. One structured VLM request receives this shared list and returns
-both predictions plus its recommendation. No physics estimate is constructed or sent.
+`S(q, i) = cosine(e_q, e_i)`.
 
-The hybrid retrieval score is not a modified physics equation and does not predict force.
-It only ranks candidate neighbors using semantic cosine similarity and closeness in mass,
-roughness, and optional projected contact. The force evidence comes from the measured
-Gecko/silicone outcomes attached to the retrieved objects.
+The embedding contains semantic contact-interface text only. E3 does not use query or
+neighbor mass, roughness, or projected contact fraction in ranking or in the VLM payload.
+Each retrieved neighbor exposes only its semantic description, semantic similarity, and
+paired observed Gecko/silicone force and feasibility outcomes. It receives no hybrid
+score components and no physics estimate. Tests enforce this boundary so later refactors
+cannot quietly leak sensor terms into E3.
 
-Projected contact is an explicit Streamlit/config ablation. When disabled, its retrieval
-weight becomes zero, the remaining weights are renormalized, and the field is omitted from
-E2/E4 VLM payloads and E4 neighbor payloads. E5 and E6 still require contact inside their
-physics equations; E6 also removes the standalone contact feature from its residual input.
+This is the right role for E3 because it creates two clean, parallel comparisons:
 
-## E5 versus E6
+- E2 minus E1 estimates the contribution of measured sensor/context variables.
+- E3 minus E1 estimates the contribution of semantic experiential retrieval.
+- E4 tests whether their combination is stronger than either source alone.
 
-Both models learn from the training fold:
+E4 having the lowest error is a hypothesis, not a guaranteed result. Sensor noise,
+retrieval mismatch, prompt sensitivity, or a small experience set can make fusion worse.
+The paper should report the measured differences and uncertainty rather than treating the
+expected ordering as a premise.
 
-- E5 fits seven bounded coefficients in fixed analytical holding-force equations: two for
-  silicone and five for Gecko. This is calibrated physics/system identification, not an
-  untrained formula.
-- E6 first fits that same E5 model. It then learns one residual regressor per gripper with
-  target `measured_force - physics_force` using log mass, roughness, optional contact,
-  physics force, and PCA-compressed semantic embeddings.
+## E4: semantic and sensor-fusion retrieval
 
-At inference, E6 returns `physics_force + predicted_residual`, continuously clamped to the
-hardware range. Physics infeasibility remains authoritative. E6 has no neighbor list and
-makes no VLM force-generation call.
+E4 uses the same paired-object experience representation as E3, but ranks candidates with
+the configured hybrid score:
 
-## Held fixed and reported metrics
+`S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough + w_a S_contact`.
 
-The force convention is stationary-finger load-cell normal force, never doubled. Hardware
-commands and model outputs are continuous from `0` to `8 N`; collection search resolution
-does not quantize predictions. The default neighbor count is the single value
-`retrieval.k: 5` in `config.yaml`.
+The query measurements and the corresponding neighbor values are also available to the
+VLM so it can interpret mass, roughness, and contact differences. The retrieval score
+only ranks candidates; it never computes force. Force evidence comes from the paired
+observed outcomes attached to those neighbors. E4 receives no E5 physics prediction.
 
-Every experiment reports:
+Projected contact is an explicit ablation. When disabled, E2 and E4 omit it, E4 gives its
+retrieval term zero weight, and the remaining hybrid weights are renormalized. E3 is
+unchanged because it never uses that term.
 
-- force MAE, RMSE, median absolute error, and configured threshold accuracy;
-- feasibility precision and recall per gripper;
-- deterministic gripper-selection accuracy, infeasible-pick rate, and regret;
-- raw VLM recommendation accuracy and selector agreement for E1, E2, and E4.
+## E5 and E6 supplementary baselines
 
-Run one condition with `python scripts/run_experiment.py --exp e4`, or all active
-conditions with `python scripts/run_experiment.py --all --dry-run`.
+- **E5** fits seven bounded coefficients in fixed analytical holding-force equations.
+  It is calibrated physics/system identification, not an untrained formula.
+- **E6** fits the same E5 model, then learns one residual regressor per gripper from
+  semantic embeddings and permitted numerical features.
+
+E5/E6 make no VLM force-generation call and retrieve no neighbor list. Physics
+infeasibility remains authoritative for E6.
+
+## Evaluation and reporting
+
+The force convention is stationary-finger load-cell normal force, never doubled. Model
+outputs are continuous from `0` to `8 N`; ground-truth search resolution does not quantize
+predictions. Report force MAE, RMSE, median absolute error, threshold accuracy,
+feasibility metrics, selection accuracy, infeasible-pick rate, and regret.
+
+The saved E1–E4 suite produces separate Gecko and silicone calibration panels, one panel
+per experiment, plus CSV metric and prediction exports. The panels show ground truth on
+the horizontal axis and prediction on the vertical axis without an identity line.
+Per-object prediction tables support the proposed ground-truth-versus-prediction analysis.
+Treat fixture-based results as synthetic pipeline validation until real standardized
+grasp trials replace them.
+
+Run one condition with `python scripts/run_experiment.py --exp e3 --dry-run`, all active
+conditions with `python scripts/run_experiment.py --all --dry-run`, or create/resume an
+E1–E4 suite from the Streamlit **Runs Viewer**.

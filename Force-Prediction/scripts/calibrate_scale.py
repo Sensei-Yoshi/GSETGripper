@@ -48,11 +48,11 @@ from collect_images import open_camera
 
 _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
-    sys.path.insert(0, str(_REPO))  # make force_prediction importable
+    sys.path.insert(0, str(_REPO))  # make modules importable
 _CONTACT_MODEL_DIR = Path(__file__).resolve().parent / "contact_model"
 sys.path.insert(0, str(_CONTACT_MODEL_DIR))
 
-from force_prediction.config import load_config  # noqa: E402
+from modules.config import load_config  # noqa: E402
 
 WINDOW = "scale measurement"
 

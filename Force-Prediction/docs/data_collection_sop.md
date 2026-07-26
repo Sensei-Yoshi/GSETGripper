@@ -2,7 +2,7 @@
 
 Goal: for every object, measure the minimum stationary-finger normal force
 `F*(o, g)` that lifts it, for **both** gecko and silicone, under one fixed
-protocol. Implemented by `force_prediction/collect.py`.
+protocol. Implemented by `modules/collect.py`.
 
 ## Force convention (non-negotiable)
 `F*` is the normal force read by the load cell **behind the stationary finger**,
@@ -57,7 +57,7 @@ OS exposes as a **standard USB (UVC) webcam** — so it is read with
 stream, which the current pipeline does not use; do **not** install or import
 `pyorbbecsdk` for image collection. If a camera call ever fails with
 `No module named 'pyorbbecsdk'`, something is wrongly going through the depth
-path (`force_prediction.hardware.OrbbecCamera`) instead of `cv2.VideoCapture`.
+path (`modules.hardware.OrbbecCamera`) instead of `cv2.VideoCapture`.
 
 Two capture tools, both `cv2.VideoCapture` based:
 

@@ -11,9 +11,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.config import load_config  # noqa: E402
-from force_prediction.hardware import make_mock_bench, synthetic_objects  # noqa: E402
-from force_prediction.perception import describe, projected_contact_fraction  # noqa: E402
+from modules.config import load_config  # noqa: E402
+from modules.hardware import make_mock_bench, synthetic_objects  # noqa: E402
+from modules.perception import describe, projected_contact_fraction  # noqa: E402
 
 
 def main() -> int:

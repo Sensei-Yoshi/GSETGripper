@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from force_prediction.config import load_config
-from force_prediction.contracts import Gripper
-from force_prediction.learning import base_features
-from force_prediction.physics import PhysicsModel, PhysicsParams, weight_n
+from modules.config import load_config
+from modules.contracts import Gripper
+from modules.learning import base_features
+from modules.physics import PhysicsModel, PhysicsParams, weight_n
 
 CFG = load_config()
 MODEL = PhysicsModel(PhysicsParams.from_config(CFG), CFG)

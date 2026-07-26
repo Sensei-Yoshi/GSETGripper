@@ -16,7 +16,12 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field, model_validator
 
-from .config import EXPERIMENT_DEFINITION_VERSION, Config, ExperimentMethod
+from .config import (
+    EXPERIMENT_DEFINITION_VERSION,
+    Config,
+    ExperimentMethod,
+    prompt_bundle_sha256,
+)
 from .contracts import ExperienceRecord, Gripper, Meta, group_by_object, save_experiences
 from .evaluation import EvalRow, compute_metrics
 from .experiments import EXPERIMENT_CATALOG, experiment_display_name
@@ -31,6 +36,7 @@ PREPARATION_RELATIVE = Path("data/expforce/preparation_manifest.json")
 DESCRIPTORS_RELATIVE = Path("data/expforce/descriptors")
 RESULTS_RELATIVE = Path("data/expforce/results")
 RUNS_RELATIVE = Path("data/expforce/runs")
+SUITES_RELATIVE = Path("data/expforce/suites")
 
 
 def slug(name: str) -> str:
@@ -92,8 +98,16 @@ class ExpForceRow(BaseModel):
         return winners[0] if len(winners) == 1 else "tie"
 
 
+def _dataset_root(cfg: Config) -> Path:
+    return cfg.root / "data" / cfg.dataset_id
+
+
+def _dataset_relative(cfg: Config, name: str) -> Path:
+    return Path("data") / cfg.dataset_id / name
+
+
 def source_path(cfg: Config) -> Path:
-    return cfg.root / SOURCE_RELATIVE
+    return _dataset_root(cfg) / "dataset_2gripper.csv"
 
 
 def source_sha256(cfg: Config) -> str:
@@ -120,7 +134,7 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
         for row in raw_rows
     ]
     ids = [row.object_id for row in rows]
-    if len(rows) != 129:
+    if cfg.dataset_id == "expforce" and len(rows) != 129:
         raise ValueError(f"expected 129 objects, found {len(rows)}")
     if len(set(ids)) != len(ids):
         raise ValueError("object names do not produce unique IDs")
@@ -146,7 +160,7 @@ def to_experiences(
     descriptions = descriptions or {}
     records: list[ExperienceRecord] = []
     for row in rows:
-        image_path = f"data/expforce/images/{row.image_name}"
+        image_path = str(_dataset_relative(cfg, f"images/{row.image_name}"))
         description = descriptions.get(row.object_id, row.object_name)
         for gripper, force, feasible in (
             (Gripper.SILICONE, row.silicone_force_n, row.silicone_feasible),
@@ -212,11 +226,11 @@ def _file_sha256(path: Path) -> str:
 
 
 def _descriptor_path(cfg: Config, object_id: str) -> Path:
-    return cfg.root / DESCRIPTORS_RELATIVE / f"{object_id}.json"
+    return _dataset_root(cfg) / "descriptors" / f"{object_id}.json"
 
 
 def load_prepared_descriptors(cfg: Config) -> dict[str, PreparedDescriptor]:
-    root = cfg.root / DESCRIPTORS_RELATIVE
+    root = _dataset_root(cfg) / "descriptors"
     if not root.exists():
         return {}
     output: dict[str, PreparedDescriptor] = {}
@@ -266,11 +280,12 @@ def prepare_dataset(
     rows = load_rows(cfg)
     prepared = load_prepared_descriptors(cfg)
     missing_images: list[str] = []
-    image_root = cfg.root / "data/expforce/images"
+    image_root = _dataset_root(cfg) / "images"
     run_cfg = cfg.model_copy(deep=True)
     run_cfg.models.dry_run = not live
+    run_cfg.paths.cache = str(Path("data") / "cache" / cfg.dataset_id)
     signature = _descriptor_signature(run_cfg)
-    manifest_path = cfg.root / PREPARATION_RELATIVE
+    manifest_path = _dataset_root(cfg) / "preparation_manifest.json"
     total_steps = len(rows) * (2 if live else 1)
     completed_steps = 0
     descriptors_completed = 0
@@ -352,7 +367,7 @@ def prepare_dataset(
             object_id=row.object_id,
             object_name=row.object_name,
             image_name=row.image_name,
-            image_path=f"data/expforce/images/{row.image_name}",
+            image_path=str(_dataset_relative(cfg, f"images/{row.image_name}")),
             image_sha256=image_hash,
             descriptor_source=source,
             descriptor_model=run_cfg.models.vlm if source == "live_gemini" else None,
@@ -378,7 +393,7 @@ def prepare_dataset(
         rows,
         {object_id: descriptor.description for object_id, descriptor in descriptions.items()},
     )
-    save_experiences(cfg.root / EXPERIENCES_RELATIVE, records)
+    save_experiences(_dataset_root(cfg) / "validation_experiences.jsonl", records)
 
     if live:
         provider = get_embedding_provider(run_cfg)
@@ -426,7 +441,7 @@ def prepare_dataset(
 
 
 def load_experience_pool(cfg: Config) -> list[ExperienceRecord]:
-    path = cfg.root / EXPERIENCES_RELATIVE
+    path = _dataset_root(cfg) / "validation_experiences.jsonl"
     if path.exists():
         from .contracts import load_experiences
 
@@ -469,6 +484,8 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
         "retrieved_objects": _object_retrieval_payload(detailed),
         "physics_estimates": detailed.physics_estimates,
         "cache_stats": detailed.cache_stats,
+        "retrieval_mode": detailed.retrieval_mode,
+        "effective_inputs": list(detailed.effective_inputs),
     }
 
 
@@ -488,7 +505,35 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
         ],
         physics_estimates=payload.get("physics_estimates", {}),
         cache_stats=payload.get("cache_stats", {}),
+        retrieval_mode=payload.get("retrieval_mode"),
+        effective_inputs=tuple(payload.get("effective_inputs", ())),
     )
+
+
+def prompt_provenance(cfg: Config, prompt_key: str | None) -> dict:
+    """Exact prompt and fixed embodiment context used by a saved run."""
+    embodiments = {
+        name: {"description": context.description}
+        for name, context in cfg.embodiments.items()
+    }
+    prediction = None
+    if prompt_key is not None:
+        prediction = {
+            "system": cfg.prompts.prediction_system,
+            "instruction_key": prompt_key,
+            "instruction": cfg.prompts.experiments[prompt_key],
+        }
+    return {
+        "bundle_file": cfg.prompts_file,
+        "bundle_sha256": prompt_bundle_sha256(cfg),
+        "experiment_instructions": dict(cfg.prompts.experiments),
+        "prediction": prediction,
+        "descriptor": {
+            "system": cfg.prompts.descriptor_system,
+            "instruction": cfg.prompts.descriptor,
+        },
+        "embodiments": embodiments,
+    }
 
 
 def save_pipeline_run(
@@ -518,7 +563,7 @@ def save_pipeline_run(
             raise RuntimeError("failed to encode run image")
         image_bytes = encoded.tobytes()
         image_digest = hashlib.sha256(image_bytes).hexdigest()
-        destination = cfg.root / "data/expforce/run_images" / f"{image_digest}.png"
+        destination = _dataset_root(cfg) / "run_images" / f"{image_digest}.png"
         if not destination.exists():
             destination.parent.mkdir(parents=True, exist_ok=True)
             with tempfile.NamedTemporaryFile("wb", dir=destination.parent, delete=False) as fh:
@@ -530,15 +575,10 @@ def save_pipeline_run(
     run_id = f"{created_at.strftime('%Y%m%dT%H%M%S%fZ')}_{experiment}_{query['object_id']}"
     definition = cfg.experiment(experiment)
     prompt_key = definition.prompt
-    prediction_prompts = None
-    if prompt_key is not None:
-        prediction_prompts = {
-            "system": cfg.prompts.prediction_system,
-            "instruction_key": prompt_key,
-            "instruction": cfg.prompts.experiments[prompt_key],
-        }
+    prompt_context = prompt_provenance(cfg, prompt_key)
     artifact = {
-        "schema_version": 3,
+        "schema_version": 5,
+        "dataset_id": cfg.dataset_id,
         "run_id": run_id,
         "created_at": created_at.isoformat(),
         "source_sha256": source_sha256(cfg),
@@ -549,7 +589,8 @@ def save_pipeline_run(
         "experiment_method": definition.method.value,
         "experiment_definition_version": EXPERIMENT_DEFINITION_VERSION,
         "experiment_definition": definition.model_dump(mode="json"),
-        "prediction_prompts": prediction_prompts,
+        "prediction_prompts": prompt_context["prediction"],
+        "prompt_context": prompt_context,
         "execution_mode": execution_mode,
         "models": {
             "vlm": cfg.models.vlm,
@@ -568,13 +609,13 @@ def save_pipeline_run(
         "result": pipeline_result_to_dict(detailed),
         "baseline": pipeline_result_to_dict(baseline) if baseline is not None else None,
     }
-    path = cfg.root / RUNS_RELATIVE / f"{run_id}.json"
+    path = _dataset_root(cfg) / "runs" / f"{run_id}.json"
     _write_json_atomic(path, artifact)
     return path
 
 
 def load_saved_runs(cfg: Config) -> list[dict]:
-    root = cfg.root / RUNS_RELATIVE
+    root = _dataset_root(cfg) / "runs"
     if not root.exists():
         return []
     runs: list[dict] = []
@@ -607,6 +648,7 @@ def _legacy_experiment_method(run: dict) -> str:
         return "legacy_per_gripper_vlm"
     if toggles.get("use_retrieval"):
         return "legacy_branch_retrieval_average"
+
     return "legacy_unknown"
 
 
@@ -614,11 +656,15 @@ def saved_run_experiment_label(run: dict) -> str:
     """Human-readable provenance that prevents old E4/E5 IDs from being misread."""
     experiment = str(run.get("experiment", "unknown")).lower()
     version = int(run.get("experiment_definition_version", 0) or 0)
-    if version >= EXPERIMENT_DEFINITION_VERSION and experiment in EXPERIMENT_CATALOG:
-        return experiment_display_name(experiment)
-
     method = str(run.get("experiment_method") or _legacy_experiment_method(run))
+    if experiment in EXPERIMENT_CATALOG:
+        expected = EXPERIMENT_CATALOG[experiment].method.value
+        if version >= 3 and method == expected:
+            label = experiment_display_name(experiment)
+            return label if version == EXPERIMENT_DEFINITION_VERSION else f"{label} (v{version})"
+
     legacy_labels = {
+        ExperimentMethod.SEMANTIC_RETRIEVAL_VLM.value: "semantic experiential retrieval",
         ExperimentMethod.PAIRED_RETRIEVAL_VLM.value: "paired retrieval VLM",
         ExperimentMethod.CALIBRATED_PHYSICS.value: "calibrated physics",
         ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL.value: "physics + semantic residual",
@@ -694,15 +740,11 @@ def run_benchmark(
     metrics = compute_metrics(eval_rows, cfg).to_dict()
     definition = cfg.experiment(experiment)
     prompt_key = definition.prompt
-    prediction_prompts = None
-    if prompt_key is not None:
-        prediction_prompts = {
-            "system": cfg.prompts.prediction_system,
-            "instruction_key": prompt_key,
-            "instruction": cfg.prompts.experiments[prompt_key],
-        }
+    prompt_context = prompt_provenance(cfg, prompt_key)
+    retrieval_mode = EXPERIMENT_CATALOG[experiment].retrieval_mode
     metadata = {
-        "schema_version": 3,
+        "schema_version": 5,
+        "dataset_id": cfg.dataset_id,
         "created_at": datetime.now(UTC).isoformat(),
         "experiment": experiment,
         "experiment_method": definition.method.value,
@@ -718,13 +760,15 @@ def run_benchmark(
         "embedding_dim": cfg.retrieval.embedding.dim,
         "inputs": cfg.inputs.model_dump(mode="json"),
         "retrieval": cfg.retrieval.model_dump(mode="json"),
-        "prediction_prompts": prediction_prompts,
+        "prediction_prompts": prompt_context["prediction"],
+        "prompt_context": prompt_context,
+        "retrieval_mode": retrieval_mode.value if retrieval_mode is not None else None,
     }
     return BenchmarkResult(metrics=metrics, rows=output_rows, run_metadata=metadata)
 
 
 def save_benchmark(cfg: Config, benchmark: BenchmarkResult) -> tuple[Path, Path]:
-    output_dir = cfg.root / RESULTS_RELATIVE
+    output_dir = _dataset_root(cfg) / "results"
     output_dir.mkdir(parents=True, exist_ok=True)
     timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
     stem = f"{timestamp}_{benchmark.run_metadata['experiment']}"

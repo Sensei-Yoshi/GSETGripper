@@ -13,10 +13,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import load_experiences  # noqa: E402
-from force_prediction.hardware import fabricate_records  # noqa: E402
-from force_prediction.pipeline import Pipeline, query_input_from_object  # noqa: E402
+from modules.config import load_config  # noqa: E402
+from modules.contracts import load_experiences  # noqa: E402
+from modules.hardware import fabricate_records  # noqa: E402
+from modules.pipeline import Pipeline, query_input_from_object  # noqa: E402
 
 
 def main() -> int:

@@ -24,11 +24,18 @@ dependencies = [
 [project.optional-dependencies]
 gemini = ["google-genai>=0.3"]
 segmentation = ["rembg[cpu]>=2.0.50"]
-viewer = ["streamlit>=1.40", "pandas>=2.0"]
+roughness = [
+    "torch>=2.1",
+    "diffusers>=0.30",
+    "transformers>=4.39",
+    "accelerate>=0.28",
+    "rembg[cpu]>=2.0.50",
+]
+viewer = ["streamlit>=1.40", "pandas>=2.0", "matplotlib>=3.8"]
 dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.9", "types-PyYAML", "types-pyserial"]
 
 [tool.setuptools.packages.find]
-include = ["force_prediction*"]
+include = ["modules*", "streamlit_app*"]
 
 [tool.ruff]
 line-length = 100

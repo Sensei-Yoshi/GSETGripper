@@ -137,11 +137,29 @@ class PerGripperPrediction(BaseModel):
         ge=0,
         description="Best continuous stationary-finger normal-force estimate in newtons.",
     )
+    evidence_used: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Observable image evidence and any supplied measurements or retrieved examples "
+            "that materially affected this estimate."
+        ),
+    )
+    calculation_summary: str = Field(
+        default="",
+        description=(
+            "Explicit equations, substitutions, comparisons, or scaling used to obtain or "
+            "sanity-check the force estimate."
+        ),
+    )
+    assumptions_and_uncertainty: list[str] = Field(
+        default_factory=list,
+        description="Material assumptions, missing evidence, and important uncertainty.",
+    )
     reasoning_trace: str = Field(
         default="",
         description=(
-            "One complete sentence supporting this gripper estimate, including a concise "
-            "calculation summary if mathematical reasoning was used."
+            "Detailed, auditable rationale connecting the reported evidence, calculation, "
+            "assumptions, and uncertainty to this gripper's estimate."
         ),
     )
 
@@ -152,11 +170,15 @@ class JointGripperPrediction(BaseModel):
     gecko: PerGripperPrediction
     silicone: PerGripperPrediction
     recommended_gripper: GripperChoice
+    comparison_evidence: list[str] = Field(
+        default_factory=list,
+        description="The decisive evidence used to compare the two grippers.",
+    )
     recommendation_summary: str = Field(
         default="",
         description=(
-            "One or two complete sentences comparing both candidates and explaining the "
-            "recommendation; combined with both reasoning traces, total three to four sentences."
+            "Auditable comparison of both candidates explaining the recommendation, remaining "
+            "uncertainty, and why the alternative requires more force or is infeasible."
         ),
     )
 
@@ -171,6 +193,7 @@ class SelectionResult(BaseModel):
     prediction_tie: bool = False
     tie_break_reason: str | None = None
     model_recommended_gripper: GripperChoice | None = None
+    model_comparison_evidence: list[str] = Field(default_factory=list)
     model_recommendation_summary: str | None = None
     recommendation_agrees_with_selector: bool | None = None
 

@@ -1,19 +1,21 @@
-"""Typed loader and validator for config.yaml.
+"""Typed loader and validator for config.yaml and prompts.yaml.
 
-`config.yaml` is the single source of tuning: force conventions, retrieval
-weights, physics coefficients/bounds, model IDs, prompts, and the experiment
-method definitions. This module parses it into validated Pydantic models so the rest
-of the codebase gets attribute access and fail-fast validation instead of raw
-dict lookups.
+`config.yaml` is the source of numerical tuning and experiment assignments;
+`prompts.yaml` is the editable source of prompt and gripper-embodiment context.
+This module parses both into validated Pydantic models so the rest of the
+codebase gets attribute access and fail-fast validation instead of raw dicts.
 
 Usage:
-    from force_prediction.config import load_config
+    from modules.config import load_config
     cfg = load_config()                 # finds config.yaml at the repo root
     cfg.retrieval.weights.semantic      # -> 0.40
 """
 
 from __future__ import annotations
 
+import hashlib
+import json
+import tempfile
 from enum import StrEnum
 from functools import lru_cache
 from pathlib import Path
@@ -22,9 +24,10 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
-# Repo root = parent of the force_prediction package directory.
+# Repo root = parent of the modules package directory.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
+DEFAULT_PROMPTS_PATH = REPO_ROOT / "prompts.yaml"
 
 
 class Paths(BaseModel):
@@ -150,18 +153,38 @@ class Prompts(BaseModel):
     experiments: dict[str, str]
 
 
+class EmbodimentContext(BaseModel):
+    """Fixed written context for one gripper embodiment."""
+
+    description: str = Field(min_length=1)
+
+
+class PromptBundle(BaseModel):
+    """Editable prompt document stored independently from numerical tuning."""
+
+    prompts: Prompts
+    embodiments: dict[str, EmbodimentContext]
+
+    @model_validator(mode="after")
+    def _validate_embodiments(self) -> PromptBundle:
+        if set(self.embodiments) != {"gecko", "silicone"}:
+            raise ValueError("embodiments keys must be exactly ['gecko', 'silicone']")
+        return self
+
+
 class ExperimentMethod(StrEnum):
     """Supported estimators; each maps to one explicit strategy implementation."""
 
     JOINT_VLM = "joint_vlm"
     JOINT_VLM_MEASURED = "joint_vlm_measured"
+    SEMANTIC_RETRIEVAL_VLM = "semantic_retrieval_vlm"
     PAIRED_RETRIEVAL_VLM = "paired_retrieval_vlm"
     CALIBRATED_PHYSICS = "calibrated_physics"
     PHYSICS_SEMANTIC_RESIDUAL = "physics_semantic_residual"
 
 
-EXPERIMENT_IDS = ("e1", "e2", "e4", "e5", "e6")
-EXPERIMENT_DEFINITION_VERSION = 3
+EXPERIMENT_IDS = ("e1", "e2", "e3", "e4", "e5", "e6")
+EXPERIMENT_DEFINITION_VERSION = 5
 
 
 class ExperimentConfig(BaseModel):
@@ -183,7 +206,11 @@ class Config(BaseModel):
     learning: LearningConfig
     evaluation: EvaluationConfig
     prompts: Prompts
+    embodiments: dict[str, EmbodimentContext]
+    prompts_file: str = "prompts.yaml"
     experiments: dict[str, ExperimentConfig]
+    # Runtime dataset selection. It is intentionally not a config.yaml tunable.
+    dataset_id: str = "expforce"
 
     # Resolved at load time so callers get absolute paths regardless of cwd.
     root: Path = REPO_ROOT
@@ -196,6 +223,7 @@ class Config(BaseModel):
         vlm_methods = {
             ExperimentMethod.JOINT_VLM,
             ExperimentMethod.JOINT_VLM_MEASURED,
+            ExperimentMethod.SEMANTIC_RETRIEVAL_VLM,
             ExperimentMethod.PAIRED_RETRIEVAL_VLM,
         }
         for name, experiment in self.experiments.items():
@@ -213,6 +241,8 @@ class Config(BaseModel):
         }
         if unused_prompts:
             raise ValueError(f"unused experiment prompts: {sorted(unused_prompts)}")
+        if set(self.embodiments) != {"gecko", "silicone"}:
+            raise ValueError("embodiments keys must be exactly ['gecko', 'silicone']")
         return self
 
     def path(self, key: Literal["experiences", "images", "splits", "cache"]) -> Path:
@@ -232,6 +262,56 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
     path = Path(path).resolve()
     with path.open("r", encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
+    prompts_name = str(raw.get("prompts_file", "prompts.yaml"))
+    bundle = load_prompt_bundle(path.parent / prompts_name)
+    raw["prompts"] = bundle.prompts.model_dump(mode="python")
+    raw["embodiments"] = bundle.embodiments
     cfg = Config.model_validate(raw)
     cfg.root = path.parent
     return cfg
+
+
+def load_prompt_bundle(path: str | Path = DEFAULT_PROMPTS_PATH) -> PromptBundle:
+    """Load and validate the editable prompt/embodiment document."""
+    source = Path(path).resolve()
+    with source.open("r", encoding="utf-8") as fh:
+        return PromptBundle.model_validate(yaml.safe_load(fh))
+
+
+def save_prompt_bundle(bundle: PromptBundle, path: str | Path = DEFAULT_PROMPTS_PATH) -> None:
+    """Validate and atomically persist prompt edits without touching config.yaml."""
+    validated = PromptBundle.model_validate(bundle)
+    destination = Path(path).resolve()
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    payload = yaml.safe_dump(
+        validated.model_dump(mode="python"), sort_keys=False, allow_unicode=True
+    )
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=destination.parent, delete=False
+    ) as fh:
+        fh.write(payload)
+        temporary = Path(fh.name)
+    temporary.replace(destination)
+    load_config.cache_clear()
+
+
+def prompt_bundle_path(cfg: Config) -> Path:
+    return (cfg.root / cfg.prompts_file).resolve()
+
+
+def prompt_bundle_sha256(cfg: Config) -> str:
+    path = prompt_bundle_path(cfg)
+    if path.is_file():
+        payload = path.read_bytes()
+    else:
+        payload = json.dumps(
+            {
+                "prompts": cfg.prompts.model_dump(mode="json"),
+                "embodiments": {
+                    name: item.model_dump(mode="json")
+                    for name, item in cfg.embodiments.items()
+                },
+            },
+            sort_keys=True,
+        ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()

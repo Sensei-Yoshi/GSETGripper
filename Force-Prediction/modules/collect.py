@@ -11,8 +11,8 @@ settings, not hardware command or model-output quantization. Infeasible (never
 lifts within the safe limit) is recorded honestly as feasible=False with
 failed_at_limit_n set.
 
-    python -m force_prediction.collect --mock --n 30
-    python -m force_prediction.collect --port /dev/cu.usbmodem1101   # real
+    python -m modules.collect --mock --n 30
+    python -m modules.collect --port /dev/cu.usbmodem1101   # real
 """
 
 from __future__ import annotations

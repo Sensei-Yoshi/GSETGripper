@@ -37,8 +37,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import numpy as np  # noqa: E402
 
-from force_prediction.config import load_config  # noqa: E402
-from force_prediction.contracts import (  # noqa: E402
+from modules.config import load_config  # noqa: E402
+from modules.contracts import (  # noqa: E402
     ExperienceRecord,
     Gripper,
     Meta,
