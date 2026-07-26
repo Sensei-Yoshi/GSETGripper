@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "morton_salt_container",
+  "object_name": "Morton salt container",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/morton_salt_container/image.png",
+  "image_sha256": "13eace1ff21552d414ccde3f85a54cb5af554289fff525c6f108cb11a6e34650",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical paperboard container with a smooth, dry surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
+    "contact_region": "Lateral cylindrical sidewalls",
+    "contact_material": "Paperboard container body",
+    "visible_surface_material": "Paperboard",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous curved cylindrical surface",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact texture under the paper label wrapper is not visible, but the outer surface provides a uniform cylindrical grasp interface."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "6f6bd63e9ab965cae7d6bbf8e95026584ceedab9d31e7ece4122b278f2601ce0",
+  "updated_at": "2026-07-23T00:44:50.847512+00:00"
+}

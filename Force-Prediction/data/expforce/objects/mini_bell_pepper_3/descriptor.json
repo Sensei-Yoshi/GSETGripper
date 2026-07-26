@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "mini_bell_pepper_3",
+  "object_name": "Mini bell pepper 3",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/mini_bell_pepper_3/image.png",
+  "image_sha256": "504af000bfffc73088ad3c4a0cefef186b51e8e0417c7e1e612b0fab0b1eaa9b",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small smooth orange pepper with a glossy, dry, nonporous skin and tapering convex curvature. The intended contact region has no visible seams or interruptions.",
+    "contact_region": "Lateral surfaces of the small pepper at its centered grasp band",
+    "contact_material": "Smooth plant skin",
+    "visible_surface_material": "Smooth plant skin",
+    "visible_surface_condition": "Clean, dry, and glossy",
+    "local_geometry": "Tapering convex curvature with continuous smooth surface and no seams or ridges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact tactile friction and exact micro-texture are not fully discernible from the visual evidence alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "8955d0ea0c4da743f92c63a284f41e983598eb3e9505106539357868e824907e",
+  "updated_at": "2026-07-23T00:44:50.822409+00:00"
+}

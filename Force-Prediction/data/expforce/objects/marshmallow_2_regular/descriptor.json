@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "marshmallow_2_regular",
+  "object_name": "Marshmallow 2 (regular)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/marshmallow_2_regular/image.png",
+  "image_sha256": "9787dfb11e4004cb532ad5824a683153363e6d43a1f69dc6ac11e0847f36a3f6",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small white pill or tablet object with a smooth, dry, nonporous lateral sidewall and rounded continuous curvature. The intended contact region has no visible seams or contamination, presenting flat vertical flanks for opposing finger pads.",
+    "contact_region": "Lateral sidewalls of the small tablet object",
+    "contact_material": "Substrate tablet material",
+    "visible_surface_material": "Substrate tablet material",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Curved with smooth vertical flanks and rounded edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The small object is viewed from a distance, but the lateral surface shape and condition are clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "dbc7efdd3a0142c8510e894a1ddd9b440ebc9a3c9c1639fe7eb4c867c5ae72e0",
+  "updated_at": "2026-07-23T00:44:50.799401+00:00"
+}

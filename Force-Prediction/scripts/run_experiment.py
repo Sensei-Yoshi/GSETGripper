@@ -75,7 +75,7 @@ def main() -> int:
         cfg.models.dry_run = True
     records = load_experiences(cfg.path("experiences"))
     if not records:
-        print("No experiences found. Run: python -m modules.collect --mock --n 40")
+        print("No experiences found. Run: python -m modules.collect --mock --dataset mock --n 40")
         return 1
     folds = get_or_make_splits(records, cfg, args.refresh_splits)
     names = EXPERIMENT_IDS if args.all else [args.exp]

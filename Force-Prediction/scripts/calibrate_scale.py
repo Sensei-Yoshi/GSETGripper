@@ -29,7 +29,7 @@ Keys (in the OpenCV window):
     q / ESC     Quit.
 
 Reuses open_camera() from collect_images.py, the background remover from
-scripts/contact_model/extract_object_outline.py, and the scale from config.yaml.
+modules.contact_model, and the scale from config.yaml.
 """
 
 from __future__ import annotations
@@ -49,10 +49,8 @@ from collect_images import open_camera
 _REPO = Path(__file__).resolve().parents[1]
 if str(_REPO) not in sys.path:
     sys.path.insert(0, str(_REPO))  # make modules importable
-_CONTACT_MODEL_DIR = Path(__file__).resolve().parent / "contact_model"
-sys.path.insert(0, str(_CONTACT_MODEL_DIR))
-
 from modules.config import load_config  # noqa: E402
+from modules.contact_model import create_rembg_session, segment_foreground  # noqa: E402
 
 WINDOW = "scale measurement"
 
@@ -61,21 +59,13 @@ WINDOW = "scale measurement"
 # Segmentation (reuses the contact-model background remover)
 # --------------------------------------------------------------------------- #
 def _load_session():
-    import extract_object_outline as outline
-    from rembg import new_session
-
-    print(f"Loading background-removal model: {outline.REMBG_MODEL}")
-    return new_session(outline.REMBG_MODEL)
+    print("Loading background-removal model...")
+    return create_rembg_session()
 
 
 def segment_mask(frame_bgr: np.ndarray, session) -> np.ndarray:
     """Return a clean 0/255 mask of the largest foreground object."""
-    import extract_object_outline as outline
-    from rembg import remove
-
-    rgb = cv2.cvtColor(frame_bgr, cv2.COLOR_BGR2RGB)
-    rgba = np.asarray(remove(rgb, session=session))
-    return outline.largest_foreground_component(rgba[:, :, 3])
+    return segment_foreground(frame_bgr, session=session)
 
 
 def mask_bbox(mask: np.ndarray) -> tuple[int, int, int, int] | None:

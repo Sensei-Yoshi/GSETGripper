@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "blackberry_2",
+  "object_name": "Blackberry 2",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/blackberry_2/image.png",
+  "image_sha256": "4776dc3322c3b8ae5b2557bb396a0b482e991a5e7d430ea7c221850469cc2767",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small dark irregular object with a textured, dry surface and uneven, lobed geometry. The intended contact region presents an irregular and discontinuous profile with multiple small ridges.",
+    "contact_region": "Lateral surfaces of the small irregular object",
+    "contact_material": "Substance of the small dark object",
+    "visible_surface_material": "Dark organic or manufactured material",
+    "visible_surface_condition": "Dry, slightly textured, clean",
+    "local_geometry": "Irregular curvature with lobes and surface ridges",
+    "contact_patch_visibility": "Visible but small due to object scale and resolution limits",
+    "uncertainty": "The small scale of the object relative to the image resolution makes fine surface texture details ambiguous."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "19b4a3ccda334e4c0ef156ae735a00bbb8c8458b8eb291870f47733c0ffa240f",
+  "updated_at": "2026-07-23T00:44:50.788093+00:00"
+}

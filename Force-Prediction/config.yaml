@@ -12,9 +12,9 @@
 seed: 20260721
 
 paths:
-  experiences: data/experiences.jsonl
-  images: data/images
-  splits: data/splits.json
+  experiences: data/cache/mock/experiences.jsonl
+  images: data/mock/objects
+  splits: data/mock/splits.json
   cache: data/cache
 
 # --- Force conventions (single source of truth) ------------------------------
@@ -45,7 +45,6 @@ inputs:
 
 # --- Geometry ----------------------------------------------------------------
 geometry:
-  pad_height_mm: 65.0   # h_pad in a = min(1, h_available / h_pad)
   px_per_mm: 1.9173     # camera scale for the contact-fraction model (see
                         # scripts/calibrate_scale.py); valid only while the
                         # object-front-to-camera distance is unchanged

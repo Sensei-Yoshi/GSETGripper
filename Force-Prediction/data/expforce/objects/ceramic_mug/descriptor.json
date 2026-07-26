@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "ceramic_mug",
+  "object_name": "Ceramic mug",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/ceramic_mug/image.png",
+  "image_sha256": "71d397a6ed27e6bf6501c4fcee14568a853fbc74a2695f18408be3e8b18a1fb8",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "White ceramic mug with a smooth, dry, curved lateral sidewall. The intended contact region has no visible seams or contamination, presenting a continuous cylindrical surface.",
+    "contact_region": "Lateral opposing sidewalls of the ceramic mug",
+    "contact_material": "Ceramic substrate",
+    "visible_surface_material": "Ceramic glaze",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Curved and continuous with no interruptions in the immediate grasp band",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact texture and exact uniformity on the occluded reverse side cannot be directly verified, but visual evidence strongly indicates a smooth glazed ceramic finish."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "32a2365d0989d028acdb1758c478c8dd1bdeb621206f6e3cb81caef7e07d2ccf",
+  "updated_at": "2026-07-23T00:44:54.412785+00:00"
+}

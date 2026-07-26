@@ -3,7 +3,8 @@
 Every module imports these models; nothing defines its own ad-hoc dict shape.
 This is what lets the team build modules in parallel against stable interfaces.
 
-Records are stored one-per-object-per-gripper in data/experiences.jsonl. The
+Generated records are cached one-per-object-per-gripper under
+data/cache/<dataset>/experiences.jsonl. The
 `ObjectRecord` paired view groups an object's two gripper rows and is what powers
 the paired-row retrieval enhancement and the selection oracle.
 """
@@ -41,10 +42,16 @@ class Meta(BaseModel):
     n_trials: int = 0
     date: str | None = None
     curvature_tag: str | None = None  # future geometry work (backlog)
+    contact_fraction_source: str | None = None
+    contact_model_schema_version: int | None = None
+    contact_summary_path: str | None = None
+    contact_grasp_feasible: bool | None = None
+    contact_antipodal_grasp: bool | None = None
+    contact_floor_applied: bool | None = None
 
 
 class ExperienceRecord(BaseModel):
-    """One measured object-gripper pair (one row of experiences.jsonl)."""
+    """One measured object-gripper pair in the generated experience cache."""
 
     object_id: str
     image_path: str

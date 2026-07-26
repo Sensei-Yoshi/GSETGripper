@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "red_grape_3",
+  "object_name": "Red grape 3",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/red_grape_3/image.png",
+  "image_sha256": "08a6fe30aa379a4b34b0ea649ff7304b01c1c256e2e025d62f452c91674500a2",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small spherical object with a smooth, dry, nonporous surface and continuous spherical curvature. The intended contact region is clean and provides a very small point-like contact area.",
+    "contact_region": "The lateral opposing sides of the sphere along its centered equatorial band.",
+    "contact_material": "Substrate polymer or resin.",
+    "visible_surface_material": "Substrate polymer or resin.",
+    "visible_surface_condition": "Clean and dry.",
+    "local_geometry": "Continuous spherical curvature with no visible seams, ridges, or interruptions.",
+    "contact_patch_visibility": "Clearly visible.",
+    "uncertainty": "The exact material composition and internal structure cannot be verified strictly from visual evidence."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "59fd17c69ef3f05907991d7645d0c81fd8e785ad1f079f6d9d14096dfe0580bc",
+  "updated_at": "2026-07-23T00:44:50.826216+00:00"
+}

@@ -10,7 +10,7 @@ Interfaces
     LoadCell         : read_n
     RoughnessSource  : read_class          (the trusted LED system)
     MassSource       : read_g              (the scale)
-    CameraSource     : capture_rgb / capture_depth_mm
+    CameraSource     : capture_rgb
 
 The gripper firmware exposes SET_FORCE <n> / OPEN / CLOSE / READ / LIFT over
 serial at 9600 baud, newline-terminated — see firmware/gripper_force.
@@ -60,7 +60,6 @@ class MassSource(Protocol):
 @runtime_checkable
 class CameraSource(Protocol):
     def capture_rgb(self) -> np.ndarray: ...
-    def capture_depth_mm(self) -> np.ndarray: ...
 
 
 @dataclass
@@ -169,18 +168,9 @@ class OrbbecCamera:
 
         self.pipeline = Pipeline()
         conf = OBConfig()
-        profiles = self.pipeline.get_stream_profile_list(OBSensorType.DEPTH_SENSOR)
-        conf.enable_stream(profiles.get_default_video_stream_profile())
         color = self.pipeline.get_stream_profile_list(OBSensorType.COLOR_SENSOR)
         conf.enable_stream(color.get_default_video_stream_profile())
         self.pipeline.start(conf)
-
-    def capture_depth_mm(self) -> np.ndarray:
-        frames = self.pipeline.wait_for_frames(500)
-        depth = frames.get_depth_frame()
-        w, h, scale = depth.get_width(), depth.get_height(), depth.get_depth_scale()
-        raw = np.frombuffer(depth.get_data(), dtype=np.uint16).reshape((h, w))
-        return raw.astype(np.float32) * scale
 
     def capture_rgb(self) -> np.ndarray:
         import cv2
@@ -308,18 +298,6 @@ class MockCamera:
         cv2.putText(img, obj.object_id, (10, 128), cv2.FONT_HERSHEY_SIMPLEX, 0.6,
                     (255, 255, 255), 2)
         return img
-
-    def capture_depth_mm(self) -> np.ndarray:
-        # A flat object whose visible height encodes the contact fraction.
-        assert self.bench.current is not None
-        obj = self.bench.current
-        h_pad = self.bench.cfg.geometry.pad_height_mm
-        h_avail = obj.projected_contact_fraction * h_pad
-        depth = np.full((256, 256), 800.0, dtype=np.float32)  # background 800 mm
-        rows = int(256 * min(1.0, h_avail / h_pad))
-        depth[128 - rows // 2: 128 + rows // 2, 96:160] = 600.0  # object closer
-        return depth
-
 
 def make_mock_bench(cfg: Config, seed: int | None = None) -> tuple[MockBench, Bench]:
     """Build a mock bench + wired-up devices."""

@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "monster_energy_drink",
+  "object_name": "Monster Energy drink",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/monster_energy_drink/image.png",
+  "image_sha256": "875d2df5a06757c895b50dcc2182f115d79b5076e76e39e61cd505a5ac642009",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical aluminum beverage can with a smooth, dry, coated metal sidewall and continuous curvature. The intended contact region is clean and uniform, presenting opposing lateral pads against a smooth cylindrical profile.",
+    "contact_region": "Opposing lateral sides of the cylindrical body, centered vertically",
+    "contact_material": "Coated aluminum metal substrate",
+    "visible_surface_material": "Coated aluminum metal",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous cylindrical curvature with smooth lateral surface",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The lateral surface is partially obscured by top-down perspective, but the cylindrical geometry and coating are clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "5615cd1bbfbb716d0b3ed717cb8a9c333b8f6a6ee76fd46775c2101b2e7ad820",
+  "updated_at": "2026-07-23T00:44:50.848378+00:00"
+}

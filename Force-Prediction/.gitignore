@@ -11,23 +11,17 @@ __pycache__/
 .ruff_cache/
 
 # Generated data (regenerate with: make collect ; run_experiment.py)
-data/experiences.jsonl
-data/splits.json
-data/images/*.png
 data/cache/*.json
+data/cache/*/experiences.jsonl
 results.json
 test_data/marigold_tests/*
 !test_data/marigold_tests/.gitkeep
 
 # Exp-Force viewer artifacts
 data/expforce/preparation_manifest.json
-data/expforce/validation_experiences.jsonl
-data/expforce/descriptors/
 data/expforce/runs/
 data/expforce/run_images/
 data/expforce/results/
-data/expforce/images/*.png
 
-# Keep the data dirs themselves
-!data/images/
+# Keep the cache directory itself
 !data/cache/

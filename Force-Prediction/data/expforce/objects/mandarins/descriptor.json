@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "mandarins",
+  "object_name": "Mandarins",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/mandarins/image.png",
+  "image_sha256": "8e9722647ddcc0a3f531b2c0f9e0c06692ff3dc98ae39185fb4e9ce76365f7e4",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small round citrus fruit with a textured, dry peel and continuous curvature. The intended contact region is clean and exhibits natural lobed geometry with slight surface irregularities.",
+    "contact_region": "Lateral opposing sides of the citrus fruit along the centered grasp band",
+    "contact_material": "Citrus fruit peel",
+    "visible_surface_material": "Citrus fruit peel",
+    "visible_surface_condition": "Clean, dry, and finely textured",
+    "local_geometry": "Curved and spheroidal with subtle surface dimpling and natural lobed segments",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible surface properties, though exact compliance and deformation behavior under load cannot be determined from visual evidence alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "449d2e520d42a5744de445474499e874b817afbb09e06b0ca2bd8fabe5abe9b3",
+  "updated_at": "2026-07-23T00:44:50.825030+00:00"
+}

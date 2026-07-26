@@ -206,17 +206,19 @@ records, contact-fraction captures, caches, saved runs, benchmark results, and s
 | Attribute | Meaning |
 |---|---|
 | `image` | source path, availability, hash, and optional remote URL |
+| `image_2` | optional calibrated second view used by surface/contact estimation |
 | `description` | optional structured description plus prompt/model provenance |
 | `embedding` | optional embedding metadata and cache key; vectors stay in the disk cache |
+| `roughness` | optional dataset-scoped Marigold statistics and provenance |
 | `mass_g` | optional measured mass |
 | `roughness_class` | optional ordinal roughness |
 | `projected_contact_fraction` | optional dimensionless projected two-pad geometry proxy |
 | `gripper_outcomes` | optional Gecko/silicone feasibility and force labels |
 
-The aggregate also exposes `images`, `descriptions`, and `embeddings` convenience mappings,
+The aggregate also exposes `images`, `second_images`, `descriptions`, and `embeddings` convenience mappings,
 capability flags, a source fingerprint, and dataset-specific artifact paths. Image-only
 folders remain useful for Gemini description generation and Data Viewer analysis even though
-force pipelines and benchmark controls are disabled. A validated `dataset_2gripper.csv`
+force pipelines and benchmark controls are disabled. A validated `dataset.csv`
 enables paired-data capabilities.
 
 The persistent force-training contract is one `ExperienceRecord` per object–gripper pair.
@@ -227,12 +229,16 @@ oracle.
 The active synthetic source is:
 
 ```text
-data/expforce/dataset_2gripper.csv
+data/expforce/dataset.csv
 ```
 
 It contains 129 objects and converts to 258 experience rows. Every current object has one
-strict winning gripper. The source CSV remains immutable during preparation; generated
-descriptors, embeddings, experience rows, runs, and benchmarks live in separate paths.
+strict winning gripper. Preparation never mutates the source CSV; generated descriptors,
+embeddings, experience rows, runs, and benchmarks live in separate paths. Researchers can
+make explicit validated corrections in the Data Viewer. Those saves atomically update the
+mass, roughness class, projected contact, force, and feasibility CSV fields, recalculate the
+favored gripper, and refresh experience rows and provenance. Names, images, descriptors, and
+generated artifact metrics remain read-only there.
 
 Preparation is stage-selectable and resumable:
 
@@ -242,8 +248,8 @@ Preparation is stage-selectable and resumable:
 4. experiences add missing descriptions first and require complete measurements plus paired
    gripper labels.
 
-Per-object checkpoints live in `data/<dataset>/descriptors/`, and the stage manifest lives at
-`data/<dataset>/preparation_manifest.json`. No downstream stage runs merely because an
+Per-object checkpoints live at `data/<dataset>/objects/<object_id>/descriptor.json`, and the
+stage manifest lives at `data/<dataset>/preparation_manifest.json`. No downstream stage runs merely because an
 upstream stage was selected.
 
 Both gripper rows for an object must remain in the same training or test fold. A known query
@@ -539,14 +545,15 @@ The application provides:
 - **Benchmark:** leave-one-object-out evaluation and saved JSON/CSV for capable datasets;
 - **Runs Viewer:** resumable E1–E4 suite comparison, saved benchmark/single-run inspection,
   provenance, separate gripper panels, and PNG/SVG/CSV exports;
-- **Data Viewer:** active-dataset images, optional measurements/outcomes, descriptions, and
-  embedding status;
+- **Data Viewer:** active-dataset images, optional measurements/outcomes, descriptions,
+  embedding status, and a validated editor for paired CSV measurements and outcomes;
 - **Prompts & Embodiments:** validate and atomically save prompt text and written gripper
   descriptions;
 - **Contact Fraction:** capture an RGB image and estimate the combined projected
   side-contact fraction of both 4.2-inch pads;
-- **Data Preparation:** independently selectable, resumable descriptions, embeddings, and
-  experience records with automatic prerequisites;
+- **Data Preparation:** independently selectable, resumable descriptions, embeddings,
+  Marigold roughness, second-view surface/contact estimates, and experience records with
+  automatic prerequisites and capability gating;
 - **Cache Status:** response/cache counts and latest telemetry;
 - **Help & Experiments:** current experiment definitions loaded from configuration.
 
@@ -683,7 +690,7 @@ From `GSETGripper/Force-Prediction`:
 ../../env/bin/python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --live
 ../../env/bin/python scripts/prepare_dataset.py --dataset expforce --stages descriptions embeddings experiences --live
 ../../env/bin/python -m streamlit run app.py
-../../env/bin/python -m modules.collect --mock --n 40
+../../env/bin/python -m modules.collect --mock --dataset mock --n 40
 ```
 
 ## 19. Invariants

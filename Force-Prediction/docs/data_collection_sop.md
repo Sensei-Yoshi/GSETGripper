@@ -73,9 +73,9 @@ Two capture tools, both `cv2.VideoCapture` based:
 2. **Contact-fraction test capture** — the **"Contact Fraction"** tab in
    `streamlit run app.py`. Live preview + Capture, with a **camera index**
    selector (try 0/1 to find the Orbbec RGB feed). Each capture runs the
-   geometric contact model and writes `data/test_contact_area/<name>/` (image
-   named `<name>.png`, plus outline overlay, CSV, contact figure, and
-   `summary.json`). See `scripts/contact_model/README.md`.
+   geometric contact model and writes
+   `data/<dataset>/objects/<name>/contact_fraction/` beside the object's
+   `image.png`. See `modules/contact_model/README.md`.
 
 Capture tips: object alone on a plain background (background removal keeps the
 largest foreground blob — keep the gripper and clutter out of frame), jaws
@@ -110,15 +110,13 @@ the old → new update.
 
 Re-measure whenever the camera or the object-placement line moves.
 
-## Dataset format (`data/experiences.jsonl`, one row per object-gripper)
-```json
-{"object_id": "object_001", "image_path": "data/images/object_001.png",
- "mass_g": 420.0, "roughness_class": 2, "projected_contact_fraction": 0.83,
- "gripper": "gecko", "min_force_n": 1.27, "feasible": true,
- "failed_at_limit_n": null, "semantic_description": "smooth rigid plastic bottle",
- "meta": {"trial_forces_n": [1.27, 1.31, 1.28], "n_trials": 3, "pad_id": "g-01",
-          "temp_c": 22.5, "humidity_pct": 40, "date": "2026-07-21"}}
-```
+## Dataset format
+
+Each measured dataset stores its paired labels in `data/<dataset>/dataset.csv`.
+The object's source image and derived contact artifacts live under
+`objects/<object_id>/`. The pipeline derives its one-row-per-gripper
+`ExperienceRecord` cache at `data/cache/<dataset>/experiences.jsonl`; that JSONL
+is rebuildable and is not source data.
 
 ## Splitting (must not leak)
 Both rows of an object share a fold: `GroupKFold(object_id)` via

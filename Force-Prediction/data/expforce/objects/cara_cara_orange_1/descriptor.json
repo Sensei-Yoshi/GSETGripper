@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "cara_cara_orange_1",
+  "object_name": "Cara Cara orange 1",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/cara_cara_orange_1/image.png",
+  "image_sha256": "6eaaaf29cc9fbf390f4f74a6e4a415ae5b0b5ea354cc988213cee6cf67b4a93f",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Spherical citrus fruit object with a textured, dry, porous peel and continuous convex curvature. The intended contact region has no visible seams or contamination, presenting a naturally dimpled surface.",
+    "contact_region": "The lateral opposing sides of the spherical fruit within the centered grasp band.",
+    "contact_material": "Natural citrus peel (peel substrate)",
+    "visible_surface_material": "Natural citrus peel",
+    "visible_surface_condition": "Dry, slightly textured, clean",
+    "local_geometry": "Continuous convex curvature with a fine, dimpled porous texture",
+    "contact_patch_visibility": "The top-down perspective shows the general object, but the exact lateral contact patches are partially obscured by viewing angle.",
+    "uncertainty": "The exact tactile friction and surface micro-texture cannot be fully determined from the overhead visual image alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "85532cf9f81fa0f9c794c900d3790d12f950385ebab99a32a465d4e76397f5a2",
+  "updated_at": "2026-07-23T00:44:50.771430+00:00"
+}

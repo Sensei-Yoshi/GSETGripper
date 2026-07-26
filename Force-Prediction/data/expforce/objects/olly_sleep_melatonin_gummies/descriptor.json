@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "olly_sleep_melatonin_gummies",
+  "object_name": "Olly? Sleep Melatonin Gummies",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/olly_sleep_melatonin_gummies/image.png",
+  "image_sha256": "63498644fe5707266a865d83a34df6881559151d8f00fd2fee552ea3d09c0a85",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Opaque plastic container with a smooth, dry, flat-sided rectangular prism body with rounded corners. The intended contact region is clean, flat to slightly curved at the edges, and uninterrupted by seams.",
+    "contact_region": "Opposing lateral flat sides of the rectangular plastic container",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat planar surfaces with rounded vertical corner edges",
+    "contact_patch_visibility": "Partially visible from top-down perspective",
+    "uncertainty": "The lateral contact regions are partially obscured by the top-down viewing angle, though the prismatic body geometry is clear."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "b2dec3073346321c07c8bcaefdd6e76f75378541fb6f864cc55e21aa34a6d7ce",
+  "updated_at": "2026-07-23T00:44:50.813138+00:00"
+}

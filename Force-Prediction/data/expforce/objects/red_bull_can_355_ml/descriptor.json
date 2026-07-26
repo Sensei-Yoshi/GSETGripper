@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "red_bull_can_355_ml",
+  "object_name": "Red Bull can (355 ml)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/red_bull_can_355_ml/image.png",
+  "image_sha256": "a00b21e1d4cf77f61bc5ec87ba33acbee26b5a5219068db79b8ce220b5ee55e0",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Painted aluminum beverage can with a smooth, dry, coated lateral surface and continuous cylindrical curvature. The intended contact region has no visible seams or interruptions.",
+    "contact_region": "Lateral sidewall of the cylindrical can",
+    "contact_material": "Coated aluminum",
+    "visible_surface_material": "Painted aluminum",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Cylindrical curvature with a continuous, smooth surface lacking prominent ridges or seams in the grasp band",
+    "contact_patch_visibility": "Clearly visible in the image",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "7cd3661a45c74d1c36ff9a88a735f04e247d62cbcbb9cb8fd440f1c111cec6fa",
+  "updated_at": "2026-07-23T00:44:50.762188+00:00"
+}

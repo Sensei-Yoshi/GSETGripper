@@ -3,24 +3,6 @@
 Ordered roughly by expected value. The MVP deliberately uses simple, defensible
 choices; each item below is a concrete upgrade path with the file it touches.
 
-## Projected contact fraction  (`perception.py`)
-The MVP uses the height-ratio proxy `a = min(1, h_available / h_pad)`, where
-`h_available` comes from the near-object vertical span in the depth frame. This
-is a geometric proxy, **not** microscopic contact area (especially for gecko).
-The separate Streamlit contact-model testbed now provides a width-free,
-side-facing two-pad length fraction, but it is deliberately not wired into the
-force experiments until it is validated on physical contact measurements.
-Upgrade path:
-1. **Segmentation overlap** — segment the object and compute pad-rectangle ∩
-   object overlap instead of a full-frame vertical span (removes the "object
-   spans the frame" framing assumption).
-2. **Curvature / local depth** — use Astra+ depth to estimate local curvature at
-   the grasp band; widthwise conformity on curved objects dominates real gecko
-   contact. Record a coarse `curvature_tag` (flat/cylindrical/complex) now
-   (`Meta.curvature_tag` already exists) so it can explain residuals later.
-3. **Expected fin-ray deformation** — model how the compliant finger conforms.
-4. **Tactile realized contact** — measure actual contact once tactile sensing exists.
-
 ## Retrieval  (`retrieval.py`)
 - Learn the four hybrid weights (currently hand-set) via cross-validated search.
 - Pairwise learning-to-rank trained around *force* similarity.

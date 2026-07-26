@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "orange_1",
+  "object_name": "Orange 1",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/orange_1/image.png",
+  "image_sha256": "b26b5dcd2cf97965499595cfb8452810a1962c5360a00af60604a620d193bec6",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Spherical citrus fruit with a textured peel substrate. The intended contact region is dry, convexly curved, and presents a slightly pebbled natural rind surface.",
+    "contact_region": "Lateral opposing flanks of the spherical fruit",
+    "contact_material": "Citrus peel substrate",
+    "visible_surface_material": "Citrus peel substrate",
+    "visible_surface_condition": "Dry, clean, and textured",
+    "local_geometry": "Continuous convex spherical curvature with fine pitted texture",
+    "contact_patch_visibility": "Clearly visible in the top-down view",
+    "uncertainty": "Exact compliance level of the inner pulp cannot be determined visually from the exterior peel."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "270dc29d38038768930f564f08f0729d2cb3adc4548a8eeadbe9546795fe10d2",
+  "updated_at": "2026-07-23T00:44:50.774368+00:00"
+}

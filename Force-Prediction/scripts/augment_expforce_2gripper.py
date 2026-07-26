@@ -18,7 +18,7 @@ Modeling choices (documented so this is defensible, not made-up):
     A low contact fraction penalizes gecko more (adhesion needs real contact area).
 
 Outputs (under data/expforce/):
-  dataset_2gripper.csv        human-readable augmented table
+  dataset.csv                 human-readable augmented table
   experiences_2gripper.jsonl  our ExperienceRecord format (2 rows/object) for the pipeline
 
     python scripts/augment_expforce_2gripper.py
@@ -152,8 +152,8 @@ def break_tie(
 
 def main() -> int:
     cfg = load_config()
-    src = cfg.root / "data" / "expforce" / "dataset.csv"
-    out_csv = cfg.root / "data" / "expforce" / "dataset_2gripper.csv"
+    src = cfg.root / "data" / "expforce" / "source_dataset.csv"
+    out_csv = cfg.root / "data" / "expforce" / "dataset.csv"
     out_jsonl = cfg.root / "data" / "expforce" / "experiences_2gripper.jsonl"
     limit = cfg.force.limit_n
 
@@ -200,7 +200,7 @@ def main() -> int:
             "gecko_feasible": gecko_feasible, "favored_gripper": favored,
         })
 
-        img_rel = f"data/expforce/images/{r['Image']}"
+        img_rel = f"data/expforce/objects/{oid}/image.png"
         for gripper, force, feas in (
             (Gripper.SILICONE, sil, True),
             (Gripper.GECKO, gecko, gecko_feasible),

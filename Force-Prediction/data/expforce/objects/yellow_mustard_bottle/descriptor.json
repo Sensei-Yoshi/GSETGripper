@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "yellow_mustard_bottle",
+  "object_name": "Yellow mustard bottle",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/yellow_mustard_bottle/image.png",
+  "image_sha256": "3df68013b5c92457a9d665e12b8c8db4a6ecb91b92aae8e8190383bc2fd01c27",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Plastic squeeze bottle with a smooth, dry, nonporous lateral surface. The intended contact region is clean, features continuous curvature within the centered grasp band, and has no visible seams or interruptions.",
+    "contact_region": "Lateral opposing sidewalls within the centered grasp band",
+    "contact_material": "Plastic",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Smooth continuous curvature along the lateral surfaces",
+    "contact_patch_visibility": "The top view provides clear visibility of the upper structure, but the exact lateral contact patches are viewed from a distance.",
+    "uncertainty": "The exact texture and micro-features of the lateral grasp surfaces are somewhat obscured by the top-down perspective and lighting."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "fddf39136dfa06ce1f7a72b2f4c9e9e4e592d9206050ef8fcac088b077c277f9",
+  "updated_at": "2026-07-23T00:44:50.842770+00:00"
+}

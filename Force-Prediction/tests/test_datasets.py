@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import base64
+import hashlib
 import json
 import shutil
+
+import pytest
 
 from modules.cache import DiskCache
 from modules.config import load_config
@@ -53,7 +57,7 @@ def test_catalog_discovers_direct_data_folders_and_excludes_artifacts(tmp_path) 
 
 def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
     cfg = _config_at(tmp_path)
-    destination = tmp_path / "data/expforce/dataset_2gripper.csv"
+    destination = tmp_path / "data/expforce/dataset.csv"
     destination.parent.mkdir(parents=True)
     source_cfg = load_config().model_copy(deep=True)
     shutil.copyfile(source_path(source_cfg), destination)
@@ -73,6 +77,218 @@ def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
     assert dataset.capabilities.can_benchmark
 
 
+def test_canonical_object_folder_discovers_contact_summary(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    object_dir = tmp_path / "data/Physical/objects/test_cup"
+    contact_dir = object_dir / "contact_fraction"
+    contact_dir.mkdir(parents=True)
+    (object_dir / "image.png").write_bytes(b"source")
+    (object_dir / "image_2.png").write_bytes(b"second view")
+    (contact_dir / "summary.json").write_text(json.dumps({
+        "schema_version": 2,
+        "results": {
+            "object_height_mm": 82.5,
+            "object_width_mm": 47.25,
+            "grasp_feasible": True,
+            "antipodal_grasp": True,
+            "geometric_contact_fraction": 0.72,
+            "contact_floor_applied": False,
+            "combined_contact_fraction": 0.72,
+        },
+    }))
+
+    dataset = get_dataset(cfg, "Physical")
+    item = dataset.objects["test_cup"]
+
+    assert item.image.path == "data/Physical/objects/test_cup/image.png"
+    assert item.image_2 is not None
+    assert item.image_2.path == "data/Physical/objects/test_cup/image_2.png"
+    assert dataset.capabilities.can_estimate_surface_area
+    assert item.projected_contact_fraction == 0.72
+    assert item.contact_fraction is not None
+    assert item.contact_fraction.object_height_mm == 82.5
+    assert item.contact_fraction.object_width_mm == 47.25
+    assert item.contact_fraction.summary_path.endswith(
+        "objects/test_cup/contact_fraction/summary.json"
+    )
+
+
+def test_flat_objectname_2_files_are_one_object_with_two_views(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Photos"
+    root.mkdir(parents=True)
+    (root / "cup.png").write_bytes(b"primary")
+    (root / "cup_2.png").write_bytes(b"second")
+
+    dataset = get_dataset(cfg, "Photos")
+
+    assert list(dataset.objects) == ["cup"]
+    assert dataset.objects["cup"].image_2 is not None
+    assert dataset.objects["cup"].image_2.path == "data/Photos/cup_2.png"
+    assert dataset.capabilities.has_second_images
+    assert dataset.capabilities.can_estimate_surface_area
+
+
+def test_surface_area_stage_is_rejected_when_any_second_view_is_missing(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Photos"
+    root.mkdir(parents=True)
+    (root / "cup.png").write_bytes(b"primary")
+    (root / "cup_2.png").write_bytes(b"second")
+    (root / "bowl.png").write_bytes(b"primary only")
+    dataset = get_dataset(cfg, "Photos")
+
+    assert not dataset.capabilities.can_estimate_surface_area
+    with pytest.raises(ValueError, match="image_2 for every object"):
+        prepare_dataset_stages(
+            cfg,
+            dataset,
+            [PreparationStage.SURFACE_AREA],
+            live=False,
+        )
+
+
+def test_surface_area_stage_uses_image_2_and_reuses_its_checkpoint(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    cfg = _config_at(tmp_path)
+    object_dir = tmp_path / "data/Physical/objects/cup"
+    object_dir.mkdir(parents=True)
+    (object_dir / "image.png").write_bytes(b"primary")
+    (object_dir / "image_2.png").write_bytes(b"calibrated second view")
+    dataset = get_dataset(cfg, "Physical")
+    calls = []
+
+    monkeypatch.setattr(
+        "modules.contact_model.create_rembg_session",
+        lambda: "shared-rembg-session",
+    )
+
+    def fake_analyze(image_path, run_dir, name, params, session):
+        calls.append((image_path, session))
+        return None, {
+            "schema_version": 2,
+            "metric": "projected_two_pad_contact_fraction",
+            "image": image_path.name,
+            "px_per_mm": params.px_per_mm,
+            "params": {
+                "pad_length_mm": params.pad_length_mm,
+                "minimum_bend_radius_mm": params.minimum_bend_radius_mm,
+                "side_angle_deg": params.side_angle_deg,
+                "minimum_contact_fraction": params.minimum_contact_fraction,
+                "closing_axis": params.closing_axis,
+            },
+            "results": {
+                "object_height_mm": 100.0,
+                "object_width_mm": 40.0,
+                "geometric_contact_fraction": 0.6,
+                "combined_contact_fraction": 0.6,
+                "grasp_feasible": True,
+                "antipodal_grasp": True,
+                "contact_floor_applied": False,
+            },
+        }, {}
+
+    monkeypatch.setattr("modules.contact_model.analyze_image", fake_analyze)
+    result = prepare_dataset_stages(
+        cfg,
+        dataset,
+        [PreparationStage.SURFACE_AREA],
+        live=False,
+    )
+
+    assert calls == [(object_dir / "image_2.png", "shared-rembg-session")]
+    assert result["surface_area_completed"] == 1
+    assert dataset.objects["cup"].projected_contact_fraction == 0.6
+    summary = json.loads((object_dir / "contact_fraction/summary.json").read_text())
+    assert summary["source"]["view"] == "image_2"
+    assert summary["source"]["path"].endswith("objects/cup/image_2.png")
+
+    monkeypatch.setattr(
+        "modules.contact_model.analyze_image",
+        lambda *args, **kwargs: pytest.fail("reusable surface result was recomputed"),
+    )
+    prepare_dataset_stages(
+        cfg,
+        dataset,
+        [PreparationStage.SURFACE_AREA],
+        live=False,
+    )
+
+
+def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Photos"
+    root.mkdir(parents=True)
+    # Valid 1x1 RGB PNG so the production image-open/hash path is exercised.
+    (root / "cup.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    ))
+    dataset = get_dataset(cfg, "Photos")
+    calls = []
+
+    class FakeAnalyzer:
+        model_id = "test/marigold"
+
+        def __init__(self, *, device, processing_resolution):
+            self.device = device
+            self.processing_resolution = processing_resolution
+
+    monkeypatch.setattr("modules.models.marigold.available_device", lambda: "cpu")
+    monkeypatch.setattr("modules.models.marigold.MarigoldAnalyzer", FakeAnalyzer)
+
+    def fake_run(analyzer, image, output_root, **kwargs):
+        calls.append(kwargs["source_path"])
+        run_dir = output_root / "test-run"
+        run_dir.mkdir(parents=True)
+        metadata = {
+            "schema_version": 2,
+            "run_id": "test-run",
+            "created_at": "2026-07-26T00:00:00+00:00",
+            "source": {
+                "image_sha256": hashlib.sha256(image.tobytes()).hexdigest(),
+            },
+            "model": {
+                "id": analyzer.model_id,
+                "processing_resolution": analyzer.processing_resolution,
+                "num_inference_steps": kwargs["num_inference_steps"],
+                "seed": kwargs["seed"],
+            },
+            "roughness": {"mean": 0.4, "median": 0.35, "std": 0.1},
+        }
+        (run_dir / "metadata.json").write_text(json.dumps(metadata))
+        return {**metadata, "run_dir": str(run_dir)}
+
+    monkeypatch.setattr("modules.models.marigold.run_marigold", fake_run)
+    result = prepare_dataset_stages(
+        cfg,
+        dataset,
+        [PreparationStage.ROUGHNESS],
+        live=False,
+    )
+
+    assert calls == ["data/Photos/cup.png"]
+    assert result["roughness_completed"] == 1
+    assert dataset.objects["cup"].roughness is not None
+    assert dataset.objects["cup"].roughness.mean == 0.4
+
+    monkeypatch.setattr(
+        "modules.models.marigold.run_marigold",
+        lambda *args, **kwargs: pytest.fail("reusable roughness result was recomputed"),
+    )
+    prepare_dataset_stages(
+        cfg,
+        dataset,
+        [PreparationStage.ROUGHNESS],
+        live=False,
+    )
+
+
 def test_description_stage_stops_without_running_downstream_stages(tmp_path) -> None:
     cfg = _config_at(tmp_path)
     root = tmp_path / "data/Photos"
@@ -87,14 +303,14 @@ def test_description_stage_stops_without_running_downstream_stages(tmp_path) -> 
         live=False,
     )
 
-    checkpoint = json.loads((root / "descriptors/cup.json").read_text())
+    checkpoint = json.loads((root / "objects/cup/descriptor.json").read_text())
     manifest = json.loads((root / "preparation_manifest.json").read_text())
     assert result["descriptors_completed"] == 1
     assert result["embeddings_completed"] == 0
     assert set(manifest["stages"]) == {"index", "descriptions"}
     assert checkpoint["descriptor_source"] == "object_name_fallback"
     assert checkpoint["embedding_status"] == "pending"
-    assert not (root / "validation_experiences.jsonl").exists()
+    assert not (tmp_path / "data/cache/Photos/experiences.jsonl").exists()
     assert get_dataset(cfg, "Photos").objects["cup"].description is not None
 
 
@@ -112,13 +328,13 @@ def test_embedding_stage_adds_description_prerequisite_and_marks_mock_source(tmp
         live=False,
     )
 
-    checkpoint = json.loads((root / "descriptors/cup.json").read_text())
+    checkpoint = json.loads((root / "objects/cup/descriptor.json").read_text())
     manifest = json.loads((root / "preparation_manifest.json").read_text())
     assert set(manifest["stages"]) == {"index", "descriptions", "embeddings"}
     assert checkpoint["embedding_status"] == "ready"
     assert checkpoint["embedding_model"].startswith("mock-sha256-")
     assert checkpoint["embedding_cache_key"] is None
-    assert not (root / "validation_experiences.jsonl").exists()
+    assert not (tmp_path / "data/cache/Photos/experiences.jsonl").exists()
 
 
 def test_dataset_cache_namespaces_are_isolated_with_expforce_legacy_readthrough(

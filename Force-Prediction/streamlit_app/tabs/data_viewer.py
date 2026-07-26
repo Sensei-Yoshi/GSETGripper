@@ -9,8 +9,11 @@ import numpy as np
 import streamlit as st
 
 from modules.contracts import Gripper, group_by_object
+from modules.datasets import DatasetObject, DatasetObjectEdit, update_csv_dataset_object
 from modules.expforce import (
+    ExpForceRow,
     load_experience_pool,
+    load_rows,
     load_saved_runs,
     pipeline_result_from_dict,
 )
@@ -38,12 +41,116 @@ def _thumbnail(path: str, modified_ns: int, max_width: int = 420) -> np.ndarray 
     return _rgb(image)
 
 
+def _card_editor(
+    context: AppContext,
+    item: DatasetObject,
+    source: ExpForceRow,
+) -> None:
+    prefix = f"data_viewer_{context.dataset.dataset_id}_{item.object_id}"
+    with st.expander("Edit measurements and outcomes"):
+        st.caption(
+            "Saves atomically to dataset.csv and refreshes paired experience records. "
+            "Names, images, descriptors, and generated artifacts remain read-only."
+        )
+        with st.form(f"{prefix}_form"):
+            measurement_cols = st.columns(3)
+            mass_g = measurement_cols[0].number_input(
+                "Mass (g)",
+                min_value=0.001,
+                value=float(source.mass_g),
+                key=f"{prefix}_mass_g",
+            )
+            roughness_class = measurement_cols[1].number_input(
+                "Roughness class",
+                min_value=1,
+                max_value=5,
+                value=int(source.roughness_class),
+                step=1,
+                key=f"{prefix}_roughness_class",
+            )
+            projected_contact_fraction = measurement_cols[2].number_input(
+                "Projected contact fraction",
+                min_value=0.0,
+                max_value=1.0,
+                value=float(item.projected_contact_fraction or 0.0),
+                step=0.001,
+                format="%.3f",
+                key=f"{prefix}_projected_contact_fraction",
+            )
+
+            outcome_cols = st.columns(2)
+            outcome_values: dict[str, tuple[bool, float | None]] = {}
+            for column, gripper in zip(
+                outcome_cols, ("gecko", "silicone"), strict=True
+            ):
+                feasible = getattr(source, f"{gripper}_feasible")
+                force = getattr(source, f"{gripper}_force_n")
+                with column:
+                    st.markdown(f"**{gripper.title()} outcome**")
+                    edited_feasible = st.checkbox(
+                        "Feasible",
+                        value=feasible,
+                        key=f"{prefix}_{gripper}_feasible",
+                    )
+                    edited_force = st.number_input(
+                        "Minimum force (N)",
+                        min_value=0.001,
+                        max_value=float(context.config.force.limit_n),
+                        value=float(force) if force is not None else None,
+                        step=0.05,
+                        placeholder="No force for an infeasible outcome",
+                        key=f"{prefix}_{gripper}_force_n",
+                    )
+                    outcome_values[gripper] = (
+                        edited_feasible,
+                        float(edited_force)
+                        if edited_feasible and edited_force is not None
+                        else None,
+                    )
+            candidate_payload = {
+                "silicone_force_n": outcome_values["silicone"][1],
+                "silicone_feasible": outcome_values["silicone"][0],
+                "gecko_force_n": outcome_values["gecko"][1],
+                "gecko_feasible": outcome_values["gecko"][0],
+            }
+            st.caption(
+                "Favored gripper is recalculated on save. "
+                f"Current value: {source.favored_gripper.title()}"
+            )
+
+            submitted = st.form_submit_button(
+                "Save object changes",
+                type="primary",
+                key=f"{prefix}_save",
+            )
+        if submitted:
+            try:
+                edit = DatasetObjectEdit(
+                    mass_g=mass_g,
+                    roughness_class=roughness_class,
+                    projected_contact_fraction=projected_contact_fraction,
+                    **candidate_payload,
+                )
+                update_csv_dataset_object(
+                    context.config,
+                    context.dataset,
+                    item.object_id,
+                    edit,
+                )
+            except (KeyError, OSError, ValueError) as error:
+                st.error(f"Could not save object: {error}")
+            else:
+                st.success("Saved CSV measurements and experience records. Reloading…")
+                st.rerun()
+
+
 def _description_catalog(context: AppContext) -> None:
     base_cfg = context.config
     rows = context.rows
-    st.info(
-        "Each card combines immutable source fields with dataset-scoped prepared artifacts. "
-        "Projected contact fraction is a dimensionless geometry proxy, not physical area."
+    source_rows = (
+        {row.object_id: row for row in load_rows(context.config)}
+        if context.dataset.adapter == "expforce_paired_csv"
+        else {}
     )
     search = st.text_input("Search objects", placeholder="Material, object, condition...")
     page_size = st.segmented_control(
@@ -80,17 +187,40 @@ def _description_catalog(context: AppContext) -> None:
         with st.container(border=True):
             image_col, detail_col = st.columns([0.28, 0.72], gap="medium")
             with image_col:
+                st.markdown("**Image 1 — Perception view**")
+                st.caption("Gemini, embeddings, and Marigold")
                 if image_path.exists():
                     image = _thumbnail(str(image_path), image_path.stat().st_mtime_ns)
                     if image is not None:
                         st.image(image, width="stretch")
+                    else:
+                        st.warning("Primary image could not be decoded.")
                 else:
-                    st.warning("Image not downloaded")
+                    st.warning("Primary image is unavailable.")
+                st.caption(f"`{Path(row.image.path).name}`")
+
+                st.markdown("**Image 2 — Geometry view**")
+                st.caption("Surface/contact fraction")
+                if row.image_2 is not None:
+                    image_2_path = base_cfg.root / row.image_2.path
+                    if image_2_path.exists():
+                        image_2 = _thumbnail(
+                            str(image_2_path), image_2_path.stat().st_mtime_ns
+                        )
+                        if image_2 is not None:
+                            st.image(image_2, width="stretch")
+                        else:
+                            st.warning("Second image could not be decoded.")
+                    else:
+                        st.warning("Second image is unavailable.")
+                    st.caption(f"`{Path(row.image_2.path).name}` (`image_2`)")
+                else:
+                    st.info("No `image_2` indexed.")
+                    st.caption("Required for surface/contact estimation")
+
             with detail_col:
                 st.subheader(row.name)
-                st.caption(
-                    f"Object ID: {row.object_id} | Source image: {Path(row.image.path).name}"
-                )
+                st.caption(f"Object ID: {row.object_id}")
 
                 sensor_cols = st.columns(3)
                 sensor_cols[0].metric(
@@ -108,6 +238,11 @@ def _description_catalog(context: AppContext) -> None:
                         else "Not available"
                     ),
                 )
+                if row.roughness is not None:
+                    st.caption(
+                        f"Marigold roughness: mean {row.roughness.mean:.3f}, "
+                        f"median {row.roughness.median:.3f}, std. {row.roughness.std:.3f}"
+                    )
 
                 if row.gripper_outcomes:
                     force_cols = st.columns(2)
@@ -126,6 +261,10 @@ def _description_catalog(context: AppContext) -> None:
                         if outcome:
                             column.caption(f"Feasible: {'Yes' if outcome.feasible else 'No'}")
 
+                source = source_rows.get(row.object_id)
+                if source is not None:
+                    _card_editor(context, row, source)
+
                 if row.description is None:
                     st.warning("No descriptor checkpoint. Run live Data Preparation.")
                     continue
@@ -133,7 +272,8 @@ def _description_catalog(context: AppContext) -> None:
                 embedding = row.embedding
                 source_label = row.description.source.replace("_", " ").title()
                 st.caption(
-                    f"{source_label} | Embedding {embedding.status if embedding else 'pending'} | "
+                    f"{source_label} | "
+                    f"Embedding {embedding.status if embedding else 'pending'} | "
                     f"{embedding.model if embedding and embedding.model else 'not generated'}"
                 )
                 st.write(descriptor.description)

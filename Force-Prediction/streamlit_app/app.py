@@ -48,17 +48,7 @@ def main() -> None:
     )
     context = load_context(selected, base_config=base_cfg, catalog=catalog)
     capability = context.dataset.capabilities
-    if capability.has_paired_labels:
-        st.markdown(
-            '<div class="synthetic-note"><b>Synthetic pipeline validation.</b> '
-            "These labels test software behavior and model integration, not physical gripper performance.</div>",
-            unsafe_allow_html=True,
-        )
-    else:
-        st.info(
-            "This is an image-only dataset. Data Viewer, Data Preparation, Contact Fraction, "
-            "Marigold Roughness, and dataset-scoped cache inspection remain available."
-        )
+
     st.caption(
         f"{len(context.dataset.objects)} objects · {context.dataset.adapter.replace('_', ' ')} · "
         f"descriptions {'ready' if capability.has_descriptions else 'not prepared'} · "

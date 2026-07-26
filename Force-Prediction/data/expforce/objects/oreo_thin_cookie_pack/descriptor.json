@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "oreo_thin_cookie_pack",
+  "object_name": "Oreo Thin cookie pack",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/oreo_thin_cookie_pack/image.png",
+  "image_sha256": "1bf3e689be060fd7fd7abb1346580127c1fddd494ae48d97c7f8d410431c37c2",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small dark circular flat object with a smooth, dry surface and uniform thickness. The intended contact region has opposing parallel planar faces and a thin cylindrical edge.",
+    "contact_region": "Opposing lateral edge surfaces and flat circular faces of the small disk.",
+    "contact_material": "Substrate",
+    "visible_surface_material": "Wood or dark rigid material",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Flat circular disk with a thin cylindrical lateral edge and sharp right-angled transitions.",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact material composition and thickness are not fully discernible from the top-down perspective, but the visible geometry and surface condition are clear."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "314193cabd427fdbdf3adff7a9e957a82bac4531896043ea985bb497ba87a2b1",
+  "updated_at": "2026-07-23T00:44:50.790928+00:00"
+}

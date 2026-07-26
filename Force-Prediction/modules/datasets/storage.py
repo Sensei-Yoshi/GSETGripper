@@ -30,14 +30,14 @@ def write_json_atomic(path: Path, payload: dict) -> None:
 
 
 def checkpoint_path(dataset: Dataset, object_id: str) -> Path:
-    return dataset.paths.descriptors / f"{object_id}.json"
+    return dataset.paths.object_dir(object_id) / "descriptor.json"
 
 
 def load_checkpoints(dataset: Dataset) -> dict[str, PreparedObjectCheckpoint]:
-    if not dataset.paths.descriptors.exists():
-        return {}
     output: dict[str, PreparedObjectCheckpoint] = {}
-    for path in sorted(dataset.paths.descriptors.glob("*.json")):
+    canonical = sorted(dataset.paths.objects.glob("*/descriptor.json"))
+    legacy = sorted(dataset.paths.descriptors.glob("*.json"))
+    for path in [*canonical, *legacy]:
         try:
             item = PreparedObjectCheckpoint.model_validate_json(path.read_text())
         except (OSError, ValueError):
@@ -113,6 +113,7 @@ def build_dataset_experiences(dataset: Dataset, force_limit_n: float) -> list[Ex
         assert item.mass_g is not None
         assert item.roughness_class is not None
         assert item.projected_contact_fraction is not None
+        contact = item.contact_fraction
         for gripper, outcome in item.gripper_outcomes.items():
             records.append(
                 ExperienceRecord(
@@ -126,7 +127,29 @@ def build_dataset_experiences(dataset: Dataset, force_limit_n: float) -> list[Ex
                     feasible=outcome.feasible,
                     failed_at_limit_n=None if outcome.feasible else force_limit_n,
                     semantic_description=description,
-                    meta=Meta(pad_id=f"{dataset.dataset_id}-dataset"),
+                    meta=Meta(
+                        pad_id=f"{dataset.dataset_id}-dataset",
+                        contact_fraction_source=(
+                            "projected_two_pad_v2"
+                            if contact is not None
+                            else "dataset_csv"
+                        ),
+                        contact_model_schema_version=(
+                            contact.schema_version if contact is not None else None
+                        ),
+                        contact_summary_path=(
+                            contact.summary_path if contact is not None else None
+                        ),
+                        contact_grasp_feasible=(
+                            contact.grasp_feasible if contact is not None else None
+                        ),
+                        contact_antipodal_grasp=(
+                            contact.antipodal_grasp if contact is not None else None
+                        ),
+                        contact_floor_applied=(
+                            contact.contact_floor_applied if contact is not None else None
+                        ),
+                    ),
                 )
             )
     save_experiences(dataset.paths.experiences, records)

@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "glass_tumbler",
+  "object_name": "Glass tumbler",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/glass_tumbler/image.png",
+  "image_sha256": "d958bb51a889e001b4a720ff19698c6897e5fdb384d064591693e800643e0d18",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Transparent cylindrical glass object with a smooth, dry, nonporous outer sidewall and continuous curvature. The intended contact region has no visible seams, texture, or contamination.",
+    "contact_region": "Lateral outer sidewall of the glass container",
+    "contact_material": "Glass",
+    "visible_surface_material": "Glass",
+    "visible_surface_condition": "clean and dry",
+    "local_geometry": "smooth cylindrical curvature with continuous surface",
+    "contact_patch_visibility": "clearly visible from top-down perspective",
+    "uncertainty": "The exact grip height along the vertical axis is unconstrained by the top-down view, but the radial contact geometry is clearly apparent."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "a265ce051893b872d159e3e36e5388c151cc60285235ca250a8c79638bf84861",
+  "updated_at": "2026-07-23T00:44:53.999057+00:00"
+}

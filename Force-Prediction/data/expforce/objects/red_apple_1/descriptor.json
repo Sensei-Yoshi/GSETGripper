@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "red_apple_1",
+  "object_name": "Red apple 1",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/red_apple_1/image.png",
+  "image_sha256": "f0901a8a539ca74da3d8e87d56c47ceb9767e069d2aef76dd20ab1f8d63993d9",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Smooth organic fruit with a dry, slightly waxy skin and continuous convex curvature. The intended contact region is clean and smooth with no visible seams or interruptions.",
+    "contact_region": "Lateral opposing sides of the fruit within the centered grasp band",
+    "contact_material": "Substrate fruit skin",
+    "visible_surface_material": "Apple skin",
+    "visible_surface_condition": "Clean and dry with natural waxy sheen",
+    "local_geometry": "Convex, smooth curvature without sharp edges or seams",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact tactile friction coefficient and minor surface micro-textures are not discernible from the visual image alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "48042400316439e718375db909eb89a20c18f33c73f2df59a9d6af50749560f5",
+  "updated_at": "2026-07-23T00:44:50.818055+00:00"
+}

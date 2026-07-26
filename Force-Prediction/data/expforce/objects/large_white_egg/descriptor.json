@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "large_white_egg",
+  "object_name": "Large white egg",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/large_white_egg/image.png",
+  "image_sha256": "4d8fc7f46ceef46009b86443d7f8b6119833194033df6f7852b30b0309dd77b3",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Ovoid smooth white object with continuous convex curvature. The intended contact region is clean, dry, and has a smooth tapered geometry with no visible seams.",
+    "contact_region": "Lateral opposing curved surfaces of the ovoid object",
+    "contact_material": "Substrate shell",
+    "visible_surface_material": "Calcite shell",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Smooth, continuous convex curvature tapering toward both ends",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The surface texture and exact material composition are inferred from visual appearance under standard lighting, but are otherwise unobstructed."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "aec6511563833a937847361ec94228cfdd05b803e4d5cbf4e64c67cf5799c568",
+  "updated_at": "2026-07-23T00:44:50.811978+00:00"
+}

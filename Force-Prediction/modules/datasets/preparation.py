@@ -9,6 +9,7 @@ import urllib.request
 from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import cv2
 
@@ -16,10 +17,13 @@ from ..config import Config
 from ..perception import Description, describe
 from ..retrieval import build_embedding_text, get_embedding_provider
 from .models import (
+    ContactFractionArtifact,
     Dataset,
+    DatasetObject,
     PreparationManifest,
     PreparationStage,
     PreparedObjectCheckpoint,
+    RoughnessArtifact,
     StageStatus,
 )
 from .storage import (
@@ -33,6 +37,8 @@ from .storage import (
 )
 
 Progress = Callable[[int, int, str], None]
+MARIGOLD_PROCESSING_RESOLUTION = 640
+MARIGOLD_INFERENCE_STEPS = 1
 
 
 def prepare_dataset_stages(
@@ -49,6 +55,14 @@ def prepare_dataset_stages(
         selected.add(PreparationStage.DESCRIPTIONS)
     if PreparationStage.EXPERIENCES in selected:
         selected.add(PreparationStage.DESCRIPTIONS)
+    if (
+        PreparationStage.SURFACE_AREA in selected
+        and not dataset.capabilities.can_estimate_surface_area
+    ):
+        raise ValueError(
+            f"dataset {dataset.display_name!r} needs a local image_2 for every object "
+            "before surface-area/contact estimation can run"
+        )
 
     run_cfg = dataset.runtime_config(cfg)
     run_cfg.models.dry_run = not live
@@ -63,6 +77,8 @@ def prepare_dataset_stages(
         PreparationStage.INDEX,
         PreparationStage.DESCRIPTIONS,
         PreparationStage.EMBEDDINGS,
+        PreparationStage.ROUGHNESS,
+        PreparationStage.SURFACE_AREA,
         PreparationStage.EXPERIENCES,
     ]
     tasks = _task_count(dataset, selected)
@@ -89,6 +105,12 @@ def prepare_dataset_stages(
                     if not (cfg.root / item.image.path).is_file()
                 ]
                 manifest.missing_images = missing
+                manifest.missing_second_images = [
+                    item.object_id
+                    for item in dataset.objects.values()
+                    if item.image_2 is None
+                    or not (cfg.root / item.image_2.path).is_file()
+                ]
                 status.completed = len(dataset.objects) - len(missing)
                 report(f"indexed {dataset.display_name}")
             elif stage is PreparationStage.DESCRIPTIONS:
@@ -149,6 +171,61 @@ def prepare_dataset_stages(
                     status.completed += 1
                     save_manifest(dataset, manifest)
                     report(f"embedding: {item.name}")
+            elif stage is PreparationStage.ROUGHNESS:
+                from ..models.background_remover import (
+                    DEFAULT_BACKGROUND_MODEL,
+                    BackgroundRemover,
+                )
+                from ..models.marigold import MarigoldAnalyzer, available_device
+
+                device = available_device()
+                analyzer = MarigoldAnalyzer(
+                    device=device,
+                    processing_resolution=MARIGOLD_PROCESSING_RESOLUTION,
+                )
+                background_remover = BackgroundRemover(
+                    model_name=DEFAULT_BACKGROUND_MODEL
+                )
+                for item in dataset.objects.values():
+                    active_object = item.object_id
+                    _prepare_roughness(
+                        cfg,
+                        dataset,
+                        item,
+                        analyzer=analyzer,
+                        background_remover=background_remover,
+                    )
+                    status.completed += 1
+                    save_manifest(dataset, manifest)
+                    report(f"Marigold roughness: {item.name}")
+            elif stage is PreparationStage.SURFACE_AREA:
+                from ..contact_model import ContactParams
+
+                params = ContactParams(
+                    px_per_mm=float(cfg.geometry.px_per_mm),
+                    closing_axis="x",
+                    pad_length_mm=float(cfg.geometry.pad_length_mm),
+                    minimum_bend_radius_mm=float(
+                        cfg.geometry.minimum_bend_radius_mm
+                    ),
+                    side_angle_deg=float(cfg.geometry.side_angle_deg),
+                    minimum_contact_fraction=float(
+                        cfg.geometry.minimum_contact_fraction
+                    ),
+                )
+                session = None
+                for item in dataset.objects.values():
+                    active_object = item.object_id
+                    session = _prepare_surface_area(
+                        cfg,
+                        dataset,
+                        item,
+                        params=params,
+                        session=session,
+                    )
+                    status.completed += 1
+                    save_manifest(dataset, manifest)
+                    report(f"surface/contact estimate: {item.name}")
             elif stage is PreparationStage.EXPERIENCES:
                 build_dataset_experiences(dataset, run_cfg.force.limit_n)
                 status.completed = len(dataset.objects)
@@ -239,6 +316,182 @@ def _ensure_image(cfg: Config, item) -> bool:
     return True
 
 
+def _prepare_roughness(
+    cfg: Config,
+    dataset: Dataset,
+    item: DatasetObject,
+    *,
+    analyzer: Any,
+    background_remover: Any,
+) -> None:
+    from PIL import Image
+
+    from ..models.marigold import run_marigold
+
+    image_path = cfg.root / item.image.path
+    if not image_path.is_file():
+        raise FileNotFoundError(f"no source image is available for {item.name!r}")
+    with Image.open(image_path) as source:
+        source_rgb = source.convert("RGB")
+        source_hash = hashlib.sha256(source_rgb.tobytes()).hexdigest()
+    output_root = dataset.paths.object_dir(item.object_id) / "roughness"
+    existing = _reusable_marigold_run(
+        output_root,
+        source_hash=source_hash,
+        model_id=analyzer.model_id,
+        processing_resolution=analyzer.processing_resolution,
+        seed=cfg.seed,
+    )
+    if existing is None:
+        existing = run_marigold(
+            analyzer,
+            source_rgb,
+            output_root,
+            background_remover=background_remover,
+            source_label=item.name,
+            dataset_id=dataset.dataset_id,
+            object_id=item.object_id,
+            source_path=item.image.path,
+            num_inference_steps=MARIGOLD_INFERENCE_STEPS,
+            seed=cfg.seed,
+        )
+    roughness = existing["roughness"]
+    metadata_path = Path(existing["run_dir"]) / "metadata.json"
+    item.roughness = RoughnessArtifact(
+        metadata_path=str(metadata_path.relative_to(cfg.root)),
+        source_image_sha256=source_hash,
+        model=str(existing["model"]["id"]),
+        mean=float(roughness["mean"]),
+        median=float(roughness["median"]),
+        std=float(roughness["std"]),
+        updated_at=str(existing["created_at"]),
+    )
+
+
+def _reusable_marigold_run(
+    output_root: Path,
+    *,
+    source_hash: str,
+    model_id: str,
+    processing_resolution: int,
+    seed: int,
+) -> dict[str, Any] | None:
+    from ..models.marigold import list_saved_runs
+
+    for run in list_saved_runs(output_root):
+        source = run.get("source", {})
+        model = run.get("model", {})
+        if (
+            source.get("image_sha256") == source_hash
+            and model.get("id") == model_id
+            and model.get("processing_resolution") == processing_resolution
+            and model.get("num_inference_steps") == MARIGOLD_INFERENCE_STEPS
+            and model.get("seed") == seed
+        ):
+            return run
+    return None
+
+
+def _prepare_surface_area(
+    cfg: Config,
+    dataset: Dataset,
+    item: DatasetObject,
+    *,
+    params: Any,
+    session: Any,
+) -> Any:
+    from ..contact_model import analyze_image
+
+    if item.image_2 is None:
+        raise FileNotFoundError(f"no image_2 is indexed for {item.name!r}")
+    image_path = cfg.root / item.image_2.path
+    if not image_path.is_file():
+        raise FileNotFoundError(f"image_2 is unavailable for {item.name!r}: {image_path}")
+    source_hash = hashlib.sha256(image_path.read_bytes()).hexdigest()
+    run_dir = dataset.paths.object_dir(item.object_id) / "contact_fraction"
+    summary_path = run_dir / "summary.json"
+    summary = _reusable_surface_summary(
+        summary_path,
+        source_hash=source_hash,
+        image_path=item.image_2.path,
+        params=params,
+    )
+    if summary is None:
+        if session is None:
+            from ..contact_model import create_rembg_session
+
+            session = create_rembg_session()
+        _, summary, _ = analyze_image(
+            image_path,
+            run_dir,
+            item.name,
+            params,
+            session=session,
+        )
+        summary["source"] = {
+            "view": "image_2",
+            "path": item.image_2.path,
+            "image_sha256": source_hash,
+        }
+        write_json_atomic(summary_path, summary)
+    _apply_contact_summary(cfg, item, summary, summary_path)
+    return session
+
+
+def _reusable_surface_summary(
+    summary_path: Path,
+    *,
+    source_hash: str,
+    image_path: str,
+    params: Any,
+) -> dict[str, Any] | None:
+    if not summary_path.is_file():
+        return None
+    try:
+        summary = json.loads(summary_path.read_text(encoding="utf-8"))
+        source = summary["source"]
+        stored_params = summary["params"]
+    except (KeyError, OSError, TypeError, json.JSONDecodeError):
+        return None
+    expected = {
+        "pad_length_mm": params.pad_length_mm,
+        "minimum_bend_radius_mm": params.minimum_bend_radius_mm,
+        "side_angle_deg": params.side_angle_deg,
+        "minimum_contact_fraction": params.minimum_contact_fraction,
+        "closing_axis": params.closing_axis,
+    }
+    if (
+        source.get("view") == "image_2"
+        and source.get("path") == image_path
+        and source.get("image_sha256") == source_hash
+        and float(summary.get("px_per_mm", -1)) == params.px_per_mm
+        and all(stored_params.get(key) == value for key, value in expected.items())
+    ):
+        return summary
+    return None
+
+
+def _apply_contact_summary(
+    cfg: Config,
+    item: DatasetObject,
+    summary: dict[str, Any],
+    summary_path: Path,
+) -> None:
+    results = summary["results"]
+    item.contact_fraction = ContactFractionArtifact(
+        summary_path=str(summary_path.relative_to(cfg.root)),
+        schema_version=int(summary["schema_version"]),
+        object_height_mm=float(results["object_height_mm"]),
+        object_width_mm=float(results["object_width_mm"]),
+        geometric_contact_fraction=float(results["geometric_contact_fraction"]),
+        combined_contact_fraction=float(results["combined_contact_fraction"]),
+        grasp_feasible=bool(results["grasp_feasible"]),
+        antipodal_grasp=bool(results["antipodal_grasp"]),
+        contact_floor_applied=bool(results["contact_floor_applied"]),
+    )
+    item.projected_contact_fraction = item.contact_fraction.combined_contact_fraction
+
+
 def _descriptor_signature(cfg: Config) -> str:
     payload = {
         "model": cfg.models.vlm,
@@ -287,6 +540,8 @@ def _task_count(dataset: Dataset, stages: set[PreparationStage]) -> int:
 def _legacy_manifest_view(dataset: Dataset, manifest: PreparationManifest) -> dict:
     descriptions = manifest.stages.get(PreparationStage.DESCRIPTIONS.value, StageStatus())
     embeddings = manifest.stages.get(PreparationStage.EMBEDDINGS.value, StageStatus())
+    roughness = manifest.stages.get(PreparationStage.ROUGHNESS.value, StageStatus())
+    surface_area = manifest.stages.get(PreparationStage.SURFACE_AREA.value, StageStatus())
     experiences = manifest.stages.get(PreparationStage.EXPERIENCES.value, StageStatus())
     failed = next((item for item in manifest.stages.values() if item.status == "failed"), None)
     return {
@@ -296,6 +551,8 @@ def _legacy_manifest_view(dataset: Dataset, manifest: PreparationManifest) -> di
         "experience_rows": sum(len(item.gripper_outcomes) for item in dataset.objects.values()),
         "descriptors_completed": descriptions.completed,
         "embeddings_completed": embeddings.completed,
+        "roughness_completed": roughness.completed,
+        "surface_area_completed": surface_area.completed,
         "records_completed": experiences.completed,
         "failed_object": failed.failed_object if failed else None,
         "error": failed.error if failed else None,

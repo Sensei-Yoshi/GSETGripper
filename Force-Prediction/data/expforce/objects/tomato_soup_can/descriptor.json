@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "tomato_soup_can",
+  "object_name": "Tomato soup can",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/tomato_soup_can/image.png",
+  "image_sha256": "a6ab56a52e0dd73618f102b4e72299aa646d0296e9cd7258d219b7c6f02bff33",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical metal beverage can with a smooth, coated metal sidewall and continuous curvature. The intended contact region is clean, dry, and regular without interruptions.",
+    "contact_region": "lateral sidewall surfaces of the cylindrical can",
+    "contact_material": "metal coated with paint or printed label substrate",
+    "visible_surface_material": "coated metal",
+    "visible_surface_condition": "clean, dry",
+    "local_geometry": "smooth cylindrical curvature with continuous surface",
+    "contact_patch_visibility": "fully visible from overhead perspective",
+    "uncertainty": "lighting is somewhat dim, but surface features and geometry are clearly discernible"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "476f2fa178736d85b20468c58442290056a58be66451d6cc5755b1cd9231f44d",
+  "updated_at": "2026-07-23T00:44:50.844837+00:00"
+}

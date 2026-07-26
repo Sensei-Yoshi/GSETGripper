@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "grapefruit",
+  "object_name": "Grapefruit",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/grapefruit/image.png",
+  "image_sha256": "468b84e2910b7e0c2df69fa7b431eb723fadf44284802efcfe2a0f064ab07f07",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Spherical citrus fruit with a textured, dry, porous peel and continuous curvature. The intended contact region has no visible seams or contamination, presenting a rounded geometry.",
+    "contact_region": "Opposing lateral exterior surfaces of the citrus fruit",
+    "contact_material": "Natural citrus peel",
+    "visible_surface_material": "Natural citrus peel",
+    "visible_surface_condition": "Dry, clean, and textured with fine pores",
+    "local_geometry": "Continuous curved surface with spheroidal geometry and slight surface texture",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact compliance of the underlying fruit flesh is not directly measurable from visual inspection alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "a0cf53d6533cf6d49adab98856d183ff5258a809973828e637078ef208eb3852",
+  "updated_at": "2026-07-23T00:44:50.767026+00:00"
+}

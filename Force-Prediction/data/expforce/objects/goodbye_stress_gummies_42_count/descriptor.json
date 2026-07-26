@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "goodbye_stress_gummies_42_count",
+  "object_name": "Goodbye Stress gummies (42 count)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/goodbye_stress_gummies_42_count/image.png",
+  "image_sha256": "8bd25f1d1a3cd9551b09ebb8b85993cc23ee74c4375d7fc8a27bea521035323e",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Rigid plastic bottle with a square cross-section and rounded corners. The intended contact region is smooth, dry, and flat along the lateral walls.",
+    "contact_region": "Opposing flat lateral surfaces of the bottle body",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat planar surfaces with rounded vertical corner edges",
+    "contact_patch_visibility": "Clearly visible in top-down orientation",
+    "uncertainty": "The exact side profile and label presence on the lower portions are partially occluded from this viewing angle."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "b448bde467ce5a4dfbf6073a68e3c84a11ac7f747f0d93bd9894072f52873183",
+  "updated_at": "2026-07-23T00:44:50.805960+00:00"
+}

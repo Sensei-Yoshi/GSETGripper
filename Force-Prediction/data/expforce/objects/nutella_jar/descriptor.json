@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "nutella_jar",
+  "object_name": "Nutella jar",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/nutella_jar/image.png",
+  "image_sha256": "b4e27c4742c2eb15fc180e3104a52fe3adbdb0a1c8cfec93e7c27ac09642d1ef",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical glass jar with a smooth, dry lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions, though the exact lateral gripping band is partially obscured from this top-down view.",
+    "contact_region": "Lateral cylindrical sidewall of the jar within the centered grasp band",
+    "contact_material": "Glass substrate",
+    "visible_surface_material": "Glass",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Continuous cylindrical curvature without interruptions or ridges",
+    "contact_patch_visibility": "Partially visible; the top-down view shows the rim and cap clearly, but the exact lateral contact band along the sides is partially obscured by perspective and shadow",
+    "uncertainty": "The exact texture and condition of the lower lateral surfaces are not fully visible due to the top-down viewing angle and lighting shadows."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "dd39b4a98d5cb7c612ca5ee43ba56183705f0d51a3a79a6f72da6bd613c3a579",
+  "updated_at": "2026-07-23T00:44:50.846536+00:00"
+}

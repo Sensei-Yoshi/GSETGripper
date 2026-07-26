@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "strawberry_2",
+  "object_name": "Strawberry 2",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/strawberry_2/image.png",
+  "image_sha256": "9b5dcbd9c1343eb897ef396946f731204c201cc5bad944e5f03007cce2e18f73",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Soft organic fruit with a textured, slightly glossy skin and irregular conical geometry. The intended contact region has gentle outward curvature, superficial achenes, and a compliant fruit substrate.",
+    "contact_region": "Lateral surfaces of the fruit positioned between the gripper fingers.",
+    "contact_material": "Organic fruit skin substrate.",
+    "visible_surface_material": "Organic fruit skin with small seed achenes.",
+    "visible_surface_condition": "Fresh, clean, and slightly moist.",
+    "local_geometry": "Rounded, tapered conical shape with curved surfaces and distributed seed indentations.",
+    "contact_patch_visibility": "Clearly visible.",
+    "uncertainty": "Lighting is somewhat distant, but surface texture and shape are adequately discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "828df10a33be536fdb8abc65d8ae5a15a4699462e31f69c146f17ddf3e375e2a",
+  "updated_at": "2026-07-23T00:44:50.823310+00:00"
+}

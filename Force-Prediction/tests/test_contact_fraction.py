@@ -3,19 +3,16 @@ from __future__ import annotations
 import csv
 import inspect
 import os
-import sys
 from pathlib import Path
 
 import numpy as np
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
-CONTACT_MODEL = ROOT / "scripts" / "contact_model"
-if str(CONTACT_MODEL) not in sys.path:
-    sys.path.insert(0, str(CONTACT_MODEL))
+from modules.contact_model import ContactParams, build_summary, estimate_contact
+from modules.contact_model.synthetic_shapes import circle, rounded_rect
 
-from contact_area import estimate_contact  # noqa: E402
-from synthetic_shapes import circle, rounded_rect  # noqa: E402
+ROOT = Path(__file__).resolve().parents[1]
+CONTACT_MODEL = ROOT / "modules" / "contact_model"
 
 PAD_LENGTH_MM = 106.68
 RADIUS_MM = 20.0
@@ -198,9 +195,7 @@ def test_contact_api_has_no_width_or_absolute_area_parameter():
     assert not hasattr(estimate, "total_area")
 
 
-def test_v2_summary_and_index_exclude_pad_width_and_area(tmp_path: Path):
-    from pipeline_core import ContactParams, append_index_v2, build_summary
-
+def test_v2_summary_excludes_pad_width_and_area():
     estimate = _estimate(circle(40.0) + np.array([0.0, 40.0]))
     params = ContactParams(px_per_mm=2.1852)
     summary = build_summary(
@@ -220,34 +215,12 @@ def test_v2_summary_and_index_exclude_pad_width_and_area(tmp_path: Path):
     assert "pad_width" not in serialized
     assert "area_mm" not in serialized
 
-    index_path = tmp_path / "index_v2.csv"
-    append_index_v2(
-        index_path,
-        "analytic_circle",
-        estimate,
-        params,
-        summary,
-        "analytic_circle",
-    )
-    with index_path.open(newline="", encoding="utf-8") as file:
-        rows = list(csv.reader(file))
-    assert len(rows) == 2
-    header = rows[0]
-    assert "schema_version" in header
-    assert "combined_contact_fraction" in header
-    assert "minimum_contact_fraction" in header
-    assert "geometric_contact_fraction" in header
-    assert "contact_floor_applied" in header
-    assert "w_pad" not in header
-    assert not any("area" in column for column in header)
-
-
 @pytest.mark.skipif(
     os.environ.get("RUN_CONTACT_IMAGE_INTEGRATION") != "1",
     reason="set RUN_CONTACT_IMAGE_INTEGRATION=1 when the local rembg model is available",
 )
 def test_saved_raw_image_end_to_end(tmp_path: Path):
-    from pipeline_core import ContactParams, analyze_image
+    from modules.contact_model import analyze_image
 
     image = CONTACT_MODEL / "test_contact_area" / "water_bottle" / "water_bottle.png"
     params = ContactParams(px_per_mm=2.1852)

@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "monster_energy_drink_zero",
+  "object_name": "Monster Energy drink (zero)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/monster_energy_drink_zero/image.png",
+  "image_sha256": "7a2c9cebeee55256e3e4ab168909f26e532071b1bebeb179c52218f9accfa2c1",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical aluminum beverage can with a smooth, dry painted lateral surface and continuous curvature. The intended contact region has no visible seams or contamination in the centered grasp band.",
+    "contact_region": "Lateral sidewall surfaces located within the centered grasp band.",
+    "contact_material": "Painted aluminum coating over metal substrate.",
+    "visible_surface_material": "Painted aluminum metal.",
+    "visible_surface_condition": "Clean and dry.",
+    "local_geometry": "Smooth cylindrical curvature with continuous surface.",
+    "contact_patch_visibility": "Clearly visible.",
+    "uncertainty": "None regarding the visible lateral surfaces; minor uncertainty regarding exact surface friction characteristics which cannot be optically measured."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "321e19ede7b19417f8ed77affa123f2b6062ec148ef33ed056b856c4bb424e65",
+  "updated_at": "2026-07-23T00:44:50.761266+00:00"
+}

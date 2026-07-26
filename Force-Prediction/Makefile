@@ -16,7 +16,7 @@ test:
 
 # Generate a synthetic dataset on the mock bench (no hardware, no API).
 collect:
-	$(PY) -m modules.collect --mock --n 40
+	$(PY) -m modules.collect --mock --dataset mock --n 40
 
 # Run the paired-retrieval VLM method (E4) offline. Use E=e5 for calibrated physics.
 E ?= e4
@@ -38,4 +38,4 @@ smoke: collect run-all
 all: lint typecheck test
 
 clean:
-	rm -rf data/cache/*.json data/experiences.jsonl data/splits.json data/images/*.png results.json
+	rm -rf data/cache/mock data/mock results.json

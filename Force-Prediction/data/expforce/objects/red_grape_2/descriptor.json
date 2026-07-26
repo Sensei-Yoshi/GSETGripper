@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "red_grape_2",
+  "object_name": "Red grape 2",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/red_grape_2/image.png",
+  "image_sha256": "3ce8dfbb97f6827a9daa0dcf3ad2fffa0d4565976acc5c69ba59d4ec4bb0a45e",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small spherical object with a smooth, dry, and uniformly curved surface. The intended contact region has no visible seams or interruptions, providing a uniform point-contact interface.",
+    "contact_region": "The lateral opposing sides of the small spherical object along its central band.",
+    "contact_material": "Substrate",
+    "visible_surface_material": "Organic or polymer substrate",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous spherical curvature with no visible seams, ridges, or flat faces.",
+    "contact_patch_visibility": "The contact patch is visible, but the object appears very small and distant in the image frame, limiting fine textural detail.",
+    "uncertainty": "The object is shown from a distance, making fine surface texture and exact material composition difficult to ascertain precisely."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "04bf6e30997f40cc99335fe3fd2fa0a22687583ffd85d520bd791a4d3f768107",
+  "updated_at": "2026-07-23T00:44:50.783202+00:00"
+}

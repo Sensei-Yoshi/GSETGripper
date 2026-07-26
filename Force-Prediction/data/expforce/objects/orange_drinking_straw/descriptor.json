@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "orange_drinking_straw",
+  "object_name": "Orange drinking straw",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/orange_drinking_straw/image.png",
+  "image_sha256": "d091327282a68c884cf544ba00afc744e535adbbb3b216b9547c7f93d1672afb",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Thin cylindrical plastic straw with a smooth, dry, flexible surface and continuous curvature. The intended contact region has uniform cylindrical geometry without visible seams or contamination.",
+    "contact_region": "Lateral sidewall surfaces near the longitudinal center of the straw",
+    "contact_material": "Plastic",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Cylindrical with continuous smooth curvature and small diameter",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The lighting and resolution are sufficient to determine the external surface geometry and material type."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "0ff99e61f46de474f343c4282cbeaf878b12c5ca04a886d3edf67583415b13b2",
+  "updated_at": "2026-07-23T00:44:50.748145+00:00"
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "golden_apple",
+  "object_name": "Golden apple",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/golden_apple/image.png",
+  "image_sha256": "d7ee556e339625c1d6ba05784241ba4c01875830aeef893ea9b6872d4d2fee2c",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Yellow round fruit with a smooth, dry, organic skin and continuous convex curvature. The intended contact region has no visible seams, texture, or contamination.",
+    "contact_region": "Opposing lateral sides of the fruit within the centered grasp band",
+    "contact_material": "Organic fruit skin substrate",
+    "visible_surface_material": "Organic fruit skin",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Smooth convex curvature with slight lobes typical of a rounded fruit",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Top-down view provides good visibility of the fruit's surface, but exact touch dynamics cannot be fully verified without physical interaction."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "66cd3e1b754eb9397ef2064806168dadb6b82c1dee0905a0d279186d0ffd5d0e",
+  "updated_at": "2026-07-23T00:44:50.816967+00:00"
+}

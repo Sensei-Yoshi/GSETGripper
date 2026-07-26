@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "single_pringles_potato_chip",
+  "object_name": "Single Pringles potato chip",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/single_pringles_potato_chip/image.png",
+  "image_sha256": "b0a7ec1fdcebfbaddd77ad8dc11f8e1716f6627d530b4ac5568cb262f8858aa3",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small curved snack chip with a porous, visibly textured surface and a thin, brittle structure. The intended contact region is dry, convex, and presents an irregular geometry offering only a small, uneven contact interface.",
+    "contact_region": "Lateral opposing edges along the curved perimeter of the snack chip",
+    "contact_material": "Baked snack food substrate",
+    "visible_surface_material": "Baked snack food substrate",
+    "visible_surface_condition": "Dry, clean, and slightly textured",
+    "local_geometry": "Curved, narrow ridge with a convex contour and irregular edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The underside and exact thickness profile are partially obscured due to the top-down perspective, but the overall surface texture and shape are clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "36c5bee706b01f05d5457d24536928f82d69f7a4886ccc2aef67337a4a390533",
+  "updated_at": "2026-07-23T00:44:50.791838+00:00"
+}

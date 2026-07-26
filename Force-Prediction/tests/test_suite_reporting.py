@@ -78,7 +78,7 @@ def test_suite_manifest_snapshots_primary_experiments(tmp_path):
     source_cfg = load_config().model_copy(deep=True)
     cfg = source_cfg.model_copy(deep=True)
     cfg.root = tmp_path
-    dataset = tmp_path / "data/expforce/dataset_2gripper.csv"
+    dataset = tmp_path / "data/expforce/dataset.csv"
     dataset.parent.mkdir(parents=True)
     shutil.copyfile(source_path(source_cfg), dataset)
 

@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "small_paper_cup",
+  "object_name": "Small paper cup",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/small_paper_cup/image.png",
+  "image_sha256": "35a0b9bd8c3bbae8e1070f776c5334b3eb72d2236346590ba144d9e9e0f6410d",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small cylindrical paper cup with a smooth, dry lateral sidewall and continuous curvature. The intended contact region is clean and uniform, presenting no visible seams or interruptions.",
+    "contact_region": "The opposing lateral sidewalls of the cylindrical cup located at the centered grasp band.",
+    "contact_material": "Paper",
+    "visible_surface_material": "Paper",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous cylindrical curvature without notable seams, ridges, or interruptions in the grasp band.",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible surface material and geometry; minor uncertainty regarding exact wall thickness from the top-down perspective."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "ad26d14bfa7a72685ce2a6862b1d510ae9c92f44fc2b07cffd3093b593aa1072",
+  "updated_at": "2026-07-23T00:44:50.750339+00:00"
+}

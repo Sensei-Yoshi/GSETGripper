@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "power_adapter",
+  "object_name": "Power adapter",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/power_adapter/image.png",
+  "image_sha256": "ba26a705239709fd1b1344a7389b4c210c634ee0f271d8f481910f01cfbe2539",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Rigid black plastic electronic power brick with attached coiled cords. The intended contact region is dry, flat, and hard with slight textural ridges.",
+    "contact_region": "Opposing lateral sides of the rectangular plastic housing",
+    "contact_material": "Hard plastic housing substrate",
+    "visible_surface_material": "Rigid plastic",
+    "visible_surface_condition": "Clean, dry, and matte",
+    "local_geometry": "Flat rectangular faces with subtle edge bevels and minor surface texturing",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Cords wrapped around the housing may interfere with exact finger placement depending on grasp height."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "db6d65619afaa3fae92b09b90f3c8acbbe7f8fbb6fc076a1eb7c039ff3c27ad3",
+  "updated_at": "2026-07-23T00:44:50.759013+00:00"
+}

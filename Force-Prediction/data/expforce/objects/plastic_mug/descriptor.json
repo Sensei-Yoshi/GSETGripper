@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "plastic_mug",
+  "object_name": "Plastic mug",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/plastic_mug/image.png",
+  "image_sha256": "0348f237d4707691ce7ad9118ce27eec1f5b622e50afcc8dd42982c0f957eb61",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Blue plastic cup with a smooth, dry, rigid lateral surface and tapered geometry. The intended contact region has continuous curvature without visible seams or contamination.",
+    "contact_region": "Lateral outer sidewall of the cup",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Blue plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Tapered continuous curvature",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "9aa994731047da8c7e24fd25a8aa6cbc320532ab98c71746e03aad239814b80a",
+  "updated_at": "2026-07-23T00:44:54.606005+00:00"
+}

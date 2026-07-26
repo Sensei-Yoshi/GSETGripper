@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "green_pear",
+  "object_name": "Green pear",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/green_pear/image.png",
+  "image_sha256": "03c0f18800281dba7e4178ed876d00d8278e34225528fe8a40d5468611ad2300",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Smooth organic pear fruit with a slightly glossy, dry skin and continuous curved profile. The intended contact region is clean and smooth with gentle convex curvature across the lower body.",
+    "contact_region": "Lateral opposing flanks of the lower bulbous section of the pear",
+    "contact_material": "Natural fruit skin (peel)",
+    "visible_surface_material": "Natural fruit skin (peel)",
+    "visible_surface_condition": "Clean, dry, and slightly glossy",
+    "local_geometry": "Convex, smooth curvature with tapering toward the stem end",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Lighting reflections create minor glare spots on the surface, but the overall skin texture and geometry remain clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "93d7b5e6b1e04b66a52203d2bf6a836bfa233b459fb2d2dfdd1ddd979e2da4c3",
+  "updated_at": "2026-07-23T00:44:50.815238+00:00"
+}

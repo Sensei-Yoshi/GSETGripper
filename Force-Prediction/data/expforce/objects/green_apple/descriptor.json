@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "green_apple",
+  "object_name": "Green apple",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/green_apple/image.png",
+  "image_sha256": "b475931c9311fb95eebd9c1d0996d0a2b581b793596bb5036ad20775468d9ddf",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Green spherical apple fruit with a smooth, dry, curved organic skin. The intended contact region is clean and exhibits continuous convex curvature without major seams or interruptions.",
+    "contact_region": "Lateral opposing curved sidewalls of the apple in the centered horizontal band.",
+    "contact_material": "Organic apple skin (substrate).",
+    "visible_surface_material": "Organic apple skin.",
+    "visible_surface_condition": "Clean and dry.",
+    "local_geometry": "Smooth convex curvature with gentle lobes.",
+    "contact_patch_visibility": "Clearly visible.",
+    "uncertainty": "None regarding the visible surface material and geometry from this overhead perspective."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "046ade62dd9afafaf8aa2320d78b82becd445e3f390a4fc24e748880ccf6a2e3",
+  "updated_at": "2026-07-23T00:44:50.818816+00:00"
+}

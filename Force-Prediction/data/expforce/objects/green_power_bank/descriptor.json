@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "green_power_bank",
+  "object_name": "Green power bank",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/green_power_bank/image.png",
+  "image_sha256": "3274e9c866739498f22899bd41eeebc6055ceeba9a99650837a5104fe2f21464",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Green rectangular electronic device with smooth, dry, rigid plastic lateral surfaces. The intended contact region is clean with flat opposing sides and rounded vertical edges.",
+    "contact_region": "The opposing lateral side faces of the rectangular electronic device within the centered grasp band.",
+    "contact_material": "Rigid plastic housing substrate",
+    "visible_surface_material": "Rigid plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat parallel sides with rounded vertical edge transitions",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Lighting is somewhat dim, but the surface form and texture are clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "7453de4b4439097bc9dda2da1e2a7a3e9151542321aeb1f1292ed154af8e1d12",
+  "updated_at": "2026-07-23T00:44:50.764014+00:00"
+}

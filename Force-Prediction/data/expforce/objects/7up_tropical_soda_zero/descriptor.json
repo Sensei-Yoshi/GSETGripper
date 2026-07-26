@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "7up_tropical_soda_zero",
+  "object_name": "7UP Tropical soda (zero)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/7up_tropical_soda_zero/image.png",
+  "image_sha256": "ca4e12628ec7df2f00554f6b408fde1223c84b7744fb27825c0f30246c4d1e76",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical aluminum beverage can with a smooth, dry, coated exterior surface and continuous curvature. The intended contact region has no visible seams or texture within the centered grasp band.",
+    "contact_region": "Lateral sidewall surfaces located centrally along the vertical axis of the can",
+    "contact_material": "Coated aluminum substrate",
+    "visible_surface_material": "Coated aluminum",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Smooth cylindrical curvature with a continuous, uniform profile",
+    "contact_patch_visibility": "Clearly visible from the top-down perspective",
+    "uncertainty": "The side of the can facing away from the camera is partially obscured, but the overall cylindrical geometry is clearly evident."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "c676fa969d86f372f2c91a57b3b1bc854732816b33e106f026ad553b034c5912",
+  "updated_at": "2026-07-23T00:44:50.794846+00:00"
+}

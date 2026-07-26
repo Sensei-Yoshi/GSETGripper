@@ -48,7 +48,7 @@ def test_all_objects_form_the_experience_pool(tmp_path):
     source_cfg = load_config().model_copy(deep=True)
     cfg = source_cfg.model_copy(deep=True)
     cfg.root = tmp_path
-    source = tmp_path / "data/expforce/dataset_2gripper.csv"
+    source = tmp_path / "data/expforce/dataset.csv"
     source.parent.mkdir(parents=True)
     shutil.copyfile(source_path(source_cfg), source)
 
@@ -243,7 +243,7 @@ def test_full_129_object_leave_one_out_benchmark_runs_offline(tmp_path):
     cfg = source_cfg.model_copy(deep=True)
     cfg.root = tmp_path
     cfg.models.dry_run = True
-    source = tmp_path / "data/expforce/dataset_2gripper.csv"
+    source = tmp_path / "data/expforce/dataset.csv"
     source.parent.mkdir(parents=True)
     shutil.copyfile(source_path(source_cfg), source)
 
@@ -262,7 +262,7 @@ def test_live_preparation_checkpoints_and_resumes(tmp_path, monkeypatch):
     source_cfg = load_config().model_copy(deep=True)
     cfg = source_cfg.model_copy(deep=True)
     cfg.root = tmp_path
-    source = tmp_path / "data/expforce/dataset_2gripper.csv"
+    source = tmp_path / "data/expforce/dataset.csv"
     source.parent.mkdir(parents=True)
     shutil.copyfile(source_path(source_cfg), source)
     ok, encoded = cv2.imencode(".png", np.zeros((8, 8, 3), dtype=np.uint8))
@@ -288,7 +288,9 @@ def test_live_preparation_checkpoints_and_resumes(tmp_path, monkeypatch):
     with pytest.raises(RuntimeError, match="quota pause"):
         prepare_dataset(cfg, live=True)
 
-    assert len(list((tmp_path / expforce.DESCRIPTORS_RELATIVE).glob("*.json"))) == 2
+    assert len(
+        list((tmp_path / expforce.DESCRIPTORS_RELATIVE).glob("*/descriptor.json"))
+    ) == 2
 
     resumed_calls = 0
 

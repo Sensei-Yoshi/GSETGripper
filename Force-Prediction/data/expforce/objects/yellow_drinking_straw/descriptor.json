@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "yellow_drinking_straw",
+  "object_name": "Yellow drinking straw",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/yellow_drinking_straw/image.png",
+  "image_sha256": "78e920aa430d8b3f644c64128458fb66597b687c57804854b81fcf874d4a4089",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Thin cylindrical plastic straw with a smooth, dry, and flexible sidewall. The intended contact region has continuous curvature along its length without visible seams or contamination.",
+    "contact_region": "Lateral cylindrical surface near the center of the straw",
+    "contact_material": "plastic",
+    "visible_surface_material": "plastic",
+    "visible_surface_condition": "clean, dry",
+    "local_geometry": "narrow cylindrical shaft with uniform continuous curvature",
+    "contact_patch_visibility": "clearly visible",
+    "uncertainty": "none"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "bfd40d4ca8c6d894ae2f785b87451b4fe0a17063c2ff7eb0d538778c742837c8",
+  "updated_at": "2026-07-23T00:44:50.786967+00:00"
+}

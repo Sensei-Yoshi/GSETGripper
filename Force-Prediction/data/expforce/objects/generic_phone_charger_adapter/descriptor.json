@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "generic_phone_charger_adapter",
+  "object_name": "Generic Phone Charger Adapter",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/generic_phone_charger_adapter/image.png",
+  "image_sha256": "cac272a27b69e6f62e384bc90ceccc60556ba3e6e6f5ae42337eb3d64688cc68",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "White rigid plastic wall charger object with smooth, flat lateral sides. The intended contact region is clean, dry, and rectangular with straight vertical edges.",
+    "contact_region": "The opposing lateral flat faces of the rectangular charger housing.",
+    "contact_material": "Rigid plastic substrate",
+    "visible_surface_material": "Rigid plastic",
+    "visible_surface_condition": "Clean, dry, smooth",
+    "local_geometry": "Flat planar surfaces with straight vertical edges and slight edge bevels",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible lateral faces, though exact surface texture finish is limited by image resolution."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "8ef78950c0df4d211c0c6613427c91953aba0b4bc57d5f4cd97309e0a58cb7b0",
+  "updated_at": "2026-07-23T00:44:55.408331+00:00"
+}

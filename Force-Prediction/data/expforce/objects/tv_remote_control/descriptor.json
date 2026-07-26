@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "tv_remote_control",
+  "object_name": "TV remote control",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/tv_remote_control/image.png",
+  "image_sha256": "75cf90de5e8dc6994be092be553a619a183e78e65db894b8f2b7a155251c955e",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Elongated rectangular plastic remote control with smooth, dry, matte lateral surfaces. The intended contact region is clean with gentle convex curvature and slight tapering along the sides.",
+    "contact_region": "Left and right lateral side surfaces at the middle length of the remote control",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Gentle convex curvature with smooth, continuous lateral walls and slightly rounded edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The reverse side of the remote is not visible, but the lateral grasping surfaces are fully clear in the image."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "439769d0497021b090befa038283bfd841f637f921c963159f963f96b9dbbf39",
+  "updated_at": "2026-07-23T00:44:50.801560+00:00"
+}

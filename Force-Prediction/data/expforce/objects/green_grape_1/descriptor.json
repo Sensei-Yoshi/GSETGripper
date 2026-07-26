@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "green_grape_1",
+  "object_name": "Green grape 1",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/green_grape_1/image.png",
+  "image_sha256": "0dd34e5a0a1f7a021a0c3957d12904440942b00e717f863fb87b928d88abff39",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small rounded fruit with a smooth, clean, nonporous skin and continuous convex curvature. The intended contact region provides a small, highly curved interface.",
+    "contact_region": "Lateral opposing sides of the fruit along the centered grasp band",
+    "contact_material": "Fruit skin",
+    "visible_surface_material": "Fruit skin",
+    "visible_surface_condition": "Clean, dry",
+    "local_geometry": "Continuous convex curvature with no visible seams or ridges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "0ee0207ca2245a0bafc87fed404304917c24502445b650c9ab341e7c9e894f09",
+  "updated_at": "2026-07-23T00:44:50.827316+00:00"
+}

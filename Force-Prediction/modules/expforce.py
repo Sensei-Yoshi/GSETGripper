@@ -30,10 +30,10 @@ from .pipeline import Pipeline, PipelineRunResult, QueryInput
 from .retrieval import build_embedding_text, get_embedding_provider
 
 BASE_URL = "https://raw.githubusercontent.com/expforcesubmission/Exp-Force-Website/main"
-SOURCE_RELATIVE = Path("data/expforce/dataset_2gripper.csv")
-EXPERIENCES_RELATIVE = Path("data/expforce/validation_experiences.jsonl")
+SOURCE_RELATIVE = Path("data/expforce/dataset.csv")
+EXPERIENCES_RELATIVE = Path("data/cache/expforce/experiences.jsonl")
 PREPARATION_RELATIVE = Path("data/expforce/preparation_manifest.json")
-DESCRIPTORS_RELATIVE = Path("data/expforce/descriptors")
+DESCRIPTORS_RELATIVE = Path("data/expforce/objects")
 RESULTS_RELATIVE = Path("data/expforce/results")
 RUNS_RELATIVE = Path("data/expforce/runs")
 SUITES_RELATIVE = Path("data/expforce/suites")
@@ -53,6 +53,7 @@ def _parse_bool(value: str) -> bool:
 class ExpForceRow(BaseModel):
     object_name: str
     image_name: str
+    image_name_2: str | None = None
     mass_g: float = Field(gt=0)
     roughness_class: int = Field(ge=1, le=5)
     projected_contact_fraction: float = Field(ge=0, le=1)
@@ -77,8 +78,6 @@ class ExpForceRow(BaseModel):
             if not feasible and force is not None:
                 raise ValueError(f"{name} infeasible row must not contain force")
         expected = self.expected_favored()
-        if expected == "tie":
-            raise ValueError("synthetic validation rows require one strict winning gripper")
         if self.favored_gripper != expected:
             raise ValueError(
                 f"favored_gripper={self.favored_gripper!r}, expected {expected!r}"
@@ -106,8 +105,17 @@ def _dataset_relative(cfg: Config, name: str) -> Path:
     return Path("data") / cfg.dataset_id / name
 
 
+def _object_image_relative(cfg: Config, row: ExpForceRow) -> Path:
+    suffix = Path(row.image_name).suffix.lower() or ".png"
+    return _dataset_relative(cfg, f"objects/{row.object_id}/image{suffix}")
+
+
+def _experience_cache_path(cfg: Config) -> Path:
+    return cfg.root / "data" / "cache" / cfg.dataset_id / "experiences.jsonl"
+
+
 def source_path(cfg: Config) -> Path:
-    return _dataset_root(cfg) / "dataset_2gripper.csv"
+    return _dataset_root(cfg) / "dataset.csv"
 
 
 def source_sha256(cfg: Config) -> str:
@@ -122,6 +130,14 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
         ExpForceRow(
             object_name=row["Object"],
             image_name=row["Image"],
+            image_name_2=next(
+                (
+                    value.strip()
+                    for value in (row.get("Image_2"), row.get("image_2"))
+                    if value and value.strip()
+                ),
+                None,
+            ),
             mass_g=float(row["Mass_g"]),
             roughness_class=int(row["roughness_class"]),
             projected_contact_fraction=float(row["projected_contact_fraction"]),
@@ -139,6 +155,57 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
     if len(set(ids)) != len(ids):
         raise ValueError("object names do not produce unique IDs")
     return rows
+
+
+def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
+    """Atomically persist validated paired-object source rows."""
+    object_ids = [row.object_id for row in rows]
+    if len(set(object_ids)) != len(object_ids):
+        raise ValueError("object names do not produce unique IDs")
+
+    columns = [
+        "Object",
+        "Image",
+        *(["Image_2"] if any(row.image_name_2 for row in rows) else []),
+        "Mass_g",
+        "roughness_class",
+        "projected_contact_fraction",
+        "silicone_force_n",
+        "silicone_feasible",
+        "gecko_force_n",
+        "gecko_feasible",
+        "favored_gripper",
+    ]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(
+        "w",
+        newline="",
+        encoding="utf-8",
+        dir=path.parent,
+        delete=False,
+    ) as fh:
+        writer = csv.DictWriter(fh, fieldnames=columns)
+        writer.writeheader()
+        for row in rows:
+            payload = {
+                "Object": row.object_name,
+                "Image": row.image_name,
+                "Mass_g": row.mass_g,
+                "roughness_class": row.roughness_class,
+                "projected_contact_fraction": row.projected_contact_fraction,
+                "silicone_force_n": (
+                    row.silicone_force_n if row.silicone_force_n is not None else ""
+                ),
+                "silicone_feasible": row.silicone_feasible,
+                "gecko_force_n": row.gecko_force_n if row.gecko_force_n is not None else "",
+                "gecko_feasible": row.gecko_feasible,
+                "favored_gripper": row.favored_gripper,
+            }
+            if "Image_2" in columns:
+                payload["Image_2"] = row.image_name_2 or ""
+            writer.writerow(payload)
+        temporary = Path(fh.name)
+    temporary.replace(path)
 
 
 def validation_summary(cfg: Config, rows: list[ExpForceRow] | None = None) -> dict:
@@ -160,7 +227,7 @@ def to_experiences(
     descriptions = descriptions or {}
     records: list[ExperienceRecord] = []
     for row in rows:
-        image_path = str(_dataset_relative(cfg, f"images/{row.image_name}"))
+        image_path = str(_object_image_relative(cfg, row))
         description = descriptions.get(row.object_id, row.object_name)
         for gripper, force, feasible in (
             (Gripper.SILICONE, row.silicone_force_n, row.silicone_feasible),
@@ -178,7 +245,10 @@ def to_experiences(
                     feasible=feasible,
                     failed_at_limit_n=None if feasible else cfg.force.limit_n,
                     semantic_description=description,
-                    meta=Meta(pad_id="synthetic-2gripper"),
+                    meta=Meta(
+                        pad_id="synthetic-2gripper",
+                        contact_fraction_source="synthetic_fixture",
+                    ),
                 )
             )
     return records
@@ -226,15 +296,14 @@ def _file_sha256(path: Path) -> str:
 
 
 def _descriptor_path(cfg: Config, object_id: str) -> Path:
-    return _dataset_root(cfg) / "descriptors" / f"{object_id}.json"
+    return _dataset_root(cfg) / "objects" / object_id / "descriptor.json"
 
 
 def load_prepared_descriptors(cfg: Config) -> dict[str, PreparedDescriptor]:
-    root = _dataset_root(cfg) / "descriptors"
-    if not root.exists():
-        return {}
     output: dict[str, PreparedDescriptor] = {}
-    for path in sorted(root.glob("*.json")):
+    canonical = sorted((_dataset_root(cfg) / "objects").glob("*/descriptor.json"))
+    legacy = sorted((_dataset_root(cfg) / "descriptors").glob("*.json"))
+    for path in [*canonical, *legacy]:
         try:
             item = PreparedDescriptor.model_validate_json(path.read_text())
         except (OSError, ValueError):
@@ -280,7 +349,6 @@ def prepare_dataset(
     rows = load_rows(cfg)
     prepared = load_prepared_descriptors(cfg)
     missing_images: list[str] = []
-    image_root = _dataset_root(cfg) / "images"
     run_cfg = cfg.model_copy(deep=True)
     run_cfg.models.dry_run = not live
     run_cfg.paths.cache = str(Path("data") / "cache" / cfg.dataset_id)
@@ -321,7 +389,7 @@ def prepare_dataset(
 
     for row in rows:
         descriptors_completed += 1
-        destination = image_root / row.image_name
+        destination = cfg.root / _object_image_relative(cfg, row)
         available = destination.exists() or (live and _download_image(row.image_name, destination))
         image_hash = _file_sha256(destination) if available else None
         existing = prepared.get(row.object_id)
@@ -367,7 +435,7 @@ def prepare_dataset(
             object_id=row.object_id,
             object_name=row.object_name,
             image_name=row.image_name,
-            image_path=str(_dataset_relative(cfg, f"images/{row.image_name}")),
+            image_path=str(_object_image_relative(cfg, row)),
             image_sha256=image_hash,
             descriptor_source=source,
             descriptor_model=run_cfg.models.vlm if source == "live_gemini" else None,
@@ -393,7 +461,7 @@ def prepare_dataset(
         rows,
         {object_id: descriptor.description for object_id, descriptor in descriptions.items()},
     )
-    save_experiences(_dataset_root(cfg) / "validation_experiences.jsonl", records)
+    save_experiences(_experience_cache_path(cfg), records)
 
     if live:
         provider = get_embedding_provider(run_cfg)
@@ -441,7 +509,7 @@ def prepare_dataset(
 
 
 def load_experience_pool(cfg: Config) -> list[ExperienceRecord]:
-    path = _dataset_root(cfg) / "validation_experiences.jsonl"
+    path = _experience_cache_path(cfg)
     if path.exists():
         from .contracts import load_experiences
 

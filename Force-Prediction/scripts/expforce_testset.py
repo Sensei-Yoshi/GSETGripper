@@ -61,8 +61,8 @@ def _download(url: str, dest: Path) -> bool:
 
 def build_dataset(cfg, limit: int | None, live: bool) -> Path:
     root = cfg.root / "data" / "expforce"
-    csv_path = root / "dataset.csv"
-    exp_path = root / "experiences.jsonl"
+    csv_path = root / "source_dataset.csv"
+    exp_path = cfg.root / "data" / "cache" / "expforce" / "single_gripper_experiences.jsonl"
     _download(f"{BASE}/dataset.csv", csv_path)
 
     rows = list(csv.DictReader(csv_path.open()))
@@ -73,7 +73,8 @@ def build_dataset(cfg, limit: int | None, live: bool) -> Path:
     for i, r in enumerate(rows):
         oid = _slug(r["Object"]) or f"object_{i:03d}"
         img_name = r["Image"]
-        rel = f"data/expforce/images/{img_name}"
+        suffix = Path(img_name).suffix.lower() or ".png"
+        rel = f"data/expforce/objects/{oid}/image{suffix}"
         have_img = live and _download(f"{BASE}/images/{img_name}", cfg.root / rel)
         img = None
         if have_img:
@@ -154,8 +155,8 @@ def main() -> int:
     cfg = load_config()
     if not args.live:
         cfg.models.dry_run = True
-    cfg.paths.experiences = "data/expforce/experiences.jsonl"
-    cfg.paths.images = "data/expforce/images"
+    cfg.paths.experiences = "data/cache/expforce/single_gripper_experiences.jsonl"
+    cfg.paths.images = "data/expforce/objects"
     cfg.paths.splits = "data/expforce/splits.json"
 
     exp_path = cfg.path("experiences")

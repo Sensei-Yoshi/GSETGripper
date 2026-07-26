@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "oxiclean_container_12_oz",
+  "object_name": "OxiClean container (12 oz)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/oxiclean_container_12_oz/image.png",
+  "image_sha256": "47f80171eba2cf6f56499bb5d6046fe1c02d5e6d4fc487f5bb6ee11a4272309d",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Rigid plastic spray bottle with a smooth, dry, nonporous lateral surface and continuous curvature. The intended contact region has no visible seams, texture, or contamination.",
+    "contact_region": "Lateral opposing sidewalls of the spray bottle body",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic substrate",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Curved continuous cylindrical or slightly contoured surface",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact texture and presence of minor surface labeling on the occluded reverse side cannot be verified from this viewpoint."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "22092a95a2abb185d1a67aa821dc02f669e147d6b45f3f71f71c275f7ca63da6",
+  "updated_at": "2026-07-23T00:44:51.312556+00:00"
+}

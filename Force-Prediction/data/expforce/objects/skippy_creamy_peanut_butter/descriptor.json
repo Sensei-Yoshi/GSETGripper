@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "skippy_creamy_peanut_butter",
+  "object_name": "Skippy creamy peanut butter",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/skippy_creamy_peanut_butter/image.png",
+  "image_sha256": "1746af2149aa8c7b18f668a833b5b1e0b2be883165528fb1974c9cdb8252b29d",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical plastic container with a smooth, dry label surface and continuous lateral curvature. The intended contact region has no visible seams or contamination within the centered grasp band.",
+    "contact_region": "Lateral sidewall surfaces located within the centered grasp band of the container.",
+    "contact_material": "Plastic label applied over the container substrate.",
+    "visible_surface_material": "Paper or plastic label material over rigid plastic.",
+    "visible_surface_condition": "Clean, dry, and intact.",
+    "local_geometry": "Smooth cylindrical curvature with continuous surface profile.",
+    "contact_patch_visibility": "The primary contact patches are partially visible on the lateral surfaces.",
+    "uncertainty": "The exact texture of the label finish is slightly ambiguous due to lighting and resolution limitations."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "85a5a39e8d63d92876eda313a40a271c3578bf56573b0514cf3040804fec0c1d",
+  "updated_at": "2026-07-23T00:44:50.805186+00:00"
+}

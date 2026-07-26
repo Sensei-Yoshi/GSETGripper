@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "h_e_b_texas_steak_seasoning",
+  "object_name": "H-E-B Texas steak seasoning",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/h_e_b_texas_steak_seasoning/image.png",
+  "image_sha256": "94fd362ce9046be758d7cc991ed561bac6fe88c232a68bb28b15735391192333",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical object with a smooth, dry, nonporous lateral surface and continuous curvature. The intended contact region is clean and uniform with no visible seams or interruptions.",
+    "contact_region": "Lateral cylindrical sidewall",
+    "contact_material": "Plastic",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Continuous cylindrical curvature without interruptions",
+    "contact_patch_visibility": "Clearly visible in the centered grasp band",
+    "uncertainty": "Lighting and viewing angle obscure finer surface texture details, but the macroscopic cylindrical geometry is clear."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "2dce9a22c1bce1f67f33a77963628757d3e642f410b1241490523d0e82a62c06",
+  "updated_at": "2026-07-23T00:44:50.794037+00:00"
+}

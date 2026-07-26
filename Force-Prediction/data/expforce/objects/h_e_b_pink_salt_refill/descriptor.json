@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "h_e_b_pink_salt_refill",
+  "object_name": "H-E-B Pink Salt refill",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/h_e_b_pink_salt_refill/image.png",
+  "image_sha256": "73bcc6b83dd46a6350e5a36aed7d778ce2d36ad57e174fbadbd33617db121a24",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical object with a smooth, dry lateral surface and continuous curvature. The intended contact region has a smooth appearance with no visible seams or contamination.",
+    "contact_region": "Lateral sidewall of the cylinder",
+    "contact_material": "Plastic",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "clean and dry",
+    "local_geometry": "smooth continuous curvature",
+    "contact_patch_visibility": "clearly visible",
+    "uncertainty": "Lighting is somewhat dim, but the surface texture and geometry are reasonably clear."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "e3455d4eebabae9921e904a2728e1b5d07bc6d25be293849b0b23d91f0e38422",
+  "updated_at": "2026-07-23T00:44:50.843692+00:00"
+}

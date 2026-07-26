@@ -45,8 +45,10 @@ used by the camera and background-removal model preserve this rule.
 | `modules/models/` | Lazy Gemini, background-removal, and Marigold adapters. |
 
 The **Runs Viewer** owns saved single runs, saved benchmarks, and resumable E1–E4 suite
-comparison/export. The **Data Viewer** is intentionally limited to the dataset and
-descriptor catalog. The **Prompts & Embodiments** tab edits `prompts.yaml` atomically,
+comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated
+editing of paired `dataset.csv` measurements and outcome labels. A save is atomic at the CSV
+level, recalculates derived labels, and refreshes experience records. Names, images,
+descriptors, and generated artifact metrics remain read-only. The **Prompts & Embodiments** tab edits `prompts.yaml` atomically,
 including the fixed written descriptions of both grippers.
 
 The **Marigold Roughness** tab is intentionally independent of the force pipeline. It can
@@ -76,25 +78,41 @@ Changing it clears transient run/preparation/contact results, and every tab rece
 context on the same rerun. Empty folders are valid catalog entries; they show zero objects.
 
 `Dataset` is the aggregate. Its `objects` mapping contains `DatasetObject` values with stable
-attributes for `image`, `description`, `embedding`, optional `mass_g`, optional
+attributes for primary `image`, optional second-view `image_2`, `description`, `embedding`, optional `mass_g`, optional
 `roughness_class`, optional `projected_contact_fraction`, and optional paired
 `gripper_outcomes`. Description and embedding values are artifact objects with provenance,
 not loose parallel dictionaries. Convenience mappings (`dataset.images`,
-`dataset.descriptions`, and `dataset.embeddings`) are available for analysis.
+`dataset.second_images`, `dataset.descriptions`, and `dataset.embeddings`) are available for analysis.
+
+The second view is discovered from `objects/<object_id>/image_2.<ext>`, from an
+`Image_2`/`image_2` column in `dataset.csv`, or by pairing flat `<object>.<ext>` and
+`<object>_2.<ext>` files. Surface/contact preparation is enabled only when every indexed
+object has a local second view. The primary image feeds Gemini and Marigold; the calibrated
+second view feeds projected two-pad contact estimation.
 
 The adapter selected from folder contents determines capabilities:
 
-- `dataset_2gripper.csv` uses the paired CSV adapter and enables experiences, Single Run,
+- `dataset.csv` uses the paired CSV adapter and enables experiences, Single Run,
   benchmarks, and suites when its required measurements and labels validate.
 - other folders use the image-folder adapter. Source images may be at the folder root or in
   nested folders. Generated masks, cutouts, contact plots, descriptors, runs, results, and
   other artifact folders are excluded from the source inventory.
 
 The Data Preparation tab exposes independent **Gemini descriptions**, **Text embeddings**,
-and **Experience records** checkboxes. Indexing is always implicit. Embeddings and experience
-records add descriptions as a prerequisite, but choosing descriptions alone does not run
-either downstream stage. Checkpoints and the manifest live inside the active dataset folder.
-The equivalent CLI is `scripts/prepare_dataset.py`.
+**Marigold roughness**, **Surface-area estimation**, and **Experience records** checkboxes.
+Indexing is always implicit. Embeddings and experience records add descriptions as a
+prerequisite, but choosing descriptions alone does not run either downstream stage. Marigold
+uses the primary image and stores runs under `objects/<object_id>/roughness/`. The surface
+option runs the dimensionless projected-contact estimator on `image_2` and stores its outputs
+under `objects/<object_id>/contact_fraction/`; despite the UI's familiar wording, it is not
+absolute physical area in mm². Checkpoints and the manifest live inside the active dataset
+folder. The equivalent CLI is `scripts/prepare_dataset.py`.
+
+The Data Viewer object editor exposes only mass, roughness class, projected contact fraction,
+per-gripper feasibility, and feasible minimum-force values. `favored_gripper` remains derived
+from feasibility and minimum-force labels so it cannot become inconsistent. Saved runs and
+results remain historical and are not rewritten; their source fingerprint mismatch is shown
+by inspectors.
 
 ## Adding a tab
 

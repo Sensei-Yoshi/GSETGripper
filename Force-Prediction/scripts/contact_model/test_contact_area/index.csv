@@ -1,6 +1,0 @@
-timestamp,name,px_per_mm,k_max,delta,L,w_pad,object_type,feasible,contact_L_mm,contact_R_mm,total_area_mm2,mean_fraction,antipodal,folder
-2026-07-24T21:09:58,hi,8.0,2.0,0.3,4.0,12.0,prismatic,True,3.539,4.011,90.597,0.9412,True,hi
-2026-07-24T22:40:43,water_bottle,2.1852,2.0,0.3,4.0,12.0,prismatic,True,4.242,4.242,101.818,1.0,True,water_bottle
-2026-07-24T22:50:13,water_bottle,2.1852,2.0,0.3,106.68,12.0,prismatic,260.55,71.39,True,107.077,107.077,2569.837,1.0,True,water_bottle
-2026-07-24T22:58:25,water_bottle,2.1852,2.0,0.3,106.68,12.0,prismatic,262.51,72.18,True,106.862,106.862,2564.699,1.0,True,water_bottle
-2026-07-24T22:59:20,test_3d_print,2.1852,2.0,0.3,106.68,12.0,prismatic,60.39,43.57,True,87.296,88.291,2107.041,0.823,True,test_3d_print

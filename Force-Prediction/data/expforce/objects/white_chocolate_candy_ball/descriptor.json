@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "white_chocolate_candy_ball",
+  "object_name": "White chocolate candy ball",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/white_chocolate_candy_ball/image.png",
+  "image_sha256": "f6ddcfaf0f5333726c8687ab63c8a3dcc6e9befafa5d52a535142e1c762ee808",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small round wrapped candy object with a paper wrapper and pleated perimeter. The intended contact region is clean, dry, and features pleated ridges along the lateral edge.",
+    "contact_region": "Lateral perimeter of the wrapped candy",
+    "contact_material": "Paper wrapper",
+    "visible_surface_material": "Paper wrapper",
+    "visible_surface_condition": "Clean, dry, and intact",
+    "local_geometry": "Pleated or fluted circular perimeter with repeating radial ridges",
+    "contact_patch_visibility": "Visible",
+    "uncertainty": "The image is taken from a distance, making fine textural details of the wrapper slightly ambiguous, but the general shape and pleated geometry are visible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "dd4f3374ab32f484058293c10c024ce0865ea3fcbe93ae5924f9820b81001e52",
+  "updated_at": "2026-07-23T00:44:50.789010+00:00"
+}

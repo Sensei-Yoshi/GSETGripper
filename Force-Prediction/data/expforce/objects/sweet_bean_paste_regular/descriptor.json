@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "sweet_bean_paste_regular",
+  "object_name": "Sweet bean paste (regular)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/sweet_bean_paste_regular/image.png",
+  "image_sha256": "b3cdf5531fdda1e0451ed0ecab6f70539ce424e9de47edbe3ca30499cf4a14af",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small yellow plastic container with rounded rectangular lateral walls. The intended contact region is clean, dry, with flat sides and rounded vertical corners.",
+    "contact_region": "Lateral opposing sidewalls of the yellow container",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat rectangular sides with smoothly rounded vertical corner edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible lateral surfaces, though the exact texture of the contact zones is partially generalized from visual appearance."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "4323454d5ea4f2d65f7573ec165207542ee66292d876896e69e58d12110238f8",
+  "updated_at": "2026-07-23T00:44:50.797552+00:00"
+}

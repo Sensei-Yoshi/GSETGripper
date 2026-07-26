@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "large_brown_egg",
+  "object_name": "Large brown egg",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/large_brown_egg/image.png",
+  "image_sha256": "aa64ae0a7551ad59b7412f97fc71de5dc6ad994f0d70693add4bd8e037d87b66",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Ovoid egg object with a smooth, dry, porous-textured shell and continuous curved geometry. The intended contact region has no visible seams or contamination, presenting a symmetric lateral grasp band.",
+    "contact_region": "Lateral opposing curved surfaces of the egg shell within the centered grasp band.",
+    "contact_material": "Egg shell substrate",
+    "visible_surface_material": "Egg shell",
+    "visible_surface_condition": "Clean, dry, and matte",
+    "local_geometry": "Smooth continuous ovoid curvature without seams, ridges, or interruptions",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact micro-texture and local surface friction cannot be fully verified from the visual evidence alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "3021189a3c8c839fcb1e2904ee1e4b8778bcf5def92fab5d9fad5a3fe551a838",
+  "updated_at": "2026-07-23T00:44:50.810975+00:00"
+}

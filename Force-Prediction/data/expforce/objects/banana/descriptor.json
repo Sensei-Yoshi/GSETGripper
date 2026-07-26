@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "banana",
+  "object_name": "Banana",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/banana/image.png",
+  "image_sha256": "0f14b370b655993395ffd5c9b2f9b74b35f7994c774fc2a5e98ee72d82148f20",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Curved organic fruit object with a smooth, dry, peel-covered surface and rounded faceted geometry. The intended contact region has longitudinal ridges and variable bruising.",
+    "contact_region": "Lateral opposing flanks along the curved midsection of the banana.",
+    "contact_material": "Natural organic peel",
+    "visible_surface_material": "Banana peel with bruising and minor blemishes",
+    "visible_surface_condition": "Dry, smooth with slight bruising marks",
+    "local_geometry": "Curved tubular structure with longitudinal facets or ridges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Lighting and viewing angle are static, but the surface and geometry are clearly observable."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "fe15c3bffbc391c756945b5afc6af8f9c2b51784ecf6629a1d9b22665a11c5b2",
+  "updated_at": "2026-07-23T00:44:50.806871+00:00"
+}

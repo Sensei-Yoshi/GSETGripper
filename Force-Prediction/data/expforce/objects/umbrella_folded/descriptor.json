@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "umbrella_folded",
+  "object_name": "Umbrella (Folded)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/umbrella_folded/image.png",
+  "image_sha256": "8267ec388f6eb69c5ecc5d01e35ad2618ce623f105b6aad11ae823af83979c7f",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Flexible fabric-wrapped object with a smooth, dry wrapper surface and continuous curved lateral bands. The intended contact region has soft wrinkles and flexible compliance under pad pressure.",
+    "contact_region": "Lateral opposing sides of the wrapped fabric section",
+    "contact_material": "Fabric wrapper",
+    "visible_surface_material": "Fabric",
+    "visible_surface_condition": "Clean, dry, slightly wrinkled",
+    "local_geometry": "Curved, compliant, featuring soft folds and wrinkles",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Exact internal contents and rigid substructure cannot be fully determined from the exterior fabric view."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "ac0fab5ffbc1b8556c313d0924c2ba0a9347952e5ae1d56a6331e90d97bd0960",
+  "updated_at": "2026-07-23T00:44:56.155831+00:00"
+}

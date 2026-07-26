@@ -41,6 +41,32 @@ class EmbeddingArtifact(BaseModel):
     vector_sha256: str | None = None
 
 
+class RoughnessArtifact(BaseModel):
+    """Latest dataset-scoped Marigold result for one object image."""
+
+    metadata_path: str
+    source_image_sha256: str
+    model: str
+    mean: float
+    median: float
+    std: float
+    updated_at: str
+
+
+class ContactFractionArtifact(BaseModel):
+    """Schema-v2 contact analysis stored alongside one object."""
+
+    summary_path: str
+    schema_version: int
+    object_height_mm: float
+    object_width_mm: float
+    geometric_contact_fraction: float = Field(ge=0, le=1)
+    combined_contact_fraction: float = Field(ge=0, le=1)
+    grasp_feasible: bool
+    antipodal_grasp: bool
+    contact_floor_applied: bool
+
+
 class GripperOutcome(BaseModel):
     gripper: Gripper
     min_force_n: float | None = None
@@ -55,27 +81,34 @@ class DatasetObject(BaseModel):
     object_id: str
     name: str
     image: ImageArtifact
+    image_2: ImageArtifact | None = None
     mass_g: float | None = Field(default=None, gt=0)
     roughness_class: int | None = Field(default=None, ge=1, le=5)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
+    contact_fraction: ContactFractionArtifact | None = None
     description: DescriptionArtifact | None = None
     embedding: EmbeddingArtifact | None = None
+    roughness: RoughnessArtifact | None = None
     gripper_outcomes: dict[Gripper, GripperOutcome] = Field(default_factory=dict)
 
 
 class DatasetCapabilities(BaseModel):
     has_images: bool = False
+    has_second_images: bool = False
     has_descriptions: bool = False
     has_embeddings: bool = False
+    has_roughness: bool = False
     has_measurements: bool = False
     has_paired_labels: bool = False
     can_build_experiences: bool = False
+    can_estimate_surface_area: bool = False
     can_run_pipeline: bool = False
     can_benchmark: bool = False
 
 
 class DatasetPaths(BaseModel):
     root: Path
+    objects: Path
     image_root: Path
     descriptors: Path
     preparation_manifest: Path
@@ -85,8 +118,10 @@ class DatasetPaths(BaseModel):
     results: Path
     run_images: Path
     suites: Path
-    contact_fraction: Path
     cache: Path
+
+    def object_dir(self, object_id: str) -> Path:
+        return self.objects / object_id
 
 
 class Dataset(BaseModel):
@@ -111,6 +146,14 @@ class Dataset(BaseModel):
     @property
     def images(self) -> dict[str, ImageArtifact]:
         return {key: item.image for key, item in self.objects.items()}
+
+    @property
+    def second_images(self) -> dict[str, ImageArtifact]:
+        return {
+            key: item.image_2
+            for key, item in self.objects.items()
+            if item.image_2 is not None
+        }
 
     @property
     def descriptions(self) -> dict[str, DescriptionArtifact]:
@@ -146,6 +189,7 @@ class Dataset(BaseModel):
         return {
             "dataset_id": self.dataset_id,
             "objects": len(self.objects),
+            "second_images": len(self.second_images),
             "experience_rows": sum(len(item.gripper_outcomes) for item in self.objects.values()),
             "source_sha256": self.source_fingerprint,
             "roughness_counts": dict(sorted(roughness.items())),
@@ -158,6 +202,8 @@ class PreparationStage(StrEnum):
     INDEX = "index"
     DESCRIPTIONS = "descriptions"
     EMBEDDINGS = "embeddings"
+    ROUGHNESS = "roughness"
+    SURFACE_AREA = "surface_area"
     EXPERIENCES = "experiences"
 
 
@@ -171,13 +217,14 @@ class StageStatus(BaseModel):
 
 
 class PreparationManifest(BaseModel):
-    schema_version: int = 3
+    schema_version: int = 4
     dataset_id: str
     source_fingerprint: str
     created_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     updated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     stages: dict[str, StageStatus] = Field(default_factory=dict)
     missing_images: list[str] = Field(default_factory=list)
+    missing_second_images: list[str] = Field(default_factory=list)
 
 
 class PreparedObjectCheckpoint(BaseModel):

@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "red_grape_1",
+  "object_name": "Red grape 1",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/red_grape_1/image.png",
+  "image_sha256": "95ae4993e5d11a53d4d8de8cdd06e147bcd65f9397e2fa14497469824cc97c76",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small spherical fruit object with a smooth, dry surface and continuous curved geometry. The intended contact region is smooth, clean, and curved without visible seams or interruptions.",
+    "contact_region": "Lateral opposing flanks of the spherical fruit.",
+    "contact_material": "Natural organic skin substrate of the fruit.",
+    "visible_surface_material": "Natural organic fruit skin.",
+    "visible_surface_condition": "Clean and dry.",
+    "local_geometry": "Continuous spherical curvature.",
+    "contact_patch_visibility": "Clearly visible.",
+    "uncertainty": "The exact tactile texture and exact firmness cannot be determined purely from visual evidence."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "db27973a69be1be6a4d154424f2c381da4ced4771b1ce598d5e9cfbed58aa356",
+  "updated_at": "2026-07-23T00:44:50.778545+00:00"
+}

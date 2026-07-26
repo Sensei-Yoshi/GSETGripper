@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "black_chocolate_candy_ball",
+  "object_name": "Black chocolate candy ball",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/black_chocolate_candy_ball/image.png",
+  "image_sha256": "9c8644ae04bbf8cc47c497329d7d790bafb86952ef3c5242daaedd164eee9ca6",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small round object enclosed in a foil wrapper with a fluted paper base. The intended contact region is dry, with complex corrugated ridges and pleated paper geometry.",
+    "contact_region": "Lateral sides of the foil-wrapped and paper-cupped object",
+    "contact_material": "Foil wrapper and fluted paper cup",
+    "visible_surface_material": "Foil and paper",
+    "visible_surface_condition": "Dry, clean, and textured",
+    "local_geometry": "Corrugated ridges and pleated paper base forming a circular, lobed profile",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact texture and pliability beneath the wrapper are not visible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "53133135916c272c6f4d9e4a34d95fbdd093eae658adb4453213cdebf2ca123e",
+  "updated_at": "2026-07-23T00:44:50.745186+00:00"
+}

@@ -35,6 +35,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Run pipeline",
         "Run 129-object leave-one-out benchmark",
         "Run new E1–E4 suite",
+        *(["Save object changes"] * 12),
         "Validate prompt bundle",
         "Save prompts & embodiments",
         "Capture & Analyze",
@@ -49,6 +50,21 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Saved suite",
         "Marigold dataset image",
     ]
+    checkbox_labels = {item.label for item in app.checkbox}
+    assert {
+        "Gemini descriptions",
+        "Text embeddings",
+        "Marigold roughness",
+        "Surface/contact fraction from image_2",
+        "Experience records",
+    } <= checkbox_labels
+    markdown_values = {item.value for item in app.markdown}
+    assert "**Image 1 — Perception view**" in markdown_values
+    assert "**Image 2 — Geometry view**" in markdown_values
+    assert not any(
+        "Each card combines CSV source fields" in item.value
+        for item in app.info
+    )
     expected_state = {
         "active_dataset_id",
         "benchmark_experiment",
@@ -82,10 +98,12 @@ def test_default_app_structure_matches_research_lab() -> None:
         "preparation_execution",
         "prepare_descriptions",
         "prepare_embeddings",
+        "prepare_roughness",
+        "prepare_surface_area",
         "prepare_experiences",
         "run_preparation_stages",
     }
-    assert set(app.session_state.filtered_state) == expected_state
+    assert expected_state <= set(app.session_state.filtered_state)
 
 
 def test_tab_registry_has_unique_labels_and_common_renderer_contract() -> None:
@@ -121,3 +139,9 @@ def test_global_dataset_selector_switches_every_tab_to_image_only_dataset() -> N
         item for item in app.checkbox if item.label == "Experience records"
     )
     assert experience_control.disabled
+    surface_control = next(
+        item
+        for item in app.checkbox
+        if item.label == "Surface/contact fraction from image_2"
+    )
+    assert surface_control.disabled

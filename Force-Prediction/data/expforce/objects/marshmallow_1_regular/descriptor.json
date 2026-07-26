@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "marshmallow_1_regular",
+  "object_name": "Marshmallow 1 (regular)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/marshmallow_1_regular/image.png",
+  "image_sha256": "928431666b9b7acbf30a5e75b3442b3e0cfd37198ac08fa35587b9ce54dafd79",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small white object with an irregular, curved lateral surface. The intended contact region is dry, smooth, and presents mildly rounded contours.",
+    "contact_region": "Lateral opposing sides of the small object",
+    "contact_material": "Substrate",
+    "visible_surface_material": "Ceramic or stone substrate",
+    "visible_surface_condition": "Clean, dry, and matte",
+    "local_geometry": "Mildly curved, slightly irregular surfaces with subtle rounded facets",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The image is taken from a distance, making fine micro-texture details difficult to fully resolve."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "f45a5c3ec4eacaff413236cdc5c3061e5d4acea1ccdd5f8e96b571a4e2a5cfac",
+  "updated_at": "2026-07-23T00:44:50.758086+00:00"
+}

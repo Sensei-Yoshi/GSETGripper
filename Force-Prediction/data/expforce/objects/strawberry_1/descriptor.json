@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "strawberry_1",
+  "object_name": "Strawberry 1",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/strawberry_1/image.png",
+  "image_sha256": "703219549b01adde5c328c8643f184f3882737c62696bc43f20f539e86263eea",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small conical fruit with a soft, textured surface featuring embedded seeds and curved lobes. The intended contact region has a slightly glossy, clean condition with irregular contours.",
+    "contact_region": "Lateral surfaces of the fruit in the centered grasp band",
+    "contact_material": "Fruit skin with embedded seeds",
+    "visible_surface_material": "Fruit skin",
+    "visible_surface_condition": "Clean, dry, and slightly glossy",
+    "local_geometry": "Conical shape with curved lobes and indented seed textures",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact compliance and friction of the fruit flesh beneath the skin cannot be determined from visual evidence alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "ca17cd34261129d9d03ec537dc01b716c0b0bc070b48235a748834efc939a5c0",
+  "updated_at": "2026-07-23T00:44:50.770700+00:00"
+}

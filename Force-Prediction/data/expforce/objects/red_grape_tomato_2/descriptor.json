@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "red_grape_tomato_2",
+  "object_name": "Red grape tomato 2",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/red_grape_tomato_2/image.png",
+  "image_sha256": "cbd7e4b8a2a8f4047eaf14b682470533faf2dee7235ff65200bf370b955843b6",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small oval tomato with a smooth, firm, nonporous skin and continuous curved lateral surfaces. The intended contact region is clean, dry, and presents convex curvature without visible seams.",
+    "contact_region": "The opposing lateral sides of the small oval tomato within the centered grasp band.",
+    "contact_material": "Smooth tomato skin (vegetable substrate)",
+    "visible_surface_material": "Smooth tomato skin",
+    "visible_surface_condition": "Clean, dry, and glossy",
+    "local_geometry": "Convex, smooth curvature with an oval profile and no seams or ridges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None; the object surface is clearly resolved in the image."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "1085ace32e483fa5a5edf8b681f9167fd9c7db2f06ea6b411ed2cfc3e64e19f1",
+  "updated_at": "2026-07-23T00:44:50.830850+00:00"
+}

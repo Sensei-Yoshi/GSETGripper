@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "blueberry",
+  "object_name": "Blueberry",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/blueberry/image.png",
+  "image_sha256": "b22770ccade98b5066104ba78a93e03f4bffecfe67812160add91315abf735e8",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small spherical object with a smooth, dry surface and continuous curved geometry. The intended contact region is clean and provides a small curved lateral surface.",
+    "contact_region": "lateral surface",
+    "contact_material": "plastic",
+    "visible_surface_material": "plastic",
+    "visible_surface_condition": "clean and dry",
+    "local_geometry": "spherical with continuous curvature",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "The exact texture and material composition are difficult to determine precisely due to the small scale and distance of the object in the image."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "21a3559f229ef71e4da76bfcf32edded4f8c17d44accc1bb38675d05dc91e205",
+  "updated_at": "2026-07-23T00:44:50.835556+00:00"
+}

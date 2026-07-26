@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "plastic_shot_cup_2_oz",
+  "object_name": "Plastic shot cup (2 oz)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/plastic_shot_cup_2_oz/image.png",
+  "image_sha256": "bc40c2859a3b46c95a098bd78a1924274e039423c78f310b67de49755e7d7079",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small cylindrical plastic bottle with a smooth, dry, nonporous lateral surface and continuous curvature. The intended contact region has no visible seams, texture, or contamination.",
+    "contact_region": "Lateral sidewall of the small bottle",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous smooth cylindrical curvature",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The image is taken from a top-down perspective where the exact vertical extent of the cylinder is foreshortened, but lateral curvature is clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "03ce4f7300a9f7d10a663f2e49cab8300e592add3b4eed316e65e0ff5422fff8",
+  "updated_at": "2026-07-23T00:44:53.810942+00:00"
+}

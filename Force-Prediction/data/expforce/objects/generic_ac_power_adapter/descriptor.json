@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "generic_ac_power_adapter",
+  "object_name": "Generic AC Power Adapter",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/generic_ac_power_adapter/image.png",
+  "image_sha256": "c5f7528b1a17cbf84c08ca17a61292c435ee7e1ab03a3c17461673b1728bc15b",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Rigid black plastic electronic power adapter housing. The intended contact region is clean and dry with flat parallel lateral surfaces and slight edge rounding.",
+    "contact_region": "Opposing lateral exterior sidewalls of the rectangular housing",
+    "contact_material": "Rigid plastic substrate",
+    "visible_surface_material": "Rigid plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat parallel rectangular faces with smooth finish and subtle rounded vertical edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The depth dimension of the housing and exact texture details cannot be fully verified from the top-down 2D image."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "efb1ff58777553134d010bd468b13dae9dc69b42d2b81bf702bb41e8a0ef2ea4",
+  "updated_at": "2026-07-23T00:44:55.835790+00:00"
+}

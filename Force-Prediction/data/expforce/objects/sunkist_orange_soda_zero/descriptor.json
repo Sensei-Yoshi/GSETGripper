@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "sunkist_orange_soda_zero",
+  "object_name": "Sunkist Orange soda (zero)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/sunkist_orange_soda_zero/image.png",
+  "image_sha256": "8679130606fd953485e53ea938a78d730b436fab984742edb75d25920982e3fd",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Metal cylindrical beverage can with a smooth, dry, coated exterior surface and continuous curvature. The intended contact region has no visible seams or contamination within the lateral grasp band.",
+    "contact_region": "The lateral sidewalls of the cylindrical can, located at the centered grasp band between the opposing fingers.",
+    "contact_material": "Coated metal substrate forming the exterior surface of the beverage can.",
+    "visible_surface_material": "Coated metal",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous cylindrical curvature with smooth lateral surface.",
+    "contact_patch_visibility": "The top-down perspective clearly shows the circular profile and upper rim, but the specific lateral contact patches along the vertical sidewalls are partially occluded by the overhead view.",
+    "uncertainty": "The exact surface texture and condition of the lower lateral sidewalls cannot be fully detailed due to the top-down perspective, though the overall cylindrical shape and metal material are clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "4409352dfd38f1f33eab1ff444bc8b9566381b6d83db135f21906238e7b08a62",
+  "updated_at": "2026-07-23T00:44:50.838539+00:00"
+}

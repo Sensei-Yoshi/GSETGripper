@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "glass_coca_cola_bottle",
+  "object_name": "Glass Coca-Cola bottle",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/glass_coca_cola_bottle/image.png",
+  "image_sha256": "74a431434291ee56883eb0290d678dbc2234d4911eceb8c3762eae5c1c14bfee",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Curved glass bottle with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has no visible seams or contamination, presenting a clean surface.",
+    "contact_region": "Lateral sidewall of the glass bottle within the centered grasp band",
+    "contact_material": "Glass",
+    "visible_surface_material": "Glass",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous smooth cylindrical curvature without interruptions",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact tactile friction coefficient and minor surface micro-texture cannot be determined from the visual image alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "dbc80fd3227f253361ffc754bf19dfcd8af3aae4624dabb0aae1751473488697",
+  "updated_at": "2026-07-23T00:44:52.174362+00:00"
+}

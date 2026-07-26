@@ -43,9 +43,10 @@ python scripts/check_pipeline.py
 The global selector above the tabs discovers each direct dataset folder under `data/`
 (excluding `data/cache`). The selection controls the Data Viewer, preparation stages,
 Gemini/embedding caches, contact captures, Marigold roughness tests, experience pool, saved
-runs, benchmarks, and suites. Image-only datasets support description/embedding preparation
-and analysis; the paired Exp-Force fixture additionally supports force pipelines and
-evaluation.
+runs, benchmarks, and suites. Image-only datasets support description, embedding, and
+Marigold preparation. Datasets with a second view for every object also support batch
+surface/contact estimation; the paired Exp-Force fixture additionally supports force
+pipelines and evaluation.
 
 For paired data, known-object runs are leave-one-object-out and custom queries use the
 entire experience pool. E3 retrieves by semantic cosine similarity only. E4 uses the
@@ -63,7 +64,10 @@ Edit the fixed written gripper descriptions and all prompt text in `prompts.yaml
 **Prompts & Embodiments** tab. No gripper images are sent to the VLM. The **Runs Viewer** creates and
 resumes saved E1–E4 suites, compares the two grippers in separate panels, inspects
 provenance, and exports PNG, SVG, and CSV results. The **Data Viewer** shows the selected
-dataset's images, optional measurements/outcomes, descriptions, and embedding status.
+dataset's images, optional measurements/outcomes, descriptions, and embedding status. For a
+paired CSV dataset, its object editor validates and atomically saves measurement/outcome
+corrections, recalculates the favored gripper, and refreshes experience
+records. Names, images, and descriptors remain read-only in this tab.
 
 The **Marigold Roughness** tab runs the IID appearance model on any active-dataset image or
 an uploaded override. Its default background-removal pass creates a mask and transparent
@@ -98,8 +102,8 @@ extra, and omit `--dry-run`.
 ## Data collection
 
 ```bash
-python -m modules.collect --mock --n 40
-python -m modules.collect --port /dev/cu.usbmodemXXXX
+python -m modules.collect --mock --dataset mock --n 40
+python -m modules.collect --dataset collected --port /dev/cu.usbmodemXXXX
 ```
 
 The coarse/fine staircase controls ground-truth search resolution only. It does not limit

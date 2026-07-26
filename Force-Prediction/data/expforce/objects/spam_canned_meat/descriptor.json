@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "spam_canned_meat",
+  "object_name": "Spam canned meat",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/spam_canned_meat/image.png",
+  "image_sha256": "599d934574d13d3eaa20201575f39ff0092b6e145e5607105a7e9c9739a97ab6",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Metal rectangular tin object with a smooth, dry, coated lateral surface and flat faces with rounded corners. The intended contact region has uniform curvature with no visible contamination.",
+    "contact_region": "Opposing lateral sides of the rectangular tin body",
+    "contact_material": "Coated metal substrate",
+    "visible_surface_material": "Coated metal",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat planar sides connected by smoothly rounded vertical corners",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The lateral surfaces are clearly visible from this overhead perspective, though the exact lighting reflections on the metal coating could obscure subtle micro-textures."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "0ed55e116f720864ec196bbfd57dbef3b04cffc53cfa974206bd477e2e9dc950",
+  "updated_at": "2026-07-23T00:44:50.747233+00:00"
+}

@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "5v_power_adapter",
+  "object_name": "5V power adapter",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/5v_power_adapter/image.png",
+  "image_sha256": "3393a69b83961f63a7e5930816924d057d7861c918c6203fe858d6dccf5fe058",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small white plastic power adapter with a smooth, dry, rigid rectangular body. The intended contact region has flat opposing sides with clean surfaces and slightly rounded vertical edges.",
+    "contact_region": "Opposing lateral flat sides of the rectangular adapter body",
+    "contact_material": "Rigid plastic substrate",
+    "visible_surface_material": "Rigid plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat planar surfaces with subtle edge bevels",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Lighting and resolution are low, but the geometric form and surface texture are typical for molded plastic electronic enclosures."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "f96106753835f4d98e8551606a61e037ac050cf247451a8a63c1499836f2a552",
+  "updated_at": "2026-07-23T00:44:50.802416+00:00"
+}

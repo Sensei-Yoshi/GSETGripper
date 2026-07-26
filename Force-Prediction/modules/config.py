@@ -63,7 +63,6 @@ class InputsConfig(BaseModel):
 
 
 class GeometryConfig(BaseModel):
-    pad_height_mm: float = Field(gt=0)
     px_per_mm: float = Field(gt=0)
     pad_length_mm: float = Field(gt=0)
     minimum_bend_radius_mm: float = Field(gt=0)

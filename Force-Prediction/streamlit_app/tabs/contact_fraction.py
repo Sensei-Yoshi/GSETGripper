@@ -4,19 +4,15 @@ from __future__ import annotations
 
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 import cv2
 import numpy as np
 import streamlit as st
 
+from modules.contact_model import ContactParams, analyze_image, create_rembg_session
 from streamlit_app.context import AppContext
-
-# The geometric contact-fraction model lives outside the package, under scripts/;
-# add it to the path so this tab's lazy imports resolve.
-_CONTACT_MODEL_DIR = Path(__file__).resolve().parents[2] / "scripts" / "contact_model"
-if str(_CONTACT_MODEL_DIR) not in sys.path:
-    sys.path.insert(0, str(_CONTACT_MODEL_DIR))
 
 # --------------------------------------------------------------------------- #
 # Contact Fraction tab: fixed modeling assumptions.
@@ -30,10 +26,7 @@ CONTACT_CLOSING_AXIS = "x"
 @st.cache_resource(show_spinner="Loading background-removal model...")
 def _rembg_session():
     """Load the rembg model once per Streamlit process."""
-    import extract_object_outline as outline_mod
-    from rembg import new_session
-
-    return new_session(outline_mod.REMBG_MODEL)
+    return create_rembg_session()
 
 
 @st.cache_resource(show_spinner="Opening camera...")
@@ -66,14 +59,14 @@ def _slugify(name: str) -> str:
 
 def render(context: AppContext) -> None:
     cfg = context.config
-    contact_root = context.dataset.paths.contact_fraction
+    objects_root = context.dataset.paths.objects
     st.subheader("Projected Contact-Fraction Capture")
     st.caption(
         "Capture a real object from the camera (the Orbbec's RGB stream shows "
         "up as a normal USB webcam), extract its outline, and estimate the "
         "finger-contact fraction. Each capture is saved under "
-        f"`data/{context.dataset.dataset_id}/contact_fraction/<name>/` with the image "
-        "named `<name>.png`. "
+        f"`data/{context.dataset.dataset_id}/objects/<name>/` with derived "
+        "contact-model outputs under `contact_fraction/`. "
         "If the wrong feed appears, change the camera index below."
     )
 
@@ -144,11 +137,12 @@ def render(context: AppContext) -> None:
             st.stop()
 
         name = _slugify(name_in)
-        run_dir = contact_root / name
-        if run_dir.exists():
+        object_dir = objects_root / name
+        run_dir = object_dir / "contact_fraction"
+        if object_dir.exists():
             st.error(
-                f"`{run_dir.name}` already exists. Choose a new run name; "
-                "existing captures and summaries are preserved."
+                f"Object `{name}` already exists. Choose a new object name; "
+                "existing images and analyses are preserved."
             )
             st.stop()
 
@@ -160,12 +154,6 @@ def render(context: AppContext) -> None:
                      "camera index is correct.")
             st.exception(exc)
             st.stop()
-
-        run_dir.mkdir(parents=True, exist_ok=True)
-        image_path = run_dir / f"{name}.png"
-        cv2.imwrite(str(image_path), frame)
-
-        from pipeline_core import ContactParams, analyze_image
 
         params = ContactParams(
             px_per_mm=px_per_mm,
@@ -181,12 +169,27 @@ def render(context: AppContext) -> None:
             ),
         )
         try:
-            with st.spinner("Extracting outline and computing contact fraction..."):
-                est, summary, paths = analyze_image(
-                    image_path, run_dir, name, params,
-                    session=_rembg_session(),
-                    index_csv=contact_root / "index_v2.csv",
-                )
+            objects_root.mkdir(parents=True, exist_ok=True)
+            with tempfile.TemporaryDirectory(
+                prefix=f".{name}-", dir=objects_root
+            ) as temporary:
+                staged_object = Path(temporary)
+                staged_image = staged_object / "image.png"
+                if not cv2.imwrite(str(staged_image), frame):
+                    raise OSError(f"could not write {staged_image}")
+                with st.spinner("Extracting outline and computing contact fraction..."):
+                    est, summary, staged_paths = analyze_image(
+                        staged_image,
+                        staged_object / "contact_fraction",
+                        name,
+                        params,
+                        session=_rembg_session(),
+                    )
+                staged_object.replace(object_dir)
+                paths = {
+                    key: object_dir / Path(path).relative_to(staged_object)
+                    for key, path in staged_paths.items()
+                }
         except Exception as exc:
             st.exception(exc)
             st.stop()

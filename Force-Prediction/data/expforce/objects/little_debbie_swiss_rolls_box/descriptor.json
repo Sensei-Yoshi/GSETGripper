@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "little_debbie_swiss_rolls_box",
+  "object_name": "Little Debbie Swiss Rolls box",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/little_debbie_swiss_rolls_box/image.png",
+  "image_sha256": "46d83e15186f299d392300875813af067b530e815d626bdc6ce348da93fe855b",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Rectangular cardboard box with a smooth, dry paper wrapper. The intended contact region is clean and flat with slight longitudinal corner creases.",
+    "contact_region": "Lateral opposing vertical faces of the box",
+    "contact_material": "Paper wrapper over cardboard substrate",
+    "visible_surface_material": "Paper wrapper",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat planar surfaces with vertical edge creases",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The back face of the box is not visible, but opposing lateral sides are clearly shown."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "710129e50d7e9ca0a7a4a58d3bf20a5aaba020d16f027488d775b732d3ca72db",
+  "updated_at": "2026-07-23T00:44:53.109173+00:00"
+}

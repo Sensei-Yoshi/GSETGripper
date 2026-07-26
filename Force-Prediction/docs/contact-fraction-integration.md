@@ -1,9 +1,9 @@
 # Contact-fraction integration reference
 
 This document is the handoff contract for code that needs the gripper's
-estimated surface-contact ratio. It covers the standalone schema-v2 contact
-model under `scripts/contact_model/`; it does not change the E1–E6 force
-experiments.
+estimated surface-contact ratio. It covers the schema-v2 contact model under
+`modules/contact_model/`, which supplies the contact value for newly collected
+objects while historical fixture values remain unchanged.
 
 ## The short answer
 
@@ -56,22 +56,12 @@ plane.
 - clockwise or counter-clockwise input is accepted;
 - the returned boundary is normalized to counter-clockwise order.
 
-The contact-model files are scripts rather than an installed Python package,
-so callers outside that directory must add it to `sys.path`, as
-`streamlit_app/tabs/contact_fraction.py` does:
+The contact model is part of the installed `modules` package:
 
 ```python
-from pathlib import Path
-import sys
-
 import numpy as np
 
-project_root = Path(__file__).resolve().parents[1]
-contact_model_dir = project_root / "scripts" / "contact_model"
-if str(contact_model_dir) not in sys.path:
-    sys.path.insert(0, str(contact_model_dir))
-
-from contact_area import estimate_contact
+from modules.contact_model import estimate_contact
 
 points_mm: np.ndarray = ...  # shape (N, 2), x-closing and y-up
 estimate = estimate_contact(
@@ -87,17 +77,13 @@ estimate = estimate_contact(
 ratio = estimate.combined_contact_fraction
 ```
 
-Use an explicit project-root path appropriate for the calling file; do not
-copy the example's `parents[1]` blindly into a file at another directory depth.
-
 ### 2. A saved `*_spline_points.csv` outline
 
 Use `pipeline_core.outline_csv_to_mm` to convert image coordinates and scale,
 then call `estimate_contact`:
 
 ```python
-from pipeline_core import outline_csv_to_mm
-from contact_area import estimate_contact
+from modules.contact_model import estimate_contact, outline_csv_to_mm
 
 points_mm = outline_csv_to_mm(
     csv_path,
@@ -114,11 +100,10 @@ regressions because it does not require a camera or the `rembg` model.
 ### 3. A raw image requiring outline extraction
 
 Use `pipeline_core.analyze_image`. It runs segmentation, outline fitting,
-contact estimation, visualization, schema-v2 summary generation, and optional
-v2 index persistence:
+contact estimation, visualization, and schema-v2 summary generation:
 
 ```python
-from pipeline_core import ContactParams, analyze_image
+from modules.contact_model import ContactParams, analyze_image
 
 params = ContactParams(
     px_per_mm=2.1852,
@@ -134,7 +119,6 @@ estimate, summary, paths = analyze_image(
     run_dir=run_dir,
     name="object_name",
     params=params,
-    index_csv=data_root / "index_v2.csv",
 )
 
 ratio_from_object = estimate.combined_contact_fraction
@@ -221,13 +205,10 @@ Every new image-pipeline run writes a `summary.json` with:
 }
 ```
 
-The shared v2 index column for the ratio is
-`combined_contact_fraction`. Code reading the index must require
-`schema_version == 2`; do not mix it with the legacy `index.csv`. New rows are
-written to `index_v2.csv` by `append_index_v2`.
-
-The Python `ContactEstimate` retains full floating-point precision. Summary
-and index contact fractions are rounded to four decimal places for storage.
+Each object stores its authoritative result in
+`objects/<object_id>/contact_fraction/summary.json`. The Python
+`ContactEstimate` retains full floating-point precision; saved summary contact
+fractions are rounded to four decimal places.
 
 ## Mathematical model
 
@@ -296,15 +277,11 @@ regressions require `f(10 mm) >= f(20 mm) >= f(30 mm)`.
 
 ## Relationship to the force-prediction pipeline
 
-The active E1–E6 query contract already has a field named
-`projected_contact_fraction`, but it currently represents the older
-`min(1, h_available / 65 mm)` height proxy. The schema-v2 estimator documented
-here is a different, two-pad quantity.
-
-Do not silently assign `combined_contact_fraction` to the existing force-query
-field. Wiring it into E1–E6 requires an explicit data-contract/version change,
-updated training artifacts, and validation against measured physical contact.
-Until then, the Contact Fraction tab remains a standalone research testbed.
+The active E1–E6 contract retains the field name
+`projected_contact_fraction` for compatibility. Newly collected physical
+objects populate it from schema-v2 `combined_contact_fraction` and preserve
+model provenance in `Meta`. ExpForce remains a synthetic fixture and is not
+reanalyzed or presented as physical contact evidence.
 
 ## Change and test checklist
 
@@ -316,10 +293,10 @@ When modifying the contact estimator or consuming its output:
 - store `grasp_feasible` and `antipodal_grasp` beside the ratio;
 - never restore pad-width or square-millimeter calculations;
 - never bridge invalid outline regions;
-- preserve schema-v2 summaries and write new rows only to `index_v2.csv`;
+- preserve one authoritative schema-v2 summary inside each object folder;
 - run `pytest tests/test_contact_fraction.py`;
 - inspect the water-bottle and 3D-print v2 overlays after geometry changes.
 
-The implementation details live in `scripts/contact_model/contact_area.py`,
+The implementation details live in `modules/contact_model/contact_area.py`,
 `grasp_selection.py`, `finger_drape.py`, and `pipeline_core.py`. The model's
-research-facing overview is in `scripts/contact_model/README.md`.
+research-facing overview is in `modules/contact_model/README.md`.

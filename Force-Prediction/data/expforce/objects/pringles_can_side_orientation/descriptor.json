@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "pringles_can_side_orientation",
+  "object_name": "Pringles can (side orientation)",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/pringles_can_side_orientation/image.png",
+  "image_sha256": "a30c0cb8fe7ba5e79454ec692ee695fba72ec880352a31a3f03ea42703ee9fe1",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical paperboard snack container with a smooth paper wrapper. The intended contact region is clean, dry, and features continuous cylindrical curvature with no visible seams in the primary grasp band.",
+    "contact_region": "Lateral cylindrical sidewall of the container",
+    "contact_material": "Paper wrapper over paperboard",
+    "visible_surface_material": "Paper wrapper",
+    "visible_surface_condition": "Clean, dry, smooth",
+    "local_geometry": "Continuous cylindrical curvature",
+    "contact_patch_visibility": "Clearly visible on the front-facing lateral surface",
+    "uncertainty": "The rear side of the container is not visible, though symmetry implies similar cylindrical geometry."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "1e83f3c12c48aa05cecafc9306fa4b74cccaca2780f07b88c4db6df1c4221c1b",
+  "updated_at": "2026-07-23T00:44:50.796730+00:00"
+}

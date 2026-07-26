@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "green_grape_tomato_2",
+  "object_name": "Green grape tomato 2",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/green_grape_tomato_2/image.png",
+  "image_sha256": "5c755f1893235408a1cce4baf5ba3ec46061614eeab866e6e24fba87c6d2da00",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small tear-shaped organic object with a smooth, dry surface and continuous curved geometry. The intended contact region has no visible seams or contamination, presenting a rounded localized interface.",
+    "contact_region": "Lateral opposing flanks of the small tear-shaped object",
+    "contact_material": "Organic produce skin",
+    "visible_surface_material": "Organic produce skin",
+    "visible_surface_condition": "Clean, dry, smooth",
+    "local_geometry": "Curved, narrowing toward one end",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The image is taken from a distance, making fine textural details or micro-surface variations difficult to resolve clearly."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "a05681509ca53ac8fc8657e6e2fa35d66ae38beb8db247e2520733a49050df85",
+  "updated_at": "2026-07-23T00:44:50.833663+00:00"
+}

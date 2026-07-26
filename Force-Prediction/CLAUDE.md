@@ -85,10 +85,10 @@ shared context, tab registry, reusable prediction components, widget-key rules, 
 Every non-hidden direct directory under `data/`, except `cache`, is exposed by the global
 Streamlit Dataset selector. Dataset-dependent code must use `AppContext.dataset.paths` or
 the dataset runtime config, not hard-coded Exp-Force paths. Each `DatasetObject` always has
-image/description/embedding attributes and optional mass, roughness,
+primary-image/description/embedding attributes, an optional `image_2` geometry view, and optional mass, roughness,
 projected-contact-fraction, and gripper outcomes.
 
-`data/expforce/dataset_2gripper.csv` is a synthetic 129-object validation fixture, not
+`data/expforce/dataset.csv` is a synthetic 129-object validation fixture, not
 physical evidence. Derived descriptors, experience rows, runs, and results stay separate
 from the source CSV. API caches live in `data/cache/<dataset>/{generation,embeddings}`; flat
 legacy cache files are read-through Exp-Force entries and are not deleted. New run artifacts use schema v5 with prompt and

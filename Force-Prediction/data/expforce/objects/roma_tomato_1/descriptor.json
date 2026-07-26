@@ -1,0 +1,26 @@
+{
+  "schema_version": 2,
+  "object_id": "roma_tomato_1",
+  "object_name": "Roma tomato 1",
+  "image_name": "image.png",
+  "image_path": "data/expforce/objects/roma_tomato_1/image.png",
+  "image_sha256": "a4f167093ee931a05a82aaba39936630336f09600c0e1cc34e27a1a472b0120f",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Small red oval produce item with a smooth, dry, nonporous skin and continuous curved geometry. The intended contact region has no visible seams or interruptions.",
+    "contact_region": "Lateral opposing sides of the oval produce item",
+    "contact_material": "Produce skin",
+    "visible_surface_material": "Produce skin",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Smooth, continuous curved surface with an oval profile",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_sha256": "49bf2b7e2f0cfe39ea4f26853f8f27afaec23d89590c41d57f7b3028d9a73a5b",
+  "updated_at": "2026-07-23T00:44:50.765064+00:00"
+}
