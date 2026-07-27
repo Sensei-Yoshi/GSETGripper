@@ -20,13 +20,16 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import numpy as np
 
 from .config import Config
 from .contracts import ExperienceRecord, Gripper, Meta
 from .physics import PhysicsModel, PhysicsParams, weight_n
+
+if TYPE_CHECKING:
+    from .handoff import GraspCommand
 
 
 # --------------------------------------------------------------------------- #
@@ -99,7 +102,20 @@ def find_serial_port(preferred: str | None = None) -> str:
 
 
 class SerialGripper:
-    """Real gripper + load cell over one Arduino link (firmware/gripper_force)."""
+    """Real gripper + load cell over one Arduino link (firmware/gripper_force).
+
+    NOTE: this targets firmware that has NOT been written. `arduino/main/main.ino`
+    speaks a different protocol (Z / SELECT / GRIP -- see `SerialGraspSender`
+    below) and implements none of the commands used here.
+
+    Kept because it is the only written record of what main.ino must still grow
+    before `collect_real` can run on real hardware:
+        SET_FORCE <n>   set the stationary-finger target force
+        CLOSE           close until contact
+        OPEN            release
+        READ            report the load-cell reading in newtons
+        LIFT            perform the standardized lift; reply HELD or not
+    """
 
     def __init__(self, cfg: Config, port: str | None = None, baud: int = 9600) -> None:
         import serial
@@ -150,6 +166,68 @@ class SerialRoughness:
         self.conn.write(b"READ\n")
         self.conn.flush()
         return int(self.conn.readline().decode("ascii", errors="ignore").strip())
+
+
+class SerialGraspSender:
+    """Send one GraspCommand to arduino/main/main.ino, one line at a time.
+
+    Writes a line, waits for its DONE ack, then writes the next -- rather than
+    dumping all four. The firmware sets a pending flag and prints DONE <axis>
+    only once distanceToGo() reaches 0 (main.ino:192-203), so waiting is what
+    keeps the moves sequential instead of overlapping.
+
+    PHYSICAL PRECONDITION: opening the port resets the board, and the firmware
+    then ASSUMES the carriage is parked at the top of travel and the jaws are
+    fully open. There is no homing routine and no limit switch (main.ino:58-62,
+    126-129). Park the rig before constructing this, or the gripper is driven
+    into the table with nothing in hardware to stop it.
+    """
+
+    def __init__(
+        self,
+        port: str | None = None,
+        baud: int = 9600,
+        timeout: float = 30.0,
+    ) -> None:
+        import serial
+
+        self.port = find_serial_port(port)
+        self.conn = serial.Serial(self.port, baud, timeout=timeout)
+        time.sleep(2.0)  # allow the board to reset
+
+    def send(self, cmd: GraspCommand) -> list[str]:
+        """Execute the grasp. Returns any WARN lines the firmware emitted.
+
+        A WARN means the firmware clamped something -- the rig did not do
+        exactly what was asked, so callers should surface these.
+        """
+        warnings: list[str] = []
+        for line in cmd.serialize():
+            self.conn.write((line + "\n").encode("ascii"))
+            self.conn.flush()
+            warnings.extend(self._await_ack(line))
+        return warnings
+
+    def _await_ack(self, line: str) -> list[str]:
+        warnings: list[str] = []
+        while True:
+            reply = self.conn.readline().decode("ascii", errors="ignore").strip()
+            if not reply:
+                raise TimeoutError(f"no reply from firmware for {line!r}")
+            if reply.startswith("ERR"):
+                # processCommand returns after sendErr without setting a pending
+                # flag (main.ino:216-217), so no DONE will ever follow. Return
+                # now; waiting for one blocks forever.
+                raise RuntimeError(f"firmware rejected {line!r}: {reply}")
+            if reply.startswith("WARN"):
+                warnings.append(reply)
+                continue
+            if reply.startswith("DONE"):
+                return warnings
+            raise RuntimeError(f"unexpected firmware reply to {line!r}: {reply}")
+
+    def close(self) -> None:
+        self.conn.close()
 
 
 class ManualMass:

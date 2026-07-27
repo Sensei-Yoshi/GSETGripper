@@ -18,3 +18,20 @@ def block_unapproved_gemini_network(monkeypatch, request):  # noqa: ANN001, ANN2
         )
 
     monkeypatch.setattr(GeminiClient, "_sdk", blocked)
+
+
+@pytest.fixture(autouse=True)
+def block_real_serial_ports(monkeypatch):  # noqa: ANN001, ANN201
+    """Mirror of the Gemini guard above, for hardware.
+
+    A unit test that opened a real port could drive an unhomed rig into the
+    table -- there is no limit switch to stop it (main.ino:58-62).
+    """
+    import serial
+
+    def blocked(*_args, **_kwargs):  # noqa: ANN002, ANN003, ANN202
+        raise AssertionError(
+            "unit test attempted to open a real serial port; install a test fake"
+        )
+
+    monkeypatch.setattr(serial, "Serial", blocked)
