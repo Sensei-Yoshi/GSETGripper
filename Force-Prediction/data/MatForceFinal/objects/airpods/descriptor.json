@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "airpods",
+  "object_name": "airpods",
+  "image_name": "airpods.jpg",
+  "image_path": "data/MatForceFinal/airpods.jpg",
+  "image_sha256": "0723ce3391696ffd94e496a00502b8886ef974c8d267ac5ac7e72c5ccb10cb8b",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Smooth white plastic charging case with rounded rectangular geometry. The intended contact region is clean, dry, and features gentle convex curvature with a horizontal parting line seam.",
+    "contact_region": "Left and right lateral side walls",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean, dry, smooth",
+    "local_geometry": "Gentle convex curvature with a horizontal parting line seam separating the lid and body",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "583f98223bd0bf9df1844c9d38f8efc97c2761141d3a8aa09a810d8b563092e4",
+  "embedding_cache_key": "626ec82c3f3f7aa15af264347e1729e2da25167c12f10483ee0fa6072a6deb73",
+  "embedding_sha256": "57de103d601ee30b0073a6ab9272eb90bb36bf882bf18e814a328ee82729b877",
+  "updated_at": "2026-07-27T14:30:01.261032+00:00"
+}

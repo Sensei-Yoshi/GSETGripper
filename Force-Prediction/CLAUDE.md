@@ -6,8 +6,8 @@ Read this file first, then `docs/project-context.md` for the complete rationale.
 
 Predict the minimum stationary-finger normal force for two compliant grippers—TPU–Gecko
 dry adhesive and TPU–silicone friction—and select the lowest-force feasible result. Force
-is an object–gripper interaction. The project combines experience-conditioned VLM
-prediction, calibrated analytical physics, and physics-residual learning.
+is an object–gripper interaction. The active experiments compare zero-shot and
+experience-conditioned VLM prediction.
 
 ## Environment
 
@@ -19,7 +19,7 @@ prediction, calibrated analytical physics, and physics-residual learning.
 
 - `config.yaml` owns numerical tunables and method assignments; `prompts.yaml` owns
   editable prompts and the two fixed written gripper embodiment descriptions.
-- `experiments/` is the readable canonical map with one strategy module per E1–E6 method.
+- `experiments/` is the readable canonical map with one strategy module per E1–E4 method.
 - `pipeline.py` is deliberately thin: `Pipeline(cfg, "e4").fit(train).predict(query)`.
 - `contracts.py` owns shared Pydantic data shapes; do not create ad-hoc response dicts.
 - Every learned resource is fit inside the current object-grouped training fold.
@@ -33,8 +33,6 @@ prediction, calibrated analytical physics, and physics-residual learning.
 | E2 | One joint image + authoritative measurements VLM response |
 | E3 | Semantic-cosine experiential retrieval + one joint VLM response |
 | E4 | Semantic + sensor-fusion retrieval + one joint VLM response |
-| E5 | Bounded calibration of seven reduced-order physics coefficients |
-| E6 | Identical E5 calibration + one semantic residual regressor per gripper |
 
 Python always makes the final
 lowest-feasible-force choice; VLM recommendation is stored and scored separately.
@@ -53,9 +51,8 @@ lowest-feasible-force choice; VLM recommendation is stored and scored separately
   physical-score components, or physics estimate.
 - Live E1–E4 calls receive the query-object image and fixed written descriptions of both
   gripper embodiments; gripper images are not sent.
-- E5 is calibrated physics, not an unlearned formula. E6 is E5 plus a flexible residual.
-- E5 and E6 receive no VLM force prediction and retrieve no neighbor list.
-- E4 receives no physics value.
+- E1/E3 never require physical measurements. E2/E4 always require mass and use roughness
+  and projected contact only when their global input switches are enabled.
 
 ## Module map
 
@@ -65,15 +62,14 @@ lowest-feasible-force choice; VLM recommendation is stored and scored separately
 | `experiments/` | Strategy catalog, shared helper, and per-ID implementations |
 | `pipeline.py` | Public facade and object-to-query adapter |
 | `contracts.py` | Experience, query, joint prediction, selection models |
-| `prediction.py` | Joint force request, continuous clamp, physics adapter, selector |
+| `prediction.py` | Joint force request, continuous clamp, selector |
 | `retrieval.py` | Embedding providers and E3 semantic/E4 hybrid retrieval |
-| `physics.py` | Analytical capacity equations, bounded calibration, root solve |
-| `learning.py` | E6 residual learner and PCA |
+| `physics.py` | Mock-hardware analytical equations and calibration diagnostics |
 | `evaluation.py` | Object-grouped splits and metrics |
 | `datasets/` | Dataset discovery, aggregate/object contracts, artifact storage, preparation stages |
 | `models/` | Lazy Gemini, rembg background-removal, and Marigold integrations |
 | `cache.py` | Dataset-scoped API caches and legacy Exp-Force read-through |
-| `expforce.py` | Viewer data preparation, schema-v6 artifacts, provenance, benchmark |
+| `expforce.py` | Viewer data preparation, schema-v7 artifacts, provenance, benchmark |
 | `suites.py` / `reporting.py` | Resumable E1–E4 suites and comparison exports |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 
@@ -91,7 +87,7 @@ projected-contact-fraction, and gripper outcomes.
 `data/expforce/dataset.csv` is a synthetic 129-object validation fixture, not
 physical evidence. Derived descriptors, experience rows, runs, and results stay separate
 from the source CSV. API caches live in `data/cache/<dataset>/{generation,embeddings}`; flat
-legacy cache files are read-through Exp-Force entries and are not deleted. New run artifacts use schema v5 with prompt and
+legacy cache files are read-through Exp-Force entries and are not deleted. New run artifacts use schema v7 with prompt and
 embodiment provenance. Old artifacts are never rewritten;
 the inspector labels old E5 paired-VLM and old E4 physics runs as legacy meanings.
 
@@ -116,8 +112,7 @@ command in verification and distinguish a tool crash from project diagnostics.
 
 - Collect and calibrate the real two-gripper dataset under the standardized protocol.
 - Validate roughness sensing and projected-contact estimation.
-- Tune retrieval weights, physics coefficients, and residual hyperparameters only inside
-  training folds.
-- Compare E1–E6 on frozen real object-grouped splits with confidence
+- Tune retrieval weights only inside training folds.
+- Compare E1–E4 on frozen real object-grouped splits with confidence
   intervals and subgroup analysis.
 - Treat all existing viewer accuracy as synthetic pipeline validation only.

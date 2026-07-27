@@ -3,7 +3,7 @@
 #
 # Everything a researcher would want to sweep lives here: retrieval weights,
 # physics bounds, force limits, model IDs, and the EXPERIMENT definitions
-# (E1–E6 as explicit methods). Editable prompts and fixed gripper embodiment
+# (E1–E4 as explicit methods). Editable prompts and fixed gripper embodiment
 # context live in prompts.yaml. No tunable is hard-coded in Python.
 #
 # Loaded and validated by modules/config.py into typed objects.
@@ -39,8 +39,8 @@ collection:
 
 # --- Optional measured inputs -------------------------------------------------
 inputs:
-  # Streamlit checkbox/config ablation. Physics-based E5/E6 still require the
-  # measured contact fraction in their analytical equations.
+  # Session-level Streamlit controls override these defaults for experiment runs.
+  use_roughness: true
   use_projected_contact: true
 
 # --- Geometry ----------------------------------------------------------------
@@ -115,15 +115,6 @@ models:
   max_retries: 4
   cache: true               # content-hashed disk cache of every embedding/VLM call
 
-# --- Learning (residual models for E6) ---------------------------------------
-learning:
-  residual_model: gbt       # 'ridge' | 'gbt' | 'gp'
-  embedding_pca_dims: 8     # PCA of semantic embedding fed to the residual model
-  ridge_alpha: 1.0
-  gbt_n_estimators: 300
-  gbt_max_depth: 3
-  gbt_learning_rate: 0.05
-
 # --- Evaluation --------------------------------------------------------------
 evaluation:
   n_folds: 5
@@ -142,5 +133,3 @@ experiments:
   e2: {method: joint_vlm_measured, prompt: e2}
   e3: {method: semantic_retrieval_vlm, prompt: e3}
   e4: {method: paired_retrieval_vlm, prompt: e4}
-  e5: {method: calibrated_physics}
-  e6: {method: physics_semantic_residual}

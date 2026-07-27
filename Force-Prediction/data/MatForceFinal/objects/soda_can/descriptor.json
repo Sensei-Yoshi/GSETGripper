@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "soda_can",
+  "object_name": "soda can",
+  "image_name": "soda_can.jpg",
+  "image_path": "data/MatForceFinal/soda_can.jpg",
+  "image_sha256": "83bd430b80ef61e8ee244823866b557f6d6ffeee834433274f651719db6c7409",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical aluminum beverage can with a painted exterior coating. The intended contact region is dry, smooth, with continuous cylindrical curvature and no visible seams.",
+    "contact_region": "Lateral sidewall of the can at the center grasp band",
+    "contact_material": "Painted aluminum coating over metal substrate",
+    "visible_surface_material": "Painted aluminum coating",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Cylindrical curvature with continuous smooth surface",
+    "contact_patch_visibility": "Clearly visible on the upper and middle lateral surfaces",
+    "uncertainty": "The back side of the can is occluded, but the visible lateral grasp band provides standard cylindrical contact characteristics."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "0bb527f14428af29a9da3cd374586a131330ecce5c6fb98f217e40bf7ef20906",
+  "embedding_cache_key": "56fcf49c75d2a03fa9f540016ef0f9b13131c8924a0729c2c947d9b6e6ff7571",
+  "embedding_sha256": "0b88e4610f2a7c305783340bbf0359951a52692585713959a2effd6e27983bff",
+  "updated_at": "2026-07-27T14:30:05.910424+00:00"
+}

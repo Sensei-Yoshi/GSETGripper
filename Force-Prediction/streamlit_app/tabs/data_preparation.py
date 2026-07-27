@@ -94,13 +94,14 @@ def render(context: AppContext) -> None:
         disabled=not dataset.capabilities.can_build_experiences,
         key="prepare_experiences",
         help=(
-            "Requires mass, roughness, projected contact, and paired gripper labels."
+            "Builds one reference record per completed gripper outcome. Physical fields may "
+            "remain blank for E3."
         ),
     )
     if not dataset.capabilities.can_build_experiences:
         st.caption(
-            "Experience records are unavailable because this dataset is image-only or lacks "
-            "complete paired measurements and labels."
+            "Experience records become available after at least one gripper outcome is "
+            "completed in Data Viewer."
         )
     if not dataset.capabilities.can_estimate_surface_area:
         st.caption(

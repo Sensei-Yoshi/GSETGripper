@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "plastic_cup",
+  "object_name": "plastic cup",
+  "image_name": "plastic_cup.jpg",
+  "image_path": "data/MatForceFinal/plastic_cup.jpg",
+  "image_sha256": "2ce571fe82d4498a22e90d6be853e22bfe455bb71fa192ab430ca98d2c6ef7fc",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Transparent plastic cup with a smooth, dry, nonporous sidewall and continuous tapered curvature. The intended contact region has no visible seams, texture, or contamination.",
+    "contact_region": "Lateral sidewall of the cup",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Tapered cylindrical curvature with smooth continuous surface",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "9b7476d1b80ea13afc3bce5a65e8641e358874c863d5f9d822a4a354399d250a",
+  "embedding_cache_key": "8740ec91f8156cfec29bb2b9ba14961c4d7a155c8496f5979522aa8af4f2a878",
+  "embedding_sha256": "ab572e12a5119e25ffaad0d3cf84fc0dee71e02df74582cfc415ce74ed23c356",
+  "updated_at": "2026-07-27T14:30:04.676274+00:00"
+}

@@ -10,11 +10,14 @@ import pytest
 from modules.cache import DiskCache
 from modules.config import load_config
 from modules.datasets import (
+    DatasetObjectEdit,
     PreparationStage,
     discover_datasets,
     get_dataset,
     prepare_dataset_stages,
+    update_dataset_object,
 )
+from modules.experiments import experiment_eligibility
 from modules.expforce import source_path
 from modules.perception import Description
 from tests.fakes import FakeEmbeddingProvider
@@ -75,8 +78,71 @@ def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
         "gecko",
         "silicone",
     }
-    assert dataset.capabilities.can_run_pipeline
+    assert not dataset.capabilities.can_run_pipeline
     assert dataset.capabilities.can_benchmark
+
+
+def test_experiment_eligibility_uses_only_enabled_inputs(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Partial/objects"
+    image_bytes = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    )
+    for object_id in ("complete", "mass_only", "image_only"):
+        image = root / object_id / "image.png"
+        image.parent.mkdir(parents=True)
+        image.write_bytes(image_bytes)
+    dataset = get_dataset(cfg, "Partial")
+    dataset = update_dataset_object(
+        cfg,
+        dataset,
+        "complete",
+        DatasetObjectEdit(
+            mass_g=100,
+            roughness_class=2,
+            projected_contact_fraction=0.7,
+            gecko_feasible=True,
+            gecko_force_n=1.0,
+            silicone_feasible=True,
+            silicone_force_n=1.5,
+        ),
+    )
+    dataset = update_dataset_object(
+        cfg,
+        dataset,
+        "mass_only",
+        DatasetObjectEdit(
+            mass_g=120,
+            gecko_feasible=True,
+            gecko_force_n=1.2,
+            silicone_feasible=True,
+            silicone_force_n=1.7,
+        ),
+    )
+    run_cfg = dataset.runtime_config(cfg)
+
+    assert experiment_eligibility(dataset, run_cfg, "e1").query_ids == (
+        "complete",
+        "image_only",
+        "mass_only",
+    )
+    assert experiment_eligibility(dataset, run_cfg, "e3").benchmark_ids == (
+        "complete",
+        "mass_only",
+    )
+    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == ("complete",)
+
+    run_cfg.inputs.use_roughness = False
+    run_cfg.inputs.use_projected_contact = False
+    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == (
+        "complete",
+        "mass_only",
+    )
+    assert experiment_eligibility(dataset, run_cfg, "e4").reference_ids == (
+        "complete",
+        "mass_only",
+    )
 
 
 def test_canonical_object_folder_discovers_contact_summary(tmp_path) -> None:

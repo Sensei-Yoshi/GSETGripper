@@ -17,10 +17,6 @@ choices; each item below is a concrete upgrade path with the file it touches.
 - Revisit smooth-vs-per-class coefficients once ≥ ~200 objects give dense class
   coverage.
 
-## Learning  (`learning.py`)
-- Add an MLP residual head once unique object–gripper pairs ≫ 200 (below that it
-  overfits high-dim embeddings — hence ridge/GBT/GP first).
-
 ## Objective & safety  (`prediction.py`, `contracts.py`)
 - Selection objective beyond `min F*`: damage risk, adhesive contamination, pad
   wear, release difficulty, tool-switch time, prediction uncertainty.

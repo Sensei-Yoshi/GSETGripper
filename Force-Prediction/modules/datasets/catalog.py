@@ -14,6 +14,7 @@ from .models import (
     Dataset,
     DatasetCapabilities,
     DatasetObject,
+    DatasetObjectMeasurements,
     DatasetPaths,
     GripperOutcome,
     ImageArtifact,
@@ -143,20 +144,13 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
             mass_g=row.mass_g,
             roughness_class=row.roughness_class,
             projected_contact_fraction=row.projected_contact_fraction,
-            gripper_outcomes={
-                Gripper.GECKO: GripperOutcome(
-                    gripper=Gripper.GECKO,
-                    min_force_n=row.gecko_force_n,
-                    feasible=row.gecko_feasible,
-                    failed_at_limit_n=None if row.gecko_feasible else dataset_cfg.force.limit_n,
-                ),
-                Gripper.SILICONE: GripperOutcome(
-                    gripper=Gripper.SILICONE,
-                    min_force_n=row.silicone_force_n,
-                    feasible=row.silicone_feasible,
-                    failed_at_limit_n=None if row.silicone_feasible else dataset_cfg.force.limit_n,
-                ),
-            },
+            gripper_outcomes=_outcomes(
+                row.gecko_feasible,
+                row.gecko_force_n,
+                row.silicone_feasible,
+                row.silicone_force_n,
+                dataset_cfg.force.limit_n,
+            ),
         )
         _attach_contact_summary(cfg, item, paths.object_dir(row.object_id))
         # For paired CSV datasets the labeled source value remains authoritative. The
@@ -174,18 +168,7 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
         paths=paths,
         source_fingerprint=_file_hash(root / "dataset.csv") or "",
         objects=objects,
-        capabilities=DatasetCapabilities(
-            has_images=all(item.image.available for item in objects.values()),
-            has_second_images=has_second_images,
-            has_roughness=bool(objects)
-            and all(item.roughness is not None for item in objects.values()),
-            has_measurements=True,
-            has_paired_labels=True,
-            can_build_experiences=True,
-            can_estimate_surface_area=has_second_images,
-            can_run_pipeline=True,
-            can_benchmark=True,
-        ),
+        capabilities=_capabilities(objects, has_second_images=has_second_images),
     )
 
 
@@ -209,6 +192,7 @@ def _load_image_folder(cfg: Config, root: Path) -> Dataset:
         while object_id in objects:
             object_id = f"{candidate}_{suffix}"
             suffix += 1
+        second_image = second_images.get(image)
         item = DatasetObject(
             dataset_id=root.name,
             object_id=object_id,
@@ -220,15 +204,16 @@ def _load_image_folder(cfg: Config, root: Path) -> Dataset:
             ),
             image_2=(
                 ImageArtifact(
-                    path=str(second_images[image].relative_to(cfg.root)),
-                    sha256=_file_hash(second_images[image]),
+                    path=str(second_image.relative_to(cfg.root)),
+                    sha256=_file_hash(second_image),
                     available=True,
                 )
-                if second_images.get(image) is not None
+                if second_image is not None
                 else None
             ),
         )
         _attach_contact_summary(cfg, item, paths.object_dir(object_id))
+        _attach_manual_measurements(item, paths.object_dir(object_id), cfg.force.limit_n)
         _attach_roughness_summary(cfg, item, paths.object_dir(object_id))
         objects[object_id] = item
     has_second_images = bool(objects) and all(
@@ -244,16 +229,104 @@ def _load_image_folder(cfg: Config, root: Path) -> Dataset:
             [
                 *images,
                 *(image for image in second_images.values() if image is not None),
+                *sorted(
+                    path
+                    for path in paths.objects.glob("*/measurements.json")
+                    if path.is_file()
+                ),
             ],
         ),
         objects=objects,
-        capabilities=DatasetCapabilities(
-            has_images=bool(objects),
-            has_second_images=has_second_images,
-            has_roughness=bool(objects)
-            and all(item.roughness is not None for item in objects.values()),
-            can_estimate_surface_area=has_second_images,
+        capabilities=_capabilities(objects, has_second_images=has_second_images),
+    )
+
+
+def _outcomes(
+    gecko_feasible: bool | None,
+    gecko_force_n: float | None,
+    silicone_feasible: bool | None,
+    silicone_force_n: float | None,
+    force_limit_n: float,
+) -> dict[Gripper, GripperOutcome]:
+    output: dict[Gripper, GripperOutcome] = {}
+    for gripper, feasible, force in (
+        (Gripper.GECKO, gecko_feasible, gecko_force_n),
+        (Gripper.SILICONE, silicone_feasible, silicone_force_n),
+    ):
+        if feasible is None and force is None:
+            continue
+        output[gripper] = GripperOutcome(
+            gripper=gripper,
+            min_force_n=force,
+            feasible=feasible,
+            failed_at_limit_n=force_limit_n if feasible is False else None,
+        )
+    return output
+
+
+def _attach_manual_measurements(
+    item: DatasetObject,
+    object_dir: Path,
+    force_limit_n: float,
+) -> None:
+    path = object_dir / "measurements.json"
+    if not path.is_file():
+        return
+    try:
+        values = DatasetObjectMeasurements.model_validate_json(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return
+    if values.object_id != item.object_id:
+        return
+    item.mass_g = values.mass_g
+    item.roughness_class = values.roughness_class
+    if values.projected_contact_fraction is not None:
+        item.projected_contact_fraction = values.projected_contact_fraction
+    item.gripper_outcomes = _outcomes(
+        values.gecko_feasible,
+        values.gecko_force_n,
+        values.silicone_feasible,
+        values.silicone_force_n,
+        force_limit_n,
+    )
+
+
+def _capabilities(
+    objects: dict[str, DatasetObject],
+    *,
+    has_second_images: bool,
+) -> DatasetCapabilities:
+    values = list(objects.values())
+    complete_outcomes = [
+        outcome
+        for item in values
+        for outcome in item.gripper_outcomes.values()
+        if outcome.complete
+    ]
+    complete_pairs = [
+        item
+        for item in values
+        if all(
+            (outcome := item.gripper_outcomes.get(gripper)) is not None
+            and outcome.complete
+            for gripper in Gripper
+        )
+    ]
+    return DatasetCapabilities(
+        has_images=bool(values) and all(item.image.available for item in values),
+        has_second_images=has_second_images,
+        has_roughness=bool(values) and all(item.roughness is not None for item in values),
+        has_measurements=bool(values) and all(
+            item.mass_g is not None
+            and item.roughness_class is not None
+            and item.projected_contact_fraction is not None
+            for item in values
         ),
+        has_paired_labels=bool(values) and len(complete_pairs) == len(values),
+        can_build_experiences=bool(complete_outcomes),
+        can_estimate_surface_area=has_second_images,
+        can_run_pipeline=any(item.image.available for item in values),
+        can_benchmark=bool(complete_pairs),
     )
 
 

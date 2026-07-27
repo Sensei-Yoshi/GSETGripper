@@ -103,18 +103,24 @@ def load_dataset_experiences(dataset: Dataset) -> list[ExperienceRecord]:
 
 
 def build_dataset_experiences(dataset: Dataset, force_limit_n: float) -> list[ExperienceRecord]:
-    if not dataset.capabilities.can_build_experiences:
-        raise ValueError(
-            f"dataset {dataset.display_name!r} lacks complete measurements and paired labels"
-        )
+    """Persist every completed outcome; physical measurements may remain absent."""
+    records = dataset_experience_records(dataset, force_limit_n)
+    save_experiences(dataset.paths.experiences, records)
+    return records
+
+
+def dataset_experience_records(
+    dataset: Dataset,
+    force_limit_n: float,
+) -> list[ExperienceRecord]:
+    """Build the current completed records without mutating the dataset cache."""
     records: list[ExperienceRecord] = []
     for item in dataset.objects.values():
         description = item.description.value.description if item.description else item.name
-        assert item.mass_g is not None
-        assert item.roughness_class is not None
-        assert item.projected_contact_fraction is not None
         contact = item.contact_fraction
         for gripper, outcome in item.gripper_outcomes.items():
+            if not outcome.complete or outcome.feasible is None:
+                continue
             records.append(
                 ExperienceRecord(
                     object_id=item.object_id,
@@ -152,7 +158,6 @@ def build_dataset_experiences(dataset: Dataset, force_limit_n: float) -> list[Ex
                     ),
                 )
             )
-    save_experiences(dataset.paths.experiences, records)
     return records
 
 

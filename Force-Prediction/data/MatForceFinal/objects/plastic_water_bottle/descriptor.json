@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "plastic_water_bottle",
+  "object_name": "plastic water bottle",
+  "image_name": "plastic_water_bottle.jpg",
+  "image_path": "data/MatForceFinal/plastic_water_bottle.jpg",
+  "image_sha256": "149ff78d3c2e2071ae083acceb2ad548f63e83e012de250f8f682316d6a5a847",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Transparent plastic bottle with a smooth, dry sidewall and continuous cylindrical curvature. The intended contact region has no visible seams or contamination, though it partially overlaps a paper or plastic label band.",
+    "contact_region": "Lateral sidewall surfaces at the center of the bottle.",
+    "contact_material": "Plastic substrate and paper/plastic label",
+    "visible_surface_material": "Plastic and paper label",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Cylindrical curvature with slight horizontal ribbing near the lower section.",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The rear side of the bottle is not visible, but the frontal grasp band is clearly observable."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "17e57dce890740c4c0b0b997f9fda647cb66e3e851e7a0f54b01ab0df24381ac",
+  "embedding_cache_key": "201c8ac2a5ec71cd0e801c63b7373b1f947c13a8fb799fef6f66a13293e23a51",
+  "embedding_sha256": "44de00a1f2f3ad488f4384e06f54ed93793fd3139c2779794190f5b6acce9e51",
+  "updated_at": "2026-07-27T14:30:04.997185+00:00"
+}

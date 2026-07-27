@@ -1,10 +1,8 @@
 # Experiment Protocol
 
-The active implementation contains E1–E6. E1–E4 form the primary VLM ablation suite;
-E5 and E6 remain complementary physics baselines. Every condition runs through
-`Pipeline(cfg, experiment_id)` under identical frozen, object-grouped splits. Both gripper
-rows for an object remain in the same fold, and every fitted resource uses training
-objects only.
+The active implementation contains E1–E4. Every condition runs through
+`Pipeline(cfg, experiment_id)`. Partially populated datasets use per-experiment eligibility;
+cross-experiment reporting uses the common eligible object intersection.
 
 ## Primary ablation suite
 
@@ -15,7 +13,7 @@ predicted and are not object-specific sensor measurements. Gripper images are no
 | ID | Object-specific evidence | Retrieval score | Research question |
 |---|---|---|---|
 | **E1** | Object image only | None | How accurately can the VLM predict both grippers zero-shot? |
-| **E2** | Image + mass + roughness + optional projected contact | None | What is the isolated benefit of measured physical inputs? |
+| **E2** | Image + mass + optional roughness/contact | None | What is the isolated benefit of measured physical inputs? |
 | **E3** | Image + semantic descriptor + paired retrieved outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval modeled after Exp-Force? |
 | **E4** | Image + measurements + semantic descriptor + paired retrieved outcomes | Semantic and physical fusion | What is the performance of the complete proposed pipeline? |
 
@@ -59,21 +57,11 @@ the configured hybrid score:
 The query measurements and the corresponding neighbor values are also available to the
 VLM so it can interpret mass, roughness, and contact differences. The retrieval score
 only ranks candidates; it never computes force. Force evidence comes from the paired
-observed outcomes attached to those neighbors. E4 receives no E5 physics prediction.
+observed outcomes attached to those neighbors. E4 receives no physics prediction.
 
-Projected contact is an explicit ablation. When disabled, E2 and E4 omit it, E4 gives its
-retrieval term zero weight, and the remaining hybrid weights are renormalized. E3 is
-unchanged because it never uses that term.
-
-## E5 and E6 supplementary baselines
-
-- **E5** fits seven bounded coefficients in fixed analytical holding-force equations.
-  It is calibrated physics/system identification, not an untrained formula.
-- **E6** fits the same E5 model, then learns one residual regressor per gripper from
-  semantic embeddings and permitted numerical features.
-
-E5/E6 make no VLM force-generation call and retrieve no neighbor list. Physics
-infeasibility remains authoritative for E6.
+Roughness and projected contact are independent explicit ablations. When disabled, E2 and
+E4 omit the field, E4 gives its retrieval term zero weight, and the remaining hybrid
+weights are renormalized. E3 is unchanged because it never uses either term.
 
 ## Evaluation and reporting
 
@@ -92,5 +80,4 @@ grasp trials replace them.
 Run a Gemini-backed condition with
 `python scripts/run_experiment.py --exp e3 --confirm-gemini-cost`, run all active
 conditions with `python scripts/run_experiment.py --all --confirm-gemini-cost`, or
-create/resume an E1–E4 suite from the Streamlit **Runs Viewer**. E5 can run without the
-confirmation flag because it is fully local.
+create/resume an E1–E4 suite from the Streamlit **Runs Viewer**.

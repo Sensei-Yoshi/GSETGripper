@@ -257,7 +257,7 @@ def _erode_mask(mask: np.ndarray, erosion_ratio: float) -> tuple[np.ndarray, int
         kernel,
         iterations=1,
         borderType=cv2.BORDER_CONSTANT,
-        borderValue=0,
+        borderValue=(0.0,),
     ).astype(bool)
     return eroded, radius
 
@@ -323,6 +323,8 @@ def run_marigold(
     crop_padding_ratio: float = DEFAULT_CROP_PADDING_RATIO,
     contact_band_fraction: float = DEFAULT_CONTACT_BAND_FRACTION,
     mask_erosion_ratio: float = DEFAULT_MASK_EROSION_RATIO,
+    scoring_mask_source: Image.Image | None = None,
+    scoring_mask_rationale: str | None = None,
 ) -> dict[str, Any]:
     """Crop to the foreground, run Marigold, and persist compact diagnostics."""
     if not 0 <= alpha_threshold <= 255:
@@ -368,29 +370,56 @@ def run_marigold(
     foreground = alpha_small >= alpha_threshold
     if not foreground.any():
         raise RuntimeError("Background removal found no foreground pixels in this image.")
-    eroded_foreground, erosion_radius = _erode_mask(foreground, mask_erosion_ratio)
-    scoring_mask = _central_principal_axis_band(eroded_foreground, contact_band_fraction)
     warnings: list[str] = []
     bbox_fill_fraction = _bbox_fill_fraction(source_foreground)
     if background_remover is None:
         warnings.append("background_removal_disabled")
     if bbox_fill_fraction < MIN_MASK_BBOX_FILL_FRACTION:
         warnings.append("sparse_foreground_mask")
-    if int(eroded_foreground.sum()) < MIN_SCORING_PIXELS:
-        warnings.append("erosion_removed_too_much_foreground")
-        eroded_foreground = foreground
-        scoring_mask = _central_principal_axis_band(foreground, contact_band_fraction)
+    manual_outside_foreground_fraction = 0.0
+    if scoring_mask_source is not None:
+        scoring_mask = (
+            np.asarray(
+                scoring_mask_source.convert("L").resize(
+                    (map_width, map_height),
+                    resample=Image.Resampling.NEAREST,
+                ),
+                dtype=np.uint8,
+            )
+            >= 128
+        )
+        if int(scoring_mask.sum()) < MIN_SCORING_PIXELS:
+            raise RuntimeError("The supplied grasp-contact mask is too small for analysis.")
+        outside = scoring_mask & ~foreground
+        manual_outside_foreground_fraction = float(outside.sum() / scoring_mask.sum())
+        if manual_outside_foreground_fraction > 0.01:
+            warnings.append("manual_mask_extends_beyond_automatic_foreground")
+        # Transparent and reflective objects can be missed by automatic alpha matting.
+        # A reviewed manual contact patch is authoritative for analysis, so retain it
+        # in the analysis foreground while recording the disagreement above.
+        foreground = foreground | scoring_mask
         erosion_radius = 0
-    if int(scoring_mask.sum()) < MIN_SCORING_PIXELS:
-        warnings.append("contact_band_too_small")
-        scoring_mask = eroded_foreground
+        scoring_strategy = "manual_projected_gripper_contact"
+    else:
+        eroded_foreground, erosion_radius = _erode_mask(foreground, mask_erosion_ratio)
+        scoring_mask = _central_principal_axis_band(eroded_foreground, contact_band_fraction)
+        if int(eroded_foreground.sum()) < MIN_SCORING_PIXELS:
+            warnings.append("erosion_removed_too_much_foreground")
+            eroded_foreground = foreground
+            scoring_mask = _central_principal_axis_band(foreground, contact_band_fraction)
+            erosion_radius = 0
+        if int(scoring_mask.sum()) < MIN_SCORING_PIXELS:
+            warnings.append("contact_band_too_small")
+            scoring_mask = eroded_foreground
+        scoring_strategy = "eroded_central_principal_axis_band"
 
     opacity = alpha_small.astype(np.float32) / 255.0
+    analysis_opacity = np.maximum(opacity, scoring_mask.astype(np.float32))
     albedo_display = (result.albedo_rgb * opacity[..., None]).astype(np.uint8)
-    roughness_display = _uint8_map(result.roughness, opacity)
-    metallicity_display = _uint8_map(result.metallicity, opacity)
+    roughness_display = _uint8_map(result.roughness, analysis_opacity)
+    metallicity_display = _uint8_map(result.metallicity, analysis_opacity)
     roughness_uncertainty_display = (
-        _uint8_map(result.roughness_uncertainty, opacity)
+        _uint8_map(result.roughness_uncertainty, analysis_opacity)
         if result.roughness_uncertainty is not None
         else None
     )
@@ -407,6 +436,9 @@ def run_marigold(
     )
     inference_rgb.save(run_dir / "inference_crop.png")
     Image.fromarray(inference_alpha, mode="L").save(run_dir / "inference_mask.png")
+    Image.fromarray(foreground.astype(np.uint8) * 255, mode="L").save(
+        run_dir / "analysis_foreground_mask.png"
+    )
     Image.fromarray(scoring_mask.astype(np.uint8) * 255, mode="L").save(
         run_dir / "scoring_mask.png"
     )
@@ -465,13 +497,17 @@ def run_marigold(
             "foreground_fraction": float(np.mean(foreground)),
         },
         "scoring": {
-            "strategy": "eroded_central_principal_axis_band",
+            "strategy": scoring_strategy,
             "contact_band_fraction": contact_band_fraction,
             "mask_erosion_ratio": mask_erosion_ratio,
             "erosion_radius_pixels": erosion_radius,
             "foreground_pixels": int(foreground.sum()),
             "scoring_pixels": int(scoring_mask.sum()),
             "scoring_fraction_of_foreground": float(scoring_mask.sum() / foreground.sum()),
+            "manual_mask_outside_automatic_foreground_fraction": (
+                manual_outside_foreground_fraction
+            ),
+            "rationale": scoring_mask_rationale,
         },
         "quality": {
             "status": "warning" if warnings else "ok",
@@ -489,6 +525,7 @@ def run_marigold(
             "foreground_mask": "foreground_mask.png",
             "inference_crop": "inference_crop.png",
             "inference_mask": "inference_mask.png",
+            "analysis_foreground_mask": "analysis_foreground_mask.png",
             "scoring_mask": "scoring_mask.png",
             "albedo": "albedo.png",
             "roughness": "roughness.png",

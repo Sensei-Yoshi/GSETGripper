@@ -6,6 +6,7 @@ import pandas as pd
 import streamlit as st
 
 from modules.config import EXPERIMENT_IDS
+from modules.experiments import experiment_eligibility
 from modules.expforce import run_benchmark, save_benchmark
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import format_experiment
@@ -13,13 +14,6 @@ from streamlit_app.prediction_ui import format_experiment
 
 def render(context: AppContext) -> None:
     base_cfg = context.config
-    object_count = len(context.dataset.objects)
-    if not context.dataset.capabilities.can_benchmark:
-        st.warning(
-            f"{context.dataset.display_name} cannot be benchmarked because it lacks complete "
-            "paired force labels and measurements. Description and embedding preparation remain available."
-        )
-        return
     left, right = st.columns([0.28, 0.72], gap="large")
     with left:
         st.subheader("Benchmark run")
@@ -30,10 +24,20 @@ def render(context: AppContext) -> None:
             format_func=format_experiment,
             key="benchmark_experiment",
         )
+        eligibility = experiment_eligibility(context.dataset, base_cfg, experiment)
+        object_count = len(eligibility.benchmark_ids)
+        st.caption(
+            f"{object_count} eligible of {len(context.dataset.objects)} objects for "
+            f"{experiment.upper()}."
+        )
+        if eligibility.skipped_benchmarks:
+            with st.expander("Skipped objects and reasons"):
+                st.json(eligibility.skipped_benchmarks, expanded=False)
         run = st.button(
             f"Run {object_count}-object leave-one-out benchmark",
             type="primary",
             width="stretch",
+            disabled=object_count == 0,
         )
         st.caption("Results are synthetic pipeline diagnostics, not real-world performance claims.")
 
@@ -56,9 +60,13 @@ def render(context: AppContext) -> None:
     with right:
         st.subheader("Leave-one-out results")
         if "benchmark_result" not in st.session_state:
-            st.info(
-                f"Run all {object_count} objects with each query excluded from its own training set."
-            )
+            if object_count:
+                st.info(
+                    f"Run {object_count} eligible objects with each query excluded from its "
+                    "own reference set."
+                )
+            else:
+                st.info(f"No objects currently satisfy {experiment.upper()} benchmark truth and inputs.")
             return
         benchmark, paths = st.session_state["benchmark_result"]
         force = benchmark.metrics["force"]["overall"]

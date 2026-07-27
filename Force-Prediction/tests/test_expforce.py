@@ -86,8 +86,8 @@ def test_config_exposes_only_the_final_explicit_experiment_methods():
     assert cfg.experiment("e2").method is ExperimentMethod.JOINT_VLM_MEASURED
     assert cfg.experiment("e3").method is ExperimentMethod.SEMANTIC_RETRIEVAL_VLM
     assert cfg.experiment("e4").method is ExperimentMethod.PAIRED_RETRIEVAL_VLM
-    assert cfg.experiment("e5").method is ExperimentMethod.CALIBRATED_PHYSICS
-    assert cfg.experiment("e6").method is ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL
+    with pytest.raises(KeyError, match="unknown experiment"):
+        cfg.experiment("e5")
     assert "surface patches" in cfg.prompts.descriptor_system
     assert "text embedding" in cfg.prompts.descriptor_system
     assert not hasattr(cfg.models, "dry_run")
@@ -117,42 +117,38 @@ def test_deprecated_embedding_provider_config_is_rejected(tmp_path):
         load_config(_write_deprecated_config(tmp_path, provider=True))
 
 
-def test_backend_provenance_distinguishes_gemini_and_local_force_paths():
+def test_backend_provenance_exposes_only_active_gemini_paths():
     cfg = load_config()
 
     assert backend_provenance(cfg, "e1") == {
         "force": "gemini_joint_generation",
         "semantic_embedding": None,
     }
-    assert backend_provenance(cfg, "e5") == {
-        "force": "local_calibrated_physics",
-        "semantic_embedding": None,
-    }
-    assert backend_provenance(cfg, "e6")["semantic_embedding"] == (
-        cfg.retrieval.embedding.model
-    )
+    with pytest.raises(KeyError, match="unknown experiment"):
+        backend_provenance(cfg, "e5")
     assert artifact_backend_label({"execution_mode": "Offline"}) == "Legacy Offline"
 
 
-def test_new_single_run_artifact_uses_backend_provenance(tmp_path):
+def test_new_single_run_artifact_uses_backend_provenance(tmp_path, monkeypatch):
     source_cfg = load_config().model_copy(deep=True)
     cfg = source_cfg.model_copy(deep=True)
     cfg.root = tmp_path
     source = tmp_path / "data/expforce/dataset.csv"
     source.parent.mkdir(parents=True)
     shutil.copyfile(source_path(source_cfg), source)
+    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     records = fabricate_records(cfg, 12)
     held = records[0].object_id
     query_records = [record for record in records if record.object_id == held]
     training = [record for record in records if record.object_id != held]
-    detailed = Pipeline(cfg, "e5").fit(training).predict_detailed(
-        query_input_from_object(query_records, cfg)
-    )
+    query = query_input_from_object(query_records, cfg)
+    query.image_bgr = np.zeros((8, 8, 3), dtype=np.uint8)
+    detailed = Pipeline(cfg, "e1").fit(training).predict_detailed(query)
 
     path = save_pipeline_run(
         cfg,
         detailed=detailed,
-        experiment="e5",
+        experiment="e1",
         query={
             "object_id": held,
             "mass_g": query_records[0].mass_g,
@@ -164,9 +160,9 @@ def test_new_single_run_artifact_uses_backend_provenance(tmp_path):
     )
     artifact = json.loads(path.read_text())
 
-    assert artifact["schema_version"] == 6
+    assert artifact["schema_version"] == 7
     assert artifact["backend"] == {
-        "force": "local_calibrated_physics",
+        "force": "gemini_joint_generation",
         "semantic_embedding": None,
     }
     assert "execution_mode" not in artifact
@@ -180,8 +176,6 @@ def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
         definition = cfg.experiment(experiment)
         assert definition.prompt == experiment
         assert cfg.prompts.experiments[experiment].strip()
-    for experiment in ("e5", "e6"):
-        assert cfg.experiment(experiment).prompt is None
 
 
 def test_vlm_prompts_require_auditable_evidence_without_invented_constants():
@@ -340,12 +334,17 @@ def test_full_129_object_leave_one_out_benchmark_uses_gemini_contract(
     cfg.root = tmp_path
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     monkeypatch.setattr(
-        "modules.expforce.load_image",
-        lambda *_args: np.zeros((8, 8, 3), dtype=np.uint8),
+        cv2,
+        "imread",
+        lambda *_args, **_kwargs: np.zeros((8, 8, 3), dtype=np.uint8),
     )
     source = tmp_path / "data/expforce/dataset.csv"
     source.parent.mkdir(parents=True)
     shutil.copyfile(source_path(source_cfg), source)
+    for row in load_rows(cfg):
+        image = tmp_path / f"data/expforce/objects/{row.object_id}/image.png"
+        image.parent.mkdir(parents=True)
+        image.write_bytes(b"test image")
 
     benchmark = run_benchmark(cfg, "e4")
 

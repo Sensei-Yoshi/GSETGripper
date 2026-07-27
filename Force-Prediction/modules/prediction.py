@@ -1,8 +1,6 @@
-"""Shared force estimators and the authoritative deterministic selector.
+"""Shared VLM force estimation and the authoritative deterministic selector.
 
-E1 through E4 use one joint VLM response for both grippers. E5 converts the
-calibrated physics solve into the shared per-gripper contract; E6 adds its
-residual in :mod:`modules.experiments`. Python always makes the final
+E1 through E4 use one joint VLM response for both grippers. Python always makes the final
 feasible minimum-force selection and records agreement with the VLM's explicit
 recommendation.
 """
@@ -22,7 +20,6 @@ from .contracts import (
     SelectionResult,
 )
 from .models.gemini import get_client
-from .physics import PhysicsEstimate
 from .retrieval import RetrievalMode, RetrievedObjectExperience, normalized_weights
 
 GRIPPERS = (Gripper.GECKO, Gripper.SILICONE)
@@ -46,7 +43,9 @@ def _query_payload(query: Query, cfg: Config, *, include_measured: bool) -> dict
     # excluding them keeps E1 genuinely image-only and avoids semantic leakage.
     payload: dict = {}
     if include_measured:
-        payload.update(mass_g=query.mass_g, roughness_class=query.roughness_class)
+        payload["mass_g"] = query.mass_g
+        if cfg.inputs.use_roughness:
+            payload["roughness_class"] = query.roughness_class
         if cfg.inputs.use_projected_contact:
             payload["projected_contact_fraction"] = query.projected_contact_fraction
     return payload
@@ -77,14 +76,16 @@ def vlm_predict_joint(
         "gripper_embodiments": embodiment_payload(cfg),
         "force_constraints": _force_constraints(cfg),
     }
-    if include_measured:
+    if include_measured and cfg.inputs.use_roughness:
         payload["roughness_scale"] = cfg.roughness.labels
     if include_retrieval:
         mode = retrieval_mode or RetrievalMode.HYBRID
         payload["query_semantic_description"] = query.semantic_description
         payload["retrieved_objects"] = [
             item.to_payload(
-                mode=mode, include_contact=cfg.inputs.use_projected_contact
+                mode=mode,
+                include_roughness=cfg.inputs.use_roughness,
+                include_contact=cfg.inputs.use_projected_contact,
             )
             for item in retrieved
         ]
@@ -129,24 +130,6 @@ def predictions_from_joint(
         Gripper.GECKO: response.gecko,
         Gripper.SILICONE: response.silicone,
     }
-
-
-def physics_predict(
-    cfg: Config,
-    gripper: Gripper,
-    physics_estimate: PhysicsEstimate,
-) -> PerGripperPrediction:
-    """Convert an E5 calibrated-physics solve into the common prediction contract."""
-    return PerGripperPrediction(
-        candidate_gripper=gripper,
-        feasible=physics_estimate.feasible,
-        predicted_normal_force_n=(
-            physics_estimate.min_force_n
-            if (physics_estimate.feasible and physics_estimate.min_force_n is not None)
-            else cfg.force.limit_n
-        ),
-        reasoning_trace="calibrated reduced-order physics",
-    )
 
 
 def select(

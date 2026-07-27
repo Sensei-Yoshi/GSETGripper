@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "20260727T154335901989Z_toilet_paper",
+  "created_at": "2026-07-27T15:43:35.901989+00:00",
+  "duration_seconds": 21.081,
+  "source": {
+    "label": "toilet_paper",
+    "dataset_id": "Matforcedata",
+    "object_id": "toilet_paper",
+    "path": "data/Matforcedata/toilet_paper.jpg",
+    "image_sha256": "da87f2dd7cdf80ce1cdd1f611cb82e96fc7e49f5192ee8b9c455a4694392d603",
+    "original_size": [
+      5712,
+      4284
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      625
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 20260721
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.0840947490107154,
+    "bbox_fill_fraction": 0.8410972845823873
+  },
+  "crop": {
+    "bbox_xyxy": [
+      2654,
+      1342,
+      4987,
+      3243
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      2333,
+      1901
+    ],
+    "foreground_fraction": 0.46391666666666664
+  },
+  "scoring": {
+    "strategy": "manual_projected_gripper_contact",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 0,
+    "foreground_pixels": 222680,
+    "scoring_pixels": 44201,
+    "scoring_fraction_of_foreground": 0.1984955990659242,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": "Opposing patches on the compressible outer paper roll; core and end face excluded."
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.5704217553138733,
+    "median": 0.57080078125,
+    "std": 0.004239826463162899,
+    "min": 0.50732421875,
+    "max": 0.58251953125,
+    "p05": 0.564453125,
+    "p25": 0.56787109375,
+    "p75": 0.5732421875,
+    "p95": 0.576171875
+  },
+  "metallicity": {
+    "mean": 0.08853617310523987,
+    "median": 0.087158203125,
+    "std": 0.009355701506137848,
+    "min": 0.07666015625,
+    "max": 0.380859375,
+    "p05": 0.082275390625,
+    "p25": 0.0849609375,
+    "p75": 0.089599609375,
+    "p95": 0.0986328125
+  },
+  "roughness_uncertainty": {
+    "mean": 0.03505922108888626,
+    "median": 0.03564453125,
+    "std": 0.00543918926268816,
+    "min": 0.00048828125,
+    "max": 0.05908203125,
+    "p05": 0.02490234375,
+    "p25": 0.03173828125,
+    "p75": 0.03857421875,
+    "p95": 0.04296875
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.01093363482505083,
+    "median": 0.010986328125,
+    "std": 0.0036187695804983377,
+    "min": 0.0,
+    "max": 0.06494140625,
+    "p05": 0.0048828125,
+    "p25": 0.008544921875,
+    "p75": 0.01318359375,
+    "p95": 0.016845703125
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

@@ -55,9 +55,9 @@ class ExperienceRecord(BaseModel):
 
     object_id: str
     image_path: str
-    mass_g: float = Field(gt=0)
-    roughness_class: int = Field(ge=1, le=5)
-    projected_contact_fraction: float = Field(ge=0, le=1)
+    mass_g: float | None = Field(default=None, gt=0)
+    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     gripper: Gripper
     min_force_n: float | None = None
     feasible: bool = True
@@ -126,9 +126,9 @@ class Query(BaseModel):
 
     object_id: str
     image_path: str
-    mass_g: float = Field(gt=0)
-    roughness_class: int = Field(ge=1, le=5)
-    projected_contact_fraction: float = Field(ge=0, le=1)
+    mass_g: float | None = Field(default=None, gt=0)
+    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     semantic_description: str = ""
 
 

@@ -12,6 +12,7 @@ from modules.datasets import (
     get_dataset,
     prepare_dataset_stages,
     update_csv_dataset_object,
+    update_dataset_object,
 )
 from modules.expforce import load_rows
 from modules.perception import Description
@@ -135,3 +136,67 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
     manifest = json.loads(refreshed.paths.preparation_manifest.read_text())
     assert manifest["source_fingerprint"] == refreshed.source_fingerprint
     assert manifest["stages"]["experiences"]["status"] == "complete"
+
+
+def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcomes(
+    tmp_path,
+) -> None:
+    cfg = _config_at(tmp_path)
+    cfg.dataset_id = "Photos"
+    image = tmp_path / "data/Photos/objects/cup/image.png"
+    image.parent.mkdir(parents=True)
+    image.write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    ))
+    dataset = get_dataset(cfg, "Photos")
+    original_fingerprint = dataset.source_fingerprint
+
+    refreshed = update_dataset_object(
+        cfg,
+        dataset,
+        "cup",
+        DatasetObjectEdit(
+            mass_g=None,
+            roughness_class=None,
+            projected_contact_fraction=None,
+            gecko_feasible=True,
+            gecko_force_n=1.25,
+            silicone_feasible=True,
+            silicone_force_n=None,
+        ),
+    )
+
+    measurement_path = image.parent / "measurements.json"
+    persisted = json.loads(measurement_path.read_text())
+    assert persisted["schema_version"] == 1
+    assert persisted["mass_g"] is None
+    assert refreshed.source_fingerprint != original_fingerprint
+    assert refreshed.objects["cup"].gripper_outcomes[Gripper.GECKO].complete
+    assert not refreshed.objects["cup"].gripper_outcomes[Gripper.SILICONE].complete
+    experiences = load_experiences(refreshed.paths.experiences)
+    assert len(experiences) == 1
+    assert experiences[0].gripper is Gripper.GECKO
+    assert experiences[0].mass_g is None
+
+
+def test_csv_edit_accepts_blank_measurements_and_unrecorded_outcomes(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Physical"
+    _write_source(root)
+    dataset = get_dataset(cfg, "Physical")
+
+    update_dataset_object(
+        cfg,
+        dataset,
+        "test_cup",
+        DatasetObjectEdit(),
+    )
+
+    row = load_rows(cfg)[0]
+    assert row.mass_g is None
+    assert row.roughness_class is None
+    assert row.projected_contact_fraction is None
+    assert row.gecko_feasible is None
+    assert row.silicone_feasible is None
+    assert row.favored_gripper is None

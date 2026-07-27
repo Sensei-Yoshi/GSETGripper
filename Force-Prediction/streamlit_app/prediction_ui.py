@@ -55,14 +55,17 @@ def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
                 "silicone_feasible": item.silicone_feasible,
             }
         if result.retrieval_mode == "hybrid":
-            row.update(
-                mass=sim.mass,
-                roughness=sim.roughness,
-                contact=sim.contact,
-                mass_g=item.mass_g,
-                roughness_class=item.roughness_class,
-                contact_fraction=item.projected_contact_fraction,
-            )
+            row.update(mass=sim.mass, mass_g=item.mass_g)
+            if sim.roughness is not None:
+                row.update(
+                    roughness=sim.roughness,
+                    roughness_class=item.roughness_class,
+                )
+            if sim.contact is not None:
+                row.update(
+                    contact=sim.contact,
+                    contact_fraction=item.projected_contact_fraction,
+                )
         rows.append(row)
     return pd.DataFrame(rows)
 
@@ -70,10 +73,15 @@ def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
 def render_formula(cfg: Config) -> None:
     weights = normalized_weights(cfg)
     st.markdown('<div class="formula"><b>Hybrid similarity</b></div>', unsafe_allow_html=True)
-    st.latex(
-        r"S_i=w_s\cos(e_q,e_i)+w_m e^{-|\ln m_q-\ln m_i|/\sigma_m}"
-        r"+w_r(1-|r_q-r_i|/4)+w_a e^{-|a_q-a_i|/\sigma_a}"
-    )
+    terms = [
+        r"w_s\cos(e_q,e_i)",
+        r"w_m e^{-|\ln m_q-\ln m_i|/\sigma_m}",
+    ]
+    if cfg.inputs.use_roughness:
+        terms.append(r"w_r(1-|r_q-r_i|/4)")
+    if cfg.inputs.use_projected_contact:
+        terms.append(r"w_a e^{-|a_q-a_i|/\sigma_a}")
+    st.latex(r"S_i=" + "+".join(terms))
     st.caption(
         "Normalized weights: "
         + " | ".join(f"{name} {value:.2f}" for name, value in weights.items())
@@ -131,7 +139,12 @@ def render_prediction(
             f"{result.tie_break_reason or 'the deterministic fallback rule'}."
         )
 
-    if counterfactual:
+    if truth is None:
+        st.markdown(
+            '<p class="status-warn">Unscored run: complete paired truth is not recorded.</p>',
+            unsafe_allow_html=True,
+        )
+    elif counterfactual:
         st.markdown(
             '<p class="status-warn">Counterfactual mode: source labels are not scored.</p>',
             unsafe_allow_html=True,

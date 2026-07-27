@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "20260727T154117340208Z_deodorant",
+  "created_at": "2026-07-27T15:41:17.340208+00:00",
+  "duration_seconds": 15.5,
+  "source": {
+    "label": "deodorant",
+    "dataset_id": "Matforcedata",
+    "object_id": "deodorant",
+    "path": "data/Matforcedata/deodorant.jpg",
+    "image_sha256": "79d0737677db86d7e6087e06e6677dfd3b5844ddfb41754a1dc755c9b4bf30e7",
+    "original_size": [
+      5712,
+      4284
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      465
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 20260721
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.029218877093320987,
+    "bbox_fill_fraction": 0.8121660426738395
+  },
+  "crop": {
+    "bbox_xyxy": [
+      3417,
+      1704,
+      5161,
+      2762
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1744,
+      1058
+    ],
+    "foreground_fraction": 0.3875532034050179
+  },
+  "scoring": {
+    "strategy": "manual_projected_gripper_contact",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 0,
+    "foreground_pixels": 138403,
+    "scoring_pixels": 25503,
+    "scoring_fraction_of_foreground": 0.18426623700353317,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": "Opposing patches on the main container body, avoiding the rounded cap and far end."
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.5592186450958252,
+    "median": 0.58251953125,
+    "std": 0.06417477875947952,
+    "min": 0.0859375,
+    "max": 0.708984375,
+    "p05": 0.43068847656250003,
+    "p25": 0.5205078125,
+    "p75": 0.59521484375,
+    "p95": 0.6279296875
+  },
+  "metallicity": {
+    "mean": 0.7598555088043213,
+    "median": 0.8125,
+    "std": 0.1359640508890152,
+    "min": 0.016845703125,
+    "max": 0.94921875,
+    "p05": 0.5126953125,
+    "p25": 0.6875,
+    "p75": 0.84423828125,
+    "p95": 0.9140625
+  },
+  "roughness_uncertainty": {
+    "mean": 0.028413256630301476,
+    "median": 0.0244140625,
+    "std": 0.02491852268576622,
+    "min": 0.0,
+    "max": 0.28564453125,
+    "p05": 0.001708984375,
+    "p25": 0.01025390625,
+    "p75": 0.03955078125,
+    "p95": 0.073974609375
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.02689952403306961,
+    "median": 0.0224609375,
+    "std": 0.02247965894639492,
+    "min": 0.0,
+    "max": 0.323486328125,
+    "p05": 0.001953125,
+    "p25": 0.01025390625,
+    "p75": 0.0380859375,
+    "p95": 0.06928710937499893
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

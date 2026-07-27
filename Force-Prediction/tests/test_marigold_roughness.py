@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 from PIL import Image
@@ -95,3 +96,34 @@ def test_list_saved_runs_ignores_invalid_metadata(tmp_path: Path) -> None:
     (invalid / "metadata.json").write_text("not json")
 
     assert list_saved_runs(tmp_path) == []
+
+
+def test_run_marigold_uses_manual_contact_mask_as_analysis_foreground(
+    tmp_path: Path,
+    monkeypatch: Any,
+) -> None:
+    monkeypatch.setattr("modules.models.marigold.MIN_SCORING_PIXELS", 1)
+    image = Image.new("RGB", (8, 6), color=(10, 20, 30))
+    manual = Image.new("L", (5, 6), color=0)
+    manual_array = np.asarray(manual).copy()
+    manual_array[:, 2:] = 255
+
+    run = run_marigold(
+        FakeAnalyzer(),  # type: ignore[arg-type]
+        image,
+        tmp_path,
+        background_remover=FakeBackgroundRemover(),  # type: ignore[arg-type]
+        source_label="Transparent object",
+        num_inference_steps=2,
+        ensemble_size=3,
+        seed=7,
+        scoring_mask_source=Image.fromarray(manual_array),
+        scoring_mask_rationale="Reviewed opposing contact patches.",
+    )
+
+    assert run["scoring"]["strategy"] == "manual_projected_gripper_contact"
+    assert run["scoring"]["rationale"] == "Reviewed opposing contact patches."
+    assert run["scoring"]["manual_mask_outside_automatic_foreground_fraction"] > 0
+    assert "manual_mask_extends_beyond_automatic_foreground" in run["quality"]["warnings"]
+    analysis_mask = Image.open(Path(run["run_dir"]) / run["artifacts"]["analysis_foreground_mask"])
+    assert np.asarray(analysis_mask).all()

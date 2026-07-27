@@ -9,11 +9,9 @@ import numpy as np
 import streamlit as st
 
 from modules.contracts import Gripper, group_by_object
-from modules.datasets import DatasetObject, DatasetObjectEdit, update_csv_dataset_object
+from modules.datasets import DatasetObject, DatasetObjectEdit, update_dataset_object
 from modules.expforce import (
-    ExpForceRow,
     load_experience_pool,
-    load_rows,
     load_saved_runs,
     pipeline_result_from_dict,
 )
@@ -44,112 +42,135 @@ def _thumbnail(path: str, modified_ns: int, max_width: int = 420) -> np.ndarray 
 def _card_editor(
     context: AppContext,
     item: DatasetObject,
-    source: ExpForceRow,
 ) -> None:
     prefix = f"data_viewer_{context.dataset.dataset_id}_{item.object_id}"
+
+    def save_change() -> None:
+        try:
+            statuses = {
+                gripper: {
+                    "Unrecorded": None,
+                    "Feasible": True,
+                    "Infeasible": False,
+                }[st.session_state[f"{prefix}_{gripper}_status"]]
+                for gripper in ("gecko", "silicone")
+            }
+            for gripper, status in statuses.items():
+                if status is not True:
+                    st.session_state[f"{prefix}_{gripper}_force_n"] = None
+            edit = DatasetObjectEdit(
+                mass_g=st.session_state[f"{prefix}_mass_g"],
+                roughness_class=st.session_state[f"{prefix}_roughness_class"],
+                projected_contact_fraction=st.session_state[
+                    f"{prefix}_projected_contact_fraction"
+                ],
+                gecko_feasible=statuses["gecko"],
+                gecko_force_n=(
+                    st.session_state[f"{prefix}_gecko_force_n"]
+                    if statuses["gecko"] is True
+                    else None
+                ),
+                silicone_feasible=statuses["silicone"],
+                silicone_force_n=(
+                    st.session_state[f"{prefix}_silicone_force_n"]
+                    if statuses["silicone"] is True
+                    else None
+                ),
+            )
+            update_dataset_object(
+                context.config,
+                context.dataset,
+                item.object_id,
+                edit,
+            )
+        except (KeyError, OSError, ValueError) as error:
+            st.session_state[f"{prefix}_save_status"] = f"error:{error}"
+        else:
+            st.session_state[f"{prefix}_save_status"] = "saved"
+
     with st.expander("Edit measurements and outcomes"):
         st.caption(
-            "Saves atomically to dataset.csv and refreshes paired experience records. "
+            "Each valid change saves atomically and refreshes completed experience records. "
             "Names, images, descriptors, and generated artifacts remain read-only."
         )
-        with st.form(f"{prefix}_form"):
-            measurement_cols = st.columns(3)
-            mass_g = measurement_cols[0].number_input(
-                "Mass (g)",
-                min_value=0.001,
-                value=float(source.mass_g),
-                key=f"{prefix}_mass_g",
-            )
-            roughness_class = measurement_cols[1].number_input(
-                "Roughness class",
-                min_value=1,
-                max_value=5,
-                value=int(source.roughness_class),
-                step=1,
-                key=f"{prefix}_roughness_class",
-            )
-            projected_contact_fraction = measurement_cols[2].number_input(
-                "Projected contact fraction",
-                min_value=0.0,
-                max_value=1.0,
-                value=float(item.projected_contact_fraction or 0.0),
-                step=0.001,
-                format="%.3f",
-                key=f"{prefix}_projected_contact_fraction",
-            )
+        measurement_cols = st.columns(3)
+        measurement_cols[0].number_input(
+            "Mass (g)",
+            min_value=0.001,
+            value=float(item.mass_g) if item.mass_g is not None else None,
+            placeholder="Not recorded",
+            key=f"{prefix}_mass_g",
+            on_change=save_change,
+        )
+        measurement_cols[1].selectbox(
+            "Roughness class",
+            [None, 1, 2, 3, 4, 5],
+            index=item.roughness_class or 0,
+            format_func=lambda value: "Not recorded" if value is None else str(value),
+            key=f"{prefix}_roughness_class",
+            on_change=save_change,
+        )
+        measurement_cols[2].number_input(
+            "Projected contact fraction",
+            min_value=0.0,
+            max_value=1.0,
+            value=(
+                float(item.projected_contact_fraction)
+                if item.projected_contact_fraction is not None
+                else None
+            ),
+            step=0.001,
+            format="%.3f",
+            placeholder="Not recorded",
+            key=f"{prefix}_projected_contact_fraction",
+            on_change=save_change,
+        )
 
-            outcome_cols = st.columns(2)
-            outcome_values: dict[str, tuple[bool, float | None]] = {}
-            for column, gripper in zip(outcome_cols, ("gecko", "silicone"), strict=True):
-                feasible = getattr(source, f"{gripper}_feasible")
-                force = getattr(source, f"{gripper}_force_n")
-                with column:
-                    st.markdown(f"**{gripper.title()} outcome**")
-                    edited_feasible = st.checkbox(
-                        "Feasible",
-                        value=feasible,
-                        key=f"{prefix}_{gripper}_feasible",
-                    )
-                    edited_force = st.number_input(
-                        "Minimum force (N)",
-                        min_value=0.001,
-                        max_value=float(context.config.force.limit_n),
-                        value=float(force) if force is not None else None,
-                        step=0.05,
-                        placeholder="No force for an infeasible outcome",
-                        key=f"{prefix}_{gripper}_force_n",
-                    )
-                    outcome_values[gripper] = (
-                        edited_feasible,
-                        float(edited_force)
-                        if edited_feasible and edited_force is not None
-                        else None,
-                    )
-            candidate_payload = {
-                "silicone_force_n": outcome_values["silicone"][1],
-                "silicone_feasible": outcome_values["silicone"][0],
-                "gecko_force_n": outcome_values["gecko"][1],
-                "gecko_feasible": outcome_values["gecko"][0],
-            }
-            st.caption(
-                "Favored gripper is recalculated on save. "
-                f"Current value: {source.favored_gripper.title()}"
+        outcome_cols = st.columns(2)
+        for column, gripper in zip(outcome_cols, ("gecko", "silicone"), strict=True):
+            outcome = item.gripper_outcomes.get(Gripper(gripper))
+            status = (
+                "Unrecorded"
+                if outcome is None or outcome.feasible is None
+                else "Feasible"
+                if outcome.feasible
+                else "Infeasible"
             )
+            with column:
+                st.markdown(f"**{gripper.title()} outcome**")
+                selected_status = st.selectbox(
+                    "Status",
+                    ["Unrecorded", "Feasible", "Infeasible"],
+                    index=["Unrecorded", "Feasible", "Infeasible"].index(status),
+                    key=f"{prefix}_{gripper}_status",
+                    on_change=save_change,
+                )
+                st.number_input(
+                    "Minimum force (N)",
+                    min_value=0.001,
+                    max_value=float(context.config.force.limit_n),
+                    value=(
+                        float(outcome.min_force_n)
+                        if outcome is not None and outcome.min_force_n is not None
+                        else None
+                    ),
+                    step=0.05,
+                    placeholder="Enter force to complete a feasible outcome",
+                    disabled=selected_status != "Feasible",
+                    key=f"{prefix}_{gripper}_force_n",
+                    on_change=save_change,
+                )
 
-            submitted = st.form_submit_button(
-                "Save object changes",
-                type="primary",
-                key=f"{prefix}_save",
-            )
-        if submitted:
-            try:
-                edit = DatasetObjectEdit(
-                    mass_g=mass_g,
-                    roughness_class=roughness_class,
-                    projected_contact_fraction=projected_contact_fraction,
-                    **candidate_payload,
-                )
-                update_csv_dataset_object(
-                    context.config,
-                    context.dataset,
-                    item.object_id,
-                    edit,
-                )
-            except (KeyError, OSError, ValueError) as error:
-                st.error(f"Could not save object: {error}")
-            else:
-                st.success("Saved CSV measurements and experience records. Reloading…")
-                st.rerun()
+        saved = st.session_state.get(f"{prefix}_save_status")
+        if saved == "saved":
+            st.success("Saved automatically.")
+        elif isinstance(saved, str) and saved.startswith("error:"):
+            st.error("Could not save: " + saved.removeprefix("error:"))
 
 
 def _description_catalog(context: AppContext) -> None:
     base_cfg = context.config
     rows = context.rows
-    source_rows = (
-        {row.object_id: row for row in load_rows(context.config)}
-        if context.dataset.adapter == "expforce_paired_csv"
-        else {}
-    )
     search = st.text_input("Search objects", placeholder="Material, object, condition...")
     page_size = st.segmented_control(
         "Objects per page", [8, 12, 24], default=12, key="catalog_page_size"
@@ -252,16 +273,23 @@ def _description_catalog(context: AppContext) -> None:
                                 f"{outcome.min_force_n:.2f} N"
                                 if outcome and outcome.min_force_n is not None
                                 else "Infeasible"
-                                if outcome
+                                if outcome and outcome.feasible is False
                                 else "Not available"
                             ),
                         )
                         if outcome:
-                            column.caption(f"Feasible: {'Yes' if outcome.feasible else 'No'}")
+                            column.caption(
+                                "Feasible: "
+                                + (
+                                    "Yes"
+                                    if outcome.feasible is True
+                                    else "No"
+                                    if outcome.feasible is False
+                                    else "Not recorded"
+                                )
+                            )
 
-                source = source_rows.get(row.object_id)
-                if source is not None:
-                    _card_editor(context, row, source)
+                _card_editor(context, row)
 
                 if row.description is None:
                     st.warning("No descriptor checkpoint. Run live Data Preparation.")
@@ -319,10 +347,18 @@ def pipeline_run_inspector(context: AppContext) -> None:
         else:
             st.warning("Saved query image is unavailable.")
         st.caption(f"Image SHA-256: {query.get('image_sha256') or 'not recorded'}")
-        st.metric("Mass", f"{query['mass_g']:.1f} g")
+        st.metric(
+            "Mass",
+            f"{query['mass_g']:.1f} g" if query.get("mass_g") is not None else "Not recorded",
+        )
         sensor_cols = st.columns(2)
-        sensor_cols[0].metric("Roughness", query["roughness_class"])
-        sensor_cols[1].metric("Contact", f"{query['projected_contact_fraction']:.3f}")
+        sensor_cols[0].metric("Roughness", query.get("roughness_class") or "Not recorded")
+        sensor_cols[1].metric(
+            "Contact",
+            f"{query['projected_contact_fraction']:.3f}"
+            if query.get("projected_contact_fraction") is not None
+            else "Not recorded",
+        )
         st.subheader("Run configuration")
         st.write(f"**Experiment:** {run['experiment_display_name']}")
         st.write(
@@ -341,6 +377,7 @@ def pipeline_run_inspector(context: AppContext) -> None:
                 "use_projected_contact",
                 retrieval.get("use_projected_contact", True),
             )
+            st.write(f"Roughness enabled: {saved_inputs.get('use_roughness', True)}")
             st.write(f"Projected contact enabled: {contact_enabled}")
             st.write(f"Saved run top k: {retrieval['k']}")
             if retrieval["k"] != base_cfg.retrieval.k:
@@ -372,10 +409,7 @@ def pipeline_run_inspector(context: AppContext) -> None:
         st.subheader("Pipeline output")
         cfg = base_cfg.model_copy(deep=True)
         cfg.retrieval = type(cfg.retrieval).model_validate(run["retrieval_config"])
-        cfg.inputs.use_projected_contact = run.get("inputs", {}).get(
-            "use_projected_contact",
-            run["retrieval_config"].get("use_projected_contact", True),
-        )
+        cfg.inputs = type(cfg.inputs).model_validate(run.get("inputs", {}))
         detailed = pipeline_result_from_dict(run["result"])
         baseline = pipeline_result_from_dict(run["baseline"]) if run.get("baseline") else None
         records = load_experience_pool(base_cfg)

@@ -8,9 +8,11 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from modules.experiments import experiment_eligibility
 from modules.expforce import artifact_backend_label
 from modules.reporting import (
     calibration_figure,
+    common_intersection_artifacts,
     comparison_rows,
     export_comparison,
     metrics_rows,
@@ -63,20 +65,46 @@ def _render_comparison(context: AppContext, manifest: dict) -> None:
     artifacts = suite_benchmarks(context.config, manifest)
     completed = [name.upper() for name in artifacts]
     st.caption(f"Available benchmark artifacts: {', '.join(completed) or 'none'}")
-    if len(artifacts) < 4:
-        st.info("Complete or resume all E1–E4 conditions to render the comparison.")
+    counts = {
+        experiment.upper(): len(artifact.get("rows", []))
+        for experiment, artifact in artifacts.items()
+    }
+    st.write("**Per-experiment eligible samples:**", counts)
+    skipped = {
+        experiment.upper(): state.get("reason")
+        for experiment, state in manifest.get("runs", {}).items()
+        if state.get("status") == "skipped"
+    }
+    if skipped:
+        st.warning(f"Skipped conditions: {skipped}")
+    if not artifacts:
+        st.info("No experiment currently has eligible benchmark objects.")
         return
 
-    figure = calibration_figure(artifacts)
+    st.subheader("Per-experiment metrics")
+    st.dataframe(pd.DataFrame(metrics_rows(artifacts)), hide_index=True, width="stretch")
+
+    comparable, common_ids = common_intersection_artifacts(artifacts, context.config)
+    if not common_ids:
+        st.info(
+            "A cross-experiment comparison needs at least one object eligible for all E1–E4 "
+            "conditions. Individual metrics remain available above."
+        )
+        return
+    st.caption(
+        f"Cross-experiment comparison uses the common intersection of {len(common_ids)} objects."
+    )
+
+    figure = calibration_figure(comparable)
     st.pyplot(figure, width="stretch")
     import matplotlib.pyplot as plt
 
     plt.close(figure)
-    st.subheader("Comparative metrics")
-    st.dataframe(pd.DataFrame(metrics_rows(artifacts)), hide_index=True, width="stretch")
+    st.subheader("Common-intersection metrics")
+    st.dataframe(pd.DataFrame(metrics_rows(comparable)), hide_index=True, width="stretch")
 
     st.subheader("Object detail")
-    long_frame = pd.DataFrame(comparison_rows(artifacts))
+    long_frame = pd.DataFrame(comparison_rows(comparable))
     selected_object = st.selectbox(
         "Object",
         sorted(long_frame["object_id"].unique()),
@@ -103,7 +131,7 @@ def _render_comparison(context: AppContext, manifest: dict) -> None:
             / manifest["suite_id"]
             / "exports"
         )
-        exports = export_comparison(artifacts, destination)
+        exports = export_comparison(comparable, destination)
         relative = {
             name: str(Path(path).relative_to(context.config.root))
             for name, path in exports.items()
@@ -130,8 +158,13 @@ def _suite_comparison(context: AppContext) -> None:
         help="A full suite can make up to 516 Gemini force-prediction calls.",
         key="suite_cost_confirmation",
     )
+    eligible_calls = sum(
+        len(experiment_eligibility(context.dataset, cfg, experiment).benchmark_ids)
+        for experiment in ("e1", "e2", "e3", "e4")
+    )
     controls[1].warning(
-        "Maximum 516 Gemini force-prediction calls; exact cached requests are reused."
+        f"Up to {eligible_calls} Gemini force-prediction calls for currently eligible rows; "
+        "exact cached requests are reused."
     )
 
     suites = list_suites(cfg)
@@ -142,7 +175,7 @@ def _suite_comparison(context: AppContext) -> None:
         key="suite_selector",
     )
     selected = options.get(selected_label)
-    resumable = selected is None or selected.get("schema_version") == 6
+    resumable = selected is None or selected.get("schema_version") == 7
     if not resumable:
         st.error(
             "This legacy suite is available for inspection only. Start a new Gemini suite "
@@ -158,12 +191,25 @@ def _suite_comparison(context: AppContext) -> None:
         run_cfg = cfg.model_copy(deep=True)
         if selected is None:
             selected = create_suite(run_cfg)
+        counts = {
+            experiment: len(
+                selected["snapshot"]["eligibility"][experiment][
+                    "eligible_benchmark_ids"
+                ]
+            )
+            for experiment in ("e1", "e2", "e3", "e4")
+        }
+        offsets: dict[str, int] = {}
+        cumulative = 0
+        for experiment, count in counts.items():
+            offsets[experiment] = cumulative
+            cumulative += count
+        total_calls = max(cumulative, 1)
         progress_bar = st.progress(0.0)
         status = st.empty()
 
         def progress(experiment: str, done: int, total: int, object_id: str) -> None:
-            experiment_index = ("e1", "e2", "e3", "e4").index(experiment)
-            progress_bar.progress((experiment_index * total + done) / (4 * total))
+            progress_bar.progress((offsets[experiment] + done) / total_calls)
             status.caption(
                 f"{experiment.upper()} | {done}/{total} | {object_id.replace('_', ' ')}"
             )
@@ -230,18 +276,6 @@ def render(context: AppContext) -> None:
     if mode == "Single Runs":
         pipeline_run_inspector(context)
     elif mode == "Benchmark Runs":
-        if context.dataset.capabilities.can_benchmark:
-            _benchmark_runs(context)
-        else:
-            st.info(
-                f"{context.dataset.display_name} has no paired force labels, so it has no "
-                "benchmark workflow. Use Data Viewer or Data Preparation for this dataset."
-            )
+        _benchmark_runs(context)
     else:
-        if context.dataset.capabilities.can_benchmark:
-            _suite_comparison(context)
-        else:
-            st.info(
-                f"{context.dataset.display_name} has no paired force labels, so experiment "
-                "suites are unavailable. Use Data Viewer or Data Preparation instead."
-            )
+        _suite_comparison(context)

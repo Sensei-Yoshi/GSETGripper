@@ -35,21 +35,22 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Run pipeline",
         "Run 129-object leave-one-out benchmark",
         "Run new E1–E4 suite",
-        *(["Save object changes"] * 12),
         "Validate prompt bundle",
         "Save prompts & embodiments",
         "Capture & Analyze",
         "Run Marigold",
         "Run selected preparation stages",
     ]
-    assert [item.label for item in app.selectbox] == [
+    selectbox_labels = [item.label for item in app.selectbox]
+    for label in (
         "Dataset",
         "Dataset object",
         "Experiment profile",
         "Experiment",
         "Saved suite",
         "Marigold dataset image",
-    ]
+    ):
+        assert label in selectbox_labels
     checkbox_labels = {item.label for item in app.checkbox}
     assert {
         "Gemini descriptions",
@@ -57,6 +58,8 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Marigold roughness",
         "Surface/contact fraction from image_2",
         "Experience records",
+        "Consider roughness class",
+        "Consider projected contact fraction",
     } <= checkbox_labels
     markdown_values = {item.value for item in app.markdown}
     assert "**Image 1 — Perception view**" in markdown_values
@@ -67,6 +70,8 @@ def test_default_app_structure_matches_research_lab() -> None:
     )
     expected_state = {
         "active_dataset_id",
+        "consider_roughness",
+        "consider_projected_contact",
         "benchmark_experiment",
         "catalog_page",
         "catalog_page_size",
@@ -141,9 +146,13 @@ def test_global_dataset_selector_switches_every_tab_to_image_only_dataset() -> N
     assert list(app.exception) == []
     assert app.session_state["active_dataset_id"] == "MatForce"
     assert any("11 objects · image folder" in item.value for item in app.caption)
-    assert any(
-        "Single Run requires mass, roughness" in item.value for item in app.warning
-    )
+    experiment = next(item for item in app.selectbox if item.label == "Experiment profile")
+    experiment.set_value("e1")
+    app.run(timeout=30)
+    run = next(item for item in app.button if item.label == "Run pipeline")
+    assert not run.disabled
+    assert any(item.label == "Mass (g)" for item in app.number_input)
+    assert any(item.label == "Status" for item in app.selectbox)
     experience_control = next(
         item for item in app.checkbox if item.label == "Experience records"
     )

@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "20260727T154211029151Z_plastic_water_bottle",
+  "created_at": "2026-07-27T15:42:11.029151+00:00",
+  "duration_seconds": 14.704,
+  "source": {
+    "label": "plastic_water_bottle",
+    "dataset_id": "Matforcedata",
+    "object_id": "plastic_water_bottle",
+    "path": "data/Matforcedata/plastic_water_bottle.jpg",
+    "image_sha256": "389104a9ded680d53e95f639a66fbd5e71b5a099a3863706d16f9a372b4bdda2",
+    "original_size": [
+      5712,
+      4284
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      436
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 20260721
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.08070687425296916,
+    "bbox_fill_fraction": 0.7328132050155549
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1987,
+      1260,
+      5208,
+      3092
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      3221,
+      1832
+    ],
+    "foreground_fraction": 0.33471903669724773
+  },
+  "scoring": {
+    "strategy": "manual_projected_gripper_contact",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 0,
+    "foreground_pixels": 112080,
+    "scoring_pixels": 23310,
+    "scoring_fraction_of_foreground": 0.2079764453961456,
+    "manual_mask_outside_automatic_foreground_fraction": 8.58000858000858e-05,
+    "rationale": "Opposing patches on the central bottle wall; cap, neck, and bottom excluded."
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.28637462854385376,
+    "median": 0.23681640625,
+    "std": 0.10579846054315567,
+    "min": 0.1572265625,
+    "max": 0.57275390625,
+    "p05": 0.179443359375,
+    "p25": 0.190673828125,
+    "p75": 0.3955078125,
+    "p95": 0.462890625
+  },
+  "metallicity": {
+    "mean": 0.6997479796409607,
+    "median": 0.68310546875,
+    "std": 0.09390082210302353,
+    "min": 0.26904296875,
+    "max": 0.8740234375,
+    "p05": 0.5244140625,
+    "p25": 0.6728515625,
+    "p75": 0.76171875,
+    "p95": 0.84912109375
+  },
+  "roughness_uncertainty": {
+    "mean": 0.03226223587989807,
+    "median": 0.01904296875,
+    "std": 0.031682200729846954,
+    "min": 0.0,
+    "max": 0.177734375,
+    "p05": 0.00146484375,
+    "p25": 0.0078125,
+    "p75": 0.052978515625,
+    "p95": 0.094970703125
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.016575923189520836,
+    "median": 0.01171875,
+    "std": 0.016865232959389687,
+    "min": 0.0,
+    "max": 0.218505859375,
+    "p05": 0.0009765625,
+    "p25": 0.00537109375,
+    "p75": 0.0224609375,
+    "p95": 0.04920654296874982
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

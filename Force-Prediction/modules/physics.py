@@ -1,6 +1,7 @@
 """Reduced-order calibrated physics for the two grippers (James et al., IEEE #11522915).
 
-E5 emits this model directly; E6 learns a residual over the same calibrated solve.
+The model remains available for mock-hardware generation and calibration diagnostics;
+it is not an active experiment strategy.
 Coefficients are smooth and monotone in roughness class so each training fold fits
 seven parameters total instead of free per-class values (which would overfit ~100
 objects with sparse class coverage).
@@ -128,8 +129,26 @@ def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
     g = cfg.force.gravity
     b = cfg.physics.bounds
 
-    sil = [r for r in records if r.gripper is Gripper.SILICONE and r.feasible and r.min_force_n]
-    geo = [r for r in records if r.gripper is Gripper.GECKO and r.feasible and r.min_force_n]
+    sil = [
+        r
+        for r in records
+        if r.gripper is Gripper.SILICONE
+        and r.feasible is True
+        and r.min_force_n is not None
+        and r.mass_g is not None
+        and r.roughness_class is not None
+        and r.projected_contact_fraction is not None
+    ]
+    geo = [
+        r
+        for r in records
+        if r.gripper is Gripper.GECKO
+        and r.feasible is True
+        and r.min_force_n is not None
+        and r.mass_g is not None
+        and r.roughness_class is not None
+        and r.projected_contact_fraction is not None
+    ]
 
     # --- silicone: residual_i = alpha_sil(c)*a*N* - W ---------------------- #
     if len(sil) >= 2:
@@ -138,6 +157,9 @@ def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
             out = []
             for r in sil:
                 assert r.min_force_n is not None
+                assert r.mass_g is not None
+                assert r.roughness_class is not None
+                assert r.projected_contact_fraction is not None
                 alpha = a0 * math.exp(-dec * (r.roughness_class - 1))
                 pred = alpha * r.projected_contact_fraction * r.min_force_n
                 out.append(pred - weight_n(r.mass_g, g))
@@ -157,6 +179,9 @@ def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
             out = []
             for r in geo:
                 assert r.min_force_n is not None
+                assert r.mass_g is not None
+                assert r.roughness_class is not None
+                assert r.projected_contact_fraction is not None
                 c, a, n = r.roughness_class, r.projected_contact_fraction, r.min_force_n
                 alpha = a0 * math.exp(-dec * (c - 1))
                 beta = be0 * max(0.0, min(1.0, 1.0 - be_dec * (c - 1)))

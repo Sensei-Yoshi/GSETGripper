@@ -2,10 +2,9 @@
 
     python scripts/run_experiment.py --exp e4
     python scripts/run_experiment.py --all
-    python scripts/run_experiment.py --exp e5               # local physics, no Gemini
 
 Leak-safe by construction: the pipeline is re-fit on each fold's training objects
-(physics calibration, residual model, retrieval index all fold-local), and both
+(the retrieval index is fold-local), and both
 gripper rows of an object always share a fold.
 """
 
@@ -76,9 +75,9 @@ def main() -> int:
     args = parse_args()
     cfg = load_config()
     names = EXPERIMENT_IDS if args.all else [args.exp]
-    if any(name != "e5" for name in names) and not args.confirm_gemini_cost:
+    if not args.confirm_gemini_cost:
         raise SystemExit(
-            "Gemini-backed evaluation requires --confirm-gemini-cost; E5 can run without it"
+            "E1–E4 evaluation requires --confirm-gemini-cost"
         )
     records = load_experiences(cfg.path("experiences"))
     if not records:

@@ -8,8 +8,6 @@ from .e1 import E1Strategy
 from .e2 import E2Strategy
 from .e3 import E3Strategy
 from .e4 import E4Strategy
-from .e5 import E5Strategy
-from .e6 import E6Strategy
 from .helper import ExperimentSpec, ExperimentStrategy
 
 EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
@@ -45,22 +43,6 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         uses_measurements=True,
         retrieval_mode=RetrievalMode.HYBRID,
     ),
-    "e5": ExperimentSpec(
-        "e5",
-        ExperimentMethod.CALIBRATED_PHYSICS,
-        "Calibrated physics",
-        "Fold-local bounded calibration of the reduced-order physics equations.",
-        0,
-        uses_measurements=True,
-    ),
-    "e6": ExperimentSpec(
-        "e6",
-        ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL,
-        "Calibrated physics + semantic residual",
-        "The E5 estimate plus a fold-local learned semantic residual per gripper.",
-        0,
-        uses_measurements=True,
-    ),
 }
 
 if tuple(EXPERIMENT_CATALOG) != EXPERIMENT_IDS:
@@ -71,8 +53,6 @@ STRATEGY_TYPES: dict[str, type[ExperimentStrategy]] = {
     "e2": E2Strategy,
     "e3": E3Strategy,
     "e4": E4Strategy,
-    "e5": E5Strategy,
-    "e6": E6Strategy,
 }
 
 

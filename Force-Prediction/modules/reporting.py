@@ -2,11 +2,86 @@
 
 from __future__ import annotations
 
+import copy
 import csv
 from pathlib import Path
 
+from .config import Config
+from .contracts import (
+    ExperienceRecord,
+    Gripper,
+    PerGripperPrediction,
+    SelectionResult,
+    group_by_object,
+)
+from .evaluation import EvalRow, compute_metrics
+
 PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4")
 GRIPPERS = ("gecko", "silicone")
+
+
+def common_intersection_artifacts(
+    artifacts: dict[str, dict],
+    cfg: Config,
+) -> tuple[dict[str, dict], tuple[str, ...]]:
+    """Filter all four artifacts to the same objects and recompute comparable metrics."""
+    if any(experiment not in artifacts for experiment in PRIMARY_EXPERIMENTS):
+        return {}, ()
+    object_sets = [
+        {row["object_id"] for row in artifacts[experiment]["rows"]}
+        for experiment in PRIMARY_EXPERIMENTS
+    ]
+    common_ids = tuple(sorted(set.intersection(*object_sets))) if object_sets else ()
+    filtered: dict[str, dict] = {}
+    for experiment in PRIMARY_EXPERIMENTS:
+        artifact = copy.deepcopy(artifacts[experiment])
+        rows = [row for row in artifact["rows"] if row["object_id"] in common_ids]
+        artifact["rows"] = rows
+        artifact["metrics"] = _metrics_from_rows(rows, cfg)
+        filtered[experiment] = artifact
+    return filtered, common_ids
+
+
+def _metrics_from_rows(rows: list[dict], cfg: Config) -> dict:
+    eval_rows: list[EvalRow] = []
+    for row in rows:
+        truth_records: list[ExperienceRecord] = []
+        predictions: dict[str, PerGripperPrediction] = {}
+        for name in GRIPPERS:
+            feasible_value = row.get(f"true_{name}_feasible")
+            feasible = (
+                bool(feasible_value)
+                if feasible_value is not None
+                else row.get(f"true_{name}_force_n") is not None
+            )
+            truth_records.append(
+                ExperienceRecord(
+                    object_id=row["object_id"],
+                    image_path="",
+                    gripper=Gripper(name),
+                    min_force_n=row.get(f"true_{name}_force_n") if feasible else None,
+                    feasible=feasible,
+                    failed_at_limit_n=None if feasible else cfg.force.limit_n,
+                )
+            )
+            predictions[name] = PerGripperPrediction(
+                candidate_gripper=Gripper(name),
+                feasible=bool(row.get(f"pred_{name}_feasible", True)),
+                predicted_normal_force_n=float(row[f"pred_{name}_force_n"]),
+            )
+        truth = group_by_object(truth_records)[row["object_id"]]
+        selection = SelectionResult(
+            desired_gripper=row["predicted_gripper"],
+            predicted_normal_force_n=(
+                predictions[row["predicted_gripper"]].predicted_normal_force_n
+                if row["predicted_gripper"] in predictions
+                else None
+            ),
+            candidate_predictions=predictions,
+            model_recommended_gripper=row.get("model_recommended_gripper"),
+        )
+        eval_rows.append(EvalRow(object_id=row["object_id"], truth=truth, result=selection))
+    return compute_metrics(eval_rows, cfg).to_dict()
 
 
 def _pyplot():

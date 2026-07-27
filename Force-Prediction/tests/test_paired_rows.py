@@ -11,7 +11,6 @@ from modules.contracts import (
 )
 from modules.hardware import fabricate_records
 from modules.pipeline import Pipeline, query_input_from_object
-from modules.prediction import clamp_force
 from modules.retrieval import ExperienceIndex, RetrievalMode
 from tests.fakes import FakeEmbeddingProvider, install_gemini_fakes
 
@@ -133,7 +132,7 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
 
 
 def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
-    """E4 adds paired experience retrieval; neither path may invoke E5/E6 physics."""
+    """E4 adds paired experience retrieval to the same measured VLM query."""
     cfg = load_config().model_copy(deep=True)
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
@@ -160,9 +159,6 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
         def cache_stats(self):
             return {}
 
-    def unexpected(*_args, **_kwargs):
-        raise AssertionError("E2/E4 must not initialize or invoke the physics models")
-
     client = CapturingClient()
     monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
     monkeypatch.setattr("modules.experiments.helper.get_client", lambda _cfg: client)
@@ -170,9 +166,6 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
         "modules.experiments.helper.get_embedding_provider",
         lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
     )
-    monkeypatch.setattr("modules.experiments.e5.calibrate", unexpected)
-    monkeypatch.setattr("modules.experiments.e6.calibrate", unexpected)
-
     e2 = Pipeline(cfg, "e2").fit(train).predict_detailed(query)
     e4 = Pipeline(cfg, "e4").fit(train).predict_detailed(query)
 
@@ -190,8 +183,9 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
     assert len(e4_payload["retrieved_objects"]) == cfg.retrieval.k
 
 
-def test_e4_contact_ablation_removes_contact_from_joint_payload(monkeypatch):
+def test_e4_optional_input_ablation_removes_roughness_and_contact(monkeypatch):
     cfg = load_config().model_copy(deep=True)
+    cfg.inputs.use_roughness = False
     cfg.inputs.use_projected_contact = False
     records = fabricate_records(cfg, 12)
     held = records[0].object_id
@@ -228,96 +222,48 @@ def test_e4_contact_ablation_removes_contact_from_joint_payload(monkeypatch):
     Pipeline(cfg, "e4").fit(train).predict_detailed(_query_with_image(test, cfg))
 
     assert "projected_contact_fraction" not in captured["extra"]["query"]
+    assert "roughness_class" not in captured["extra"]["query"]
     assert all(
         "projected_contact_fraction" not in item
         for item in captured["extra"]["retrieved_objects"]
     )
+    assert all(
+        "roughness_class" not in item
+        and "roughness" not in item["similarity"]
+        and "contact" not in item["similarity"]
+        for item in captured["extra"]["retrieved_objects"]
+    )
+    weights = captured["extra"]["retrieval_config"]["normalized_weights"]
+    assert weights["roughness"] == 0
+    assert weights["contact"] == 0
     assert captured["extra"]["retrieval_config"]["k"] == cfg.retrieval.k
 
 
-def test_e5_loads_only_calibrated_physics(monkeypatch):
+@pytest.mark.parametrize("experiment", ["e1", "e3"])
+def test_sensor_free_experiments_accept_missing_physical_fields(experiment, monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    records = fabricate_records(cfg, 20)
+    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
+    records = [
+        record.model_copy(
+            update={
+                "mass_g": None,
+                "roughness_class": None,
+                "projected_contact_fraction": None,
+            }
+        )
+        for record in fabricate_records(cfg, 12)
+    ]
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
-    def unexpected(*_args, **_kwargs):
-        raise AssertionError("E5 must not initialize VLM, retrieval, or embedding resources")
-
-    monkeypatch.setattr("modules.experiments.helper.get_embedding_provider", unexpected)
-    monkeypatch.setattr("modules.experiments.helper.vlm_predict_joint", unexpected)
-    monkeypatch.setattr("modules.experiments.helper.describe", unexpected)
-    detailed = Pipeline(cfg, "e5").fit(train).predict_detailed(
+    detailed = Pipeline(cfg, experiment).fit(train).predict_detailed(
         _query_with_image(test, cfg)
     )
 
-    assert detailed.experiment_method == "calibrated_physics"
-    assert detailed.retrieved_objects == []
-    assert set(detailed.physics_estimates) == {"gecko", "silicone"}
-    assert detailed.selection.model_recommended_gripper is None
-
-
-def test_e6_is_the_same_e5_physics_plus_the_learned_residual(monkeypatch):
-    cfg = load_config().model_copy(deep=True)
-    cfg.learning.embedding_pca_dims = 0
-    records = fabricate_records(cfg, 24)
-    held = records[0].object_id
-    train = [record for record in records if record.object_id != held]
-    test = [record for record in records if record.object_id == held]
-    query = _query_with_image(test, cfg)
-
-    class ConstantResidual:
-        def __init__(self, _cfg):
-            pass
-
-        def fit(self, base, embeddings, residuals):
-            assert len(base) == len(residuals)
-            assert embeddings.shape[1] == 0
-            return self
-
-        def predict_residual(self, base, embeddings):
-            assert len(base) == 1
-            assert embeddings.shape == (1, 0)
-            return np.asarray([0.2])
-
-    monkeypatch.setattr("modules.experiments.e6.ResidualForceModel", ConstantResidual)
-    e5 = Pipeline(cfg, "e5").fit(train).predict_detailed(query)
-    e6 = Pipeline(cfg, "e6").fit(train).predict_detailed(query)
-
-    assert e6.physics_estimates == e5.physics_estimates
-    for gripper in ("gecko", "silicone"):
-        e5_prediction = e5.selection.candidate_predictions[gripper]
-        e6_prediction = e6.selection.candidate_predictions[gripper]
-        if e5_prediction.feasible:
-            assert e6_prediction.predicted_normal_force_n == pytest.approx(
-                clamp_force(e5_prediction.predicted_normal_force_n + 0.2, cfg)
-            )
-
-
-def test_e6_keeps_semantic_embeddings_without_vlm_force_or_retrieval(monkeypatch):
-    cfg = load_config().model_copy(deep=True)
-    records = fabricate_records(cfg, 24)
-    held = records[0].object_id
-    train = [record for record in records if record.object_id != held]
-    test = [record for record in records if record.object_id == held]
-
-    def unexpected(*_args, **_kwargs):
-        raise AssertionError("E6 must not initialize retrieval or call the force VLM")
-
-    monkeypatch.setattr("modules.experiments.helper.ExperienceIndex", unexpected)
-    monkeypatch.setattr("modules.experiments.helper.vlm_predict_joint", unexpected)
-    provider = FakeEmbeddingProvider(cfg.retrieval.embedding.dim)
-    monkeypatch.setattr(
-        "modules.experiments.e6.get_embedding_provider", lambda _cfg: provider
+    assert not {"mass", "roughness", "projected_contact"} & set(
+        detailed.effective_inputs
     )
-    pipeline = Pipeline(cfg, "e6").fit(train)
-    detailed = pipeline.predict_detailed(_query_with_image(test, cfg))
-
-    assert pipeline.strategy.provider is not None
-    assert provider.client.embedding_calls > 0
-    assert detailed.retrieved_objects == []
-    assert detailed.selection.model_recommended_gripper is None
 
 
 def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):

@@ -41,15 +41,35 @@ def main() -> None:
             st.session_state.pop(key, None)
 
     choices = [dataset.dataset_id for dataset in catalog]
-    selected = st.selectbox(
-        "Dataset",
-        choices,
-        key="active_dataset_id",
-        on_change=clear_dataset_state,
-        format_func=lambda value: next(
-            dataset.display_name for dataset in catalog if dataset.dataset_id == value
-        ),
-    )
+    selector_col, roughness_col, contact_col = st.columns([0.5, 0.25, 0.25])
+    with selector_col:
+        selected = st.selectbox(
+            "Dataset",
+            choices,
+            key="active_dataset_id",
+            on_change=clear_dataset_state,
+            format_func=lambda value: next(
+                dataset.display_name for dataset in catalog if dataset.dataset_id == value
+            ),
+        )
+    with roughness_col:
+        use_roughness = st.checkbox(
+            "Consider roughness class",
+            value=base_cfg.inputs.use_roughness,
+            key="consider_roughness",
+            on_change=clear_dataset_state,
+            help="Controls E2 inputs and the E4 hybrid retrieval term.",
+        )
+    with contact_col:
+        use_projected_contact = st.checkbox(
+            "Consider projected contact fraction",
+            value=base_cfg.inputs.use_projected_contact,
+            key="consider_projected_contact",
+            on_change=clear_dataset_state,
+            help="Controls E2 inputs and the E4 hybrid retrieval term.",
+        )
+    base_cfg.inputs.use_roughness = use_roughness
+    base_cfg.inputs.use_projected_contact = use_projected_contact
     context = load_context(selected, base_config=base_cfg, catalog=catalog)
     capability = context.dataset.capabilities
 

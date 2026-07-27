@@ -5,7 +5,7 @@ for TPU–Gecko and TPU–silicone grippers, then select the lowest-force feasib
 The command range is continuous from `0` to `8 N`; predictions are never rounded to a
 collection grid.
 
-The active research suite has six explicit methods. E1–E4 are the primary VLM ablation:
+The active research suite has four explicit VLM ablation methods:
 
 | ID | Method |
 |---|---|
@@ -13,8 +13,6 @@ The active research suite has six explicit methods. E1–E4 are the primary VLM 
 | E2 | One joint image + measured-input VLM response |
 | E3 | Semantic-only experiential retrieval + one joint VLM response |
 | E4 | Semantic + sensor-fusion paired retrieval + one joint VLM response |
-| E5 | Fold-calibrated reduced-order physics |
-| E6 | The same E5 physics + a learned semantic residual |
 
 E1–E4 also return an explicit model gripper
 recommendation, but Python's lowest-feasible-force rule remains authoritative.
@@ -44,8 +42,8 @@ The global selector above the tabs discovers each direct dataset folder under `d
 Gemini/embedding caches, contact captures, Marigold roughness tests, experience pool, saved
 runs, benchmarks, and suites. Image-only datasets support description, embedding, and
 Marigold preparation. Datasets with a second view for every object also support batch
-surface/contact estimation; the paired Exp-Force fixture additionally supports force
-pipelines and evaluation.
+surface/contact estimation. Partial datasets can run any experiment whose object-specific
+inputs and reference outcomes are ready; they no longer wait for dataset-wide completion.
 
 For paired data, known-object runs are leave-one-object-out and custom queries use the
 entire experience pool. E3 retrieves by semantic cosine similarity only. E4 uses the
@@ -64,9 +62,10 @@ Edit the fixed written gripper descriptions and all prompt text in `prompts.yaml
 resumes saved E1–E4 suites, compares the two grippers in separate panels, inspects
 provenance, and exports PNG, SVG, and CSV results. The **Data Viewer** shows the selected
 dataset's images, optional measurements/outcomes, descriptions, and embedding status. For a
-paired CSV dataset, its object editor validates and atomically saves measurement/outcome
-corrections, recalculates the favored gripper, and refreshes experience
-records. Names, images, and descriptors remain read-only in this tab.
+dataset, its object editor auto-saves nullable measurement/outcome corrections, recalculates
+the favored gripper after both labels are complete, and refreshes completed experience
+records. Image-folder values are stored under each object's `measurements.json`; names,
+images, and descriptors remain read-only in this tab.
 
 The **Marigold Roughness** tab runs the IID appearance model on any active-dataset image or
 an uploaded override. Its default background-removal pass creates a mask and transparent
@@ -77,10 +76,21 @@ mode can reopen every saved run. Raw NumPy maps are not persisted. Models are lo
 after **Run Marigold** is pressed. Marigold's value is BRDF appearance roughness, not a direct
 measurement of physical height roughness or pad friction.
 
-The Single Run page includes a projected-contact checkbox. Disabling it removes contact
-from E2/E4 VLM payloads, sets its E4 retrieval weight to zero, and removes the direct E6
-residual feature. E3 is unaffected because sensor fields are excluded by construction;
-E5/E6 physics still requires the measured contact fraction.
+Raised bumps and grooves are measured separately with the Marigold normals checkpoint. The
+topographic analysis removes a locally smoothed base normal field, scores the remaining angular
+variation inside the same grasp band, and stores PNG diagnostics rather than NumPy arrays:
+
+```bash
+python scripts/analyze_topography.py --dataset Matforcedata --objects lechee orange
+```
+
+The reported topographic score is an uncalibrated monocular-image proxy. Preserve its raw angular
+statistics and calibrate it against measured slip or friction before using it as a physical value.
+
+Global roughness and projected-contact switches sit beside the Dataset selector. Disabling
+one removes it from E2/E4 VLM payloads and sets its E4 retrieval weight to zero before the
+remaining weights are renormalized. E1 and E3 are unaffected because physical fields are
+excluded by construction.
 
 Use `scripts/prepare_dataset.py --dataset <folder> --stages <stage...>` to run only
 `descriptions`, `embeddings`, or `experiences`. Prerequisites are automatic, but downstream
@@ -95,11 +105,10 @@ under `data/cache/<dataset>/{generation,embeddings}` and resumable. The legacy f
 ```bash
 python scripts/run_experiment.py --exp e4 --confirm-gemini-cost
 python scripts/run_experiment.py --all --confirm-gemini-cost
-python scripts/run_experiment.py --exp e5
 ```
 
-E1–E4 use Gemini generation, E3/E4 use Gemini embeddings, and E6 uses Gemini embeddings
-with its local residual model. E5 is fully local. Cached identical requests make no new call.
+E1–E4 use Gemini generation and E3/E4 use Gemini embeddings. Cached identical requests
+make no new call.
 
 ## Data collection
 
@@ -121,10 +130,9 @@ the precision of predictions or hardware commands. See
 | `modules/experiments/` | Canonical per-experiment strategies plus shared helpers |
 | `modules/pipeline.py` | Thin shared `fit`/`predict` facade |
 | `modules/contracts.py` | Records, joint predictions, and selection contracts |
-| `modules/prediction.py` | Joint VLM request, physics adapter, force clamp, selector |
+| `modules/prediction.py` | Joint VLM request, force clamp, and selector |
 | `modules/retrieval.py` | Paired-object embeddings and hybrid retrieval |
 | `modules/physics.py` | Reduced-order equations, bounded calibration, solver |
-| `modules/learning.py` | E6 residual regressor and semantic PCA |
 | `modules/evaluation.py` | Grouped splits and force/selection/recommendation metrics |
 | `modules/datasets/` | Dataset catalog, object/artifact models, storage, and preparation stages |
 | `modules/cache.py` | Dataset-isolated response caches plus Exp-Force legacy read-through |

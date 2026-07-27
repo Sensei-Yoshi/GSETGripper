@@ -47,18 +47,30 @@ def _parse_bool(value: str) -> bool:
     return normalized == "true"
 
 
+def _parse_optional_bool(value: str | None) -> bool | None:
+    return _parse_bool(value) if value and value.strip() else None
+
+
+def _parse_optional_float(value: str | None) -> float | None:
+    return float(value) if value and value.strip() else None
+
+
+def _parse_optional_int(value: str | None) -> int | None:
+    return int(value) if value and value.strip() else None
+
+
 class ExpForceRow(BaseModel):
     object_name: str
     image_name: str
     image_name_2: str | None = None
-    mass_g: float = Field(gt=0)
-    roughness_class: int = Field(ge=1, le=5)
-    projected_contact_fraction: float = Field(ge=0, le=1)
-    silicone_force_n: float | None
-    silicone_feasible: bool
-    gecko_force_n: float | None
-    gecko_feasible: bool
-    favored_gripper: str
+    mass_g: float | None = Field(default=None, gt=0)
+    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
+    silicone_force_n: float | None = Field(default=None, gt=0)
+    silicone_feasible: bool | None = None
+    gecko_force_n: float | None = Field(default=None, gt=0)
+    gecko_feasible: bool | None = None
+    favored_gripper: str | None = None
 
     @property
     def object_id(self) -> str:
@@ -70,10 +82,8 @@ class ExpForceRow(BaseModel):
             (self.silicone_force_n, self.silicone_feasible, "silicone"),
             (self.gecko_force_n, self.gecko_feasible, "gecko"),
         ):
-            if feasible and (force is None or force <= 0):
-                raise ValueError(f"{name} feasible row requires positive force")
-            if not feasible and force is not None:
-                raise ValueError(f"{name} infeasible row must not contain force")
+            if feasible is not True and force is not None:
+                raise ValueError(f"only a feasible {name} row may contain force")
         expected = self.expected_favored()
         if self.favored_gripper != expected:
             raise ValueError(
@@ -81,7 +91,16 @@ class ExpForceRow(BaseModel):
             )
         return self
 
-    def expected_favored(self) -> str:
+    def expected_favored(self) -> str | None:
+        complete = (
+            self.silicone_feasible is False
+            or (self.silicone_feasible is True and self.silicone_force_n is not None)
+        ) and (
+            self.gecko_feasible is False
+            or (self.gecko_feasible is True and self.gecko_force_n is not None)
+        )
+        if not complete:
+            return None
         candidates: dict[str, float] = {}
         if self.silicone_feasible and self.silicone_force_n is not None:
             candidates["silicone"] = self.silicone_force_n
@@ -116,7 +135,12 @@ def source_path(cfg: Config) -> Path:
 
 
 def source_sha256(cfg: Config) -> str:
-    return hashlib.sha256(source_path(cfg).read_bytes()).hexdigest()
+    path = source_path(cfg)
+    if path.is_file():
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    from .datasets.catalog import get_dataset
+
+    return get_dataset(cfg, cfg.dataset_id).source_fingerprint
 
 
 def load_rows(cfg: Config) -> list[ExpForceRow]:
@@ -135,14 +159,18 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
                 ),
                 None,
             ),
-            mass_g=float(row["Mass_g"]),
-            roughness_class=int(row["roughness_class"]),
-            projected_contact_fraction=float(row["projected_contact_fraction"]),
-            silicone_force_n=float(row["silicone_force_n"]) if row["silicone_force_n"] else None,
-            silicone_feasible=_parse_bool(row["silicone_feasible"]),
-            gecko_force_n=float(row["gecko_force_n"]) if row["gecko_force_n"] else None,
-            gecko_feasible=_parse_bool(row["gecko_feasible"]),
-            favored_gripper=row["favored_gripper"].strip().lower(),
+            mass_g=_parse_optional_float(row.get("Mass_g")),
+            roughness_class=_parse_optional_int(row.get("roughness_class")),
+            projected_contact_fraction=_parse_optional_float(
+                row.get("projected_contact_fraction")
+            ),
+            silicone_force_n=_parse_optional_float(row.get("silicone_force_n")),
+            silicone_feasible=_parse_optional_bool(row.get("silicone_feasible")),
+            gecko_force_n=_parse_optional_float(row.get("gecko_force_n")),
+            gecko_feasible=_parse_optional_bool(row.get("gecko_feasible")),
+            favored_gripper=(
+                row.get("favored_gripper", "").strip().lower() or None
+            ),
         )
         for row in raw_rows
     ]
@@ -187,16 +215,26 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
             payload = {
                 "Object": row.object_name,
                 "Image": row.image_name,
-                "Mass_g": row.mass_g,
-                "roughness_class": row.roughness_class,
-                "projected_contact_fraction": row.projected_contact_fraction,
+                "Mass_g": row.mass_g if row.mass_g is not None else "",
+                "roughness_class": (
+                    row.roughness_class if row.roughness_class is not None else ""
+                ),
+                "projected_contact_fraction": (
+                    row.projected_contact_fraction
+                    if row.projected_contact_fraction is not None
+                    else ""
+                ),
                 "silicone_force_n": (
                     row.silicone_force_n if row.silicone_force_n is not None else ""
                 ),
-                "silicone_feasible": row.silicone_feasible,
+                "silicone_feasible": (
+                    row.silicone_feasible if row.silicone_feasible is not None else ""
+                ),
                 "gecko_force_n": row.gecko_force_n if row.gecko_force_n is not None else "",
-                "gecko_feasible": row.gecko_feasible,
-                "favored_gripper": row.favored_gripper,
+                "gecko_feasible": (
+                    row.gecko_feasible if row.gecko_feasible is not None else ""
+                ),
+                "favored_gripper": row.favored_gripper or "",
             }
             if "Image_2" in columns:
                 payload["Image_2"] = row.image_name_2 or ""
@@ -209,10 +247,22 @@ def validation_summary(cfg: Config, rows: list[ExpForceRow] | None = None) -> di
     rows = rows or load_rows(cfg)
     return {
         "objects": len(rows),
-        "experience_rows": 2 * len(rows),
+        "experience_rows": sum(
+            (row.gecko_feasible is False or (
+                row.gecko_feasible is True and row.gecko_force_n is not None
+            ))
+            + (row.silicone_feasible is False or (
+                row.silicone_feasible is True and row.silicone_force_n is not None
+            ))
+            for row in rows
+        ),
         "source_sha256": source_sha256(cfg),
-        "roughness_counts": dict(sorted(Counter(row.roughness_class for row in rows).items())),
-        "favored_counts": dict(sorted(Counter(row.favored_gripper for row in rows).items())),
+        "roughness_counts": dict(sorted(Counter(
+            row.roughness_class for row in rows if row.roughness_class is not None
+        ).items())),
+        "favored_counts": dict(sorted(Counter(
+            row.favored_gripper for row in rows if row.favored_gripper is not None
+        ).items())),
     }
 
 
@@ -230,6 +280,8 @@ def to_experiences(
             (Gripper.SILICONE, row.silicone_force_n, row.silicone_feasible),
             (Gripper.GECKO, row.gecko_force_n, row.gecko_feasible),
         ):
+            if feasible is None or (feasible and force is None):
+                continue
             records.append(
                 ExperienceRecord(
                     object_id=row.object_id,
@@ -287,7 +339,13 @@ def load_experience_pool(cfg: Config) -> list[ExperienceRecord]:
         from .contracts import load_experiences
 
         return load_experiences(path)
-    return to_experiences(cfg, load_rows(cfg))
+    if source_path(cfg).is_file():
+        return to_experiences(cfg, load_rows(cfg))
+    from .datasets import get_dataset
+    from .datasets.storage import dataset_experience_records
+
+    dataset = get_dataset(cfg, cfg.dataset_id)
+    return dataset_experience_records(dataset, cfg.force.limit_n)
 
 
 def load_validation_records(cfg: Config) -> list[ExperienceRecord]:
@@ -386,17 +444,6 @@ def backend_provenance(cfg: Config, experiment: str) -> dict[str, str | None]:
                 cfg.retrieval.embedding.model if experiment in {"e3", "e4"} else None
             ),
         }
-    if experiment == "e5":
-        return {"force": "local_calibrated_physics", "semantic_embedding": None}
-    if experiment == "e6":
-        return {
-            "force": "local_physics_semantic_residual",
-            "semantic_embedding": (
-                cfg.retrieval.embedding.model
-                if cfg.learning.embedding_pca_dims > 0
-                else None
-            ),
-        }
     raise KeyError(f"unknown experiment {experiment!r}")
 
 
@@ -455,7 +502,7 @@ def save_pipeline_run(
     prompt_key = definition.prompt
     prompt_context = prompt_provenance(cfg, prompt_key)
     artifact = {
-        "schema_version": 6,
+        "schema_version": 7,
         "dataset_id": cfg.dataset_id,
         "run_id": run_id,
         "created_at": created_at.isoformat(),
@@ -514,9 +561,9 @@ def load_saved_runs(cfg: Config) -> list[dict]:
 def _legacy_experiment_method(run: dict) -> str:
     toggles = run.get("experiment_toggles", {})
     if toggles.get("use_residual"):
-        return ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL.value
+        return "physics_semantic_residual"
     if toggles.get("use_physics"):
-        return ExperimentMethod.CALIBRATED_PHYSICS.value
+        return "calibrated_physics"
     if (
         toggles.get("use_paired_rows")
         and toggles.get("use_retrieval")
@@ -545,8 +592,8 @@ def saved_run_experiment_label(run: dict) -> str:
     legacy_labels = {
         ExperimentMethod.SEMANTIC_RETRIEVAL_VLM.value: "semantic experiential retrieval",
         ExperimentMethod.PAIRED_RETRIEVAL_VLM.value: "paired retrieval VLM",
-        ExperimentMethod.CALIBRATED_PHYSICS.value: "calibrated physics",
-        ExperimentMethod.PHYSICS_SEMANTIC_RESIDUAL.value: "physics + semantic residual",
+        "calibrated_physics": "calibrated physics",
+        "physics_semantic_residual": "physics + semantic residual",
         "legacy_per_gripper_vlm": "per-gripper VLM",
         "legacy_branch_retrieval_average": "branch retrieval average",
         "legacy_unknown": "unknown method",
@@ -560,26 +607,46 @@ def run_benchmark(
     *,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> BenchmarkResult:
+    from .datasets import get_dataset
+    from .experiments import experiment_eligibility
+
+    dataset = get_dataset(cfg, cfg.dataset_id)
+    eligibility = experiment_eligibility(dataset, cfg, experiment)
     records = load_experience_pool(cfg)
     by_object = group_by_object(records)
-    object_ids = sorted(by_object)
+    object_ids = list(eligibility.benchmark_ids)
     eval_rows: list[EvalRow] = []
     output_rows: list[dict] = []
 
     for index, object_id in enumerate(object_ids, start=1):
-        train = [record for record in records if record.object_id != object_id]
+        train = [
+            record
+            for record in records
+            if record.object_id != object_id
+            and (
+                experiment not in {"e3", "e4"}
+                or record.object_id in eligibility.reference_ids
+            )
+        ]
         pipe = Pipeline(cfg, experiment).fit(train)
         truth = by_object[object_id]
-        sample = truth.gecko or truth.silicone
-        assert sample is not None
+        item = dataset.objects[object_id]
+        image_path = cfg.root / item.image.path
+        image = None
+        if image_path.is_file():
+            import cv2
+
+            image = cv2.imread(str(image_path))
         query = QueryInput(
             object_id=object_id,
-            mass_g=sample.mass_g,
-            roughness_class=sample.roughness_class,
-            projected_contact_fraction=sample.projected_contact_fraction,
-            image_bgr=load_image(cfg, sample),
-            image_path=sample.image_path,
-            semantic_description=sample.semantic_description,
+            mass_g=item.mass_g,
+            roughness_class=item.roughness_class,
+            projected_contact_fraction=item.projected_contact_fraction,
+            image_bgr=image,
+            image_path=item.image.path,
+            semantic_description=(
+                item.description.value.description if item.description is not None else None
+            ),
         )
         detailed = pipe.predict_detailed(query)
         result = detailed.selection
@@ -594,13 +661,17 @@ def run_benchmark(
             regret = (chosen_truth.min_force_n or 0.0) - oracle_force
         row = {
             "object_id": object_id,
-            "mass_g": sample.mass_g,
-            "roughness_class": sample.roughness_class,
-            "projected_contact_fraction": sample.projected_contact_fraction,
+            "mass_g": item.mass_g,
+            "roughness_class": item.roughness_class,
+            "projected_contact_fraction": item.projected_contact_fraction,
             "true_gecko_force_n": truth.gecko.min_force_n if truth.gecko else None,
+            "true_gecko_feasible": truth.gecko.feasible if truth.gecko else None,
             "pred_gecko_force_n": result.candidate_predictions["gecko"].predicted_normal_force_n,
+            "pred_gecko_feasible": result.candidate_predictions["gecko"].feasible,
             "true_silicone_force_n": truth.silicone.min_force_n if truth.silicone else None,
+            "true_silicone_feasible": truth.silicone.feasible if truth.silicone else None,
             "pred_silicone_force_n": result.candidate_predictions["silicone"].predicted_normal_force_n,
+            "pred_silicone_feasible": result.candidate_predictions["silicone"].feasible,
             "true_favored": next(iter(optimal)).value,
             "predicted_gripper": chosen,
             "selection_correct": chosen in {gripper.value for gripper in optimal},
@@ -622,7 +693,7 @@ def run_benchmark(
     prompt_context = prompt_provenance(cfg, prompt_key)
     retrieval_mode = EXPERIMENT_CATALOG[experiment].retrieval_mode
     metadata = {
-        "schema_version": 6,
+        "schema_version": 7,
         "dataset_id": cfg.dataset_id,
         "created_at": datetime.now(UTC).isoformat(),
         "experiment": experiment,
@@ -633,7 +704,7 @@ def run_benchmark(
         "source_sha256": source_sha256(cfg),
         "evaluation_protocol": "leave-one-object-out",
         "experience_pool_objects": len(object_ids),
-        "training_objects_per_run": len(object_ids) - 1,
+        "training_objects_per_run": max(0, len(eligibility.reference_ids) - 1),
         "model": cfg.models.vlm,
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,
@@ -642,6 +713,13 @@ def run_benchmark(
         "prediction_prompts": prompt_context["prediction"],
         "prompt_context": prompt_context,
         "retrieval_mode": retrieval_mode.value if retrieval_mode is not None else None,
+        "eligibility": {
+            "eligible_query_ids": list(eligibility.query_ids),
+            "eligible_benchmark_ids": list(eligibility.benchmark_ids),
+            "reference_ids": list(eligibility.reference_ids),
+            "skipped_queries": eligibility.skipped_queries,
+            "skipped_benchmarks": eligibility.skipped_benchmarks,
+        },
     }
     return BenchmarkResult(metrics=metrics, rows=output_rows, run_metadata=metadata)
 

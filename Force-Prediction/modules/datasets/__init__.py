@@ -1,12 +1,13 @@
 """Public dataset discovery, storage, and preparation interfaces."""
 
 from .catalog import discover_datasets, get_dataset, load_dataset
-from .editing import DatasetObjectEdit, update_csv_dataset_object
+from .editing import DatasetObjectEdit, update_csv_dataset_object, update_dataset_object
 from .models import (
     ContactFractionArtifact,
     Dataset,
     DatasetCapabilities,
     DatasetObject,
+    DatasetObjectMeasurements,
     DatasetPaths,
     DescriptionArtifact,
     EmbeddingArtifact,
@@ -23,6 +24,7 @@ __all__ = [
     "DatasetCapabilities",
     "DatasetObject",
     "DatasetObjectEdit",
+    "DatasetObjectMeasurements",
     "DatasetPaths",
     "ContactFractionArtifact",
     "DescriptionArtifact",
@@ -37,4 +39,5 @@ __all__ = [
     "load_dataset_experiences",
     "prepare_dataset_stages",
     "update_csv_dataset_object",
+    "update_dataset_object",
 ]

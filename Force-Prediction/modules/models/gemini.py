@@ -3,7 +3,7 @@
 One client, used by perception (descriptor), retrieval (embeddings), and
 prediction (joint two-gripper force response). Every call is content-hash cached on disk and
 wrapped with retries. This is the only module that imports google-genai, and it
-is imported lazily so E5 can run without initializing the Gemini SDK.
+is imported lazily so read-only and local preparation views do not initialize the SDK.
 """
 
 from __future__ import annotations

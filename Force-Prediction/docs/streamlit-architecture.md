@@ -45,9 +45,10 @@ used by the camera and background-removal model preserve this rule.
 | `modules/models/` | Lazy Gemini, background-removal, and Marigold adapters. |
 
 The **Runs Viewer** owns saved single runs, saved benchmarks, and resumable E1–E4 suite
-comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated
-editing of paired `dataset.csv` measurements and outcome labels. A save is atomic at the CSV
-level, recalculates derived labels, and refreshes experience records. Names, images,
+comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
+auto-saving measurement and partial outcome labels. CSV sources remain authoritative; image
+folders use `objects/<object_id>/measurements.json`. Each save is atomic, recalculates any
+complete derived label, and refreshes completed experience records. Names, images,
 descriptors, and generated artifact metrics remain read-only. The **Prompts & Embodiments** tab edits `prompts.yaml` atomically,
 including the fixed written descriptions of both grippers.
 
@@ -93,8 +94,9 @@ second view feeds projected two-pad contact estimation.
 
 The adapter selected from folder contents determines capabilities:
 
-- `dataset.csv` uses the paired CSV adapter and enables experiences, Single Run,
-  benchmarks, and suites when its required measurements and labels validate.
+- `dataset.csv` uses the paired CSV adapter and permits nullable physical fields and partial
+  outcomes. Single Run, benchmarks, and suites use per-experiment eligibility instead of a
+  dataset-wide completeness gate.
 - other folders use the image-folder adapter. Source images may be at the folder root or in
   nested folders. Generated masks, cutouts, contact plots, descriptors, runs, results, and
   other artifact folders are excluded from the source inventory.
@@ -110,8 +112,8 @@ absolute physical area in mm². Checkpoints and the manifest live inside the act
 folder. The equivalent CLI is `scripts/prepare_dataset.py`.
 
 The Data Viewer object editor exposes only mass, roughness class, projected contact fraction,
-per-gripper feasibility, and feasible minimum-force values. `favored_gripper` remains derived
-from feasibility and minimum-force labels so it cannot become inconsistent. Saved runs and
+per-gripper outcome status, and feasible minimum-force values. Every valid change auto-saves;
+`favored_gripper` is derived only after both outcomes are complete. Saved runs and
 results remain historical and are not rewritten; their source fingerprint mismatch is shown
 by inspectors.
 

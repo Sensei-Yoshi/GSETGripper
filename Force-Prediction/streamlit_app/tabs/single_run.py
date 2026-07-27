@@ -8,10 +8,9 @@ import streamlit as st
 
 from modules.config import EXPERIMENT_IDS, Config
 from modules.contracts import group_by_object
-from modules.experiments import EXPERIMENT_CATALOG
+from modules.experiments import EXPERIMENT_CATALOG, experiment_eligibility
 from modules.expforce import (
     load_experience_pool,
-    load_image,
     save_pipeline_run,
 )
 from modules.pipeline import Pipeline, QueryInput
@@ -29,7 +28,6 @@ from streamlit_app.prediction_ui import (
 def _run_config(
     base: Config,
     *,
-    use_projected_contact: bool,
     semantic: float,
     mass: float,
     roughness: float,
@@ -39,7 +37,6 @@ def _run_config(
     validate_hybrid_weights: bool,
 ) -> Config:
     cfg = base.model_copy(deep=True)
-    cfg.inputs.use_projected_contact = use_projected_contact
     cfg.retrieval.weights.semantic = semantic
     cfg.retrieval.weights.mass = mass
     cfg.retrieval.weights.roughness = roughness
@@ -65,11 +62,8 @@ def _rgb(image_bgr: np.ndarray) -> np.ndarray:
 def render(context: AppContext) -> None:
     base_cfg = context.config
     rows = context.rows
-    if not context.dataset.capabilities.can_run_pipeline:
-        st.warning(
-            f"{context.dataset.display_name} is available for viewing and semantic preparation, "
-            "but Single Run requires mass, roughness, projected contact, and paired gripper labels."
-        )
+    if not rows:
+        st.warning(f"{context.dataset.display_name} has no indexed objects.")
         return
     records = load_experience_pool(base_cfg)
     objects = group_by_object(records)
@@ -82,10 +76,8 @@ def render(context: AppContext) -> None:
         selected_name = st.selectbox("Dataset object", sorted(names))
         object_id = names[selected_name]
         dataset_object = dataset_objects[object_id]
-        truth = objects[object_id]
-        sample = truth.gecko or truth.silicone
-        assert sample is not None
-        source_image = load_image(base_cfg, sample)
+        source_path = base_cfg.root / dataset_object.image.path
+        source_image = cv2.imread(str(source_path)) if source_path.is_file() else None
         uploaded = st.file_uploader("Override image", type=["png", "jpg", "jpeg"])
         upload_image = _decode_upload(uploaded)
         query_image = upload_image if upload_image is not None else source_image
@@ -102,27 +94,40 @@ def render(context: AppContext) -> None:
         )
         uses_measurements = EXPERIMENT_CATALOG[experiment].uses_measurements
         uses_hybrid_retrieval = experiment == "e4"
+        eligibility = experiment_eligibility(context.dataset, base_cfg, experiment)
+        query_reasons = eligibility.query_reasons(object_id)
+        if query_reasons:
+            st.warning("Cannot run this object: " + "; ".join(query_reasons) + ".")
         mass = st.number_input(
             "Mass (g)",
             min_value=0.1,
-            value=float(sample.mass_g),
+            value=(
+                float(dataset_object.mass_g)
+                if dataset_object.mass_g is not None
+                else None
+            ),
             step=1.0,
             disabled=not uses_measurements,
             help="This authoritative value is hidden from E1 and E3.",
         )
-        roughness = st.select_slider(
+        roughness = st.selectbox(
             "Roughness class",
-            options=[1, 2, 3, 4, 5],
-            value=int(sample.roughness_class),
-            disabled=not uses_measurements,
+            options=[None, 1, 2, 3, 4, 5],
+            index=(dataset_object.roughness_class or 0),
+            format_func=lambda value: "Not recorded" if value is None else str(value),
+            disabled=not uses_measurements or not base_cfg.inputs.use_roughness,
         )
-        contact = st.slider(
+        contact = st.number_input(
             "Projected contact fraction",
             min_value=0.0,
             max_value=1.0,
-            value=float(sample.projected_contact_fraction),
+            value=(
+                float(dataset_object.projected_contact_fraction)
+                if dataset_object.projected_contact_fraction is not None
+                else None
+            ),
             step=0.001,
-            disabled=not uses_measurements,
+            disabled=not uses_measurements or not base_cfg.inputs.use_projected_contact,
         )
         if not uses_measurements:
             st.caption(
@@ -130,15 +135,9 @@ def render(context: AppContext) -> None:
                 "contact to the estimator."
             )
         with st.expander("Input and retrieval tuning", expanded=True):
-            use_projected_contact = st.checkbox(
-                "Use projected contact fraction",
-                value=base_cfg.inputs.use_projected_contact,
-                disabled=not uses_measurements,
-                help=(
-                    "When disabled, contact is omitted from VLM inputs and its retrieval "
-                    "weight is set to zero; the remaining weights are renormalized. "
-                    "Physics-based E5 and E6 still require the measured contact fraction."
-                ),
+            st.caption(
+                "The roughness and projected-contact switches beside the Dataset selector "
+                "control every new run. Stored values remain available for later use."
             )
             semantic_w = st.slider(
                 "Semantic weight", 0.0, 1.0,
@@ -153,14 +152,19 @@ def render(context: AppContext) -> None:
             roughness_w = st.slider(
                 "Roughness weight", 0.0, 1.0,
                 float(base_cfg.retrieval.weights.roughness), 0.05,
-                disabled=not uses_hybrid_retrieval,
+                disabled=not uses_hybrid_retrieval or not base_cfg.inputs.use_roughness,
             )
             configured_contact_w = st.slider(
                 "Contact weight", 0.0, 1.0,
                 float(base_cfg.retrieval.weights.contact), 0.05,
-                disabled=not use_projected_contact or not uses_hybrid_retrieval,
+                disabled=(
+                    not base_cfg.inputs.use_projected_contact
+                    or not uses_hybrid_retrieval
+                ),
             )
-            contact_w = configured_contact_w if use_projected_contact else 0.0
+            contact_w = (
+                configured_contact_w if base_cfg.inputs.use_projected_contact else 0.0
+            )
             sigma_mass = st.slider(
                 "Mass sigma", 0.1, 3.0,
                 float(base_cfg.retrieval.sigma_mass), 0.1,
@@ -169,19 +173,26 @@ def render(context: AppContext) -> None:
             sigma_contact = st.slider(
                 "Contact sigma", 0.05, 1.0,
                 float(base_cfg.retrieval.sigma_contact), 0.05,
-                disabled=not use_projected_contact or not uses_hybrid_retrieval,
+                disabled=(
+                    not base_cfg.inputs.use_projected_contact
+                    or not uses_hybrid_retrieval
+                ),
             )
             st.caption(f"Neighbor count comes from config.yaml: k = {base_cfg.retrieval.k}.")
 
-        run = st.button("Run pipeline", type="primary", width="stretch")
+        run = st.button(
+            "Run pipeline",
+            type="primary",
+            width="stretch",
+            disabled=bool(query_reasons) or query_image is None,
+        )
 
     try:
         cfg = _run_config(
             base_cfg,
-            use_projected_contact=use_projected_contact,
             semantic=semantic_w,
             mass=mass_w,
-            roughness=roughness_w,
+            roughness=(roughness_w if base_cfg.inputs.use_roughness else 0.0),
             contact=contact_w,
             sigma_mass=sigma_mass,
             sigma_contact=sigma_contact,
@@ -193,57 +204,78 @@ def render(context: AppContext) -> None:
         return
 
     if run:
+        truth = objects.get(object_id) if object_id in eligibility.benchmark_ids else None
         counterfactual = bool(
             uploaded is not None
             or (
                 uses_measurements
                 and (
-                    not np.isclose(mass, sample.mass_g)
-                    or roughness != sample.roughness_class
-                    or not np.isclose(contact, sample.projected_contact_fraction)
+                    mass != dataset_object.mass_g
+                    or (
+                        base_cfg.inputs.use_roughness
+                        and roughness != dataset_object.roughness_class
+                    )
+                    or (
+                        base_cfg.inputs.use_projected_contact
+                        and contact != dataset_object.projected_contact_fraction
+                    )
                 )
             )
         )
-        training = (
-            records
-            if counterfactual
-            else [record for record in records if record.object_id != object_id]
-        )
+        training = [
+            record
+            for record in records
+            if (counterfactual or record.object_id != object_id)
+            and (
+                experiment not in {"e3", "e4"}
+                or record.object_id in eligibility.reference_ids
+            )
+        ]
         prepared_text = (
             dataset_object.description.value.description
             if dataset_object.description is not None
             else None
         )
         semantic_description = (
-            None if uploaded is not None else prepared_text or sample.semantic_description
+            None if uploaded is not None else prepared_text
         )
         with output, st.spinner("Running the shared pipeline..."):
             pipe = Pipeline(cfg, experiment).fit(training)
             detailed = pipe.predict_detailed(
                 QueryInput(
                     object_id=f"custom_{object_id}" if counterfactual else object_id,
-                    mass_g=mass,
+                    mass_g=float(mass) if mass is not None else None,
                     roughness_class=roughness,
-                    projected_contact_fraction=contact,
+                    projected_contact_fraction=(
+                        float(contact) if contact is not None else None
+                    ),
                     image_bgr=query_image,
-                    image_path=sample.image_path if uploaded is None else "",
+                    image_path=dataset_object.image.path if uploaded is None else "",
                     semantic_description=semantic_description,
                 )
             )
             baseline = None
-            if counterfactual:
+            if counterfactual and object_id in eligibility.query_ids:
                 baseline_pipe = Pipeline(cfg, experiment).fit(
-                    [record for record in records if record.object_id != object_id]
+                    [
+                        record
+                        for record in records
+                        if record.object_id != object_id
+                        and (
+                            experiment not in {"e3", "e4"}
+                            or record.object_id in eligibility.reference_ids
+                        )
+                    ]
                 )
                 baseline = baseline_pipe.predict_detailed(
                     QueryInput(
                         object_id=object_id,
-                        mass_g=sample.mass_g,
-                        roughness_class=sample.roughness_class,
-                        projected_contact_fraction=sample.projected_contact_fraction,
+                        mass_g=dataset_object.mass_g,
+                        roughness_class=dataset_object.roughness_class,
+                        projected_contact_fraction=dataset_object.projected_contact_fraction,
                         image_bgr=source_image,
-                        image_path=sample.image_path,
-                        semantic_description=prepared_text or sample.semantic_description,
+                        image_path=dataset_object.image.path,
+                        semantic_description=prepared_text,
                     )
                 )
             run_path = save_pipeline_run(
@@ -258,17 +290,19 @@ def render(context: AppContext) -> None:
                     "roughness_class": roughness,
                     "projected_contact_fraction": contact,
                     "semantic_description": detailed.semantic_description,
-                    "original_image_path": sample.image_path if uploaded is None else None,
+                    "original_image_path": (
+                        dataset_object.image.path if uploaded is None else None
+                    ),
                 },
-                truth=truth_payload(truth),
-                counterfactual=counterfactual,
+                truth=truth_payload(truth) if truth is not None else None,
+                counterfactual=counterfactual or truth is None,
                 image_bgr=query_image,
                 baseline=baseline,
             )
             st.session_state["single_result"] = (
                 detailed,
                 truth,
-                counterfactual,
+                counterfactual or truth is None,
                 baseline,
                 cfg,
                 experiment,

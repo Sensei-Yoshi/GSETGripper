@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "20260727T153358361156Z_small_3d_print",
+  "created_at": "2026-07-27T15:33:58.361156+00:00",
+  "duration_seconds": 20.466,
+  "source": {
+    "label": "small_3d_print",
+    "dataset_id": "Matforcedata",
+    "object_id": "small_3d_print",
+    "path": "data/Matforcedata/small_3d_print.jpg",
+    "image_sha256": "8e380c00c44df7995646acad8bf15b4cfeb2d1e127f16a1b1f6455ab227d508e",
+    "original_size": [
+      5712,
+      4284
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      608
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 20260721
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.008072796111908816,
+    "bbox_fill_fraction": 0.8573170731707317
+  },
+  "crop": {
+    "bbox_xyxy": [
+      3304,
+      1740,
+      4034,
+      2318
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      730,
+      578
+    ],
+    "foreground_fraction": 0.46849515145285087
+  },
+  "scoring": {
+    "strategy": "manual_projected_gripper_contact",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 0,
+    "foreground_pixels": 218761,
+    "scoring_pixels": 44832,
+    "scoring_fraction_of_foreground": 0.20493598036213037,
+    "manual_mask_outside_automatic_foreground_fraction": 0.003100463954318344,
+    "rationale": "Opposing patches on the ribbed outer body; central hole and end silhouette excluded."
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.34386882185935974,
+    "median": 0.348388671875,
+    "std": 0.028870346024632454,
+    "min": 0.17919921875,
+    "max": 0.5224609375,
+    "p05": 0.2900390625,
+    "p25": 0.333251953125,
+    "p75": 0.3583984375,
+    "p95": 0.382568359375
+  },
+  "metallicity": {
+    "mean": 0.793479323387146,
+    "median": 0.79296875,
+    "std": 0.08978857100009918,
+    "min": 0.279541015625,
+    "max": 0.923828125,
+    "p05": 0.6455078125,
+    "p25": 0.73291015625,
+    "p75": 0.876953125,
+    "p95": 0.9111328125
+  },
+  "roughness_uncertainty": {
+    "mean": 0.01835082843899727,
+    "median": 0.01318359375,
+    "std": 0.016595641151070595,
+    "min": 0.0,
+    "max": 0.11181640625,
+    "p05": 0.0009765625,
+    "p25": 0.005126953125,
+    "p75": 0.028076171875,
+    "p95": 0.050537109375
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.0230674110352993,
+    "median": 0.01708984375,
+    "std": 0.020637400448322296,
+    "min": 0.0,
+    "max": 0.14453125,
+    "p05": 0.0009765625,
+    "p25": 0.005859375,
+    "p75": 0.03564453125,
+    "p95": 0.06298828125
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

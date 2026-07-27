@@ -4,7 +4,7 @@ E3 ranks by semantic cosine only; E4 uses the configured hybrid score. Both retu
 the paired gripper labels for every neighbor.
 Exact search is appropriate for this dataset (<1k objects), so no vector database
 is required. The hybrid score is only a neighbor-ranking heuristic: it never
-evaluates the E5 holding-force equations and never produces a force prediction.
+evaluates no holding-force equations and never produces a force prediction.
 """
 
 from __future__ import annotations
@@ -106,7 +106,7 @@ def normalized_weights(cfg: Config) -> dict[str, float]:
     values = {
         "semantic": raw.semantic,
         "mass": raw.mass,
-        "roughness": raw.roughness,
+        "roughness": raw.roughness if cfg.inputs.use_roughness else 0.0,
         "contact": raw.contact if cfg.inputs.use_projected_contact else 0.0,
     }
     total = sum(values.values())
@@ -157,6 +157,7 @@ class RetrievedObjectExperience(BaseModel):
         self,
         *,
         mode: RetrievalMode = RetrievalMode.HYBRID,
+        include_roughness: bool = True,
         include_contact: bool = True,
     ) -> dict:
         if mode is RetrievalMode.SEMANTIC_ONLY:
@@ -172,9 +173,11 @@ class RetrievedObjectExperience(BaseModel):
                 "silicone_feasible": self.silicone_feasible,
             }
         excluded = {"image_path"}
+        if not include_roughness:
+            excluded.add("roughness_class")
         if not include_contact:
             excluded.add("projected_contact_fraction")
-        return self.model_dump(mode="json", exclude=excluded)
+        return self.model_dump(mode="json", exclude=excluded, exclude_none=True)
 
 
 # --------------------------------------------------------------------------- #
@@ -222,13 +225,32 @@ class ExperienceIndex:
                 total=semantic,
             )
         w = normalized_weights(self.cfg)
+        if query.mass_g is None or rec.mass_g is None:
+            raise ValueError("E4 hybrid retrieval requires query and reference mass")
         mass = s_mass(query.mass_g, rec.mass_g, self.cfg.retrieval.sigma_mass)
-        roughness = s_roughness(query.roughness_class, rec.roughness_class, self.cfg)
-        contact = s_contact(
-            query.projected_contact_fraction,
-            rec.projected_contact_fraction,
-            self.cfg.retrieval.sigma_contact,
+        roughness = None
+        if self.cfg.inputs.use_roughness:
+            if query.roughness_class is None or rec.roughness_class is None:
+                raise ValueError("E4 hybrid retrieval requires enabled roughness values")
+            roughness = s_roughness(
+                query.roughness_class, rec.roughness_class, self.cfg
+            )
+        contact = None
+        if self.cfg.inputs.use_projected_contact:
+            if (
+                query.projected_contact_fraction is None
+                or rec.projected_contact_fraction is None
+            ):
+                raise ValueError("E4 hybrid retrieval requires enabled contact values")
+            contact = s_contact(
+                query.projected_contact_fraction,
+                rec.projected_contact_fraction,
+                self.cfg.retrieval.sigma_contact,
+            )
+        roughness_contribution = (
+            w["roughness"] * roughness if roughness is not None else None
         )
+        contact_contribution = w["contact"] * contact if contact is not None else None
         return SimilarityBreakdown(
             mode=mode,
             semantic=semantic,
@@ -237,13 +259,13 @@ class ExperienceIndex:
             contact=contact,
             semantic_contribution=w["semantic"] * semantic,
             mass_contribution=w["mass"] * mass,
-            roughness_contribution=w["roughness"] * roughness,
-            contact_contribution=w["contact"] * contact,
+            roughness_contribution=roughness_contribution,
+            contact_contribution=contact_contribution,
             total=(
                 w["semantic"] * semantic
                 + w["mass"] * mass
-                + w["roughness"] * roughness
-                + w["contact"] * contact
+                + (roughness_contribution or 0.0)
+                + (contact_contribution or 0.0)
             ),
         )
 
@@ -280,11 +302,14 @@ class ExperienceIndex:
                     image_path=rec.image_path if mode is RetrievalMode.HYBRID else "",
                     mass_g=rec.mass_g if mode is RetrievalMode.HYBRID else None,
                     roughness_class=(
-                        rec.roughness_class if mode is RetrievalMode.HYBRID else None
+                        rec.roughness_class
+                        if mode is RetrievalMode.HYBRID and self.cfg.inputs.use_roughness
+                        else None
                     ),
                     projected_contact_fraction=(
                         rec.projected_contact_fraction
                         if mode is RetrievalMode.HYBRID
+                        and self.cfg.inputs.use_projected_contact
                         else None
                     ),
                     semantic_description=rec.semantic_description,

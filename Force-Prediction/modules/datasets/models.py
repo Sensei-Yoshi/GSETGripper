@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from ..config import Config
 from ..contracts import Gripper
@@ -75,8 +75,45 @@ class ContactFractionArtifact(BaseModel):
 class GripperOutcome(BaseModel):
     gripper: Gripper
     min_force_n: float | None = None
-    feasible: bool
+    feasible: bool | None = None
     failed_at_limit_n: float | None = None
+
+    @model_validator(mode="after")
+    def _validate_partial_outcome(self) -> GripperOutcome:
+        if self.feasible is not True and self.min_force_n is not None:
+            raise ValueError("only a feasible outcome may have a minimum force")
+        return self
+
+    @property
+    def complete(self) -> bool:
+        return self.feasible is False or (
+            self.feasible is True and self.min_force_n is not None
+        )
+
+
+class DatasetObjectMeasurements(BaseModel):
+    """Nullable, incrementally editable object measurements and outcome labels."""
+
+    schema_version: int = 1
+    object_id: str
+    mass_g: float | None = Field(default=None, gt=0)
+    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
+    gecko_feasible: bool | None = None
+    gecko_force_n: float | None = Field(default=None, gt=0)
+    silicone_feasible: bool | None = None
+    silicone_force_n: float | None = Field(default=None, gt=0)
+    updated_at: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
+
+    @model_validator(mode="after")
+    def _validate_outcomes(self) -> DatasetObjectMeasurements:
+        for feasible, force, name in (
+            (self.gecko_feasible, self.gecko_force_n, "gecko"),
+            (self.silicone_feasible, self.silicone_force_n, "silicone"),
+        ):
+            if feasible is not True and force is not None:
+                raise ValueError(f"only a feasible {name} outcome may have a minimum force")
+        return self
 
 
 class DatasetObject(BaseModel):

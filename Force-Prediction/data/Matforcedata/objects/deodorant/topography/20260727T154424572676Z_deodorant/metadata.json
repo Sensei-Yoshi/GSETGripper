@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "run_id": "20260727T154424572676Z_deodorant",
+  "created_at": "2026-07-27T15:44:24.572676+00:00",
+  "duration_seconds": 9.218,
+  "source": {
+    "dataset_id": "Matforcedata",
+    "object_id": "deodorant",
+    "label": "deodorant",
+    "appearance_run_id": "20260727T154117340208Z_deodorant",
+    "appearance_metadata": "/Users/premshah/Desktop/Robotics/GSET/GSETGripper/Force-Prediction/data/Matforcedata/objects/deodorant/roughness/20260727T154117340208Z_deodorant/metadata.json"
+  },
+  "model": {
+    "id": "prs-eth/marigold-normals-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      465
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 20260721
+  },
+  "method": {
+    "name": "local_normal_angular_residual",
+    "base_surface_sigma_ratio": 0.04,
+    "base_surface_sigma_pixels": 11.56,
+    "display_max_angle_deg": 20.0,
+    "scoring_pixels": 25503,
+    "interpretation": "Uncalibrated geometric texture proxy from monocular normals; larger values indicate stronger local bumps, ridges, or grooves."
+  },
+  "topographic_roughness": {
+    "score_0_1": 0.28456679582595823,
+    "angle_degrees": {
+      "mean": 6.818660259246826,
+      "median": 2.0017383098602295,
+      "std": 12.681157112121582,
+      "min": 0.0,
+      "max": 70.2210922241211,
+      "p25": 1.0649595260620117,
+      "p75": 5.691335916519165,
+      "p90": 17.24965476989746,
+      "p95": 37.269959640502776
+    }
+  },
+  "normal_uncertainty": {
+    "mean": 0.028371961787343025,
+    "median": 0.020848708227276802,
+    "std": 0.029692692682147026,
+    "min": 0.0,
+    "max": 0.303157240152359,
+    "p25": 0.01460500992834568,
+    "p75": 0.029136136174201965,
+    "p90": 0.0509056381881237,
+    "p95": 0.07920670881867405
+  },
+  "quality": {
+    "status": "warning",
+    "warnings": [
+      "display_angle_clipping"
+    ]
+  },
+  "artifacts": {
+    "input_crop": "input_crop.png",
+    "foreground_mask": "foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "normal_map": "normal_map.png",
+    "base_normal_map": "base_normal_map.png",
+    "bump_angle": "bump_angle.png",
+    "normal_uncertainty": "normal_uncertainty.png"
+  }
+}

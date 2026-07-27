@@ -10,8 +10,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from .config import EXPERIMENT_DEFINITION_VERSION, Config, prompt_bundle_sha256
+from .datasets import get_dataset
+from .experiments import experiment_eligibility
 from .expforce import (
-    load_rows,
     prompt_provenance,
     run_benchmark,
     save_benchmark,
@@ -33,6 +34,7 @@ def _write_json_atomic(path: Path, payload: dict) -> None:
 
 
 def _suite_snapshot(cfg: Config) -> dict:
+    dataset = get_dataset(cfg, cfg.dataset_id)
     definitions = {
         name: cfg.experiment(name).model_dump(mode="json") for name in PRIMARY_EXPERIMENTS
     }
@@ -51,7 +53,18 @@ def _suite_snapshot(cfg: Config) -> dict:
         "retrieval": cfg.retrieval.model_dump(mode="json"),
         "inputs": cfg.inputs.model_dump(mode="json"),
         "evaluation_protocol": "leave-one-object-out",
-        "object_count": len(load_rows(cfg)),
+        "object_count": len(dataset.objects),
+        "eligibility": {
+            name: {
+                "eligible_query_ids": list(report.query_ids),
+                "eligible_benchmark_ids": list(report.benchmark_ids),
+                "reference_ids": list(report.reference_ids),
+                "skipped_queries": report.skipped_queries,
+                "skipped_benchmarks": report.skipped_benchmarks,
+            }
+            for name in PRIMARY_EXPERIMENTS
+            for report in [experiment_eligibility(dataset, cfg, name)]
+        },
     }
 
 
@@ -65,7 +78,7 @@ def create_suite(cfg: Config) -> dict:
     suite_id = created_at.strftime("%Y%m%dT%H%M%S%fZ_primary_e1_e4")
     snapshot = _suite_snapshot(cfg)
     manifest = {
-        "schema_version": 6,
+        "schema_version": 7,
         "suite_id": suite_id,
         "created_at": created_at.isoformat(),
         "updated_at": created_at.isoformat(),
@@ -114,7 +127,7 @@ def run_suite(
 ) -> dict:
     """Run or resume a suite, checkpointing after every completed experiment."""
     manifest = manifest or create_suite(cfg)
-    if manifest.get("schema_version") != 6:
+    if manifest.get("schema_version") != 7:
         raise ValueError(
             "Legacy suites are read-only because their execution backend is not compatible "
             "with the Gemini-only suite contract; start a new suite instead"
@@ -130,12 +143,23 @@ def run_suite(
     manifest["updated_at"] = datetime.now(UTC).isoformat()
     _write_json_atomic(path, manifest)
 
-    total_objects = int(manifest["snapshot"]["object_count"])
     try:
         for experiment in PRIMARY_EXPERIMENTS:
             state = manifest["runs"][experiment]
             saved = state.get("json_path")
             if state.get("status") == "completed" and saved and (cfg.root / saved).is_file():
+                continue
+            eligible_ids = manifest["snapshot"]["eligibility"][experiment][
+                "eligible_benchmark_ids"
+            ]
+            if not eligible_ids:
+                state.update(
+                    status="skipped",
+                    reason="no eligible benchmark objects",
+                    object_count=0,
+                    completed_at=datetime.now(UTC).isoformat(),
+                )
+                _write_json_atomic(path, manifest)
                 continue
             state["status"] = "running"
             _write_json_atomic(path, manifest)
@@ -156,7 +180,7 @@ def run_suite(
                 json_path=str(json_path.relative_to(cfg.root)),
                 csv_path=str(csv_path.relative_to(cfg.root)),
                 completed_at=datetime.now(UTC).isoformat(),
-                object_count=total_objects,
+                object_count=len(eligible_ids),
             )
             manifest["updated_at"] = datetime.now(UTC).isoformat()
             _write_json_atomic(path, manifest)

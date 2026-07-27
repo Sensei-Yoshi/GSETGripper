@@ -59,6 +59,7 @@ class CollectionConfig(BaseModel):
 
 
 class InputsConfig(BaseModel):
+    use_roughness: bool = True
     use_projected_contact: bool = True
 
 
@@ -129,15 +130,6 @@ class ModelsConfig(BaseModel):
     cache: bool
 
 
-class LearningConfig(BaseModel):
-    residual_model: Literal["ridge", "gbt", "gp"]
-    embedding_pca_dims: int = Field(ge=0)
-    ridge_alpha: float = Field(gt=0)
-    gbt_n_estimators: int = Field(gt=0)
-    gbt_max_depth: int = Field(gt=0)
-    gbt_learning_rate: float = Field(gt=0)
-
-
 class EvaluationConfig(BaseModel):
     n_folds: int = Field(ge=2)
     within_thresholds_n: list[float]
@@ -176,12 +168,10 @@ class ExperimentMethod(StrEnum):
     JOINT_VLM_MEASURED = "joint_vlm_measured"
     SEMANTIC_RETRIEVAL_VLM = "semantic_retrieval_vlm"
     PAIRED_RETRIEVAL_VLM = "paired_retrieval_vlm"
-    CALIBRATED_PHYSICS = "calibrated_physics"
-    PHYSICS_SEMANTIC_RESIDUAL = "physics_semantic_residual"
 
 
-EXPERIMENT_IDS = ("e1", "e2", "e3", "e4", "e5", "e6")
-EXPERIMENT_DEFINITION_VERSION = 5
+EXPERIMENT_IDS = ("e1", "e2", "e3", "e4")
+EXPERIMENT_DEFINITION_VERSION = 6
 
 
 class ExperimentConfig(BaseModel):
@@ -200,7 +190,6 @@ class Config(BaseModel):
     retrieval: RetrievalConfig
     physics: PhysicsConfig
     models: ModelsConfig
-    learning: LearningConfig
     evaluation: EvaluationConfig
     prompts: Prompts
     embodiments: dict[str, EmbodimentContext]

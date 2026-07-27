@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "foam_roller",
+  "object_name": "foam roller",
+  "image_name": "foam_roller.jpg",
+  "image_path": "data/MatForceFinal/foam_roller.jpg",
+  "image_sha256": "8cfc61085b42bc707b7f94d6656338dddaee0ba5e18424d56f12c02f338287da",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Black foamed polymer cylindrical object with a porous, textured exterior surface and an inward curved waist. The intended contact region is dry, softly compliant, and features smooth continuous curvature along its lateral height.",
+    "contact_region": "The lateral curved waist of the cylindrical foam object.",
+    "contact_material": "Foamed polymer substrate",
+    "visible_surface_material": "Foamed polymer",
+    "visible_surface_condition": "Clean, dry, and textured porous surface",
+    "local_geometry": "Concave curved waist with continuous circumferential symmetry and a central axial through-hole",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible lateral surface characteristics."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "8bdf12bc18e9c707b4bc098653575b8cb123767f320fbb623f2933436c43089f",
+  "embedding_cache_key": "432cad27debc1c260c82f08e99280e2cdc966b1c0de2b263422ffcce11051b45",
+  "embedding_sha256": "1c2959e57f87de071a314bc0391e9384ddb853c97f2b5d1d9d3b8fae0e86847d",
+  "updated_at": "2026-07-27T14:30:03.034320+00:00"
+}

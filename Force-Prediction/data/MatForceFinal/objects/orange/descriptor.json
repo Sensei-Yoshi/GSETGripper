@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "orange",
+  "object_name": "orange",
+  "image_name": "orange.jpg",
+  "image_path": "data/MatForceFinal/orange.jpg",
+  "image_sha256": "e5ead1aebd4881827ace29423575209f8859c3278ee51421b3d9eff73e22865e",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
+    "contact_region": "Lateral opposing flanks of the spherical fruit",
+    "contact_material": "Natural citrus peel",
+    "visible_surface_material": "Natural citrus peel",
+    "visible_surface_condition": "Dry, finely pitted, and clean",
+    "local_geometry": "Convex, approximately spherical curvature with a micro-textured rind",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible surface properties and local geometry from this viewing angle."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "5b5f93ba274e2388e6d849c59b20cc98abf9dc7b06e90a3f32b4243993880a9f",
+  "embedding_cache_key": "65cb433ba3d2c2d7180a03685984c7bf0664fd66a9b9ddb74f66707e932079d5",
+  "embedding_sha256": "e7f3433d488baab2a50c3bd26e0c24f9feeaeff1975979811d4382ab5b2daa9e",
+  "updated_at": "2026-07-27T14:30:04.279316+00:00"
+}

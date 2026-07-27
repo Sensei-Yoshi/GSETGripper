@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "toilet_paper",
+  "object_name": "toilet paper",
+  "image_name": "toilet_paper.jpg",
+  "image_path": "data/MatForceFinal/toilet_paper.jpg",
+  "image_sha256": "8c9833e78f3dd75a0e274f1072908b13226eabd480e34ffca53cda1e78884a20",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical paper roll with a soft, textured, dry outer surface and continuous curved lateral walls. The intended contact region has a compliant, fibrous texture with slight structural yield.",
+    "contact_region": "Lateral curved outer surface of the toilet paper roll",
+    "contact_material": "Paper substrate",
+    "visible_surface_material": "Paper",
+    "visible_surface_condition": "Clean, dry, and textured",
+    "local_geometry": "Cylindrical curvature with soft, compressible fibrous layers and minor embossing patterns",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "32912f9c7aebd29530aa8608170d7f034c7a9226498bb5a1eb52e7b3eee99e55",
+  "embedding_cache_key": "bff3c82f600a74428f54489fdad4d32533c83454dcf1f6e0df6ffba13362688a",
+  "embedding_sha256": "e5bdf4df20c23328c5c2e43e2ac63e764d79715799a000d90fb6c16535a2d628",
+  "updated_at": "2026-07-27T14:30:06.258921+00:00"
+}

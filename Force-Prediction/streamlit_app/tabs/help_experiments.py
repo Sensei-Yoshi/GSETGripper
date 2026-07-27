@@ -24,10 +24,10 @@ def render(context: AppContext) -> None:
 2. Open **Data Preparation** and select only the stages you need. Descriptions and semantic
    embeddings use Gemini and reuse exact cached requests.
 3. Open **Single Run**, choose one of the {object_count} active objects, or upload an image.
-   This tab is available only when the dataset has measurements and paired force labels.
-4. For conditions that use sensors, set mass, roughness, and projected contact fraction.
-   E1 and E3 intentionally disable these controls. Changing an enabled value or image
-   creates an unscored counterfactual that uses the full experience pool.
+   E1 can run from an image alone; other conditions report exactly which inputs or references
+   are still missing.
+4. For conditions that use measurements, record mass and optionally enable roughness and
+   projected contact beside the Dataset selector. E1 and E3 ignore all three.
 5. Choose an experiment. Adjust retrieval weights and hybrid similarity constants for E4;
    E3 is fixed to semantic cosine similarity.
 6. Click **Run pipeline**. Read the selected gripper and force first, then compare both
@@ -44,8 +44,6 @@ def render(context: AppContext) -> None:
         "e2": "Image + sensors + joint VLM",
         "e3": "Image + semantic-only paired retrieval + joint VLM",
         "e4": "Sensors + paired retrieval + joint VLM",
-        "e5": "Sensors + calibrated physics",
-        "e6": "Sensors + calibrated physics + semantic residual",
     }
     experiments = pd.DataFrame(
         [
@@ -60,8 +58,7 @@ def render(context: AppContext) -> None:
     st.dataframe(experiments, hide_index=True, width="stretch")
     st.caption(
         "Primary comparisons: E1 vs E2 tests sensors without experience; E1 vs E3 tests "
-        "semantic experience without sensors; E4 tests their combined system. E5 vs E6 "
-        "isolates the learned residual."
+        "semantic experience without sensors; E4 tests their combined system."
     )
 
     st.subheader("Prediction prompt routing")
@@ -76,25 +73,12 @@ def render(context: AppContext) -> None:
         assert prompt_key is not None
         with st.expander(f"{experiment.upper()} instruction — prompts.experiments.{prompt_key}"):
             st.code(base_cfg.prompts.experiments[prompt_key], language=None)
-    st.info("E5 and E6 do not call a VLM for force prediction, so they have no prompt.")
-
-    st.subheader("How E6 learns the physics residual")
-    st.markdown(
-        """
-E6 calibrates the same physics model as E5 on each training fold, then learns the target
-`measured force − physics force` separately for gecko and silicone. The default
-gradient-boosted trees use log mass, roughness, projected contact fraction, physics
-force, and PCA-reduced semantic embedding features. At inference the continuous output
-is `physics force + predicted residual`, clamped only to the 0–8 N hardware range.
-E6 retrieves no neighbors and makes no VLM force-prediction call.
-        """
-    )
 
     st.header("What Gemini-backed E3/E4 means")
     st.markdown(
         """
-For a known dataset object, the pipeline excludes that object and uses the other objects.
-For a custom query, it uses the full active dataset. It reuses one cached text embedding per reference object for
+For a known dataset object, the pipeline excludes that object and uses eligible outcomes from the other objects.
+For a custom query, it uses the eligible outcomes in the active dataset. It reuses one cached text embedding per reference object for
 both grippers and embeds the query description. E3 ranks by semantic cosine only and hides
 all sensor values. E4 ranks with the displayed semantic + sensor hybrid similarity. Each
 retrieves five objects once, with both Gecko and silicone outcomes attached to each object.

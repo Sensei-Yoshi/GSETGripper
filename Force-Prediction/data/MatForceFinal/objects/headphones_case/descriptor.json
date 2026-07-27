@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "headphones_case",
+  "object_name": "headphones case",
+  "image_name": "headphones_case.jpg",
+  "image_path": "data/MatForceFinal/headphones_case.jpg",
+  "image_sha256": "24cd9325e7992f0db96caca781df77f4269f9d0ef27a4d25c29d431b5356d65c",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Fabric-covered semi-rigid protective case with a soft, dry, textured woven exterior and gently curved lateral surfaces. The intended contact region has smooth rounded edges, continuous curvature, and a zipper seam running along the upper perimeter.",
+    "contact_region": "Lateral side walls of the case",
+    "contact_material": "Woven fabric exterior coating",
+    "visible_surface_material": "Woven fabric",
+    "visible_surface_condition": "Clean, dry, and woven textured",
+    "local_geometry": "Gently curved, broad continuous area with smooth rounded edges and a visible zipper seam running near the top boundary",
+    "contact_patch_visibility": "Clearly visible on both lateral sides",
+    "uncertainty": "The exact internal rigidity and backing material beneath the fabric layer are not visible from the exterior."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "99c279672e9eb08c2b1159473c0d37a5dd7c315b559fa8fb3522268d95accf12",
+  "embedding_cache_key": "3420b337a780446cb3cc08baa2387b921a4c6f015580a3918c1d8a76e6f70656",
+  "embedding_sha256": "5d021191344e3955d34d98fc100433ae7bc0489fa2618fa2da6ecc8836da9617",
+  "updated_at": "2026-07-27T14:30:03.304620+00:00"
+}

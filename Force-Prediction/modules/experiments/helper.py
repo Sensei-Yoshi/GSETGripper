@@ -42,9 +42,9 @@ class QueryInput:
     """Everything an experiment may need about one query object."""
 
     object_id: str
-    mass_g: float
-    roughness_class: int
-    projected_contact_fraction: float
+    mass_g: float | None = None
+    roughness_class: int | None = None
+    projected_contact_fraction: float | None = None
     image_bgr: np.ndarray | None = None
     image_path: str = ""
     semantic_description: str | None = None
@@ -100,6 +100,22 @@ class ExperimentStrategy(ABC):
             semantic_description=description or "",
         )
 
+    def _validate_measured_query(self, query_input: QueryInput) -> None:
+        missing: list[str] = []
+        if query_input.mass_g is None:
+            missing.append("mass")
+        if self.cfg.inputs.use_roughness and query_input.roughness_class is None:
+            missing.append("roughness class")
+        if (
+            self.cfg.inputs.use_projected_contact
+            and query_input.projected_contact_fraction is None
+        ):
+            missing.append("projected contact fraction")
+        if missing:
+            raise ValueError(
+                f"{self.spec.experiment_id.upper()} requires " + ", ".join(missing)
+            )
+
     def _instruction(self) -> str:
         prompt = self.definition.prompt
         if prompt is None:
@@ -144,6 +160,8 @@ class JointVLMExperiment(ExperimentStrategy):
         del train_records
 
     def predict_detailed(self, query_input: QueryInput) -> PipelineRunResult:
+        if self.include_measured:
+            self._validate_measured_query(query_input)
         query = self._query(query_input, needs_description=False)
         response = vlm_predict_joint(
             self.cfg,
@@ -162,7 +180,11 @@ class JointVLMExperiment(ExperimentStrategy):
         )
         inputs: tuple[str, ...] = ("object_image", "gripper_context")
         if self.include_measured:
-            inputs += ("mass", "roughness", "projected_contact")
+            inputs += ("mass",)
+            if self.cfg.inputs.use_roughness:
+                inputs += ("roughness",)
+            if self.cfg.inputs.use_projected_contact:
+                inputs += ("projected_contact",)
         return self._result(
             selection=selection,
             description=query.semantic_description,
@@ -188,6 +210,8 @@ class RetrievalVLMExperiment(ExperimentStrategy):
     def predict_detailed(self, query_input: QueryInput) -> PipelineRunResult:
         if self.index is None:
             raise RuntimeError(f"fit must be called before {self.spec.experiment_id.upper()} prediction")
+        if self.include_measured:
+            self._validate_measured_query(query_input)
         query = self._query(query_input, needs_description=True)
         retrieved = self.index.retrieve_objects(
             query,
@@ -218,7 +242,11 @@ class RetrievalVLMExperiment(ExperimentStrategy):
             "semantic_experiences",
         )
         if self.include_measured:
-            inputs += ("mass", "roughness", "projected_contact")
+            inputs += ("mass",)
+            if self.cfg.inputs.use_roughness:
+                inputs += ("roughness",)
+            if self.cfg.inputs.use_projected_contact:
+                inputs += ("projected_contact",)
         return self._result(
             selection=selection,
             description=query.semantic_description,
