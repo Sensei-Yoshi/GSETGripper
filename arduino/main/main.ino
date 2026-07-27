@@ -116,35 +116,28 @@ const float GRIP_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2
 // same 1.8 deg motor, same 1/8 microstepping, coupled 1:1 with no reduction:
 //   (200 steps/rev * 8 microsteps) / 8 mm per rev = 200 steps/mm
 // Only ONE jaw moves (the opposing jaw is rigidly fixed to the frame), so jaw
-// opening changes 1:1 with nut travel -- hence no factor of 2 below or in
-// gripStepsForWidth().
+// opening changes 1:1 with nut travel.
 //
 // Measured 2026-07-24: the grip screw has 4.00 in = 101.6 mm of usable travel,
 // and running it all the way from the open end closes the jaws to a zero gap.
-// The jaw gap therefore equals the travel REMAINING, so a fully-open gap of
-// 101.6 mm and a closing travel of 101.6 mm are the same measurement:
-//   gap = GRIP_MAX_OPENING_MM - (steps / GRIP_STEPS_PER_MM)
 //
 // Step 0 is the fully-open end, which -- like Z -- is assumed, not homed. The
 // jaws must be physically fully open whenever the board powers on or resets,
-// and opening the serial port resets the board. "GRIP OPEN" returns to that
-// flashed-at position.
-const long GRIP_OPEN_STEPS = 0;
+// and opening the serial port resets the board. There is no serial command to
+// reopen them: after a grasp, back the jaws off by hand before the next boot.
 const float GRIP_MAX_OPENING_MM = 101.6; // 4.00 in fully-open jaw gap
 const float GRIP_STEPS_PER_MM = 200.0;
 // FLIP THIS if the jaws open when they should close. +1 or -1, nothing else.
-// Test with a small move (GRIP CLOSE 90) before trusting a full-travel one.
+// Test with a low FORCE target before trusting a full-travel seek.
 // The equivalent knob is Z_DOWN_SIGN for the Z axis and the setPinsInverted()
 // call in setup() for SELECT.
 const int GRIP_CLOSE_SIGN = 1;
-const long GRIP_MIN_STEPS = 0;
 // Fully closed: the whole 101.6 mm of travel consumed.
 const long GRIP_MAX_STEPS = (long)(GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM);  // 20320
 
-// Grip-axis lifecycle. GRIP_POSITION is the classic position move (what the
-// old gripMovePending flag tracked). GRIP_SEEKING and GRIP_LIFTING are the
-// force-controlled grasp, serviced in loop().
-enum GripPhase { GRIP_IDLE, GRIP_POSITION, GRIP_SEEKING, GRIP_LIFTING };
+// Grip-axis lifecycle, serviced in loop(): FORCE starts a seek (creep closed
+// until the load cell reads the target), which rolls into the 50 mm lift.
+enum GripPhase { GRIP_IDLE, GRIP_SEEKING, GRIP_LIFTING };
 GripPhase gripPhase = GRIP_IDLE;
 
 // ---- HX711 LOAD CELLS (HX711_ADC) ----
@@ -223,24 +216,17 @@ const float CAL_FACTOR[LOADCELL_COUNT] = {655.1, 655.1};
 // false = restore whatever TARE/CAL last saved to EEPROM
 const bool USE_HARDCODED_CAL = true;
 
-// ---- FORCE target (one-shot) ----
-// Armed by "FORCE <n>", consumed by the next "GRIP CLOSE", cleared by
-// "FORCE 0" and "GRIP OPEN". While unarmed, GRIP CLOSE is pure position mode.
-bool forceArmed = false;
-float forceTargetN = 0.0;
-
-// Which cell the next force grasp reads: follows the last SELECT command.
+// Which cell a force grasp reads: follows the last SELECT command.
 // Boot default GEKKO because the turret's assumed boot position is step 0.
 int selectedCellIndex = CELL_FOR_GEKKO;
 
-// Creep speed while seeking force contact -- 2 mm/s of jaw travel. Restored
-// to GRIP_MAX_SPEED_STEPS_PER_SEC when the grip axis returns to idle.
+// Creep speed while seeking force contact -- 2 mm/s of jaw travel.
 const float FORCE_SEEK_SPEED_STEPS_PER_SEC = 400.0;
 
-// Rise after a successful force grasp, before DONE GRIP is sent.
+// Rise after a successful force grasp, before DONE FORCE is sent.
 const float LIFT_MM = 50.0;
 
-// Consumed copies for the seek in progress (forceArmed is one-shot).
+// The seek in progress, captured when FORCE starts it.
 int activeCellIndex = 0;
 float activeTargetN = 0.0;
 
@@ -367,10 +353,7 @@ void loop() {
     selectMovePending = false;
     Serial.println("DONE SELECT");
   }
-  if (gripPhase == GRIP_POSITION && stepperGrip.distanceToGo() == 0) {
-    gripPhase = GRIP_IDLE;
-    Serial.println("DONE GRIP");
-  } else if (gripPhase == GRIP_SEEKING) {
+  if (gripPhase == GRIP_SEEKING) {
     if (cellRT[activeCellIndex].haveFirst &&
         cellForceN(activeCellIndex) >= activeTargetN) {
       // Contact at target force: stop the jaws (decelerate; the lead screw
@@ -381,16 +364,14 @@ void loop() {
     } else if (stepperGrip.distanceToGo() == 0) {
       // Fully closed without reaching the target: missed or slipped object.
       // A physical outcome, not a protocol violation -- WARN, no lift, DONE.
-      stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
       Serial.println("WARN force not reached");
       gripPhase = GRIP_IDLE;
-      Serial.println("DONE GRIP");
+      Serial.println("DONE FORCE");
     }
   } else if (gripPhase == GRIP_LIFTING) {
     if (stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
-      stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
       gripPhase = GRIP_IDLE;
-      Serial.println("DONE GRIP");
+      Serial.println("DONE FORCE");
     }
   }
 }
@@ -421,59 +402,15 @@ void processCommand(const String& message) {
     } else {
       sendErr("unknown select position");
     }
-  } else if (message.startsWith("GRIP ")) {
-    String arg = message.substring(5);
-    arg.trim();
-    if (arg == "OPEN") {
-      // Clears any armed target and aborts an in-progress seek or lift. The
-      // lift's Z motion stops where the abort catches it (it set no
-      // zMovePending, so stopping it prints nothing).
-      forceArmed = false;
-      if (gripPhase == GRIP_LIFTING) {
-        stepperZA.stop();
-        stepperZB.stop();
-      }
-      stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
-      moveGripToSteps(GRIP_OPEN_STEPS);
-    } else if (arg.startsWith("CLOSE")) {
-      String widthArg = arg.substring(5);
-      widthArg.trim();
-      float widthMM;
-      if (!parseFloatStrict(widthArg, widthMM)) {
-        sendErr("bad value");
-        return;
-      }
-      // A negative width can only come from a bad measurement. Refuse rather
-      // than let it drive the jaws past closed onto whatever is between them.
-      if (widthMM < 0.0) {
-        sendErr("negative width");
-        return;
-      }
-      if (forceArmed) {
-        // Force mode: widthMM was validated above but is not used for motion.
-        startForceSeek();
-      } else {
-        moveGripToSteps(gripStepsForWidth(widthMM));
-      }
-    } else {
-      sendErr("unknown grip command");
-    }
-  }
-  else if (message.startsWith("FORCE ")) {
+  } else if (message.startsWith("FORCE ")) {
     String arg = message.substring(6);
     arg.trim();
     float newtons;
-    if (!parseFloatStrict(arg, newtons) || newtons < 0.0) {
+    if (!parseFloatStrict(arg, newtons) || newtons <= 0.0) {
       sendErr("bad value");
       return;
     }
-    if (newtons == 0.0) {
-      forceArmed = false;  // FORCE 0 returns GRIP CLOSE to position mode
-    } else {
-      forceTargetN = newtons;
-      forceArmed = true;
-    }
-    Serial.println("DONE FORCE");
+    startForceSeek(newtons);
   }
   else if (message == "F?") {
     printForceLine();
@@ -562,28 +499,19 @@ void moveSelectTo(long targetSteps) {
   selectMovePending = true;
 }
 
-// targetSteps counts travel away from the fully-open end, so it is always >= 0.
-// GRIP_CLOSE_SIGN decides which way the motor turns to consume that travel.
-void moveGripToSteps(long targetSteps) {
-  long clamped = clampSteps(targetSteps, GRIP_MIN_STEPS, GRIP_MAX_STEPS, "GRIP");
-  stepperGrip.moveTo(GRIP_CLOSE_SIGN * clamped);
-  gripPhase = GRIP_POSITION;
-}
-
 // Begin a force-seeking close: creep toward fully closed and let loop() stop
-// the jaws when the selected gripper's cell reads the target. Refuses (ERR,
-// no DONE) when that cell cannot be read -- the grasp cannot proceed, and the
-// Python sender treats ERR as fatal by design.
-void startForceSeek() {
+// the jaws when the selected gripper's cell reads the target, then lift.
+// Refuses (ERR, no DONE) when that cell cannot be read -- the grasp cannot
+// proceed, and the Python sender treats ERR as fatal by design.
+void startForceSeek(float targetN) {
   int cell = selectedCellIndex;
   if (!LOADCELL_ENABLED[cell] || !cellHealthy[cell]) {
     sendErr(cell == CELL_FOR_GEKKO ? "gekko load cell disabled"
                                    : "silicone load cell disabled");
     return;
   }
-  forceArmed = false;  // one-shot: consumed by this close
   activeCellIndex = cell;
-  activeTargetN = forceTargetN;
+  activeTargetN = targetN;
   stepperGrip.setMaxSpeed(FORCE_SEEK_SPEED_STEPS_PER_SEC);
   stepperGrip.moveTo(GRIP_CLOSE_SIGN * GRIP_MAX_STEPS);
   gripPhase = GRIP_SEEKING;
@@ -591,7 +519,7 @@ void startForceSeek() {
 
 // Raise Z by LIFT_MM from wherever it is, clamped at top of travel. Owned by
 // the grip operation: deliberately does NOT set zMovePending, so it never
-// prints DONE Z -- the sender is waiting for DONE GRIP.
+// prints DONE Z -- the sender is waiting for DONE FORCE.
 void startLift() {
   long liftSteps = (long)(LIFT_MM * Z_STEPS_PER_MM);
   // Signed motor position -> non-negative descent steps from top-of-travel.
@@ -602,18 +530,6 @@ void startLift() {
   }
   stepperZA.moveTo(Z_DOWN_SIGN * targetDescent);
   stepperZB.moveTo(Z_DOWN_SIGN * targetDescent);
-}
-
-// Converts an object width into a jaw position: close by however much travel
-// is left over once the object's width is accounted for, leaving a gap equal
-// to the width. An object wider than the jaws open (travel would go negative)
-// leaves them fully open rather than reaching for an impossible position.
-long gripStepsForWidth(float widthMM) {
-  float travelMM = GRIP_MAX_OPENING_MM - widthMM;
-  if (travelMM < 0) {
-    travelMM = 0;
-  }
-  return GRIP_OPEN_STEPS + (long)(travelMM * GRIP_STEPS_PER_MM);
 }
 
 long clampSteps(long value, long minSteps, long maxSteps, const char* axisName) {
