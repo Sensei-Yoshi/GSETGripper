@@ -219,6 +219,16 @@ const float CAL_FACTOR[LOADCELL_COUNT] = {655.1, 655.1};
 // false = restore whatever TARE/CAL last saved to EEPROM
 const bool USE_HARDCODED_CAL = true;
 
+// ---- FORCE target (one-shot) ----
+// Armed by "FORCE <n>", consumed by the next "GRIP CLOSE", cleared by
+// "FORCE 0" and "GRIP OPEN". While unarmed, GRIP CLOSE is pure position mode.
+bool forceArmed = false;
+float forceTargetN = 0.0;
+
+// Which cell the next force grasp reads: follows the last SELECT command.
+// Boot default GEKKO because the turret's assumed boot position is step 0.
+int selectedCellIndex = CELL_FOR_GEKKO;
+
 String command;
 
 void setup() {
@@ -366,8 +376,10 @@ void processCommand(const String& message) {
     String arg = message.substring(7);
     arg.trim();
     if (arg == "GEKKO") {
+      selectedCellIndex = CELL_FOR_GEKKO;
       moveSelectTo(SELECT_GEKKO_STEPS);
     } else if (arg == "SILICONE") {
+      selectedCellIndex = CELL_FOR_SILICONE;
       moveSelectTo(SELECT_SILICONE_STEPS);
     } else {
       sendErr("unknown select position");
@@ -396,9 +408,21 @@ void processCommand(const String& message) {
       sendErr("unknown grip command");
     }
   }
-  else if (message.startsWith("FORCE")){
+  else if (message.startsWith("FORCE ")) {
     String arg = message.substring(6);
     arg.trim();
+    float newtons;
+    if (!parseFloatStrict(arg, newtons) || newtons < 0.0) {
+      sendErr("bad value");
+      return;
+    }
+    if (newtons == 0.0) {
+      forceArmed = false;  // FORCE 0 returns GRIP CLOSE to position mode
+    } else {
+      forceTargetN = newtons;
+      forceArmed = true;
+    }
+    Serial.println("DONE FORCE");
   }
   else if (message == "F?") {
     printForceLine();
