@@ -701,3 +701,11 @@ These are expected, not defects — both are recorded in the spec.
 
 1. **No object has height or width yet.** `from_prediction` raises for all 129 until `scripts/calibrate_scale.py` then `scripts/prepare_dataset.py --stages surface_area` have run. Nothing in this plan produces that data.
 2. **`FORCE` does not exist in the firmware.** Until `main.ino` implements it, a real send fails at the third line with `RuntimeError: firmware rejected 'FORCE 1.75': ERR unknown command` (`main.ino:254`). Tasks 1–3 are still fully testable, because every test uses a fake connection.
+
+## Note from the force-grasp firmware work (2026-07-27)
+
+The merged firmware prints boot lines (`INFO`/`READY`, and `ERR cell <n> timed
+out` on a wiring fault) before accepting commands. `SerialGraspSender` must
+call `reset_input_buffer()` after its 2.0 s post-open sleep, or the first
+`Z` ack read will consume boot output — and a boot `ERR` line would be
+mistaken for a command failure.
