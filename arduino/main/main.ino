@@ -1,4 +1,6 @@
 #include <AccelStepper.h>
+#include <HX711_ADC.h>
+#include <EEPROM.h>
 
 const unsigned long BAUD_RATE = 9600;
 
@@ -62,7 +64,7 @@ const float Z_MIN_GRIPPER_HEIGHT_MM = Z_FLOOR_CLEARANCE_MM;
 // downward from there, so a bigger step count = a lower gripper.
 const long Z_MIN_STEPS = 0;
 const long Z_MAX_STEPS =
-    (long)((Z_MAX_GRIPPER_HEIGHT_MM - Z_MIN_GRIPPER_HEIGHT_MM) * Z_STEPS_PER_MM);  // 48546
+    (long)((Z_MAX_GRIPPER_HEIGHT_MM - Z_MIN_GRIPPER_HEIGHT_MM) * Z_STEPS_PER_MM);  // 48545
 
 // ---- Grasp placement ----
 // "Z <mm>" carries the height of the TOP OF THE OBJECT above the floor -- that
@@ -114,22 +116,119 @@ const float GRIP_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2
 // same 1.8 deg motor, same 1/8 microstepping, coupled 1:1 with no reduction:
 //   (200 steps/rev * 8 microsteps) / 8 mm per rev = 200 steps/mm
 // Only ONE jaw moves (the opposing jaw is rigidly fixed to the frame), so jaw
-// opening changes 1:1 with nut travel -- hence no factor of 2 below or in
-// gripStepsForWidth().
+// opening changes 1:1 with nut travel.
 //
-// GRIP_OPEN_STEPS is the fully-open home position. GRIP_MAX_OPENING_MM is the
-// object width (mm) that corresponds to fully open jaws; GRIP_STEPS_PER_MM
-// converts the remaining jaw travel needed to close around a narrower object
-// into steps.
-const long GRIP_OPEN_STEPS = 0;
-const float GRIP_MAX_OPENING_MM = 60.0; // TODO: measure the fully-open jaw gap
+// Measured 2026-07-24: the grip screw has 4.00 in = 101.6 mm of usable travel,
+// and running it all the way from the open end closes the jaws to a zero gap.
+//
+// Step 0 is the fully-open end, which -- like Z -- is assumed, not homed. The
+// jaws must be physically fully open whenever the board powers on or resets,
+// and opening the serial port resets the board. There is no serial command to
+// reopen them: after a grasp, back the jaws off by hand before the next boot.
+const float GRIP_MAX_OPENING_MM = 101.6; // 4.00 in fully-open jaw gap
 const float GRIP_STEPS_PER_MM = 200.0;
-const long GRIP_MIN_STEPS = 0;
-// Fully-closed travel = GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM. Update this
-// alongside GRIP_MAX_OPENING_MM when the jaw gap is measured.
-const long GRIP_MAX_STEPS = 12000;
+// FLIP THIS if the jaws open when they should close. +1 or -1, nothing else.
+// Test with a low FORCE target before trusting a full-travel seek.
+// The equivalent knob is Z_DOWN_SIGN for the Z axis and the setPinsInverted()
+// call in setup() for SELECT.
+const int GRIP_CLOSE_SIGN = 1;
+// Fully closed: the whole 101.6 mm of travel consumed.
+const long GRIP_MAX_STEPS = (long)(GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM);  // 20320
 
-bool gripMovePending = false;
+// Grip-axis lifecycle, serviced in loop(): FORCE starts a seek (creep closed
+// until the load cell reads the target), which rolls into the 50 mm lift.
+enum GripPhase { GRIP_IDLE, GRIP_SEEKING, GRIP_LIFTING };
+GripPhase gripPhase = GRIP_IDLE;
+
+// ---- HX711 LOAD CELLS (HX711_ADC) ----
+// Cell 1 (index 0): DOUT -> A5,  SCK -> A9   -- GEKKO head
+// Cell 2 (index 1): DOUT -> A10, SCK -> A11  -- SILICONE head
+const int LC1_DOUT = A5;
+const int LC1_SCK  = A9;
+const int LC2_DOUT = A10;
+const int LC2_SCK  = A11;
+
+HX711_ADC loadCell1(LC1_DOUT, LC1_SCK);
+HX711_ADC loadCell2(LC2_DOUT, LC2_SCK);
+
+const int LOADCELL_COUNT = 2;
+HX711_ADC* loadCell[LOADCELL_COUNT] = {&loadCell1, &loadCell2};
+
+// Which cell the force loop reads for each turret head. Swap these two if the
+// heads turn out to be the other way round -- same knob as SELECT_GEKKO_STEPS.
+const int CELL_FOR_GEKKO = 0;
+const int CELL_FOR_SILICONE = 1;
+
+// Set an entry false for any cell that is not physically wired yet. An unwired
+// HX711 leaves DOUT floating; a floating pin reads LOW much of the time, so
+// update() believes a conversion is waiting on EVERY loop pass and does a full
+// 24-bit shift-out each time. That starves AccelStepper.
+const bool LOADCELL_ENABLED[LOADCELL_COUNT] = {true, false};
+
+// Flip the sign properly rather than fabs()-ing the reading. fabs() rectifies
+// the noise around zero into a positive bias, which corrupts small-force
+// readings and the tared baseline.
+const bool LOADCELL_REVERSED[LOADCELL_COUNT] = {false, false};
+
+const unsigned long LOADCELL_STABILIZING_MS = 2000;
+
+// Extra smoothing on top of the library's own moving average. 1.0 = none.
+const float LOADCELL_ALPHA = 0.15;
+
+const float G_TO_NEWTON = 0.00980665f; // 1 gram-force -> N
+
+// getData() averages this many samples (highest and lowest discarded). At the
+// stock 10 SPS this is a ~0.4 s window -- the force-seek's dominant lag
+// (~0.8 mm of jaw travel at creep speed). Tie the HX711 RATE pin high for
+// 80 SPS if that proves too coarse.
+const int LOADCELL_SAMPLES_IN_USE = 4;
+
+struct CellRuntime {
+  float filtered;   // EMA-smoothed grams, relative to tare
+  bool haveFirst;
+  bool tarePending;
+};
+CellRuntime cellRT[LOADCELL_COUNT];
+
+// False when a cell timed out at boot -- force mode refuses to use it.
+bool cellHealthy[LOADCELL_COUNT] = {true, true};
+
+// ---- EEPROM-persisted calibration ----
+const uint32_t CAL_MAGIC = 0x4C43414CUL; // "LCAL"
+const uint16_t CAL_VERSION = 2;
+const int CAL_EEPROM_ADDR = 0;
+
+struct LoadCellCal {
+  uint32_t magic;
+  uint16_t version;
+  float calFactor[LOADCELL_COUNT]; // raw counts per gram
+  long tareOffset[LOADCELL_COUNT]; // raw counts at zero load
+  uint16_t checksum; // must stay the LAST member
+};
+LoadCellCal cal;
+bool calValid = false;
+
+// Calibration factor per cell, in raw counts per gram. Cell 1 measured 655.1.
+// Use a NEGATIVE value if a cell reads backwards under load.
+const float CAL_FACTOR[LOADCELL_COUNT] = {655.1, 655.1};
+
+// true  = always use CAL_FACTOR above and tare fresh on every boot
+// false = restore whatever TARE/CAL last saved to EEPROM
+const bool USE_HARDCODED_CAL = true;
+
+// Which cell a force grasp reads: follows the last SELECT command.
+// Boot default GEKKO because the turret's assumed boot position is step 0.
+int selectedCellIndex = CELL_FOR_GEKKO;
+
+// Creep speed while seeking force contact -- 2 mm/s of jaw travel.
+const float FORCE_SEEK_SPEED_STEPS_PER_SEC = 400.0;
+
+// Rise after a successful force grasp, before DONE FORCE is sent.
+const float LIFT_MM = 50.0;
+
+// The seek in progress, captured when FORCE starts it.
+int activeCellIndex = 0;
+float activeTargetN = 0.0;
 
 String command;
 
@@ -158,6 +257,71 @@ void setup() {
   stepperGrip.setAcceleration(GRIP_ACCELERATION_STEPS_PER_SEC2);
 
   stepperSelect.setPinsInverted(true, false, false);
+
+  // ---- load cells ----
+  for (int i = 0; i < LOADCELL_COUNT; i++) {
+    cellRT[i].filtered = 0.0;
+    cellRT[i].haveFirst = false;
+    cellRT[i].tarePending = false;
+
+    if (!LOADCELL_ENABLED[i]) {
+      Serial.print(F("INFO cell "));
+      Serial.print(i + 1);
+      Serial.println(F(" disabled in LOADCELL_ENABLED -- not initialized"));
+      continue;
+    }
+    loadCell[i]->begin();
+    if (LOADCELL_REVERSED[i]) {
+      loadCell[i]->setReverseOutput();
+    }
+  }
+
+  calLoad();
+
+  // With USE_HARDCODED_CAL we always tare fresh at boot. Otherwise only tare
+  // when there is no stored record to restore.
+  bool doTare = USE_HARDCODED_CAL || !calValid;
+
+  // A disabled cell counts as already ready so the handshake does not hang.
+  byte ready1 = LOADCELL_ENABLED[0] ? 0 : 1;
+  byte ready2 = LOADCELL_ENABLED[1] ? 0 : 1;
+  while ((ready1 + ready2) < 2) {
+    if (!ready1) ready1 = loadCell1.startMultiple(LOADCELL_STABILIZING_MS, doTare);
+    if (!ready2) ready2 = loadCell2.startMultiple(LOADCELL_STABILIZING_MS, doTare);
+  }
+
+  for (int i = 0; i < LOADCELL_COUNT; i++) {
+    if (!LOADCELL_ENABLED[i]) continue;
+
+    if (loadCell[i]->getTareTimeoutFlag() || loadCell[i]->getSignalTimeoutFlag()) {
+      cellHealthy[i] = false;
+      Serial.print(F("ERR cell "));
+      Serial.print(i + 1);
+      Serial.println(F(" timed out -- check DOUT/SCK wiring and 5V"));
+    }
+    if (USE_HARDCODED_CAL) {
+      cal.calFactor[i] = CAL_FACTOR[i];
+    }
+    loadCell[i]->setCalFactor(cal.calFactor[i]);
+    loadCell[i]->setSamplesInUse(LOADCELL_SAMPLES_IN_USE);
+  }
+
+  if (doTare) {
+    for (int i = 0; i < LOADCELL_COUNT; i++) {
+      if (!LOADCELL_ENABLED[i]) continue;
+      cal.tareOffset[i] = loadCell[i]->getTareOffset();
+    }
+    if (!USE_HARDCODED_CAL) {
+      calSave();
+    }
+  } else {
+    for (int i = 0; i < LOADCELL_COUNT; i++) {
+      if (!LOADCELL_ENABLED[i]) continue;
+      loadCell[i]->setTareOffset(cal.tareOffset[i]);
+    }
+  }
+
+  Serial.println(F("READY"));
 }
 
 void loop() {
@@ -179,6 +343,8 @@ void loop() {
   stepperSelect.run();
   stepperGrip.run();
 
+  serviceLoadCells();
+
   if (zMovePending && stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
     zMovePending = false;
     Serial.println("DONE Z");
@@ -187,9 +353,26 @@ void loop() {
     selectMovePending = false;
     Serial.println("DONE SELECT");
   }
-  if (gripMovePending && stepperGrip.distanceToGo() == 0) {
-    gripMovePending = false;
-    Serial.println("DONE GRIP");
+  if (gripPhase == GRIP_SEEKING) {
+    if (cellRT[activeCellIndex].haveFirst &&
+        cellForceN(activeCellIndex) >= activeTargetN) {
+      // Contact at target force: stop the jaws (decelerate; the lead screw
+      // holds from there) and lift the object.
+      stepperGrip.stop();
+      startLift();
+      gripPhase = GRIP_LIFTING;
+    } else if (stepperGrip.distanceToGo() == 0) {
+      // Fully closed without reaching the target: missed or slipped object.
+      // A physical outcome, not a protocol violation -- WARN, no lift, DONE.
+      Serial.println("WARN force not reached");
+      gripPhase = GRIP_IDLE;
+      Serial.println("DONE FORCE");
+    }
+  } else if (gripPhase == GRIP_LIFTING) {
+    if (stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
+      gripPhase = GRIP_IDLE;
+      Serial.println("DONE FORCE");
+    }
   }
 }
 
@@ -211,30 +394,59 @@ void processCommand(const String& message) {
     String arg = message.substring(7);
     arg.trim();
     if (arg == "GEKKO") {
+      selectedCellIndex = CELL_FOR_GEKKO;
       moveSelectTo(SELECT_GEKKO_STEPS);
     } else if (arg == "SILICONE") {
+      selectedCellIndex = CELL_FOR_SILICONE;
       moveSelectTo(SELECT_SILICONE_STEPS);
     } else {
       sendErr("unknown select position");
     }
-  } else if (message.startsWith("GRIP ")) {
-    String arg = message.substring(5);
+  } else if (message.startsWith("FORCE ")) {
+    String arg = message.substring(6);
     arg.trim();
-    if (arg == "OPEN") {
-      moveGripToSteps(GRIP_OPEN_STEPS);
-    } else if (arg.startsWith("CLOSE")) {
-      String widthArg = arg.substring(5);
-      widthArg.trim();
-      float widthMM;
-      if (!parseFloatStrict(widthArg, widthMM)) {
-        sendErr("bad value");
-        return;
-      }
-      moveGripToSteps(gripStepsForWidth(widthMM));
-    } else {
-      sendErr("unknown grip command");
+    float newtons;
+    if (!parseFloatStrict(arg, newtons) || newtons <= 0.0) {
+      sendErr("bad value");
+      return;
     }
-  } else {
+    startForceSeek(newtons);
+  }
+  else if (message == "F?") {
+    printForceLine();
+
+  } else if (message == "TARE") {
+    for (int i = 0; i < LOADCELL_COUNT; i++) {
+      if (!LOADCELL_ENABLED[i]) continue;
+      startTare(i);
+    }
+
+  } else if (message.startsWith("TARE ")) {
+    int idx = cellIndexFromArg(message.substring(5));
+    if (idx < 0) return;
+    startTare(idx);
+
+  } else if (message.startsWith("CAL ")) {
+    String arg = message.substring(4);
+    arg.trim();
+    int sp = arg.indexOf(' ');
+    if (sp < 0) {
+      sendErr("usage: CAL <1|2> <known grams>");
+      return;
+    }
+    int idx = cellIndexFromArg(arg.substring(0, sp));
+    if (idx < 0) return;
+    float grams;
+    if (!parseFloatStrict(arg.substring(sp + 1), grams)) {
+      sendErr("bad value");
+      return;
+    }
+    calibrateCell(idx, grams);
+
+  } else if (message == "CAL?") {
+    calPrint();
+  }
+  else {
     sendErr("unknown command");
   }
 }
@@ -244,6 +456,8 @@ void processCommand(const String& message) {
 // above the floor. It is clamped in millimetres first so the WARN reports a
 // real-world height, then converted to a downward step count from the
 // top-of-travel origin.
+
+
 void moveZTo(float targetHeightMM) {
   float clampedHeightMM = targetHeightMM;
   if (clampedHeightMM < Z_MIN_GRIPPER_HEIGHT_MM) {
@@ -285,18 +499,37 @@ void moveSelectTo(long targetSteps) {
   selectMovePending = true;
 }
 
-void moveGripToSteps(long targetSteps) {
-  long clamped = clampSteps(targetSteps, GRIP_MIN_STEPS, GRIP_MAX_STEPS, "GRIP");
-  stepperGrip.moveTo(clamped);
-  gripMovePending = true;
+// Begin a force-seeking close: creep toward fully closed and let loop() stop
+// the jaws when the selected gripper's cell reads the target, then lift.
+// Refuses (ERR, no DONE) when that cell cannot be read -- the grasp cannot
+// proceed, and the Python sender treats ERR as fatal by design.
+void startForceSeek(float targetN) {
+  int cell = selectedCellIndex;
+  if (!LOADCELL_ENABLED[cell] || !cellHealthy[cell]) {
+    sendErr(cell == CELL_FOR_GEKKO ? "gekko load cell disabled"
+                                   : "silicone load cell disabled");
+    return;
+  }
+  activeCellIndex = cell;
+  activeTargetN = targetN;
+  stepperGrip.setMaxSpeed(FORCE_SEEK_SPEED_STEPS_PER_SEC);
+  stepperGrip.moveTo(GRIP_CLOSE_SIGN * GRIP_MAX_STEPS);
+  gripPhase = GRIP_SEEKING;
 }
 
-long gripStepsForWidth(float widthMM) {
-  float travelMM = GRIP_MAX_OPENING_MM - widthMM;
-  if (travelMM < 0) {
-    travelMM = 0;
+// Raise Z by LIFT_MM from wherever it is, clamped at top of travel. Owned by
+// the grip operation: deliberately does NOT set zMovePending, so it never
+// prints DONE Z -- the sender is waiting for DONE FORCE.
+void startLift() {
+  long liftSteps = (long)(LIFT_MM * Z_STEPS_PER_MM);
+  // Signed motor position -> non-negative descent steps from top-of-travel.
+  long descentSteps = Z_DOWN_SIGN * stepperZA.currentPosition();
+  long targetDescent = descentSteps - liftSteps;
+  if (targetDescent < Z_MIN_STEPS) {
+    targetDescent = Z_MIN_STEPS;
   }
-  return GRIP_OPEN_STEPS + (long)(travelMM * GRIP_STEPS_PER_MM);
+  stepperZA.moveTo(Z_DOWN_SIGN * targetDescent);
+  stepperZB.moveTo(Z_DOWN_SIGN * targetDescent);
 }
 
 long clampSteps(long value, long minSteps, long maxSteps, const char* axisName) {
@@ -351,4 +584,165 @@ bool parseFloatStrict(const String& s, float& out) {
 void sendErr(const char* reason) {
   Serial.print("ERR ");
   Serial.println(reason);
+}
+
+// ---------------- LOAD CELLS ----------------
+
+// Non-blocking per-pass update: pick up a new sample when one is ready and
+// fold it into the EMA. Also completes any pending tare.
+void serviceLoadCells() {
+  for (int i = 0; i < LOADCELL_COUNT; i++) {
+    if (!LOADCELL_ENABLED[i]) continue;
+
+    if (loadCell[i]->update()) {
+      float g = loadCell[i]->getData();
+      CellRuntime& rt = cellRT[i];
+      if (!rt.haveFirst) {
+        rt.filtered = g;
+        rt.haveFirst = true;
+      } else {
+        rt.filtered += LOADCELL_ALPHA * (g - rt.filtered);
+      }
+    }
+
+    if (cellRT[i].tarePending && loadCell[i]->getTareStatus()) {
+      cellRT[i].tarePending = false;
+      cal.tareOffset[i] = loadCell[i]->getTareOffset();
+      cellRT[i].haveFirst = false;
+      Serial.print(F("TARE "));
+      Serial.print(i + 1);
+      Serial.print(F(" offset="));
+      Serial.println(cal.tareOffset[i]);
+      if (!USE_HARDCODED_CAL) {
+        calSave();
+      }
+    }
+  }
+}
+
+float cellForceN(int i) {
+  return cellRT[i].filtered * G_TO_NEWTON;
+}
+
+// F <t_ms> <g1> <N1> <g2> <N2>. A disabled cell reports 0.
+void printForceLine() {
+  Serial.print(F("F "));
+  Serial.print(millis());
+  for (int i = 0; i < LOADCELL_COUNT; i++) {
+    Serial.print(' ');
+    Serial.print(cellRT[i].filtered, 2);
+    Serial.print(' ');
+    Serial.print(cellForceN(i), 4);
+  }
+  Serial.println();
+}
+
+int cellIndexFromArg(String arg) {
+  arg.trim();
+  int idx = -1;
+  if (arg == "1") idx = 0;
+  if (arg == "2") idx = 1;
+  if (idx < 0) {
+    sendErr("cell must be 1 or 2");
+    return -1;
+  }
+  if (!LOADCELL_ENABLED[idx]) {
+    sendErr("that cell is disabled in LOADCELL_ENABLED");
+    return -1;
+  }
+  return idx;
+}
+
+// Non-blocking: the library fills a fresh dataset in the background and the
+// result gets picked up in serviceLoadCells().
+void startTare(int i) {
+  loadCell[i]->tareNoDelay();
+  cellRT[i].tarePending = true;
+  Serial.print(F("TARING cell "));
+  Serial.print(i + 1);
+  Serial.println(F(" -- keep it unloaded and still"));
+}
+
+void calibrateCell(int i, float knownGrams) {
+  if (knownGrams == 0.0) {
+    sendErr("known mass cannot be zero");
+    return;
+  }
+  if (cellRT[i].tarePending) {
+    sendErr("tare still running");
+    return;
+  }
+  // getNewCalibration() both computes and applies the factor from the current
+  // averaged reading, so the mass must already be on and settled.
+  float newFactor = loadCell[i]->getNewCalibration(knownGrams);
+  cal.calFactor[i] = newFactor;
+  cellRT[i].haveFirst = false;
+  Serial.print(F("CAL "));
+  Serial.print(i + 1);
+  Serial.print(F(" calFactor="));
+  Serial.println(newFactor, 4);
+  if (USE_HARDCODED_CAL) {
+    Serial.println(F("NOTE paste that number into CAL_FACTOR[] -- it resets at next boot"));
+  } else {
+    calSave();
+  }
+}
+
+// ---------------- EEPROM CALIBRATION STORAGE ----------------
+
+uint16_t calChecksum(const LoadCellCal& c) {
+  const uint8_t* p = (const uint8_t*)&c;
+  size_t n = sizeof(LoadCellCal) - sizeof(c.checksum);
+  uint16_t sum = 0;
+  for (size_t k = 0; k < n; k++) {
+    sum += p[k];
+  }
+  return sum;
+}
+
+void calSetDefaults() {
+  memset(&cal, 0, sizeof(cal));
+  cal.magic = CAL_MAGIC;
+  cal.version = CAL_VERSION;
+  for (int i = 0; i < LOADCELL_COUNT; i++) {
+    cal.calFactor[i] = CAL_FACTOR[i];
+    cal.tareOffset[i] = 0;
+  }
+  calValid = false;
+}
+
+void calLoad() {
+  LoadCellCal tmp;
+  EEPROM.get(CAL_EEPROM_ADDR, tmp);
+  if (tmp.magic == CAL_MAGIC && tmp.version == CAL_VERSION &&
+      tmp.checksum == calChecksum(tmp)) {
+    cal = tmp;
+    calValid = true;
+  } else {
+    calSetDefaults();
+  }
+}
+
+void calSave() {
+  cal.magic = CAL_MAGIC;
+  cal.version = CAL_VERSION;
+  cal.checksum = calChecksum(cal);
+  EEPROM.put(CAL_EEPROM_ADDR, cal);
+  calValid = true;
+  Serial.println(F("CAL SAVED"));
+}
+
+void calPrint() {
+  for (int i = 0; i < LOADCELL_COUNT; i++) {
+    Serial.print(F("CAL "));
+    Serial.print(i + 1);
+    if (!LOADCELL_ENABLED[i]) {
+      Serial.println(F(" disabled"));
+      continue;
+    }
+    Serial.print(F(" calFactor="));
+    Serial.print(cal.calFactor[i], 4);
+    Serial.print(F(" tareOffset="));
+    Serial.println(cal.tareOffset[i]);
+  }
 }
