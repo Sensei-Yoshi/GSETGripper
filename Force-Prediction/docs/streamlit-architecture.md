@@ -54,9 +54,10 @@ including the fixed written descriptions of both grippers.
 The **Marigold Roughness** tab is intentionally independent of the force pipeline. It can
 run the active dataset's images or an uploaded override, and it browses all prior runs under
 `test_data/marigold_tests`. The default background-removal pass saves a mask and transparent
-cutout and restricts roughness statistics to the foreground. Heavy rembg/Torch/Diffusers
-imports and model loading occur only after the user presses the run button; cached model
-adapters survive ordinary Streamlit reruns.
+cutout, crops the original RGB before inference, and restricts roughness statistics to an
+eroded central grasp band. Runs save PNG diagnostics and uncertainty/statistical metadata,
+not raw NumPy maps. Heavy rembg/Torch/Diffusers imports and model loading occur only after
+the user presses the run button; cached model adapters survive ordinary Streamlit reruns.
 
 Every top-level tab exports exactly this entrypoint:
 

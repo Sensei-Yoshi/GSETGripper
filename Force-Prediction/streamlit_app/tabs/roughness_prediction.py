@@ -15,6 +15,12 @@ from modules.models.background_remover import (
     BackgroundRemover,
 )
 from modules.models.marigold import (
+    DEFAULT_CONTACT_BAND_FRACTION,
+    DEFAULT_CROP_PADDING_RATIO,
+    DEFAULT_ENSEMBLE_SIZE,
+    DEFAULT_INFERENCE_STEPS,
+    DEFAULT_MASK_EROSION_RATIO,
+    DEFAULT_PROCESSING_RESOLUTION,
     MarigoldAnalyzer,
     available_device,
     list_saved_runs,
@@ -71,6 +77,20 @@ def _render_run(run: dict[str, Any]) -> None:
             with column:
                 st.image(str(path), caption=caption, width="stretch")
 
+    crop_columns = st.columns(3, gap="medium")
+    for column, artifact, caption in zip(
+        crop_columns,
+        ("inference_crop", "inference_mask", "scoring_mask"),
+        ("Marigold input crop", "Crop mask", "Scored contact-oriented region"),
+        strict=True,
+    ):
+        path = _artifact_path(run, artifact)
+        with column:
+            if path:
+                st.image(str(path), caption=caption, width="stretch")
+            else:
+                st.caption(f"{caption} is unavailable for this legacy run.")
+
     image_columns = st.columns(3, gap="medium")
     for column, artifact, caption in zip(
         image_columns,
@@ -85,13 +105,41 @@ def _render_run(run: dict[str, Any]) -> None:
             else:
                 st.warning(f"{caption} artifact is missing.")
 
+    uncertainty_path = _artifact_path(run, "roughness_uncertainty")
+    if uncertainty_path:
+        st.image(
+            str(uncertainty_path),
+            caption="Roughness uncertainty (bright = less certain)",
+            width="stretch",
+        )
+
     roughness = run.get("roughness", {})
     metallicity = run.get("metallicity", {})
-    metrics = st.columns(4)
+    uncertainty = run.get("roughness_uncertainty") or {}
+    metrics = st.columns(5)
     metrics[0].metric("Mean roughness", f"{roughness.get('mean', float('nan')):.3f}")
     metrics[1].metric("Median roughness", f"{roughness.get('median', float('nan')):.3f}")
-    metrics[2].metric("Roughness std.", f"{roughness.get('std', float('nan')):.3f}")
+    metrics[2].metric(
+        "Roughness IQR",
+        f"{roughness.get('p75', float('nan')) - roughness.get('p25', float('nan')):.3f}",
+    )
     metrics[3].metric("Mean metallicity", f"{metallicity.get('mean', float('nan')):.3f}")
+    metrics[4].metric(
+        "Mean uncertainty",
+        (f"{uncertainty['mean']:.3f}" if uncertainty.get("mean") is not None else "Not available"),
+    )
+
+    quality = run.get("quality") or {}
+    if quality.get("status") == "warning":
+        st.warning("Quality checks: " + ", ".join(quality.get("warnings", [])))
+    elif quality.get("status") == "ok":
+        st.success("Mask and scoring-region quality checks passed.")
+    st.caption(
+        quality.get(
+            "interpretation",
+            "Marigold estimates BRDF appearance roughness, not physical height roughness or friction.",
+        )
+    )
 
     with st.expander("Run data and provenance"):
         display = {key: value for key, value in run.items() if key != "run_dir"}
@@ -130,10 +178,7 @@ def _history(output_root: Path) -> None:
 
 def _run_new(context: AppContext, output_root: Path) -> None:
     rows = sorted(context.rows, key=lambda row: (row.name.casefold(), row.object_id))
-    labels = {
-        f"{row.name} ({row.object_id})": row
-        for row in rows
-    }
+    labels = {f"{row.name} ({row.object_id})": row for row in rows}
     selected_row = None
     if labels:
         selected_label = st.selectbox(
@@ -175,17 +220,24 @@ def _run_new(context: AppContext, output_root: Path) -> None:
         processing_resolution = st.select_slider(
             "Processing resolution",
             options=[384, 512, 640, 768],
-            value=640,
+            value=DEFAULT_PROCESSING_RESOLUTION,
             key="roughness_processing_resolution",
-            help="Lower resolutions use less memory. The reference script uses 640 pixels.",
+            help="The Marigold appearance checkpoint is optimized around 768 pixels.",
         )
         inference_steps = st.number_input(
             "Inference steps",
             min_value=1,
             max_value=10,
-            value=1,
+            value=DEFAULT_INFERENCE_STEPS,
             step=1,
             key="roughness_inference_steps",
+        )
+        ensemble_size = st.select_slider(
+            "Ensemble size",
+            options=[1, 3, 5],
+            value=DEFAULT_ENSEMBLE_SIZE,
+            key="roughness_ensemble_size",
+            help="Three or more samples produce a predictive uncertainty map.",
         )
         seed = st.number_input(
             "Random seed",
@@ -199,14 +251,35 @@ def _run_new(context: AppContext, output_root: Path) -> None:
             "Remove background before computing roughness statistics",
             value=True,
             key="roughness_remove_background",
-            help=(
-                "Uses rembg with ISNet to create a foreground mask. Marigold still sees the "
-                "original RGB image, while displayed maps and summary statistics are masked."
-            ),
+            help=("Uses rembg with ISNet to crop the original RGB tightly before Marigold runs."),
         )
-        st.caption(
-            "The first run downloads and loads the Marigold and background-removal weights."
+        crop_padding_ratio = st.slider(
+            "Crop padding",
+            min_value=0.0,
+            max_value=0.5,
+            value=DEFAULT_CROP_PADDING_RATIO,
+            step=0.05,
+            key="roughness_crop_padding_ratio",
         )
+        contact_band_fraction = st.slider(
+            "Central grasp-band fraction",
+            min_value=0.2,
+            max_value=1.0,
+            value=DEFAULT_CONTACT_BAND_FRACTION,
+            step=0.05,
+            key="roughness_contact_band_fraction",
+            help="Rejects caps and end faces by scoring the center of the object's major axis.",
+        )
+        mask_erosion_ratio = st.slider(
+            "Mask-edge erosion fraction",
+            min_value=0.0,
+            max_value=0.05,
+            value=DEFAULT_MASK_EROSION_RATIO,
+            step=0.005,
+            key="roughness_mask_erosion_ratio",
+            help="Removes segmentation halos before computing statistics.",
+        )
+        st.caption("The first run downloads and loads the Marigold and background-removal weights.")
 
     run_requested = st.button(
         "Run Marigold",
@@ -221,7 +294,9 @@ def _run_new(context: AppContext, output_root: Path) -> None:
             source_label = (
                 uploaded.name
                 if uploaded is not None
-                else selected_row.name if selected_row is not None else "image"
+                else selected_row.name
+                if selected_row is not None
+                else "image"
             )
             with st.spinner(f"Loading and running Marigold on {device}..."):
                 result = run_marigold(
@@ -229,9 +304,7 @@ def _run_new(context: AppContext, output_root: Path) -> None:
                     query_image,
                     output_root,
                     background_remover=(
-                        _background_remover(DEFAULT_BACKGROUND_MODEL)
-                        if remove_background
-                        else None
+                        _background_remover(DEFAULT_BACKGROUND_MODEL) if remove_background else None
                     ),
                     source_label=source_label,
                     dataset_id=context.dataset.dataset_id if uploaded is None else None,
@@ -246,7 +319,11 @@ def _run_new(context: AppContext, output_root: Path) -> None:
                         else None
                     ),
                     num_inference_steps=int(inference_steps),
+                    ensemble_size=int(ensemble_size),
                     seed=int(seed),
+                    crop_padding_ratio=float(crop_padding_ratio),
+                    contact_band_fraction=float(contact_band_fraction),
+                    mask_erosion_ratio=float(mask_erosion_ratio),
                 )
             st.session_state["roughness_last_run"] = result
             st.success(f"Saved Marigold run to {result['run_dir']}")
@@ -262,9 +339,9 @@ def render(context: AppContext) -> None:
     st.header("Marigold Roughness")
     st.write(
         "Test Marigold IID appearance decomposition independently of the force pipeline. "
-        "Background removal isolates the object before foreground roughness statistics are "
-        "computed. Each run stores the input, mask, cutout, albedo, roughness and metallicity "
-        "maps, raw numeric arrays, summary statistics, and model provenance."
+        "Background removal now crops the RGB object before inference; statistics use an "
+        "eroded, contact-oriented central band. Each run stores compact PNG diagnostics, "
+        "summary statistics, uncertainty, quality checks, and model provenance."
     )
     output_root = context.config.root / "test_data" / "marigold_tests"
     view_history = st.toggle(

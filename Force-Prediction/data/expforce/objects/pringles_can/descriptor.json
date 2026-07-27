@@ -1,5 +1,6 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
+  "dataset_id": "expforce",
   "object_id": "pringles_can",
   "object_name": "Pringles can",
   "image_name": "image.png",
@@ -7,20 +8,22 @@
   "image_sha256": "836a9edcaf22a57909a4ffee8b8a7736e0c3542e3aea73d7db68144b1cc7abb0",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
   "descriptor": {
-    "retrieval_description": "Cylindrical paperboard canister with a printed plastic and paper label. The intended contact region is clean, dry, and has a smooth continuous cylindrical curvature.",
-    "contact_region": "Lateral opposing sidewalls in the centered grasp band",
-    "contact_material": "Paperboard substrate covered by a printed paper or plastic wrapper",
-    "visible_surface_material": "Printed paper/plastic wrapper over paperboard",
-    "visible_surface_condition": "Clean and dry",
-    "local_geometry": "Smooth continuous cylindrical curvature without visible seams in the primary contact band",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The back side of the cylinder is not visible, but standard manufacturing uniformity implies similar continuous curvature."
+    "retrieval_description": "The object is a tall cylindrical container with smooth lateral surfaces. Opposing contact pads would interface with the curved paperboard body.",
+    "contact_region": "Lateral curved surfaces along the central height of the cylinder",
+    "contact_material": "Paperboard",
+    "visible_surface_material": "Paperboard and printed paper label",
+    "visible_surface_condition": "Smooth, clean, and intact",
+    "local_geometry": "Cylindrical curvature with uniform radius",
+    "contact_patch_visibility": "Fully visible",
+    "uncertainty": "Low uncertainty regarding surface material and curvature"
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_sha256": "bcf0e77b4ba2caaeeb68789db293f9293b94608adc1e509e732f4b6852e1659e",
-  "updated_at": "2026-07-23T00:44:50.746303+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-27T00:20:16.036128+00:00"
 }

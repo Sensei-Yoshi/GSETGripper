@@ -1,5 +1,6 @@
 {
-  "schema_version": 2,
+  "schema_version": 3,
+  "dataset_id": "expforce",
   "object_id": "orange_drinking_straw",
   "object_name": "Orange drinking straw",
   "image_name": "image.png",
@@ -7,20 +8,22 @@
   "image_sha256": "d091327282a68c884cf544ba00afc744e535adbbb3b216b9547c7f93d1672afb",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
   "descriptor": {
-    "retrieval_description": "Thin cylindrical plastic straw with a smooth, dry, flexible surface and continuous curvature. The intended contact region has uniform cylindrical geometry without visible seams or contamination.",
-    "contact_region": "Lateral sidewall surfaces near the longitudinal center of the straw",
+    "retrieval_description": "The object is a thin, cylindrical orange straw. Opposing finger pads would make contact with the smooth, curved lateral surfaces along the central region of the straw.",
+    "contact_region": "Central lateral surface of the thin cylindrical straw",
     "contact_material": "Plastic",
     "visible_surface_material": "Plastic",
-    "visible_surface_condition": "Clean and dry",
-    "local_geometry": "Cylindrical with continuous smooth curvature and small diameter",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The lighting and resolution are sufficient to determine the external surface geometry and material type."
+    "visible_surface_condition": "Smooth, uniform, and clean",
+    "local_geometry": "Convex cylindrical curvature",
+    "contact_patch_visibility": "Fully visible",
+    "uncertainty": "Low"
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_sha256": "0ff99e61f46de474f343c4282cbeaf878b12c5ca04a886d3edf67583415b13b2",
-  "updated_at": "2026-07-23T00:44:50.748145+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-27T00:20:19.248362+00:00"
 }

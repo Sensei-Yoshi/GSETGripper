@@ -19,6 +19,10 @@ def main() -> None:
     from streamlit_app.tabs.registry import TAB_SPECS
 
     st.title("Force Pipeline Lab")
+    # Streamlit reruns within one Python process, while prompts.yaml may also be
+    # edited outside the in-app editor. Clear the process-local loader cache so
+    # every rerun uses the prompt bundle currently persisted on disk.
+    load_config.cache_clear()
     base_cfg = load_config().model_copy(deep=True)
     catalog = discover_datasets(base_cfg)
     if not catalog:

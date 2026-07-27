@@ -109,7 +109,8 @@ prompts:
 
     Return only valid JSON matching the supplied schema, including an explicit
 
-    recommended_gripper. For each gripper, record every material piece of supplied or
+    recommended_gripper. For each gripper, record every material piece of supplied
+    or
 
     visible evidence in evidence_used, show equations/substitutions/scaling in
 
@@ -126,18 +127,24 @@ prompts:
     evidence merely to keep the answer short.
 
     '
-  descriptor: 'Inspect the likely opposing finger-contact patches in the centered
-    grasp band.
-
-    Return the requested structured JSON with the likely contact region and visibility;
-
-    material touching the pads; visible surface condition; local curvature, seams,
-
-    ridges, edges, lobes, or interruptions; grounded uncertainty; and a concise 1-2
-
-    sentence retrieval_description. Do not choose a gripper or estimate force.
-
-    '
+  descriptor: "Inspect the likely opposing finger-contact patches in the centered\
+    \ grasp band.\nReturn the requested structured JSON with:\n- the likely contact\
+    \ region and whether it is clearly visible;\n- the material actually touching\
+    \ the pads, distinguishing substrate from a\n  label, wrapper, coating, sleeve,\
+    \ or exposed contents;\n- visible condition such as clean, dry, dusty, wet, oily,\
+    \ worn, or unknown;\n- local geometry, including curvature, broad continuous area,\
+    \ seams, ridges,\n  edges, lobes, or other interruptions;\n- an uncertainty statement\
+    \ grounded in what the image does or does not show;\n- a concise retrieval_description\
+    \ containing the most discriminating\n  pad-to-object interface evidence in 1-2\
+    \ sentences. Roughly follow this template: [Material/object form]. The intended\
+    \ contact region is [surface condition], [geometry], and [other relevant properties].\n\
+    \nGood retrieval_description examples:\n1. \"Transparent cylindrical glass object\
+    \ with a smooth, dry, nonporous sidewall and continuous curvature. The intended\
+    \ contact region has no visible seams, texture, or contamination.\"\n2. \"Small\
+    \ curved snack chip with a porous, visibly textured surface and a thin, brittle\
+    \ structure. Its irregular geometry provides only a small, uneven contact region.\"\
+    \n\nDo not\nchoose gecko or silicone and do not estimate force. Return only JSON\
+    \ matching\nthe supplied schema.\n"
   experiments:
     e1: 'E1 ZERO-SHOT VISION-ONLY CONDITION.
 

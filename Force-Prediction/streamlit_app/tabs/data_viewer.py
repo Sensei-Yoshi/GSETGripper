@@ -80,9 +80,7 @@ def _card_editor(
 
             outcome_cols = st.columns(2)
             outcome_values: dict[str, tuple[bool, float | None]] = {}
-            for column, gripper in zip(
-                outcome_cols, ("gecko", "silicone"), strict=True
-            ):
+            for column, gripper in zip(outcome_cols, ("gecko", "silicone"), strict=True):
                 feasible = getattr(source, f"{gripper}_feasible")
                 force = getattr(source, f"{gripper}_force_n")
                 with column:
@@ -204,9 +202,7 @@ def _description_catalog(context: AppContext) -> None:
                 if row.image_2 is not None:
                     image_2_path = base_cfg.root / row.image_2.path
                     if image_2_path.exists():
-                        image_2 = _thumbnail(
-                            str(image_2_path), image_2_path.stat().st_mtime_ns
-                        )
+                        image_2 = _thumbnail(str(image_2_path), image_2_path.stat().st_mtime_ns)
                         if image_2 is not None:
                             st.image(image_2, width="stretch")
                         else:
@@ -243,19 +239,21 @@ def _description_catalog(context: AppContext) -> None:
                         f"Marigold roughness: mean {row.roughness.mean:.3f}, "
                         f"median {row.roughness.median:.3f}, std. {row.roughness.std:.3f}"
                     )
+                    if row.roughness.quality_status == "warning":
+                        st.warning("Marigold quality: " + ", ".join(row.roughness.quality_warnings))
 
                 if row.gripper_outcomes:
                     force_cols = st.columns(2)
-                    for column, gripper in zip(
-                        force_cols, ("gecko", "silicone"), strict=True
-                    ):
+                    for column, gripper in zip(force_cols, ("gecko", "silicone"), strict=True):
                         outcome = row.gripper_outcomes.get(Gripper(gripper))
                         column.metric(
                             f"{gripper.title()} force",
                             (
                                 f"{outcome.min_force_n:.2f} N"
                                 if outcome and outcome.min_force_n is not None
-                                else "Infeasible" if outcome else "Not available"
+                                else "Infeasible"
+                                if outcome
+                                else "Not available"
                             ),
                         )
                         if outcome:
@@ -379,9 +377,7 @@ def pipeline_run_inspector(context: AppContext) -> None:
             run["retrieval_config"].get("use_projected_contact", True),
         )
         detailed = pipeline_result_from_dict(run["result"])
-        baseline = (
-            pipeline_result_from_dict(run["baseline"]) if run.get("baseline") else None
-        )
+        baseline = pipeline_result_from_dict(run["baseline"]) if run.get("baseline") else None
         records = load_experience_pool(base_cfg)
         objects = group_by_object(records)
         source_id = query.get("source_object_id")

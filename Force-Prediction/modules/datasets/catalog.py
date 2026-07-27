@@ -52,8 +52,10 @@ def dataset_paths(cfg: Config, dataset_id: str, image_root: Path | None = None) 
     return DatasetPaths(
         root=root,
         objects=objects,
-        image_root=image_root or (
-            objects if objects.is_dir()
+        image_root=image_root
+        or (
+            objects
+            if objects.is_dir()
             else (root / "images" if (root / "images").is_dir() else root)
         ),
         descriptors=root / "descriptors",
@@ -125,7 +127,9 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
                 remote_url=(
                     "https://raw.githubusercontent.com/expforcesubmission/"
                     f"Exp-Force-Website/main/images/{row.image_name}"
-                ) if root.name == "expforce" else None,
+                )
+                if root.name == "expforce"
+                else None,
             ),
             image_2=(
                 ImageArtifact(
@@ -161,8 +165,7 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
         _attach_roughness_summary(cfg, item, paths.object_dir(row.object_id))
         objects[row.object_id] = item
     has_second_images = bool(objects) and all(
-        item.image_2 is not None and item.image_2.available
-        for item in objects.values()
+        item.image_2 is not None and item.image_2.available for item in objects.values()
     )
     return Dataset(
         dataset_id=root.name,
@@ -174,9 +177,8 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
         capabilities=DatasetCapabilities(
             has_images=all(item.image.available for item in objects.values()),
             has_second_images=has_second_images,
-            has_roughness=bool(objects) and all(
-                item.roughness is not None for item in objects.values()
-            ),
+            has_roughness=bool(objects)
+            and all(item.roughness is not None for item in objects.values()),
             has_measurements=True,
             has_paired_labels=True,
             can_build_experiences=True,
@@ -192,10 +194,7 @@ def _load_image_folder(cfg: Config, root: Path) -> Dataset:
     canonical = _canonical_object_images(paths.objects)
     if canonical:
         images = list(canonical.values())
-        second_images = {
-            image: _canonical_second_image(image.parent)
-            for image in images
-        }
+        second_images = {image: _canonical_second_image(image.parent) for image in images}
     else:
         images, second_images = _partition_flat_image_pairs(_source_images(root))
     objects: dict[str, DatasetObject] = {}
@@ -233,8 +232,7 @@ def _load_image_folder(cfg: Config, root: Path) -> Dataset:
         _attach_roughness_summary(cfg, item, paths.object_dir(object_id))
         objects[object_id] = item
     has_second_images = bool(objects) and all(
-        item.image_2 is not None and item.image_2.available
-        for item in objects.values()
+        item.image_2 is not None and item.image_2.available for item in objects.values()
     )
     return Dataset(
         dataset_id=root.name,
@@ -252,9 +250,8 @@ def _load_image_folder(cfg: Config, root: Path) -> Dataset:
         capabilities=DatasetCapabilities(
             has_images=bool(objects),
             has_second_images=has_second_images,
-            has_roughness=bool(objects) and all(
-                item.roughness is not None for item in objects.values()
-            ),
+            has_roughness=bool(objects)
+            and all(item.roughness is not None for item in objects.values()),
             can_estimate_surface_area=has_second_images,
         ),
     )
@@ -282,7 +279,8 @@ def _canonical_object_images(objects_root: Path) -> dict[str, Path]:
         if not object_dir.is_dir() or object_dir.name.startswith("."):
             continue
         candidates = [
-            path for path in sorted(object_dir.glob("image.*"))
+            path
+            for path in sorted(object_dir.glob("image.*"))
             if path.suffix.lower() in IMAGE_EXTENSIONS
         ]
         if candidates:
@@ -294,7 +292,8 @@ def _canonical_second_image(object_dir: Path) -> Path | None:
     candidates: list[Path] = []
     for pattern in ("image_2.*", f"{object_dir.name}_2.*"):
         candidates.extend(
-            path for path in sorted(object_dir.glob(pattern))
+            path
+            for path in sorted(object_dir.glob(pattern))
             if path.suffix.lower() in IMAGE_EXTENSIONS
         )
     return candidates[0] if candidates else None
@@ -329,7 +328,8 @@ def _resolve_row_image(root: Path, object_id: str, image_name: str) -> Path:
         return declared
     object_dir = root / "objects" / object_id
     canonical = [
-        path for path in sorted(object_dir.glob("image.*"))
+        path
+        for path in sorted(object_dir.glob("image.*"))
         if path.suffix.lower() in IMAGE_EXTENSIONS
     ]
     if canonical:
@@ -398,6 +398,8 @@ def _attach_roughness_summary(cfg: Config, item: DatasetObject, object_dir: Path
             source = metadata["source"]
             model = metadata["model"]
             roughness = metadata["roughness"]
+            uncertainty = metadata.get("roughness_uncertainty") or {}
+            quality = metadata.get("quality") or {}
             item.roughness = RoughnessArtifact(
                 metadata_path=str(path.relative_to(cfg.root)),
                 source_image_sha256=str(source["image_sha256"]),
@@ -405,6 +407,13 @@ def _attach_roughness_summary(cfg: Config, item: DatasetObject, object_dir: Path
                 mean=float(roughness["mean"]),
                 median=float(roughness["median"]),
                 std=float(roughness["std"]),
+                p25=(float(roughness["p25"]) if roughness.get("p25") is not None else None),
+                p75=(float(roughness["p75"]) if roughness.get("p75") is not None else None),
+                uncertainty_mean=(
+                    float(uncertainty["mean"]) if uncertainty.get("mean") is not None else None
+                ),
+                quality_status=str(quality.get("status", "unknown")),
+                quality_warnings=[str(value) for value in quality.get("warnings", [])],
                 updated_at=str(metadata["created_at"]),
             )
         except (KeyError, OSError, TypeError, ValueError, json.JSONDecodeError):

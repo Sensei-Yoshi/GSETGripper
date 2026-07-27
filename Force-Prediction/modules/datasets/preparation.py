@@ -37,8 +37,12 @@ from .storage import (
 )
 
 Progress = Callable[[int, int, str], None]
-MARIGOLD_PROCESSING_RESOLUTION = 640
-MARIGOLD_INFERENCE_STEPS = 1
+MARIGOLD_PROCESSING_RESOLUTION = 768
+MARIGOLD_INFERENCE_STEPS = 4
+MARIGOLD_ENSEMBLE_SIZE = 3
+MARIGOLD_CROP_PADDING_RATIO = 0.15
+MARIGOLD_CONTACT_BAND_FRACTION = 0.60
+MARIGOLD_MASK_EROSION_RATIO = 0.01
 
 
 def prepare_dataset_stages(
@@ -106,8 +110,7 @@ def prepare_dataset_stages(
                 manifest.missing_second_images = [
                     item.object_id
                     for item in dataset.objects.values()
-                    if item.image_2 is None
-                    or not (cfg.root / item.image_2.path).is_file()
+                    if item.image_2 is None or not (cfg.root / item.image_2.path).is_file()
                 ]
                 status.completed = len(dataset.objects) - len(missing)
                 report(f"indexed {dataset.display_name}")
@@ -174,9 +177,7 @@ def prepare_dataset_stages(
                     device=device,
                     processing_resolution=MARIGOLD_PROCESSING_RESOLUTION,
                 )
-                background_remover = BackgroundRemover(
-                    model_name=DEFAULT_BACKGROUND_MODEL
-                )
+                background_remover = BackgroundRemover(model_name=DEFAULT_BACKGROUND_MODEL)
                 for item in dataset.objects.values():
                     active_object = item.object_id
                     _prepare_roughness(
@@ -196,13 +197,9 @@ def prepare_dataset_stages(
                     px_per_mm=float(cfg.geometry.px_per_mm),
                     closing_axis="x",
                     pad_length_mm=float(cfg.geometry.pad_length_mm),
-                    minimum_bend_radius_mm=float(
-                        cfg.geometry.minimum_bend_radius_mm
-                    ),
+                    minimum_bend_radius_mm=float(cfg.geometry.minimum_bend_radius_mm),
                     side_angle_deg=float(cfg.geometry.side_angle_deg),
-                    minimum_contact_fraction=float(
-                        cfg.geometry.minimum_contact_fraction
-                    ),
+                    minimum_contact_fraction=float(cfg.geometry.minimum_contact_fraction),
                 )
                 session = None
                 for item in dataset.objects.values():
@@ -275,9 +272,7 @@ def _prepare_description(
         descriptor=value,
         updated_at=datetime.now(UTC).isoformat(),
     )
-    write_json_atomic(
-        checkpoint_path(dataset, item.object_id), checkpoint.model_dump(mode="json")
-    )
+    write_json_atomic(checkpoint_path(dataset, item.object_id), checkpoint.model_dump(mode="json"))
     return checkpoint
 
 
@@ -323,6 +318,7 @@ def _prepare_roughness(
         source_hash=source_hash,
         model_id=analyzer.model_id,
         processing_resolution=analyzer.processing_resolution,
+        ensemble_size=MARIGOLD_ENSEMBLE_SIZE,
         seed=cfg.seed,
     )
     if existing is None:
@@ -336,9 +332,15 @@ def _prepare_roughness(
             object_id=item.object_id,
             source_path=item.image.path,
             num_inference_steps=MARIGOLD_INFERENCE_STEPS,
+            ensemble_size=MARIGOLD_ENSEMBLE_SIZE,
             seed=cfg.seed,
+            crop_padding_ratio=MARIGOLD_CROP_PADDING_RATIO,
+            contact_band_fraction=MARIGOLD_CONTACT_BAND_FRACTION,
+            mask_erosion_ratio=MARIGOLD_MASK_EROSION_RATIO,
         )
     roughness = existing["roughness"]
+    uncertainty = existing.get("roughness_uncertainty") or {}
+    quality = existing.get("quality") or {}
     metadata_path = Path(existing["run_dir"]) / "metadata.json"
     item.roughness = RoughnessArtifact(
         metadata_path=str(metadata_path.relative_to(cfg.root)),
@@ -347,6 +349,13 @@ def _prepare_roughness(
         mean=float(roughness["mean"]),
         median=float(roughness["median"]),
         std=float(roughness["std"]),
+        p25=float(roughness["p25"]),
+        p75=float(roughness["p75"]),
+        uncertainty_mean=(
+            float(uncertainty["mean"]) if uncertainty.get("mean") is not None else None
+        ),
+        quality_status=str(quality.get("status", "unknown")),
+        quality_warnings=[str(item) for item in quality.get("warnings", [])],
         updated_at=str(existing["created_at"]),
     )
 
@@ -357,6 +366,7 @@ def _reusable_marigold_run(
     source_hash: str,
     model_id: str,
     processing_resolution: int,
+    ensemble_size: int,
     seed: int,
 ) -> dict[str, Any] | None:
     from ..models.marigold import list_saved_runs
@@ -366,10 +376,16 @@ def _reusable_marigold_run(
         model = run.get("model", {})
         if (
             source.get("image_sha256") == source_hash
+            and int(run.get("schema_version", 0)) >= 3
             and model.get("id") == model_id
             and model.get("processing_resolution") == processing_resolution
             and model.get("num_inference_steps") == MARIGOLD_INFERENCE_STEPS
+            and model.get("ensemble_size") == ensemble_size
             and model.get("seed") == seed
+            and run.get("crop", {}).get("padding_ratio") == MARIGOLD_CROP_PADDING_RATIO
+            and run.get("scoring", {}).get("contact_band_fraction")
+            == MARIGOLD_CONTACT_BAND_FRACTION
+            and run.get("scoring", {}).get("mask_erosion_ratio") == MARIGOLD_MASK_EROSION_RATIO
         ):
             return run
     return None
@@ -501,7 +517,8 @@ def _stage_total(dataset: Dataset, stage: PreparationStage) -> int:
 
 def _task_count(dataset: Dataset, stages: set[PreparationStage]) -> int:
     return sum(
-        1 if stage in {PreparationStage.INDEX, PreparationStage.EXPERIENCES}
+        1
+        if stage in {PreparationStage.INDEX, PreparationStage.EXPERIENCES}
         else len(dataset.objects)
         for stage in stages
     )

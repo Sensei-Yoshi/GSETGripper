@@ -50,6 +50,11 @@ class RoughnessArtifact(BaseModel):
     mean: float
     median: float
     std: float
+    p25: float | None = None
+    p75: float | None = None
+    uncertainty_mean: float | None = None
+    quality_status: str = "unknown"
+    quality_warnings: list[str] = Field(default_factory=list)
     updated_at: str
 
 
@@ -149,11 +154,7 @@ class Dataset(BaseModel):
 
     @property
     def second_images(self) -> dict[str, ImageArtifact]:
-        return {
-            key: item.image_2
-            for key, item in self.objects.items()
-            if item.image_2 is not None
-        }
+        return {key: item.image_2 for key, item in self.objects.items() if item.image_2 is not None}
 
     @property
     def descriptions(self) -> dict[str, DescriptionArtifact]:
@@ -166,9 +167,7 @@ class Dataset(BaseModel):
     @property
     def embeddings(self) -> dict[str, EmbeddingArtifact]:
         return {
-            key: item.embedding
-            for key, item in self.objects.items()
-            if item.embedding is not None
+            key: item.embedding for key, item in self.objects.items() if item.embedding is not None
         }
 
     def summary(self) -> dict:

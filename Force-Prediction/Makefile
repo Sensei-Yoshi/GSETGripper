@@ -38,4 +38,4 @@ smoke: collect run-all
 all: lint typecheck test
 
 clean:
-	rm -rf data
+	rm -rf data/cache/mock data/mock results.json

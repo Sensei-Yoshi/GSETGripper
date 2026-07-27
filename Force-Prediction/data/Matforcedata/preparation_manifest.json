@@ -3,7 +3,7 @@
   "dataset_id": "Matforcedata",
   "source_fingerprint": "cc844bd18729d45c3e6eb901cededdff04be619ee376c23c71121fc87ca75e78",
   "created_at": "2026-07-27T00:02:22.882736+00:00",
-  "updated_at": "2026-07-27T00:07:07.820817+00:00",
+  "updated_at": "2026-07-27T02:33:24.445697+00:00",
   "stages": {
     "index": {
       "status": "complete",
@@ -11,31 +11,31 @@
       "total": 17,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-27T00:02:22.883562+00:00"
+      "updated_at": "2026-07-27T00:20:22.331912+00:00"
     },
     "descriptions": {
-      "status": "complete",
-      "completed": 17,
+      "status": "pending",
+      "completed": 0,
       "total": 17,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-27T00:05:01.524212+00:00"
+      "updated_at": "2026-07-27T02:33:24.445697+00:00"
     },
     "embeddings": {
+      "status": "pending",
+      "completed": 0,
+      "total": 17,
+      "failed_object": null,
+      "error": null,
+      "updated_at": "2026-07-27T02:33:24.445697+00:00"
+    },
+    "roughness": {
       "status": "complete",
       "completed": 17,
       "total": 17,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-27T00:05:05.036162+00:00"
-    },
-    "roughness": {
-      "status": "failed",
-      "completed": 4,
-      "total": 17,
-      "failed_object": "curved_water_bottle",
-      "error": "TimeoutError: [Errno 60] Operation timed out",
-      "updated_at": "2026-07-27T00:07:07.820787+00:00"
+      "updated_at": "2026-07-27T02:33:24.445697+00:00"
     }
   },
   "missing_images": [],

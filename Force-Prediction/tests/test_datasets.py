@@ -246,7 +246,7 @@ def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
         run_dir = output_root / "test-run"
         run_dir.mkdir(parents=True)
         metadata = {
-            "schema_version": 2,
+            "schema_version": 3,
             "run_id": "test-run",
             "created_at": "2026-07-26T00:00:00+00:00",
             "source": {
@@ -256,9 +256,23 @@ def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
                 "id": analyzer.model_id,
                 "processing_resolution": analyzer.processing_resolution,
                 "num_inference_steps": kwargs["num_inference_steps"],
+                "ensemble_size": kwargs["ensemble_size"],
                 "seed": kwargs["seed"],
             },
-            "roughness": {"mean": 0.4, "median": 0.35, "std": 0.1},
+            "crop": {"padding_ratio": kwargs["crop_padding_ratio"]},
+            "scoring": {
+                "contact_band_fraction": kwargs["contact_band_fraction"],
+                "mask_erosion_ratio": kwargs["mask_erosion_ratio"],
+            },
+            "quality": {"status": "ok", "warnings": []},
+            "roughness": {
+                "mean": 0.4,
+                "median": 0.35,
+                "std": 0.1,
+                "p25": 0.3,
+                "p75": 0.45,
+            },
+            "roughness_uncertainty": {"mean": 0.02},
         }
         (run_dir / "metadata.json").write_text(json.dumps(metadata))
         return {**metadata, "run_dir": str(run_dir)}

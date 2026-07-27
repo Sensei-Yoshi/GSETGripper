@@ -70,10 +70,12 @@ records. Names, images, and descriptors remain read-only in this tab.
 
 The **Marigold Roughness** tab runs the IID appearance model on any active-dataset image or
 an uploaded override. Its default background-removal pass creates a mask and transparent
-cutout, then limits roughness statistics and displayed intrinsic maps to the foreground. It
-saves the input, mask, cutout, albedo, roughness and metallicity images, raw map arrays,
-statistics, and provenance under `test_data/marigold_tests/<run-id>/`; history mode can reopen
-every saved run. Models are loaded only after **Run Marigold** is pressed.
+cutout, crops the original RGB around the object before inference, and computes robust
+statistics over an eroded central grasp band. It saves compact PNG diagnostics, uncertainty,
+quality checks, statistics, and provenance under `test_data/marigold_tests/<run-id>/`; history
+mode can reopen every saved run. Raw NumPy maps are not persisted. Models are loaded only
+after **Run Marigold** is pressed. Marigold's value is BRDF appearance roughness, not a direct
+measurement of physical height roughness or pad friction.
 
 The Single Run page includes a projected-contact checkbox. Disabling it removes contact
 from E2/E4 VLM payloads, sets its E4 retrieval weight to zero, and removes the direct E6
@@ -123,4 +125,13 @@ the precision of predictions or hardware commands. See
 | `modules/retrieval.py` | Paired-object embeddings and hybrid retrieval |
 | `modules/physics.py` | Reduced-order equations, bounded calibration, solver |
 | `modules/learning.py` | E6 residual regressor and semantic PCA |
-| `modules/evaluation.py` | Grouped split
+| `modules/evaluation.py` | Grouped splits and force/selection/recommendation metrics |
+| `modules/datasets/` | Dataset catalog, object/artifact models, storage, and preparation stages |
+| `modules/cache.py` | Dataset-isolated response caches plus Exp-Force legacy read-through |
+| `modules/expforce.py` | Synthetic fixture preparation, persistence, and benchmark |
+| `modules/suites.py` / `reporting.py` | Resumable E1–E4 suites and paper-ready comparisons |
+| `modules/models/` | Gemini, background-removal, and Marigold model adapters |
+| `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
+
+See [`docs/experiments.md`](docs/experiments.md) for the scientific comparison and
+[`docs/project-context.md`](docs/project-context.md) for the complete current context.

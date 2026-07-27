@@ -103,6 +103,18 @@ def test_default_app_structure_matches_research_lab() -> None:
     assert expected_state <= set(app.session_state.filtered_state)
 
 
+def test_descriptor_editor_shows_the_standard_retrieval_template() -> None:
+    app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
+
+    descriptor = next(
+        item for item in app.text_area if item.label == "Descriptor instruction"
+    )
+    assert (
+        "[Material/object form]. The intended contact region is [surface condition], "
+        "[geometry], and [other relevant properties]."
+    ) in descriptor.value
+
+
 def test_tab_registry_has_unique_labels_and_common_renderer_contract() -> None:
     labels = [spec.label for spec in TAB_SPECS]
 
