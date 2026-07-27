@@ -103,10 +103,10 @@ def test_mismatched_ack_raises_instead_of_accepting_wrong_axis():
     assert conn.written == ["SELECT SILICONE\n"]
 
 
-def test_force_stub_has_no_ack_and_times_out():
-    # Documents the current firmware gap: FORCE is parsed and discarded with
-    # no ack at all (see SerialGraspSender's docstring), so once SELECT and Z
-    # complete normally, the FORCE line stalls until the read times out.
+def test_force_line_without_its_ack_times_out():
+    # FORCE is verified like every other axis: if its "DONE FORCE" ack never
+    # arrives (e.g. the board resets mid-sequence), the sender must time out
+    # rather than silently proceeding to GRIP CLOSE.
     sender, conn = _sender(["DONE SELECT", "DONE Z"])
     with pytest.raises(TimeoutError, match="no reply"):
         sender.send(COMMAND)

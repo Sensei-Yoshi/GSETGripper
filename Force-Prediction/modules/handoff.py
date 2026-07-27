@@ -157,12 +157,10 @@ class GraspCommand(BaseModel):
         every grasp downward; nothing in this module or the firmware detects
         that.
 
-        NOTE -- FORCE IS NOT YET IMPLEMENTED IN FIRMWARE: main.ino matches the
-        `FORCE` command, parses the argument, and returns without printing
-        any ack. A real send of this sequence therefore does not fail fast
-        with `ERR unknown command`; `SerialGraspSender._await_ack` stalls for
-        its full timeout with the gripper already descended and closed, then
-        raises `TimeoutError`. See `SerialGraspSender`'s class docstring.
+        PROTOCOL CONTRACT -- FORCE: `SerialGraspSender._await_ack` requires
+        `FORCE <n>` to be acknowledged with `DONE FORCE`, the same
+        request/ack shape as `SELECT`, `Z`, and `GRIP`. See
+        `SerialGraspSender`'s class docstring.
 
         Fixed-point formatting is mandatory: main.ino's parseFloatStrict
         accepts only an optional sign, digits, and at most one dot. Python's

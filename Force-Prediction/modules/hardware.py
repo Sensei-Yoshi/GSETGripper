@@ -175,9 +175,7 @@ class SerialRoughness:
 
 # Command word -> the DONE ack main.ino emits once that axis's move completes.
 # Not one-to-one with GraspCommand.serialize()'s lines: both "GRIP CLOSE <mm>"
-# and "GRIP OPEN" ack as "DONE GRIP". FORCE has no firmware ack yet (see
-# SerialGraspSender's docstring) -- mapped to the "DONE FORCE" main.ino will
-# emit once implemented, so a real send currently stalls here until timeout.
+# and "GRIP OPEN" ack as "DONE GRIP".
 _EXPECTED_DONE = {
     "Z": "DONE Z",
     "SELECT": "DONE SELECT",
@@ -214,12 +212,9 @@ class SerialGraspSender:
     anything at or above it -- is a way to drive the carriage back to the top
     of travel as part of parking.)
 
-    NOTE -- FORCE IS NOT YET IMPLEMENTED IN FIRMWARE: main.ino matches the
-    `FORCE` command, parses the argument, and returns without printing any
-    ack. A real send() of a `GraspCommand` therefore does not fail fast with
-    `ERR unknown command`; it stalls in `_await_ack` for the full `timeout`
-    with the gripper already descended and closed, and then raises
-    `TimeoutError`, not a firmware `ERR`.
+    PROTOCOL CONTRACT -- FORCE: `_await_ack` requires `FORCE <n>` to be
+    acknowledged with `DONE FORCE`, the same request/ack shape as `SELECT`,
+    `Z`, and `GRIP CLOSE <mm>` / `GRIP OPEN`.
     """
 
     def __init__(
@@ -253,12 +248,10 @@ class SerialGraspSender:
         Every connection resets the board, so boot-time garbage or a
         desynchronised stream is a real scenario -- accepting *any* line
         starting with "DONE" would let a stale ack for a different axis pass
-        as success. The mapping from command word to ack is not one-to-one:
-        `Z` -> `DONE Z`, `SELECT ...` -> `DONE SELECT`, `GRIP CLOSE ...` (and
-        `GRIP OPEN`) -> `DONE GRIP`. `FORCE` has no ack in firmware yet; it is
-        mapped here to the `DONE FORCE` main.ino will emit once implemented,
-        which is exactly why the current stub (see this class's docstring)
-        stalls until timeout instead of acking.
+        as success. The mapping from command word to ack is uniform but not
+        one-to-one: `Z` -> `DONE Z`, `SELECT ...` -> `DONE SELECT`,
+        `FORCE ...` -> `DONE FORCE`, `GRIP CLOSE ...` (and `GRIP OPEN`) ->
+        `DONE GRIP`.
         """
         expected = _EXPECTED_DONE[line.split(" ", 1)[0]]
         warnings: list[str] = []
