@@ -215,6 +215,14 @@ class SerialGraspSender:
     PROTOCOL CONTRACT -- FORCE: `_await_ack` requires `FORCE <n>` to be
     acknowledged with `DONE FORCE`, the same request/ack shape as `SELECT`,
     `Z`, and `GRIP CLOSE <mm>` / `GRIP OPEN`.
+
+    CONNECTION SEQUENCE: opening the port resets the board, which spends the
+    post-reset window inside `setup()` printing an `INFO`/`READY` boot banner
+    -- and, on a load-cell wiring fault, an `ERR cell <n> timed out` line --
+    before it accepts any command. After the reset sleep below, `__init__`
+    flushes that boot output with `reset_input_buffer()` so the first
+    `_await_ack` read sees the real ack for the first command rather than
+    leftover boot text.
     """
 
     def __init__(
@@ -228,6 +236,13 @@ class SerialGraspSender:
         self.port = find_serial_port(port)
         self.conn = serial.Serial(self.port, baud, timeout=timeout)
         time.sleep(2.0)  # allow the board to reset
+        # setup() prints an INFO/READY boot banner (and, on a load-cell wiring
+        # fault, an "ERR cell <n> timed out" line) before it accepts any
+        # command. Without this flush, the first _await_ack read would
+        # consume that boot output instead of the real ack -- either raising
+        # "unexpected firmware reply" on a healthy board, or mistaking the
+        # boot ERR for a rejection of the first command.
+        self.conn.reset_input_buffer()
 
     def send(self, cmd: GraspCommand) -> list[str]:
         """Execute the grasp. Returns any WARN lines the firmware emitted.
