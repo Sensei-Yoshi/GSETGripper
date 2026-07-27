@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Gantry jog panel</title>
+<style>
+  :root {
+    --bg: #14161a;
+    --panel: #1c1f26;
+    --panel-2: #232732;
+    --line: #2e333f;
+    --ink: #e8eaef;
+    --ink-dim: #9aa1b0;
+    --accent: #5dcaa5;
+    --accent-dim: #1d9e75;
+    --warn: #ef9f27;
+    --danger: #e24b4a;
+    --radius: 10px;
+    --mono: ui-monospace, "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: var(--sans); font-size: 15px; line-height: 1.5;
+    padding: 24px; display: flex; justify-content: center;
+  }
+  .wrap { width: 100%; max-width: 760px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 0 0 4px; }
+  .sub { color: var(--ink-dim); font-size: 13px; margin: 0 0 20px; }
+  .bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
+  button {
+    font-family: var(--sans); font-size: 14px; color: var(--ink);
+    background: var(--panel-2); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 8px 14px; cursor: pointer;
+    transition: border-color .12s, background .12s;
+  }
+  button:hover:not(:disabled) { border-color: #46506a; background: #262b38; }
+  button:disabled { opacity: .4; cursor: not-allowed; }
+  button.primary { background: var(--accent-dim); border-color: var(--accent-dim); color: #04211a; font-weight: 600; }
+  button.primary:hover:not(:disabled) { background: var(--accent); border-color: var(--accent); }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--danger); flex: none; }
+  .dot.on { background: var(--accent); }
+  .status { color: var(--ink-dim); font-size: 13px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 18px; }
+  @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: var(--radius); padding: 16px; }
+  .card h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--ink-dim); margin: 0 0 12px; }
+  .readout { font-family: var(--mono); font-size: 26px; font-weight: 500; margin: 0; }
+  .readout .unit { font-size: 14px; color: var(--ink-dim); margin-left: 4px; }
+  .pad { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(3, 56px); gap: 8px; justify-content: center; margin: 8px 0 4px; }
+  .pad button { padding: 0; font-size: 22px; display: flex; align-items: center; justify-content: center; user-select: none; }
+  .pad button.held { background: var(--accent-dim); border-color: var(--accent-dim); color: #04211a; }
+  .pad .spacer { visibility: hidden; }
+  .k-up { grid-column: 2; grid-row: 1; }
+  .k-left { grid-column: 1; grid-row: 2; }
+  .k-right { grid-column: 3; grid-row: 2; }
+  .k-down { grid-column: 2; grid-row: 3; }
+  .hint { font-size: 12px; color: var(--ink-dim); text-align: center; margin: 8px 0 0; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--ink-dim); }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .seg button { border: none; border-radius: 0; }
+  .seg button.active { background: var(--accent-dim); color: #04211a; font-weight: 600; }
+  .console { background: #0e1013; border: 1px solid var(--line); border-radius: var(--radius); padding: 12px; font-family: var(--mono); font-size: 12px; line-height: 1.55; height: 180px; overflow-y: auto; white-space: pre-wrap; color: var(--ink-dim); }
+  .console .tx { color: var(--accent); }
+  .console .warn { color: var(--warn); }
+  .console .err { color: var(--danger); }
+  .foot { color: var(--ink-dim); font-size: 12px; margin-top: 14px; }
+  .foot code { background: var(--panel-2); padding: 1px 5px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Gantry jog panel</h1>
+  <p class="sub">Web Serial &middot; arrow keys jog Z and the gripper &middot; tap = one step, hold = continuous until release</p>
+
+  <div class="bar">
+    <button id="connect" class="primary">Connect</button>
+    <span class="dot" id="dot"></span>
+    <span class="status" id="status">Not connected</span>
+    <span style="flex:1"></span>
+    <div class="toggle">
+      Step
+      <div class="seg" id="stepMode">
+        <button data-mode="fine" class="active">Fine</button>
+        <button data-mode="fast">Fast</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Z axis &mdash; up / down</h2>
+      <p class="readout"><span id="zPos">--</span><span class="unit">mm</span></p>
+      <div class="pad">
+        <button class="k-up" data-axis="z" data-dir="-1" aria-label="Z up">&#9650;</button>
+        <span class="spacer k-left"></span>
+        <span class="spacer k-right"></span>
+        <button class="k-down" data-axis="z" data-dir="1" aria-label="Z down">&#9660;</button>
+      </div>
+      <p class="hint">&uarr; raises &middot; &darr; lowers</p>
+    </div>
+
+    <div class="card">
+      <h2>Gripper &mdash; open / close</h2>
+      <p class="readout"><span id="gPos">--</span><span class="unit">mm</span></p>
+      <div class="pad">
+        <button class="k-left" data-axis="grip" data-dir="-1" aria-label="Gripper open">&#9664;</button>
+        <button class="k-right" data-axis="grip" data-dir="1" aria-label="Gripper close">&#9654;</button>
+      </div>
+      <p class="hint">&larr; loosens &middot; &rarr; tightens</p>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <h2>Turret &amp; quick moves</h2>
+    <div class="row">
+      <button data-cmd="SELECT GEKKO">Select gecko</button>
+      <button data-cmd="SELECT SILICONE">Select silicone</button>
+      <button data-cmd="GRIP OPEN">Grip open</button>
+      <button data-cmd="POS?">Poll position</button>
+      <button data-cmd="STOP" style="border-color:var(--danger);color:var(--danger)">Stop all</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px;">
+    <h2>Force sensors</h2>
+    <div class="row" style="align-items:center;">
+      <div style="flex:1;min-width:120px;">
+        <p class="hint" style="text-align:left;margin:0 0 2px;">Cell 1</p>
+        <p class="readout"><span id="f1g">--</span><span class="unit">g</span></p>
+        <p class="hint" style="text-align:left;margin:2px 0 0;"><span id="f1n">--</span> N</p>
+      </div>
+      <div style="flex:1;min-width:120px;">
+        <p class="hint" style="text-align:left;margin:0 0 2px;">Cell 2</p>
+        <p class="readout"><span id="f2g">--</span><span class="unit">g</span></p>
+        <p class="hint" style="text-align:left;margin:2px 0 0;"><span id="f2n">--</span> N</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <button id="streamBtn">Start live readings</button>
+        <button data-cmd="TARE">Tare</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Serial log</h2>
+    <div class="console" id="log"></div>
+  </div>
+
+  <p class="foot">
+    Requires Chrome/Edge over <code>https</code> or <code>localhost</code>. Sends your firmware's <code>JOGLIVE</code> command on hold and <code>STOP</code> on release; taps send relative moves like <code>Z +0.25</code> / <code>GRIP +0.1</code>. Click a pad once, then this window has keyboard focus &mdash; the arrow keys drive it.
+  </p>
+</div>
+
+<script>
+const STEP = {
+  z:    { fine: 0.5, fast: 4.0 },
+  grip: { fine: 0.2, fast: 2.0 }
+};
+const HOLD_MS = 250;
+const PING_MS = 200;
+
+let port = null, writer = null, reader = null;
+let stepMode = "fine";
+let pingTimer = null;
+let streamOn = false;
+const keyState = {};
+
+function anyHeld() {
+  for (const k in keyState) if (keyState[k].active && keyState[k].hold) return true;
+  return false;
+}
+
+function updatePinger() {
+  if (anyHeld() && !pingTimer) {
+    pingTimer = setInterval(() => send("JOGLIVE PING"), PING_MS);
+  } else if (!anyHeld() && pingTimer) {
+    clearInterval(pingTimer);
+    pingTimer = null;
+  }
+}
+
+const el = id => document.getElementById(id);
+const log = el("log");
+
+function logLine(text, cls) {
+  const span = document.createElement("span");
+  if (cls) span.className = cls;
+  span.textContent = text + "\n";
+  log.appendChild(span);
+  log.scrollTop = log.scrollHeight;
+}
+
+async function send(line) {
+  if (!writer) return;
+  await writer.write(new TextEncoder().encode(line + "\n"));
+  logLine("> " + line, "tx");
+}
+
+async function connect() {
+  if (port) { await disconnect(); return; }
+  try {
+    port = await navigator.serial.requestPort();
+    await port.open({ baudRate: 115200 });
+    writer = port.writable.getWriter();
+    el("connect").textContent = "Disconnect";
+    el("connect").classList.remove("primary");
+    el("dot").classList.add("on");
+    el("status").textContent = "Connected @ 115200";
+    logLine("-- connected --");
+    readLoop();
+  } catch (e) {
+    logLine("connect failed: " + e.message, "err");
+    port = null;
+  }
+}
+
+async function disconnect() {
+  try {
+    for (const k in keyState) if (keyState[k].active) releaseAxis(keyState[k]);
+    if (streamOn && writer) { await writer.write(new TextEncoder().encode("STREAM OFF\n")).catch(()=>{}); }
+    if (reader) { await reader.cancel().catch(()=>{}); reader = null; }
+    if (writer) { await writer.close().catch(()=>{}); writer.releaseLock(); writer = null; }
+    if (port) { await port.close().catch(()=>{}); }
+  } finally {
+    port = null;
+    streamOn = false;
+    el("streamBtn").textContent = "Start live readings";
+    el("streamBtn").classList.remove("primary");
+    el("connect").textContent = "Connect";
+    el("connect").classList.add("primary");
+    el("dot").classList.remove("on");
+    el("status").textContent = "Not connected";
+    logLine("-- disconnected --");
+  }
+}
+
+async function readLoop() {
+  const dec = new TextDecoder();
+  let buf = "";
+  try {
+    while (port && port.readable) {
+      reader = port.readable.getReader();
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) break;
+          buf += dec.decode(value, { stream: true });
+          let nl;
+          while ((nl = buf.indexOf("\n")) >= 0) {
+            const line = buf.slice(0, nl).replace(/\r$/, "");
+            buf = buf.slice(nl + 1);
+            if (line.length) handleLine(line);
+          }
+        }
+      } finally { reader.releaseLock(); reader = null; }
+    }
+  } catch (e) { logLine("read error: " + e.message, "err"); }
+}
+
+function setForce(g1, n1, g2, n2) {
+  if (g1 !== undefined) { el("f1g").textContent = g1.toFixed(1); el("f1n").textContent = n1.toFixed(3); }
+  if (g2 !== undefined) { el("f2g").textContent = g2.toFixed(1); el("f2n").textContent = n2.toFixed(3); }
+}
+
+function handleLine(line) {
+  const cls = line.startsWith("ERR") ? "err" : line.startsWith("WARN") ? "warn" : "";
+  logLine(line, cls);
+
+  if (line[0] === "F" && line[1] === " ") {
+    const p = line.trim().split(/\s+/);
+    if (p.length >= 8) {
+      setForce(+p[2], +p[3], +p[4], +p[5]);
+      el("zPos").textContent = (+p[6]).toFixed(1);
+      el("gPos").textContent = (+p[7]).toFixed(1);
+    }
+    return;
+  }
+
+  const pos = line.match(/^POS z=(-?\d+\.?\d*).*?grip=(-?\d+\.?\d*).*?f1=(-?\d+\.?\d*).*?f2=(-?\d+\.?\d*)/i);
+  if (pos) {
+    el("zPos").textContent = (+pos[1]).toFixed(1);
+    el("gPos").textContent = (+pos[2]).toFixed(1);
+    setForce(+pos[3], +pos[3] * 0.00980665, +pos[4], +pos[4] * 0.00980665);
+    return;
+  }
+
+  const m = line.match(/z=\s*(-?\d+\.?\d*)\s*mm\s*grip=\s*(-?\d+\.?\d*)/i);
+  if (m) { el("zPos").textContent = (+m[1]).toFixed(1); el("gPos").textContent = (+m[2]).toFixed(1); }
+}
+
+function axisState(axis, dir) {
+  const key = axis + ":" + dir;
+  if (!keyState[key]) keyState[key] = { axis, dir, active: false, hold: false, timer: null };
+  return keyState[key];
+}
+
+function jogliveCmd(axis, dir, action) {
+  if (action === "stop") {
+    return axis === "z" ? "JOGLIVE Z STOP" : "JOGLIVE GRIP STOP";
+  }
+  if (axis === "z") return dir < 0 ? "JOGLIVE Z UP" : "JOGLIVE Z DOWN";
+  return dir < 0 ? "JOGLIVE GRIP OPEN" : "JOGLIVE GRIP CLOSE";
+}
+
+function tapCmd(axis, dir) {
+  const mm = STEP[axis][stepMode] * dir;
+  const sign = mm >= 0 ? "+" : "";
+  return (axis === "z" ? "Z " : "GRIP ") + sign + mm;
+}
+
+function pressAxis(axis, dir, btn) {
+  const s = axisState(axis, dir);
+  if (s.active) return;
+  s.active = true; s.hold = false; s.btn = btn;
+  if (btn) btn.classList.add("held");
+  send(tapCmd(axis, dir));
+  s.timer = setTimeout(() => {
+    if (!s.active) return;
+    s.hold = true;
+    send(jogliveCmd(axis, dir, "go"));
+    updatePinger();
+  }, HOLD_MS);
+}
+
+function releaseAxis(s) {
+  if (!s.active) return;
+  clearTimeout(s.timer);
+  if (s.hold) send(jogliveCmd(s.axis, s.dir, "stop"));
+  s.active = false; s.hold = false;
+  if (s.btn) s.btn.classList.remove("held");
+  updatePinger();
+}
+
+const KEYMAP = {
+  ArrowUp:    ["z", -1],  w: ["z", -1],
+  ArrowDown:  ["z", 1],   s: ["z", 1],
+  ArrowLeft:  ["grip", -1], a: ["grip", -1],
+  ArrowRight: ["grip", 1],  d: ["grip", 1]
+};
+
+window.addEventListener("keydown", e => {
+  const map = KEYMAP[e.key];
+  if (!map || !writer) return;
+  e.preventDefault();
+  const [axis, dir] = map;
+  const btn = document.querySelector(`.pad button[data-axis="${axis}"][data-dir="${dir}"]`);
+  pressAxis(axis, dir, btn);
+});
+
+window.addEventListener("keyup", e => {
+  const map = KEYMAP[e.key];
+  if (!map) return;
+  e.preventDefault();
+  const [axis, dir] = map;
+  releaseAxis(axisState(axis, dir));
+});
+
+window.addEventListener("blur", () => {
+  for (const k in keyState) if (keyState[k].active) releaseAxis(keyState[k]);
+});
+
+document.querySelectorAll(".pad button").forEach(btn => {
+  const axis = btn.dataset.axis, dir = +btn.dataset.dir;
+  const down = e => { e.preventDefault(); pressAxis(axis, dir, btn); };
+  const up = e => { e.preventDefault(); releaseAxis(axisState(axis, dir)); };
+  btn.addEventListener("mousedown", down);
+  btn.addEventListener("mouseup", up);
+  btn.addEventListener("mouseleave", up);
+  btn.addEventListener("touchstart", down, { passive: false });
+  btn.addEventListener("touchend", up);
+});
+
+document.querySelectorAll("[data-cmd]").forEach(b =>
+  b.addEventListener("click", () => send(b.dataset.cmd)));
+
+el("streamBtn").addEventListener("click", () => {
+  streamOn = !streamOn;
+  send(streamOn ? "STREAM ON 100" : "STREAM OFF");
+  el("streamBtn").textContent = streamOn ? "Stop live readings" : "Start live readings";
+  el("streamBtn").classList.toggle("primary", streamOn);
+});
+
+el("stepMode").querySelectorAll("button").forEach(b =>
+  b.addEventListener("click", () => {
+    stepMode = b.dataset.mode;
+    el("stepMode").querySelectorAll("button").forEach(x => x.classList.toggle("active", x === b));
+  }));
+
+el("connect").addEventListener("click", connect);
+
+if (!("serial" in navigator)) {
+  el("status").textContent = "Web Serial unsupported \u2014 use Chrome or Edge";
+  el("connect").disabled = true;
+}
+</script>
+</body>
+</html>
