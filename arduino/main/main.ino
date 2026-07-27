@@ -62,7 +62,7 @@ const float Z_MIN_GRIPPER_HEIGHT_MM = Z_FLOOR_CLEARANCE_MM;
 // downward from there, so a bigger step count = a lower gripper.
 const long Z_MIN_STEPS = 0;
 const long Z_MAX_STEPS =
-    (long)((Z_MAX_GRIPPER_HEIGHT_MM - Z_MIN_GRIPPER_HEIGHT_MM) * Z_STEPS_PER_MM);  // 48546
+    (long)((Z_MAX_GRIPPER_HEIGHT_MM - Z_MIN_GRIPPER_HEIGHT_MM) * Z_STEPS_PER_MM);  // 48545
 
 // ---- Grasp placement ----
 // "Z <mm>" carries the height of the TOP OF THE OBJECT above the floor -- that
@@ -117,17 +117,27 @@ const float GRIP_ACCELERATION_STEPS_PER_SEC2 = 5000.0;  // 25 mm/s^2
 // opening changes 1:1 with nut travel -- hence no factor of 2 below or in
 // gripStepsForWidth().
 //
-// GRIP_OPEN_STEPS is the fully-open home position. GRIP_MAX_OPENING_MM is the
-// object width (mm) that corresponds to fully open jaws; GRIP_STEPS_PER_MM
-// converts the remaining jaw travel needed to close around a narrower object
-// into steps.
+// Measured 2026-07-24: the grip screw has 4.00 in = 101.6 mm of usable travel,
+// and running it all the way from the open end closes the jaws to a zero gap.
+// The jaw gap therefore equals the travel REMAINING, so a fully-open gap of
+// 101.6 mm and a closing travel of 101.6 mm are the same measurement:
+//   gap = GRIP_MAX_OPENING_MM - (steps / GRIP_STEPS_PER_MM)
+//
+// Step 0 is the fully-open end, which -- like Z -- is assumed, not homed. The
+// jaws must be physically fully open whenever the board powers on or resets,
+// and opening the serial port resets the board. "GRIP OPEN" returns to that
+// flashed-at position.
 const long GRIP_OPEN_STEPS = 0;
-const float GRIP_MAX_OPENING_MM = 60.0; // TODO: measure the fully-open jaw gap
+const float GRIP_MAX_OPENING_MM = 101.6; // 4.00 in fully-open jaw gap
 const float GRIP_STEPS_PER_MM = 200.0;
+// FLIP THIS if the jaws open when they should close. +1 or -1, nothing else.
+// Test with a small move (GRIP CLOSE 90) before trusting a full-travel one.
+// The equivalent knob is Z_DOWN_SIGN for the Z axis and the setPinsInverted()
+// call in setup() for SELECT.
+const int GRIP_CLOSE_SIGN = 1;
 const long GRIP_MIN_STEPS = 0;
-// Fully-closed travel = GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM. Update this
-// alongside GRIP_MAX_OPENING_MM when the jaw gap is measured.
-const long GRIP_MAX_STEPS = 12000;
+// Fully closed: the whole 101.6 mm of travel consumed.
+const long GRIP_MAX_STEPS = (long)(GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM);  // 20320
 
 bool gripMovePending = false;
 
@@ -230,11 +240,23 @@ void processCommand(const String& message) {
         sendErr("bad value");
         return;
       }
+      // A negative width can only come from a bad measurement. Refuse rather
+      // than let it drive the jaws past closed onto whatever is between them.
+      if (widthMM < 0.0) {
+        sendErr("negative width");
+        return;
+      }
       moveGripToSteps(gripStepsForWidth(widthMM));
     } else {
       sendErr("unknown grip command");
     }
-  } else {
+  }
+  else if (message.startsWith("FORCE")){
+    String arg = message.substring(6);
+    arg.trim();
+  }
+  
+  else {
     sendErr("unknown command");
   }
 }
@@ -244,6 +266,8 @@ void processCommand(const String& message) {
 // above the floor. It is clamped in millimetres first so the WARN reports a
 // real-world height, then converted to a downward step count from the
 // top-of-travel origin.
+
+
 void moveZTo(float targetHeightMM) {
   float clampedHeightMM = targetHeightMM;
   if (clampedHeightMM < Z_MIN_GRIPPER_HEIGHT_MM) {
@@ -285,12 +309,18 @@ void moveSelectTo(long targetSteps) {
   selectMovePending = true;
 }
 
+// targetSteps counts travel away from the fully-open end, so it is always >= 0.
+// GRIP_CLOSE_SIGN decides which way the motor turns to consume that travel.
 void moveGripToSteps(long targetSteps) {
   long clamped = clampSteps(targetSteps, GRIP_MIN_STEPS, GRIP_MAX_STEPS, "GRIP");
-  stepperGrip.moveTo(clamped);
+  stepperGrip.moveTo(GRIP_CLOSE_SIGN * clamped);
   gripMovePending = true;
 }
 
+// Converts an object width into a jaw position: close by however much travel
+// is left over once the object's width is accounted for, leaving a gap equal
+// to the width. An object wider than the jaws open (travel would go negative)
+// leaves them fully open rather than reaching for an impossible position.
 long gripStepsForWidth(float widthMM) {
   float travelMM = GRIP_MAX_OPENING_MM - widthMM;
   if (travelMM < 0) {
