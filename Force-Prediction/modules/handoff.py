@@ -11,7 +11,9 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field, model_validator
 
-from .contracts import Gripper
+from .config import Config
+from .contracts import Gripper, SelectionResult
+from .datasets.models import DatasetObject
 
 # --------------------------------------------------------------------------- #
 # Mirrors of arduino/main/main.ino constants. Keep in sync by hand.
@@ -51,6 +53,49 @@ class GraspCommand(BaseModel):
                 f"{GRIP_MAX_OPENING_MM} mm"
             )
         return self
+
+    @classmethod
+    def from_prediction(
+        cls,
+        obj: DatasetObject,
+        selection: SelectionResult,
+        cfg: Config,
+    ) -> GraspCommand:
+        """Assemble a command from a pipeline selection and an object's contact data.
+
+        Gripper and force come from `Pipeline.predict()` (pipeline.py:33); height
+        and width from the contact model's summary.json, surfaced as
+        `DatasetObject.contact_fraction` (catalog.py:366). Those two halves have
+        different lifecycles -- one live, one read from disk -- which is why they
+        are validated together here.
+
+        Raises ValueError naming the fix when the grasp cannot be executed.
+        All-or-nothing: nothing partial reaches a rig that has no homing routine
+        and no limit switches.
+        """
+        object_id = obj.object_id
+        if selection.desired_gripper == "none":
+            raise ValueError(f"no feasible gripper for {object_id}")
+        force_n = selection.predicted_normal_force_n
+        if force_n is None:
+            raise ValueError(f"selection has no force for {object_id}")
+        contact = obj.contact_fraction
+        if contact is None:
+            raise ValueError(
+                f"no contact data for {object_id}: "
+                "run prepare_dataset --stages surface_area"
+            )
+        if not contact.grasp_feasible:
+            raise ValueError(f"contact model found no antipodal grasp for {object_id}")
+        if force_n > cfg.force.limit_n:
+            raise ValueError(f"force {force_n} N exceeds limit {cfg.force.limit_n} N")
+        return cls(
+            object_id=object_id,
+            object_height_mm=contact.object_height_mm,
+            object_width_mm=contact.object_width_mm,
+            gripper=Gripper(selection.desired_gripper),
+            force_n=force_n,
+        )
 
     def serialize(self) -> list[str]:
         """Render the firmware command lines, in execution order.
