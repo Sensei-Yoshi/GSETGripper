@@ -233,6 +233,17 @@ float forceTargetN = 0.0;
 // Boot default GEKKO because the turret's assumed boot position is step 0.
 int selectedCellIndex = CELL_FOR_GEKKO;
 
+// Creep speed while seeking force contact -- 2 mm/s of jaw travel. Restored
+// to GRIP_MAX_SPEED_STEPS_PER_SEC when the grip axis returns to idle.
+const float FORCE_SEEK_SPEED_STEPS_PER_SEC = 400.0;
+
+// Rise after a successful force grasp, before DONE GRIP is sent.
+const float LIFT_MM = 50.0;
+
+// Consumed copies for the seek in progress (forceArmed is one-shot).
+int activeCellIndex = 0;
+float activeTargetN = 0.0;
+
 String command;
 
 void setup() {
@@ -359,6 +370,28 @@ void loop() {
   if (gripPhase == GRIP_POSITION && stepperGrip.distanceToGo() == 0) {
     gripPhase = GRIP_IDLE;
     Serial.println("DONE GRIP");
+  } else if (gripPhase == GRIP_SEEKING) {
+    if (cellRT[activeCellIndex].haveFirst &&
+        cellForceN(activeCellIndex) >= activeTargetN) {
+      // Contact at target force: stop the jaws (decelerate; the lead screw
+      // holds from there) and lift the object.
+      stepperGrip.stop();
+      startLift();
+      gripPhase = GRIP_LIFTING;
+    } else if (stepperGrip.distanceToGo() == 0) {
+      // Fully closed without reaching the target: missed or slipped object.
+      // A physical outcome, not a protocol violation -- WARN, no lift, DONE.
+      stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
+      Serial.println("WARN force not reached");
+      gripPhase = GRIP_IDLE;
+      Serial.println("DONE GRIP");
+    }
+  } else if (gripPhase == GRIP_LIFTING) {
+    if (stepperZA.distanceToGo() == 0 && stepperZB.distanceToGo() == 0) {
+      stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
+      gripPhase = GRIP_IDLE;
+      Serial.println("DONE GRIP");
+    }
   }
 }
 
@@ -392,6 +425,15 @@ void processCommand(const String& message) {
     String arg = message.substring(5);
     arg.trim();
     if (arg == "OPEN") {
+      // Clears any armed target and aborts an in-progress seek or lift. The
+      // lift's Z motion stops where the abort catches it (it set no
+      // zMovePending, so stopping it prints nothing).
+      forceArmed = false;
+      if (gripPhase == GRIP_LIFTING) {
+        stepperZA.stop();
+        stepperZB.stop();
+      }
+      stepperGrip.setMaxSpeed(GRIP_MAX_SPEED_STEPS_PER_SEC);
       moveGripToSteps(GRIP_OPEN_STEPS);
     } else if (arg.startsWith("CLOSE")) {
       String widthArg = arg.substring(5);
@@ -407,7 +449,12 @@ void processCommand(const String& message) {
         sendErr("negative width");
         return;
       }
-      moveGripToSteps(gripStepsForWidth(widthMM));
+      if (forceArmed) {
+        // Force mode: widthMM was validated above but is not used for motion.
+        startForceSeek();
+      } else {
+        moveGripToSteps(gripStepsForWidth(widthMM));
+      }
     } else {
       sendErr("unknown grip command");
     }
@@ -521,6 +568,40 @@ void moveGripToSteps(long targetSteps) {
   long clamped = clampSteps(targetSteps, GRIP_MIN_STEPS, GRIP_MAX_STEPS, "GRIP");
   stepperGrip.moveTo(GRIP_CLOSE_SIGN * clamped);
   gripPhase = GRIP_POSITION;
+}
+
+// Begin a force-seeking close: creep toward fully closed and let loop() stop
+// the jaws when the selected gripper's cell reads the target. Refuses (ERR,
+// no DONE) when that cell cannot be read -- the grasp cannot proceed, and the
+// Python sender treats ERR as fatal by design.
+void startForceSeek() {
+  int cell = selectedCellIndex;
+  if (!LOADCELL_ENABLED[cell] || !cellHealthy[cell]) {
+    sendErr(cell == CELL_FOR_GEKKO ? "gekko load cell disabled"
+                                   : "silicone load cell disabled");
+    return;
+  }
+  forceArmed = false;  // one-shot: consumed by this close
+  activeCellIndex = cell;
+  activeTargetN = forceTargetN;
+  stepperGrip.setMaxSpeed(FORCE_SEEK_SPEED_STEPS_PER_SEC);
+  stepperGrip.moveTo(GRIP_CLOSE_SIGN * GRIP_MAX_STEPS);
+  gripPhase = GRIP_SEEKING;
+}
+
+// Raise Z by LIFT_MM from wherever it is, clamped at top of travel. Owned by
+// the grip operation: deliberately does NOT set zMovePending, so it never
+// prints DONE Z -- the sender is waiting for DONE GRIP.
+void startLift() {
+  long liftSteps = (long)(LIFT_MM * Z_STEPS_PER_MM);
+  // Signed motor position -> non-negative descent steps from top-of-travel.
+  long descentSteps = Z_DOWN_SIGN * stepperZA.currentPosition();
+  long targetDescent = descentSteps - liftSteps;
+  if (targetDescent < Z_MIN_STEPS) {
+    targetDescent = Z_MIN_STEPS;
+  }
+  stepperZA.moveTo(Z_DOWN_SIGN * targetDescent);
+  stepperZB.moveTo(Z_DOWN_SIGN * targetDescent);
 }
 
 // Converts an object width into a jaw position: close by however much travel
