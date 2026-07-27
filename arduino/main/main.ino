@@ -400,7 +400,40 @@ void processCommand(const String& message) {
     String arg = message.substring(6);
     arg.trim();
   }
-  
+  else if (message == "F?") {
+    printForceLine();
+
+  } else if (message == "TARE") {
+    for (int i = 0; i < LOADCELL_COUNT; i++) {
+      if (!LOADCELL_ENABLED[i]) continue;
+      startTare(i);
+    }
+
+  } else if (message.startsWith("TARE ")) {
+    int idx = cellIndexFromArg(message.substring(5));
+    if (idx < 0) return;
+    startTare(idx);
+
+  } else if (message.startsWith("CAL ")) {
+    String arg = message.substring(4);
+    arg.trim();
+    int sp = arg.indexOf(' ');
+    if (sp < 0) {
+      sendErr("usage: CAL <1|2> <known grams>");
+      return;
+    }
+    int idx = cellIndexFromArg(arg.substring(0, sp));
+    if (idx < 0) return;
+    float grams;
+    if (!parseFloatStrict(arg.substring(sp + 1), grams)) {
+      sendErr("bad value");
+      return;
+    }
+    calibrateCell(idx, grams);
+
+  } else if (message == "CAL?") {
+    calPrint();
+  }
   else {
     sendErr("unknown command");
   }
