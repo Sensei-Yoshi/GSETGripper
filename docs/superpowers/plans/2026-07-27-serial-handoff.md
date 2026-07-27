@@ -100,9 +100,13 @@ def test_descends_before_closing_and_sets_force_first():
 def test_small_force_never_renders_in_scientific_notation():
     # parseFloatStrict (main.ino:340-371) accepts only sign, digits, one dot.
     # "1e-05" comes back as "ERR bad value".
+    #
+    # Check the ARGUMENT, not the whole line: FORCE, SILICONE, and CLOSE all
+    # contain "e", so scanning the line for "e" can never pass.
     lines = _command(force_n=0.00001).serialize()
-    assert "FORCE 0.00" in lines
-    assert not any("e" in line.lower() for line in lines)
+    force_line = next(line for line in lines if line.startswith("FORCE "))
+    assert force_line == "FORCE 0.00"
+    assert "e" not in force_line.removeprefix("FORCE ")
 
 
 def test_rejects_nonpositive_dimensions():
@@ -432,7 +436,7 @@ git commit -m "feat: assemble GraspCommand from a pipeline selection"
 
 **Interfaces:**
 - Consumes: `GraspCommand.serialize()` from Task 1; `find_serial_port()` from `modules/hardware.py:79`.
-- Produces: `SerialGraspSender(port: str | None = None, baud: int = 9600, timeout: float = 30.0)` with `send(cmd: GraspCommand) -> list[str]` returning firmware `WARN` lines, and `close() -> None`.
+- Produces: `SerialGraspSender(port: str | None = None, baud: int = 9600, timeout: float = 30.0)` with `send(cmd: GraspCommand) -> list[str]` returning firmware `WARN` lines, and `close() -> None`. `GraspCommand` is imported under a `TYPE_CHECKING` guard — annotation only, no runtime import.
 
 - [ ] **Step 1: Add the serial guard to conftest**
 
@@ -584,7 +588,18 @@ class SerialGripper:
 
 - [ ] **Step 5: Add the sender**
 
-Append to `Force-Prediction/modules/hardware.py`, after `SerialRoughness`:
+First extend the existing `typing` import at `Force-Prediction/modules/hardware.py:23`:
+
+```python
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from .handoff import GraspCommand
+```
+
+A `TYPE_CHECKING` guard, not a plain import: the annotation is already a string thanks to `from __future__ import annotations`, so this gives full typing without pulling `handoff` — and its `datasets.models` → `perception` chain — into `hardware`'s runtime imports. There is no cycle (nothing in `handoff` imports `hardware`); this is about import weight, since `collect.py:31` imports `hardware` eagerly.
+
+Then append after `SerialRoughness`:
 
 ```python
 class SerialGraspSender:
@@ -614,7 +629,7 @@ class SerialGraspSender:
         self.conn = serial.Serial(self.port, baud, timeout=timeout)
         time.sleep(2.0)  # allow the board to reset
 
-    def send(self, cmd) -> list[str]:  # noqa: ANN001
+    def send(self, cmd: GraspCommand) -> list[str]:
         """Execute the grasp. Returns any WARN lines the firmware emitted.
 
         A WARN means the firmware clamped something -- the rig did not do
@@ -686,3 +701,11 @@ These are expected, not defects — both are recorded in the spec.
 
 1. **No object has height or width yet.** `from_prediction` raises for all 129 until `scripts/calibrate_scale.py` then `scripts/prepare_dataset.py --stages surface_area` have run. Nothing in this plan produces that data.
 2. **`FORCE` does not exist in the firmware.** Until `main.ino` implements it, a real send fails at the third line with `RuntimeError: firmware rejected 'FORCE 1.75': ERR unknown command` (`main.ino:254`). Tasks 1–3 are still fully testable, because every test uses a fake connection.
+
+## Note from the force-grasp firmware work (2026-07-27)
+
+The merged firmware prints boot lines (`INFO`/`READY`, and `ERR cell <n> timed
+out` on a wiring fault) before accepting commands. `SerialGraspSender` must
+call `reset_input_buffer()` after its 2.0 s post-open sleep, or the first
+`Z` ack read will consume boot output — and a boot `ERR` line would be
+mistaken for a command failure.

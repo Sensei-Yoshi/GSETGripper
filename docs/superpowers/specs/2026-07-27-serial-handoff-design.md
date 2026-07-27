@@ -241,7 +241,35 @@ This is consumed, not produced, by this design.
 
 Out of scope here; recorded because this design implies them.
 
-1. **`FORCE <n>` does not exist.** `main.ino` needs an `else if (message.startsWith("FORCE "))` branch, `parseFloatStrict` on the argument, and a `DONE FORCE` ack. Until then, `FORCE` returns `ERR unknown command` (`main.ino:254`) and the sender raises.
+1. ~~**`FORCE <n>` does not exist.**~~ **RESOLVED 2026-07-27.** The firmware now
+   implements `FORCE <n>`: it parses with `parseFloatStrict`, rejects negative or
+   malformed values via `sendErr`, treats `FORCE 0` as disarming, and emits a
+   `DONE FORCE` ack. The Python states this as a protocol contract rather than a
+   status claim, so it will not go stale again.
+
+   **Still open:** `forceArmed` / `forceTargetN` are set by the `FORCE` handler but
+   not yet read anywhere, so an armed force target does not currently gate
+   `GRIP CLOSE`. Until it does, see follow-up 5.
+
+5. **`GRIP CLOSE <width>` produces a zero-preload grasp by construction.**
+   `gripStepsForWidth` sets the final jaw gap *equal* to its argument, and
+   `object_width_mm` is `np.ptp(pts[:, 0])` — the object's *widest* cross-section.
+   So the emitted command closes to exactly the widest point: contact without
+   compression, zero normal force. A 1 mm overestimate from the contact model
+   means the jaws never touch at all.
+
+   This is a design gap in this spec, not an implementation defect — the code
+   faithfully renders what was specified. Resolving it needs a decision:
+   either `GRIP CLOSE` becomes force-terminated (reading `forceArmed`), or the
+   handoff subtracts a compression allowance before emitting the width. The
+   second needs a new tunable and belongs in `config.yaml`, unlike the firmware
+   geometry constants.
+
+6. **Nothing calls this code yet.** `handoff` is imported only by its tests. There
+   is no `scripts/send_grasp.py`, no CLI, no Streamlit control. The plan scoped
+   that out deliberately, but it means follow-up 5 and the floor-plane
+   precondition stay theoretical until someone writes that caller — which is
+   where both would surface first.
 
 2. **Z flooring makes height a no-op for small objects.** `moveZForGrasp` computes `target = objectTop - GRASP_DEPTH_BELOW_TOP_MM` (107.95 mm) and floors it at `Z_MIN_GRIPPER_HEIGHT_MM` (10 mm) — `main.ino:290-296`. For any object shorter than **~118 mm**, the target floors out and the gripper goes to the same minimum height *regardless of the height sent*. No `WARN` fires, because the flooring happens before `moveZTo`'s clamp sees it.
 

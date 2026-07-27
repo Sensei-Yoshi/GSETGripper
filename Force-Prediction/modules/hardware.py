@@ -7,26 +7,34 @@ GSETGripper/camera/depth_serial_trigger.py.
 
 Interfaces
     GripperController : set_normal_force / open / close_until_contact / attempt_lift
-    LoadCell         : read_n
-    RoughnessSource  : read_class          (the trusted LED system)
-    MassSource       : read_g              (the scale)
-    CameraSource     : capture_rgb
+    LoadCell          : read_n
+    RoughnessSource   : read_class          (the trusted LED system)
+    MassSource        : read_g              (the scale)
+    CameraSource      : capture_rgb
+    SerialGraspSender : send                (arduino/main/main.ino's Z/SELECT/FORCE/GRIP
+                                              protocol -- see its own docstring)
 
-The gripper firmware exposes SET_FORCE <n> / OPEN / CLOSE / READ / LIFT over
-serial at 9600 baud, newline-terminated — see firmware/gripper_force.
+`SerialGripper` below targets a SET_FORCE <n> / OPEN / CLOSE / READ / LIFT
+protocol over serial at 9600 baud -- but that firmware, firmware/gripper_force,
+has never been written; see `SerialGripper`'s own docstring. The firmware that
+does exist, arduino/main/main.ino, speaks the unrelated Z/SELECT/FORCE/GRIP
+protocol instead, and is driven by `SerialGraspSender`, not `SerialGripper`.
 """
 
 from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
-from typing import Protocol, runtime_checkable
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
 
 import numpy as np
 
 from .config import Config
 from .contracts import ExperienceRecord, Gripper, Meta
 from .physics import PhysicsModel, PhysicsParams, weight_n
+
+if TYPE_CHECKING:
+    from .handoff import GraspCommand
 
 
 # --------------------------------------------------------------------------- #
@@ -99,7 +107,20 @@ def find_serial_port(preferred: str | None = None) -> str:
 
 
 class SerialGripper:
-    """Real gripper + load cell over one Arduino link (firmware/gripper_force)."""
+    """Real gripper + load cell over one Arduino link (firmware/gripper_force).
+
+    NOTE: this targets firmware that has NOT been written. `arduino/main/main.ino`
+    speaks a different protocol (Z / SELECT / GRIP -- see `SerialGraspSender`
+    below) and implements none of the commands used here.
+
+    Kept because it is the only written record of what main.ino must still grow
+    before `collect_real` can run on real hardware:
+        SET_FORCE <n>   set the stationary-finger target force
+        CLOSE           close until contact
+        OPEN            release
+        READ            report the load-cell reading in newtons
+        LIFT            perform the standardized lift; reply HELD or not
+    """
 
     def __init__(self, cfg: Config, port: str | None = None, baud: int = 9600) -> None:
         import serial
@@ -150,6 +171,128 @@ class SerialRoughness:
         self.conn.write(b"READ\n")
         self.conn.flush()
         return int(self.conn.readline().decode("ascii", errors="ignore").strip())
+
+
+# Command word -> the DONE ack main.ino emits once that axis's move completes.
+# Not one-to-one with GraspCommand.serialize()'s lines: both "GRIP CLOSE <mm>"
+# and "GRIP OPEN" ack as "DONE GRIP".
+_EXPECTED_DONE = {
+    "Z": "DONE Z",
+    "SELECT": "DONE SELECT",
+    "GRIP": "DONE GRIP",
+    "FORCE": "DONE FORCE",
+}
+
+
+class SerialGraspSender:
+    """Send one GraspCommand to arduino/main/main.ino, one line at a time.
+
+    Writes a line, waits for its DONE ack, then writes the next -- rather than
+    dumping all four. The firmware sets a pending flag and prints DONE <axis>
+    only once distanceToGo() reaches 0 (main.ino's loop(), the pending-flag
+    block), so waiting is what keeps the moves sequential instead of
+    overlapping.
+
+    PHYSICAL PRECONDITION: opening the port resets the board, and the firmware
+    then ASSUMES the carriage is parked at the top of travel and the jaws are
+    fully open. There is no homing routine and no limit switch (see main.ino's
+    Z-geometry and GRIP-geometry comment blocks). Park the rig before
+    constructing this, or the gripper is driven into the table with nothing in
+    hardware to stop it.
+
+    POSTCONDITION -- send() DOES NOT PARK THE RIG: a successful send() leaves
+    the carriage at grasp depth with the jaws closed around the object. It
+    does not retract, and there is no `park()` method. Because opening the
+    port resets the board and the firmware then assumes, on that reset,
+    carriage-at-top-of-travel and jaws-fully-open, the operator MUST MANUALLY
+    PARK THE RIG before the *next* connection -- otherwise the firmware's
+    position origin is false, and the next `Z` command drives the gripper
+    down from a wrong reference, through the table. (main.ino clamps the Z
+    argument to its reachable band, so manually sending `Z 360.68` -- or
+    anything at or above it -- is a way to drive the carriage back to the top
+    of travel as part of parking.)
+
+    PROTOCOL CONTRACT -- FORCE: `_await_ack` requires `FORCE <n>` to be
+    acknowledged with `DONE FORCE`, the same request/ack shape as `SELECT`,
+    `Z`, and `GRIP CLOSE <mm>` / `GRIP OPEN`.
+
+    CONNECTION SEQUENCE: opening the port resets the board, which spends the
+    post-reset window inside `setup()` printing an `INFO`/`READY` boot banner
+    -- and, on a load-cell wiring fault, an `ERR cell <n> timed out` line --
+    before it accepts any command. After the reset sleep below, `__init__`
+    flushes that boot output with `reset_input_buffer()` so the first
+    `_await_ack` read sees the real ack for the first command rather than
+    leftover boot text.
+    """
+
+    def __init__(
+        self,
+        port: str | None = None,
+        baud: int = 9600,
+        timeout: float = 30.0,
+    ) -> None:
+        import serial
+
+        self.port = find_serial_port(port)
+        self.conn = serial.Serial(self.port, baud, timeout=timeout)
+        time.sleep(2.0)  # allow the board to reset
+        # setup() prints an INFO/READY boot banner (and, on a load-cell wiring
+        # fault, an "ERR cell <n> timed out" line) before it accepts any
+        # command. Without this flush, the first _await_ack read would
+        # consume that boot output instead of the real ack -- either raising
+        # "unexpected firmware reply" on a healthy board, or mistaking the
+        # boot ERR for a rejection of the first command.
+        self.conn.reset_input_buffer()
+
+    def send(self, cmd: GraspCommand) -> list[str]:
+        """Execute the grasp. Returns any WARN lines the firmware emitted.
+
+        A WARN means the firmware clamped something -- the rig did not do
+        exactly what was asked, so callers should surface these.
+        """
+        warnings: list[str] = []
+        for line in cmd.serialize():
+            self.conn.write((line + "\n").encode("ascii"))
+            self.conn.flush()
+            warnings.extend(self._await_ack(line))
+        return warnings
+
+    def _await_ack(self, line: str) -> list[str]:
+        """Wait for the specific DONE ack that acknowledges `line`.
+
+        Every connection resets the board, so boot-time garbage or a
+        desynchronised stream is a real scenario -- accepting *any* line
+        starting with "DONE" would let a stale ack for a different axis pass
+        as success. The mapping from command word to ack is uniform but not
+        one-to-one: `Z` -> `DONE Z`, `SELECT ...` -> `DONE SELECT`,
+        `FORCE ...` -> `DONE FORCE`, `GRIP CLOSE ...` (and `GRIP OPEN`) ->
+        `DONE GRIP`.
+        """
+        expected = _EXPECTED_DONE[line.split(" ", 1)[0]]
+        warnings: list[str] = []
+        while True:
+            reply = self.conn.readline().decode("ascii", errors="ignore").strip()
+            if not reply:
+                raise TimeoutError(f"no reply from firmware for {line!r}")
+            if reply.startswith("ERR"):
+                # processCommand returns after sendErr without setting a pending
+                # flag (main.ino's sendErr), so no DONE will ever follow. Return
+                # now; waiting for one blocks forever.
+                raise RuntimeError(f"firmware rejected {line!r}: {reply}")
+            if reply.startswith("WARN"):
+                warnings.append(reply)
+                continue
+            if reply == expected:
+                return warnings
+            if reply.startswith("DONE"):
+                raise RuntimeError(
+                    f"firmware desynchronised: expected {expected!r} "
+                    f"for {line!r}, got {reply!r}"
+                )
+            raise RuntimeError(f"unexpected firmware reply to {line!r}: {reply}")
+
+    def close(self) -> None:
+        self.conn.close()
 
 
 class ManualMass:
