@@ -432,7 +432,7 @@ git commit -m "feat: assemble GraspCommand from a pipeline selection"
 
 **Interfaces:**
 - Consumes: `GraspCommand.serialize()` from Task 1; `find_serial_port()` from `modules/hardware.py:79`.
-- Produces: `SerialGraspSender(port: str | None = None, baud: int = 9600, timeout: float = 30.0)` with `send(cmd: GraspCommand) -> list[str]` returning firmware `WARN` lines, and `close() -> None`.
+- Produces: `SerialGraspSender(port: str | None = None, baud: int = 9600, timeout: float = 30.0)` with `send(cmd: GraspCommand) -> list[str]` returning firmware `WARN` lines, and `close() -> None`. `GraspCommand` is imported under a `TYPE_CHECKING` guard — annotation only, no runtime import.
 
 - [ ] **Step 1: Add the serial guard to conftest**
 
@@ -584,7 +584,18 @@ class SerialGripper:
 
 - [ ] **Step 5: Add the sender**
 
-Append to `Force-Prediction/modules/hardware.py`, after `SerialRoughness`:
+First extend the existing `typing` import at `Force-Prediction/modules/hardware.py:23`:
+
+```python
+from typing import TYPE_CHECKING, Protocol, runtime_checkable
+
+if TYPE_CHECKING:
+    from .handoff import GraspCommand
+```
+
+A `TYPE_CHECKING` guard, not a plain import: the annotation is already a string thanks to `from __future__ import annotations`, so this gives full typing without pulling `handoff` — and its `datasets.models` → `perception` chain — into `hardware`'s runtime imports. There is no cycle (nothing in `handoff` imports `hardware`); this is about import weight, since `collect.py:31` imports `hardware` eagerly.
+
+Then append after `SerialRoughness`:
 
 ```python
 class SerialGraspSender:
@@ -614,7 +625,7 @@ class SerialGraspSender:
         self.conn = serial.Serial(self.port, baud, timeout=timeout)
         time.sleep(2.0)  # allow the board to reset
 
-    def send(self, cmd) -> list[str]:  # noqa: ANN001
+    def send(self, cmd: GraspCommand) -> list[str]:
         """Execute the grasp. Returns any WARN lines the firmware emitted.
 
         A WARN means the firmware clamped something -- the rig did not do
