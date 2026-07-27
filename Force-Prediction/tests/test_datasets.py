@@ -304,8 +304,8 @@ def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
             self.device = device
             self.processing_resolution = processing_resolution
 
-    monkeypatch.setattr("modules.models.marigold.available_device", lambda: "cpu")
-    monkeypatch.setattr("modules.models.marigold.MarigoldAnalyzer", FakeAnalyzer)
+    monkeypatch.setattr("modules.models.marigold_rough.available_device", lambda: "cpu")
+    monkeypatch.setattr("modules.models.marigold_rough.MarigoldAnalyzer", FakeAnalyzer)
 
     def fake_run(analyzer, image, output_root, **kwargs):
         calls.append(kwargs["source_path"])
@@ -343,7 +343,7 @@ def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
         (run_dir / "metadata.json").write_text(json.dumps(metadata))
         return {**metadata, "run_dir": str(run_dir)}
 
-    monkeypatch.setattr("modules.models.marigold.run_marigold", fake_run)
+    monkeypatch.setattr("modules.models.marigold_rough.run_marigold", fake_run)
     result = prepare_dataset_stages(
         cfg,
         dataset,
@@ -356,7 +356,7 @@ def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
     assert dataset.objects["cup"].roughness.mean == 0.4
 
     monkeypatch.setattr(
-        "modules.models.marigold.run_marigold",
+        "modules.models.marigold_rough.run_marigold",
         lambda *args, **kwargs: pytest.fail("reusable roughness result was recomputed"),
     )
     prepare_dataset_stages(

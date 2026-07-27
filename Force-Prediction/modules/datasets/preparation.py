@@ -170,7 +170,7 @@ def prepare_dataset_stages(
                     DEFAULT_BACKGROUND_MODEL,
                     BackgroundRemover,
                 )
-                from ..models.marigold import MarigoldAnalyzer, available_device
+                from ..models.marigold_rough import MarigoldAnalyzer, available_device
 
                 device = available_device()
                 analyzer = MarigoldAnalyzer(
@@ -304,7 +304,7 @@ def _prepare_roughness(
 ) -> None:
     from PIL import Image
 
-    from ..models.marigold import run_marigold
+    from ..models.marigold_rough import run_marigold
 
     image_path = cfg.root / item.image.path
     if not image_path.is_file():
@@ -369,7 +369,7 @@ def _reusable_marigold_run(
     ensemble_size: int,
     seed: int,
 ) -> dict[str, Any] | None:
-    from ..models.marigold import list_saved_runs
+    from ..models.marigold_rough import list_saved_runs
 
     for run in list_saved_runs(output_root):
         source = run.get("source", {})

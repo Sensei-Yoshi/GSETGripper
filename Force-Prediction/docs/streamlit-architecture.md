@@ -52,13 +52,16 @@ complete derived label, and refreshes completed experience records. Names, image
 descriptors, and generated artifact metrics remain read-only. The **Prompts & Embodiments** tab edits `prompts.yaml` atomically,
 including the fixed written descriptions of both grippers.
 
-The **Marigold Roughness** tab is intentionally independent of the force pipeline. It can
-run the active dataset's images or an uploaded override, and it browses all prior runs under
-`test_data/marigold_tests`. The default background-removal pass saves a mask and transparent
-cutout, crops the original RGB before inference, and restricts roughness statistics to an
-eroded central grasp band. Runs save PNG diagnostics and uncertainty/statistical metadata,
-not raw NumPy maps. Heavy rembg/Torch/Diffusers imports and model loading occur only after
-the user presses the run button; cached model adapters survive ordinary Streamlit reruns.
+The **Marigold Roughness** tab is intentionally independent of the force pipeline. Its
+multiselect can run IID appearance roughness, normals-based topography, or both on the active
+dataset's images or an uploaded override. The default background-removal pass saves a mask
+and transparent cutout, crops the original RGB before inference, and restricts statistics to
+an eroded central grasp band. Topography smooths the normal field into a broad base surface
+and measures local angular residuals for bumps and grooves. Dataset outputs update stable
+`objects/<object_id>/{roughness,topography}/streamlit/` directories; uploads use stable
+name-based directories under `test_data/marigold_tests/`. Runs save PNG diagnostics and
+uncertainty/statistical metadata, not raw NumPy maps. Heavy rembg/Torch/Diffusers imports and
+model loading occur only after the user presses the run button; each adapter remains cached.
 
 Every top-level tab exports exactly this entrypoint:
 
@@ -165,8 +168,8 @@ absent on that branch.
   and Cache Status; changes require coordinated migration and tests.
 - Contact Fraction keeps its cached camera/model resources and lazy optional-dependency
   imports; outputs live under `data/<active-dataset>/contact_fraction`.
-- Marigold Roughness keeps optional dependencies lazy and writes only to
-  `test_data/marigold_tests/<run-id>/`.
+- Marigold Roughness keeps optional dependencies lazy and overwrites the selected image's
+  stable `streamlit/` result directories instead of creating a new directory per UI run.
 - Tab registration must not change any public interface in `modules`.
 
 Run the UI regression test after any tab or shared-component change:

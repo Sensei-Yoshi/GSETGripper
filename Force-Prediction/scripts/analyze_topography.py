@@ -10,8 +10,8 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.config import load_config  # noqa: E402
-from modules.models.marigold import available_device, list_saved_runs  # noqa: E402
-from modules.models.topographic_roughness import (  # noqa: E402
+from modules.models.marigold_rough import available_device, list_saved_runs  # noqa: E402
+from modules.models.marigold_topo import (  # noqa: E402
     DEFAULT_BASE_SURFACE_SIGMA_RATIO,
     DEFAULT_ENSEMBLE_SIZE,
     DEFAULT_INFERENCE_STEPS,

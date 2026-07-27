@@ -6,9 +6,10 @@ from pathlib import Path
 import numpy as np
 from PIL import Image
 
-from modules.models.topographic_roughness import (
+from modules.models.marigold_topo import (
     NormalPrediction,
     list_saved_topography_runs,
+    run_marigold_topography,
     run_topographic_roughness,
 )
 
@@ -111,3 +112,36 @@ def test_topographic_roughness_rejects_tiny_scoring_mask(tmp_path: Path) -> None
         assert "too small" in str(error)
     else:
         raise AssertionError("expected a tiny scoring mask to be rejected")
+
+
+def test_direct_topography_reuses_stable_run_directory(tmp_path: Path) -> None:
+    image = Image.new("RGB", (64, 64), color=(180, 100, 60))
+    kwargs = {
+        "source_label": "Stable fruit",
+        "dataset_id": "sample",
+        "object_id": "fruit",
+        "num_inference_steps": 2,
+        "ensemble_size": 3,
+        "seed": 11,
+        "run_key": "streamlit",
+    }
+
+    first = run_marigold_topography(
+        FakeNormalsAnalyzer(),  # type: ignore[arg-type]
+        image,
+        tmp_path,
+        **kwargs,
+    )
+    second = run_marigold_topography(
+        FakeNormalsAnalyzer(),  # type: ignore[arg-type]
+        image,
+        tmp_path,
+        **kwargs,
+    )
+
+    assert first["run_dir"] == second["run_dir"] == str(tmp_path / "streamlit")
+    assert second["source"]["object_id"] == "fruit"
+    assert second["scoring"]["strategy"] == "eroded_central_principal_axis_band"
+    assert len(list_saved_topography_runs(tmp_path)) == 1
+    for artifact in second["artifacts"].values():
+        assert (Path(second["run_dir"]) / artifact).is_file()

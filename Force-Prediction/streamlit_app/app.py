@@ -35,6 +35,7 @@ def main() -> None:
             "benchmark_result",
             "contact_last",
             "roughness_last_run",
+            "marigold_last_results",
             "preparation_manifest",
             "last_experiment",
         ):

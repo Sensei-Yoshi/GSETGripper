@@ -14,13 +14,13 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.config import load_config  # noqa: E402
 from modules.models.background_remover import BackgroundRemover  # noqa: E402
-from modules.models.marigold import (  # noqa: E402
+from modules.models.marigold_rough import (  # noqa: E402
     MarigoldAnalyzer,
     available_device,
     list_saved_runs,
     run_marigold,
 )
-from modules.models.topographic_roughness import (  # noqa: E402
+from modules.models.marigold_topo import (  # noqa: E402
     MarigoldNormalsAnalyzer,
     run_topographic_roughness,
 )

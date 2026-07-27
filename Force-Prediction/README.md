@@ -67,18 +67,20 @@ the favored gripper after both labels are complete, and refreshes completed expe
 records. Image-folder values are stored under each object's `measurements.json`; names,
 images, and descriptors remain read-only in this tab.
 
-The **Marigold Roughness** tab runs the IID appearance model on any active-dataset image or
-an uploaded override. Its default background-removal pass creates a mask and transparent
-cutout, crops the original RGB around the object before inference, and computes robust
-statistics over an eroded central grasp band. It saves compact PNG diagnostics, uncertainty,
-quality checks, statistics, and provenance under `test_data/marigold_tests/<run-id>/`; history
-mode can reopen every saved run. Raw NumPy maps are not persisted. Models are loaded only
-after **Run Marigold** is pressed. Marigold's value is BRDF appearance roughness, not a direct
-measurement of physical height roughness or pad friction.
+The **Marigold Roughness** tab can multi-select IID appearance roughness, normal-based
+topography, or both for any active-dataset image or uploaded override. Its default
+background-removal pass creates a mask and transparent cutout, crops the RGB object, and
+scores an eroded central grasp band that rejects caps and end faces. Dataset results update
+in place under `objects/<object_id>/roughness/streamlit/` and
+`objects/<object_id>/topography/streamlit/`; uploaded-image results similarly use stable
+name-based folders under `test_data/marigold_tests/`. Raw NumPy maps are not persisted, and
+models are loaded only after **Run Marigold** is pressed. IID roughness represents BRDF
+appearance, not physical height roughness or pad friction.
 
-Raised bumps and grooves are measured separately with the Marigold normals checkpoint. The
-topographic analysis removes a locally smoothed base normal field, scores the remaining angular
-variation inside the same grasp band, and stores PNG diagnostics rather than NumPy arrays:
+Raised bumps and grooves use the separate Marigold normals checkpoint. The topographic
+analysis removes a locally smoothed base normal field, scores the remaining angular variation
+inside the same grasp band, and stores PNG diagnostics rather than NumPy arrays. It is
+available in the Streamlit tab and from the batch CLI:
 
 ```bash
 python scripts/analyze_topography.py --dataset Matforcedata --objects lechee orange

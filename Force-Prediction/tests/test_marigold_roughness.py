@@ -7,7 +7,7 @@ import numpy as np
 from PIL import Image
 
 from modules.models.background_remover import BackgroundRemoval
-from modules.models.marigold import IntrinsicPrediction, list_saved_runs, run_marigold
+from modules.models.marigold_rough import IntrinsicPrediction, list_saved_runs, run_marigold
 
 
 class FakeAnalyzer:
@@ -98,11 +98,29 @@ def test_list_saved_runs_ignores_invalid_metadata(tmp_path: Path) -> None:
     assert list_saved_runs(tmp_path) == []
 
 
+def test_run_marigold_reuses_stable_run_directory(tmp_path: Path) -> None:
+    image = Image.new("RGB", (8, 6), color=(10, 20, 30))
+    kwargs = {
+        "source_label": "Stable object",
+        "num_inference_steps": 2,
+        "ensemble_size": 3,
+        "seed": 7,
+        "run_key": "streamlit",
+    }
+
+    first = run_marigold(FakeAnalyzer(), image, tmp_path, **kwargs)  # type: ignore[arg-type]
+    second = run_marigold(FakeAnalyzer(), image, tmp_path, **kwargs)  # type: ignore[arg-type]
+
+    assert first["run_dir"] == second["run_dir"] == str(tmp_path / "streamlit")
+    assert second["run_id"] == "streamlit"
+    assert len(list_saved_runs(tmp_path)) == 1
+
+
 def test_run_marigold_uses_manual_contact_mask_as_analysis_foreground(
     tmp_path: Path,
     monkeypatch: Any,
 ) -> None:
-    monkeypatch.setattr("modules.models.marigold.MIN_SCORING_PIXELS", 1)
+    monkeypatch.setattr("modules.models.marigold_rough.MIN_SCORING_PIXELS", 1)
     image = Image.new("RGB", (8, 6), color=(10, 20, 30))
     manual = Image.new("L", (5, 6), color=0)
     manual_array = np.asarray(manual).copy()
