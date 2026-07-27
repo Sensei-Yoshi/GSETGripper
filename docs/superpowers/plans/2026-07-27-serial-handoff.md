@@ -100,9 +100,13 @@ def test_descends_before_closing_and_sets_force_first():
 def test_small_force_never_renders_in_scientific_notation():
     # parseFloatStrict (main.ino:340-371) accepts only sign, digits, one dot.
     # "1e-05" comes back as "ERR bad value".
+    #
+    # Check the ARGUMENT, not the whole line: FORCE, SILICONE, and CLOSE all
+    # contain "e", so scanning the line for "e" can never pass.
     lines = _command(force_n=0.00001).serialize()
-    assert "FORCE 0.00" in lines
-    assert not any("e" in line.lower() for line in lines)
+    force_line = next(line for line in lines if line.startswith("FORCE "))
+    assert force_line == "FORCE 0.00"
+    assert "e" not in force_line.removeprefix("FORCE ")
 
 
 def test_rejects_nonpositive_dimensions():
