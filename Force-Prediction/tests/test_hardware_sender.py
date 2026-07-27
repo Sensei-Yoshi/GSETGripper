@@ -46,11 +46,11 @@ def _sender(replies: list[str]) -> tuple[SerialGraspSender, _FakeSerial]:
 
 
 def test_writes_every_line_in_order_and_waits_for_each_ack():
-    sender, conn = _sender(["DONE Z", "DONE SELECT", "DONE FORCE", "DONE GRIP"])
+    sender, conn = _sender(["DONE SELECT", "DONE Z", "DONE FORCE", "DONE GRIP"])
     warnings = sender.send(COMMAND)
     assert conn.written == [
-        "Z 84.2\n",
         "SELECT SILICONE\n",
+        "Z 84.2\n",
         "FORCE 1.75\n",
         "GRIP CLOSE 61.0\n",
     ]
@@ -58,26 +58,26 @@ def test_writes_every_line_in_order_and_waits_for_each_ack():
 
 
 def test_error_raises_and_does_not_hang():
-    # sendErr returns without setting a pending flag (main.ino:216-217), so no
-    # DONE ever follows. A reader that waits for one would block forever.
+    # sendErr returns without setting a pending flag (main.ino's sendErr), so
+    # no DONE ever follows. A reader that waits for one would block forever.
     sender, conn = _sender(["ERR bad value"])
     with pytest.raises(RuntimeError, match="ERR bad value"):
         sender.send(COMMAND)
-    assert conn.written == ["Z 84.2\n"]
+    assert conn.written == ["SELECT SILICONE\n"]
 
 
 def test_warning_is_collected_and_not_mistaken_for_the_ack():
     sender, _ = _sender(
         [
-            "WARN Z clamped to 252.7 mm above floor",
-            "DONE Z",
+            "WARN SELECT clamped to 430",
             "DONE SELECT",
+            "DONE Z",
             "DONE FORCE",
             "DONE GRIP",
         ]
     )
     warnings = sender.send(COMMAND)
-    assert warnings == ["WARN Z clamped to 252.7 mm above floor"]
+    assert warnings == ["WARN SELECT clamped to 430"]
 
 
 def test_silent_board_times_out():
@@ -90,3 +90,24 @@ def test_unexpected_reply_raises_rather_than_looping():
     sender, _ = _sender(["HELLO"])
     with pytest.raises(RuntimeError, match="unexpected firmware reply"):
         sender.send(COMMAND)
+
+
+def test_mismatched_ack_raises_instead_of_accepting_wrong_axis():
+    # The first line sent is SELECT. A DONE Z reply here means the stream is
+    # desynchronised -- e.g. boot-time garbage left over from the reset that
+    # opening the port just triggered. Accepting any "DONE"-prefixed line
+    # would let this pass as success.
+    sender, conn = _sender(["DONE Z"])
+    with pytest.raises(RuntimeError, match=r"expected 'DONE SELECT'.*got 'DONE Z'"):
+        sender.send(COMMAND)
+    assert conn.written == ["SELECT SILICONE\n"]
+
+
+def test_force_stub_has_no_ack_and_times_out():
+    # Documents the current firmware gap: FORCE is parsed and discarded with
+    # no ack at all (see SerialGraspSender's docstring), so once SELECT and Z
+    # complete normally, the FORCE line stalls until the read times out.
+    sender, conn = _sender(["DONE SELECT", "DONE Z"])
+    with pytest.raises(TimeoutError, match="no reply"):
+        sender.send(COMMAND)
+    assert conn.written == ["SELECT SILICONE\n", "Z 84.2\n", "FORCE 1.75\n"]

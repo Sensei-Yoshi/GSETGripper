@@ -29,16 +29,16 @@ def _command(**overrides) -> GraspCommand:
 
 def test_serialize_emits_exact_firmware_lines():
     assert _command().serialize() == [
-        "Z 84.2",
         "SELECT SILICONE",
+        "Z 84.2",
         "FORCE 1.75",
         "GRIP CLOSE 61.0",
     ]
 
 
 def test_gecko_serializes_with_the_firmware_spelling():
-    # main.ino:223 compares against "GEKKO", not "GECKO". Sending the Python
-    # enum value verbatim yields "ERR unknown select position".
+    # main.ino's SELECT branch compares against "GEKKO", not "GECKO". Sending
+    # the Python enum value verbatim yields "ERR unknown select position".
     lines = _command(gripper=Gripper.GECKO).serialize()
     assert "SELECT GEKKO" in lines
     assert "SELECT GECKO" not in lines
@@ -46,15 +46,22 @@ def test_gecko_serializes_with_the_firmware_spelling():
 
 def test_descends_before_closing_and_sets_force_first():
     lines = _command().serialize()
+    select = next(i for i, line in enumerate(lines) if line.startswith("SELECT "))
     z = next(i for i, line in enumerate(lines) if line.startswith("Z "))
     force = next(i for i, line in enumerate(lines) if line.startswith("FORCE "))
     grip = next(i for i, line in enumerate(lines) if line.startswith("GRIP CLOSE "))
+    # SELECT must precede Z: the turret rotates two gripper heads 96.75 degrees
+    # apart, and for short objects the gripper is floored to 10 mm above the
+    # floor with the object already between the open jaws. Rotating there
+    # would sweep a head through the object -- there is no limit switch or
+    # torque sensing to catch that.
+    assert select < z
     assert z < grip
     assert force < grip
 
 
 def test_small_force_never_renders_in_scientific_notation():
-    # parseFloatStrict (main.ino:340-371) accepts only sign, digits, one dot.
+    # main.ino's parseFloatStrict accepts only sign, digits, one dot.
     # "1e-05" comes back as "ERR bad value".
     #
     # Check the ARGUMENT, not the whole line: FORCE, SILICONE, and CLOSE all
@@ -121,7 +128,7 @@ def test_from_prediction_assembles_all_four_values():
     assert cmd.object_width_mm == 61.0
     assert cmd.gripper is Gripper.SILICONE
     assert cmd.force_n == 1.75
-    assert cmd.serialize()[0] == "Z 84.2"
+    assert cmd.serialize()[0] == "SELECT SILICONE"
 
 
 def test_from_prediction_rejects_infeasible_selection():
@@ -143,7 +150,10 @@ def test_from_prediction_rejects_missing_contact_data():
         name="Banana",
         image=ImageArtifact(path="data/expforce/objects/banana/image.png"),
     )
-    with pytest.raises(ValueError, match="run prepare_dataset --stages surface_area"):
+    with pytest.raises(
+        ValueError,
+        match="run scripts/calibrate_scale.py.*run prepare_dataset --stages surface_area",
+    ):
         GraspCommand.from_prediction(obj, _selection(), CFG)
 
 
@@ -157,3 +167,28 @@ def test_from_prediction_rejects_force_over_the_configured_limit():
     selection = _selection(predicted_normal_force_n=CFG.force.limit_n + 0.5)
     with pytest.raises(ValueError, match="exceeds limit"):
         GraspCommand.from_prediction(_object(), selection, CFG)
+
+
+def test_from_prediction_rejects_overwide_contact_width_as_plain_value_error():
+    # ContactFractionArtifact.object_width_mm has no upper bound, so a
+    # degenerate contact summary can carry a width wider than the jaws.
+    # from_prediction must catch this itself and raise a plain ValueError --
+    # not rely on GraspCommand's own model_validator, whose failure pydantic
+    # wraps into a ValidationError (a ValueError subclass, but a different
+    # exception type than every other rejection in from_prediction).
+    obj = _object(_contact(object_width_mm=150.0))
+    with pytest.raises(ValueError, match="exceeds jaw opening") as exc_info:
+        GraspCommand.from_prediction(obj, _selection(), CFG)
+    assert exc_info.type is ValueError
+
+
+def test_from_prediction_rejects_nonpositive_height_as_plain_value_error():
+    # ContactFractionArtifact.object_height_mm is a bare float with no
+    # positivity constraint, so a degenerate contact summary can carry a
+    # non-positive height. Same reasoning as the width case above: this must
+    # be a plain ValueError raised before cls(...), not GraspCommand's field
+    # constraint's ValidationError.
+    obj = _object(_contact(object_height_mm=0.0))
+    with pytest.raises(ValueError, match="non-positive object dimensions") as exc_info:
+        GraspCommand.from_prediction(obj, _selection(), CFG)
+    assert exc_info.type is ValueError

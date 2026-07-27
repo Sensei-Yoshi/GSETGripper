@@ -7,13 +7,18 @@ GSETGripper/camera/depth_serial_trigger.py.
 
 Interfaces
     GripperController : set_normal_force / open / close_until_contact / attempt_lift
-    LoadCell         : read_n
-    RoughnessSource  : read_class          (the trusted LED system)
-    MassSource       : read_g              (the scale)
-    CameraSource     : capture_rgb
+    LoadCell          : read_n
+    RoughnessSource   : read_class          (the trusted LED system)
+    MassSource        : read_g              (the scale)
+    CameraSource      : capture_rgb
+    SerialGraspSender : send                (arduino/main/main.ino's Z/SELECT/FORCE/GRIP
+                                              protocol -- see its own docstring)
 
-The gripper firmware exposes SET_FORCE <n> / OPEN / CLOSE / READ / LIFT over
-serial at 9600 baud, newline-terminated — see firmware/gripper_force.
+`SerialGripper` below targets a SET_FORCE <n> / OPEN / CLOSE / READ / LIFT
+protocol over serial at 9600 baud -- but that firmware, firmware/gripper_force,
+has never been written; see `SerialGripper`'s own docstring. The firmware that
+does exist, arduino/main/main.ino, speaks the unrelated Z/SELECT/FORCE/GRIP
+protocol instead, and is driven by `SerialGraspSender`, not `SerialGripper`.
 """
 
 from __future__ import annotations
@@ -168,19 +173,53 @@ class SerialRoughness:
         return int(self.conn.readline().decode("ascii", errors="ignore").strip())
 
 
+# Command word -> the DONE ack main.ino emits once that axis's move completes.
+# Not one-to-one with GraspCommand.serialize()'s lines: both "GRIP CLOSE <mm>"
+# and "GRIP OPEN" ack as "DONE GRIP". FORCE has no firmware ack yet (see
+# SerialGraspSender's docstring) -- mapped to the "DONE FORCE" main.ino will
+# emit once implemented, so a real send currently stalls here until timeout.
+_EXPECTED_DONE = {
+    "Z": "DONE Z",
+    "SELECT": "DONE SELECT",
+    "GRIP": "DONE GRIP",
+    "FORCE": "DONE FORCE",
+}
+
+
 class SerialGraspSender:
     """Send one GraspCommand to arduino/main/main.ino, one line at a time.
 
     Writes a line, waits for its DONE ack, then writes the next -- rather than
     dumping all four. The firmware sets a pending flag and prints DONE <axis>
-    only once distanceToGo() reaches 0 (main.ino:192-203), so waiting is what
-    keeps the moves sequential instead of overlapping.
+    only once distanceToGo() reaches 0 (main.ino's loop(), the pending-flag
+    block), so waiting is what keeps the moves sequential instead of
+    overlapping.
 
     PHYSICAL PRECONDITION: opening the port resets the board, and the firmware
     then ASSUMES the carriage is parked at the top of travel and the jaws are
-    fully open. There is no homing routine and no limit switch (main.ino:58-62,
-    126-129). Park the rig before constructing this, or the gripper is driven
-    into the table with nothing in hardware to stop it.
+    fully open. There is no homing routine and no limit switch (see main.ino's
+    Z-geometry and GRIP-geometry comment blocks). Park the rig before
+    constructing this, or the gripper is driven into the table with nothing in
+    hardware to stop it.
+
+    POSTCONDITION -- send() DOES NOT PARK THE RIG: a successful send() leaves
+    the carriage at grasp depth with the jaws closed around the object. It
+    does not retract, and there is no `park()` method. Because opening the
+    port resets the board and the firmware then assumes, on that reset,
+    carriage-at-top-of-travel and jaws-fully-open, the operator MUST MANUALLY
+    PARK THE RIG before the *next* connection -- otherwise the firmware's
+    position origin is false, and the next `Z` command drives the gripper
+    down from a wrong reference, through the table. (main.ino clamps the Z
+    argument to its reachable band, so manually sending `Z 360.68` -- or
+    anything at or above it -- is a way to drive the carriage back to the top
+    of travel as part of parking.)
+
+    NOTE -- FORCE IS NOT YET IMPLEMENTED IN FIRMWARE: main.ino matches the
+    `FORCE` command, parses the argument, and returns without printing any
+    ack. A real send() of a `GraspCommand` therefore does not fail fast with
+    `ERR unknown command`; it stalls in `_await_ack` for the full `timeout`
+    with the gripper already descended and closed, and then raises
+    `TimeoutError`, not a firmware `ERR`.
     """
 
     def __init__(
@@ -209,6 +248,19 @@ class SerialGraspSender:
         return warnings
 
     def _await_ack(self, line: str) -> list[str]:
+        """Wait for the specific DONE ack that acknowledges `line`.
+
+        Every connection resets the board, so boot-time garbage or a
+        desynchronised stream is a real scenario -- accepting *any* line
+        starting with "DONE" would let a stale ack for a different axis pass
+        as success. The mapping from command word to ack is not one-to-one:
+        `Z` -> `DONE Z`, `SELECT ...` -> `DONE SELECT`, `GRIP CLOSE ...` (and
+        `GRIP OPEN`) -> `DONE GRIP`. `FORCE` has no ack in firmware yet; it is
+        mapped here to the `DONE FORCE` main.ino will emit once implemented,
+        which is exactly why the current stub (see this class's docstring)
+        stalls until timeout instead of acking.
+        """
+        expected = _EXPECTED_DONE[line.split(" ", 1)[0]]
         warnings: list[str] = []
         while True:
             reply = self.conn.readline().decode("ascii", errors="ignore").strip()
@@ -216,14 +268,19 @@ class SerialGraspSender:
                 raise TimeoutError(f"no reply from firmware for {line!r}")
             if reply.startswith("ERR"):
                 # processCommand returns after sendErr without setting a pending
-                # flag (main.ino:216-217), so no DONE will ever follow. Return
+                # flag (main.ino's sendErr), so no DONE will ever follow. Return
                 # now; waiting for one blocks forever.
                 raise RuntimeError(f"firmware rejected {line!r}: {reply}")
             if reply.startswith("WARN"):
                 warnings.append(reply)
                 continue
-            if reply.startswith("DONE"):
+            if reply == expected:
                 return warnings
+            if reply.startswith("DONE"):
+                raise RuntimeError(
+                    f"firmware desynchronised: expected {expected!r} "
+                    f"for {line!r}, got {reply!r}"
+                )
             raise RuntimeError(f"unexpected firmware reply to {line!r}: {reply}")
 
     def close(self) -> None:

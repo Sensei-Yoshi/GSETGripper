@@ -9,18 +9,23 @@ See docs/superpowers/specs/2026-07-27-serial-handoff-design.md.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from pydantic import BaseModel, Field, model_validator
 
-from .config import Config
-from .contracts import Gripper, SelectionResult
-from .datasets.models import DatasetObject
+from .contracts import Gripper
+
+if TYPE_CHECKING:
+    from .config import Config
+    from .contracts import SelectionResult
+    from .datasets.models import DatasetObject
 
 # --------------------------------------------------------------------------- #
 # Mirrors of arduino/main/main.ino constants. Keep in sync by hand.
 # These are hardware facts, not tunables -- they do not belong in config.yaml.
 # --------------------------------------------------------------------------- #
-GRIP_MAX_OPENING_MM = 101.6    # main.ino:131  GRIP_MAX_OPENING_MM
-GECKO_SELECT_TOKEN = "GEKKO"   # main.ino:223  firmware's spelling of "gecko"
+GRIP_MAX_OPENING_MM = 101.6    # main.ino's GRIP_MAX_OPENING_MM
+GECKO_SELECT_TOKEN = "GEKKO"   # main.ino's SELECT branch: its spelling of "gecko"
 
 _SELECT_TOKENS = {
     Gripper.GECKO: GECKO_SELECT_TOKEN,
@@ -44,9 +49,15 @@ class GraspCommand(BaseModel):
 
     @model_validator(mode="after")
     def _width_fits_the_jaws(self) -> GraspCommand:
-        # The firmware's response to an over-wide object is silent: it floors
-        # negative travel to zero (main.ino:317-320) and leaves the jaws fully
-        # open with no WARN. Raising beats a rig that looks like it is working.
+        # The firmware's response to an over-wide object is silent: main.ino's
+        # gripStepsForWidth floors negative travel to zero and leaves the jaws
+        # fully open with no WARN. Raising beats a rig that looks like it is
+        # working.
+        #
+        # NOTE: `from_prediction` below duplicates this check so that path
+        # never has to surface pydantic's ValidationError (see its docstring).
+        # This validator stays so direct `GraspCommand(...)` construction is
+        # still guarded.
         if self.object_width_mm > GRIP_MAX_OPENING_MM:
             raise ValueError(
                 f"width {self.object_width_mm} mm exceeds jaw opening "
@@ -65,11 +76,17 @@ class GraspCommand(BaseModel):
 
         Gripper and force come from `Pipeline.predict()` (pipeline.py:33); height
         and width from the contact model's summary.json, surfaced as
-        `DatasetObject.contact_fraction` (catalog.py:366). Those two halves have
-        different lifecycles -- one live, one read from disk -- which is why they
-        are validated together here.
+        `DatasetObject.contact_fraction` by `datasets/catalog.py`'s
+        `_attach_contact_summary`. Those two halves have different lifecycles --
+        one live, one read from disk -- which is why they are validated together
+        here.
 
         Raises ValueError naming the fix when the grasp cannot be executed.
+        Every rejection here -- including the width and dimension checks that
+        `GraspCommand` itself also enforces via `_width_fits_the_jaws` and its
+        field constraints -- is a plain `ValueError` raised before `cls(...)`
+        is ever called, so a caller catching `ValueError` never has to also
+        catch pydantic's `ValidationError` to cover the same failures.
         All-or-nothing: nothing partial reaches a rig that has no homing routine
         and no limit switches.
         """
@@ -82,11 +99,24 @@ class GraspCommand(BaseModel):
         contact = obj.contact_fraction
         if contact is None:
             raise ValueError(
-                f"no contact data for {object_id}: "
-                "run prepare_dataset --stages surface_area"
+                f"no contact data for {object_id}: run scripts/calibrate_scale.py to "
+                "establish geometry.px_per_mm, then run "
+                "prepare_dataset --stages surface_area"
             )
         if not contact.grasp_feasible:
             raise ValueError(f"contact model found no antipodal grasp for {object_id}")
+        if contact.object_width_mm > GRIP_MAX_OPENING_MM:
+            raise ValueError(
+                f"width {contact.object_width_mm} mm exceeds jaw opening "
+                f"{GRIP_MAX_OPENING_MM} mm for {object_id}: re-measure or re-run the "
+                "contact model"
+            )
+        if contact.object_height_mm <= 0 or contact.object_width_mm <= 0:
+            raise ValueError(
+                f"non-positive object dimensions for {object_id} "
+                f"(height={contact.object_height_mm} mm, width={contact.object_width_mm} mm): "
+                "the contact summary is degenerate, re-run prepare_dataset --stages surface_area"
+            )
         if force_n > cfg.force.limit_n:
             raise ValueError(f"force {force_n} N exceeds limit {cfg.force.limit_n} N")
         return cls(
@@ -100,19 +130,48 @@ class GraspCommand(BaseModel):
     def serialize(self) -> list[str]:
         """Render the firmware command lines, in execution order.
 
-        Z precedes GRIP CLOSE so the gripper descends before the jaws close --
-        reversed, the jaws close in mid-air and the gripper descends already
-        shut. FORCE precedes GRIP CLOSE so the target is set before any jaw
-        motion begins.
+        Order is SELECT, then Z, then FORCE, then GRIP CLOSE:
 
-        Fixed-point formatting is mandatory: parseFloatStrict (main.ino:340-371)
+        - SELECT precedes Z so the turret only ever rotates at the TOP of
+          travel. The turret is direct-drive with two gripper heads mounted
+          96.75 degrees apart (main.ino's SELECT_SILICONE_STEPS geometry),
+          hanging 260.35 mm below the carriage. For objects under ~118 mm
+          tall the gripper is floored to 10 mm above the floor with the
+          object already sitting between the open jaws (main.ino's
+          moveZForGrasp) -- rotating the turret there sweeps a head straight
+          through the object. There is no limit switch and no torque sensing
+          to catch that.
+        - Z precedes GRIP CLOSE so the gripper descends before the jaws close
+          -- reversed, the jaws close in mid-air and the gripper descends
+          already shut.
+        - FORCE precedes GRIP CLOSE so the target is set before any jaw
+          motion begins.
+
+        PRECONDITION: `object_height_mm` is the object's own vertical extent,
+        as measured by the contact model (contact_model/pipeline_core.py's
+        surface-area stage), while the firmware's `Z <mm>` is the height of
+        the object's TOP above the RIG'S FLOOR. These two are the same number
+        only if the object rests directly on the plane the firmware's Z
+        geometry references -- confirmed true for this rig. A riser,
+        turntable, or scale placed under the object would silently offset
+        every grasp downward; nothing in this module or the firmware detects
+        that.
+
+        NOTE -- FORCE IS NOT YET IMPLEMENTED IN FIRMWARE: main.ino matches the
+        `FORCE` command, parses the argument, and returns without printing
+        any ack. A real send of this sequence therefore does not fail fast
+        with `ERR unknown command`; `SerialGraspSender._await_ack` stalls for
+        its full timeout with the gripper already descended and closed, then
+        raises `TimeoutError`. See `SerialGraspSender`'s class docstring.
+
+        Fixed-point formatting is mandatory: main.ino's parseFloatStrict
         accepts only an optional sign, digits, and at most one dot. Python's
         default float formatting emits "1e-05" for small values, which the
         firmware answers with "ERR bad value".
         """
         return [
-            f"Z {self.object_height_mm:.1f}",
             f"SELECT {_SELECT_TOKENS[self.gripper]}",
+            f"Z {self.object_height_mm:.1f}",
             f"FORCE {self.force_n:.2f}",
             f"GRIP CLOSE {self.object_width_mm:.1f}",
         ]

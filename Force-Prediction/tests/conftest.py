@@ -25,7 +25,8 @@ def block_real_serial_ports(monkeypatch):  # noqa: ANN001, ANN201
     """Mirror of the Gemini guard above, for hardware.
 
     A unit test that opened a real port could drive an unhomed rig into the
-    table -- there is no limit switch to stop it (main.ino:58-62).
+    table -- there is no limit switch to stop it (see main.ino's Z-geometry
+    comment block).
     """
     import serial
 
