@@ -21,15 +21,15 @@ def render(context: AppContext) -> None:
         f"""
 1. Choose a dataset in the global selector above. Every dataset-aware tab and artifact path
    follows that selection.
-2. Open **Data Preparation** and select only the stages you need. Use **Live Gemini** when
-   you want image-derived descriptions or Gemini text embeddings.
+2. Open **Data Preparation** and select only the stages you need. Descriptions and semantic
+   embeddings use Gemini and reuse exact cached requests.
 3. Open **Single Run**, choose one of the {object_count} active objects, or upload an image.
    This tab is available only when the dataset has measurements and paired force labels.
 4. For conditions that use sensors, set mass, roughness, and projected contact fraction.
    E1 and E3 intentionally disable these controls. Changing an enabled value or image
    creates an unscored counterfactual that uses the full experience pool.
-5. Choose an experiment and **Offline** or **Live Gemini**. Adjust retrieval weights and
-   hybrid similarity constants for E4; E3 is fixed to semantic cosine similarity.
+5. Choose an experiment. Adjust retrieval weights and hybrid similarity constants for E4;
+   E3 is fixed to semantic cosine similarity.
 6. Click **Run pipeline**. Read the selected gripper and force first, then compare both
    predictions, evidence summaries, and the top-five matches.
 7. Use **Benchmark** for one condition or **Runs Viewer** for a resumable E1–E4
@@ -90,7 +90,7 @@ E6 retrieves no neighbors and makes no VLM force-prediction call.
         """
     )
 
-    st.header("What E3/E4 + Live Gemini means")
+    st.header("What Gemini-backed E3/E4 means")
     st.markdown(
         """
 For a known dataset object, the pipeline excludes that object and uses the other objects.
@@ -102,10 +102,10 @@ One Gemini request returns both force estimates and an explicit recommendation. 
 condition constructs or sends a physics estimate. Python selects the lower feasible
 predicted force and explicitly reports a prediction tie only when the continuous estimates are equal.
 
-**Live Gemini** means Gemini-backed descriptor, embedding, and VLM stages are allowed to make
-network calls. A cached identical request makes no new call. It does not mean the labels are
-real, and it does not automatically replace an offline-prepared reference corpus with visual
-descriptions; that is the job of live Data Preparation.
+Gemini-backed descriptor, embedding, and VLM stages may make network calls. A cached identical
+request makes no new call. This does not mean the labels are real, and pipeline execution does
+not automatically replace a previously prepared reference corpus; run Data Preparation to
+refresh visual descriptions and reference embeddings.
         """
     )
 

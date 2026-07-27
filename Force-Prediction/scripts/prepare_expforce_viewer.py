@@ -22,8 +22,14 @@ from modules.datasets import (  # noqa: E402
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--live", action="store_true", help="Download images and use Gemini descriptors.")
+    parser.add_argument(
+        "--confirm-gemini-cost",
+        action="store_true",
+        help="Confirm Gemini description and embedding calls for the full dataset.",
+    )
     args = parser.parse_args()
+    if not args.confirm_gemini_cost:
+        parser.error("Exp-Force preparation requires --confirm-gemini-cost")
     cfg = load_config().model_copy(deep=True)
 
     dataset = get_dataset(cfg, "expforce")
@@ -40,7 +46,6 @@ def main() -> int:
             PreparationStage.EMBEDDINGS,
             PreparationStage.EXPERIENCES,
         ],
-        live=args.live,
         progress=progress,
     )
     print(json.dumps(manifest, indent=2))

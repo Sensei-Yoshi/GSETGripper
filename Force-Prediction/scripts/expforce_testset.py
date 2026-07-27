@@ -1,13 +1,12 @@
-"""Live end-to-end Gemini test on the PUBLIC Exp-Force dataset (129 real objects).
+"""End-to-end Gemini test on the PUBLIC Exp-Force dataset (129 real objects).
 
 Single-embodiment public set (image, mass, min grasp force). Purpose: exercise the
-ENTIRE live Gemini pipeline on real data before our own collection exists:
+ENTIRE Gemini pipeline on real data before our own collection exists:
 descriptor -> Gemini Embedding 2 (asymmetric retrieval) -> hybrid object retrieval ->
 structured joint force prediction -> silicone force MAE, sanity-checked vs Exp-Force's
 reported ~0.43 N.
 
-    python scripts/expforce_testset.py --limit 20            # offline stub
-    python scripts/expforce_testset.py --live --limit 20 --k 5   # real Gemini (needs .env key)
+    python scripts/expforce_testset.py --limit 20 --k 5 --confirm-gemini-cost
 
 Roughness/contact are unknown here, held constant (class 3, a=1.0), so this is a
 single-embodiment compatibility check of the E4 interface, not a full E4 evaluation.
@@ -59,7 +58,7 @@ def _download(url: str, dest: Path) -> bool:
         return False
 
 
-def build_dataset(cfg, limit: int | None, live: bool) -> Path:
+def build_dataset(cfg, limit: int | None) -> Path:
     root = cfg.root / "data" / "expforce"
     csv_path = root / "source_dataset.csv"
     exp_path = cfg.root / "data" / "cache" / "expforce" / "single_gripper_experiences.jsonl"
@@ -75,13 +74,15 @@ def build_dataset(cfg, limit: int | None, live: bool) -> Path:
         img_name = r["Image"]
         suffix = Path(img_name).suffix.lower() or ".png"
         rel = f"data/expforce/objects/{oid}/image{suffix}"
-        have_img = live and _download(f"{BASE}/images/{img_name}", cfg.root / rel)
-        img = None
-        if have_img:
-            import cv2
+        have_img = _download(f"{BASE}/images/{img_name}", cfg.root / rel)
+        if not have_img:
+            raise RuntimeError(f"could not download required object image: {img_name}")
+        import cv2
 
-            img = cv2.imread(str(cfg.root / rel))
-        desc = describe(img, cfg).description if img is not None else ""
+        img = cv2.imread(str(cfg.root / rel))
+        if img is None:
+            raise RuntimeError(f"could not decode required object image: {cfg.root / rel}")
+        desc = describe(img, cfg).description
         records.append(
             ExperienceRecord(
                 object_id=oid,
@@ -147,28 +148,27 @@ def run(cfg, records, k: int) -> None:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--live", action="store_true")
     ap.add_argument("--k", type=int, default=None, help="Override config.yaml retrieval.k.")
     ap.add_argument("--rebuild", action="store_true")
+    ap.add_argument("--confirm-gemini-cost", action="store_true")
     args = ap.parse_args()
+    if not args.confirm_gemini_cost:
+        ap.error("Exp-Force evaluation requires --confirm-gemini-cost")
 
     cfg = load_config()
-    if not args.live:
-        cfg.models.dry_run = True
     cfg.paths.experiences = "data/cache/expforce/single_gripper_experiences.jsonl"
     cfg.paths.images = "data/expforce/objects"
     cfg.paths.splits = "data/expforce/splits.json"
 
     exp_path = cfg.path("experiences")
     if args.rebuild or not exp_path.exists():
-        build_dataset(cfg, args.limit, args.live)
+        build_dataset(cfg, args.limit)
     records = load_experiences(exp_path)
     if args.limit:
         records = records[: args.limit]
     k = args.k if args.k is not None else cfg.retrieval.k
     cfg.retrieval.k = k
-    print(f"Running {'LIVE Gemini' if args.live else 'offline (dry-run stub)'} "
-          f"on {len(records)} objects, k={k}\n")
+    print(f"Running Gemini on {len(records)} objects, k={k}\n")
     run(cfg, records, k)
     return 0
 

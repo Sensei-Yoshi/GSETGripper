@@ -11,6 +11,7 @@ from modules.retrieval import (
     s_mass,
     s_roughness,
 )
+from tests.fakes import FakeEmbeddingProvider
 
 CFG = load_config()
 
@@ -32,11 +33,10 @@ def test_embedding_text_is_semantic_only():
 
 def test_weights_normalize_and_breakdown_sums_to_score():
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = True
     weights = normalized_weights(cfg)
     assert sum(weights.values()) == 1.0
     records = fabricate_records(cfg, 10)
-    index = ExperienceIndex(cfg).fit(records)
+    index = ExperienceIndex(cfg, FakeEmbeddingProvider(cfg.retrieval.embedding.dim)).fit(records)
     probe = records[0]
     q = Query(object_id="probe", image_path="", mass_g=probe.mass_g,
               roughness_class=probe.roughness_class,
@@ -55,9 +55,8 @@ def test_weights_normalize_and_breakdown_sums_to_score():
 
 def test_paired_payload_can_omit_contact():
     cfg = load_config()
-    cfg.models.dry_run = True
     records = fabricate_records(cfg, 10)
-    index = ExperienceIndex(cfg).fit(records)
+    index = ExperienceIndex(cfg, FakeEmbeddingProvider(cfg.retrieval.embedding.dim)).fit(records)
     q = Query(object_id="probe", image_path="", mass_g=200, roughness_class=2,
               projected_contact_fraction=0.7, semantic_description="x")
     qv = index.provider.embed("x")
@@ -68,10 +67,9 @@ def test_paired_payload_can_omit_contact():
 
 def test_object_retrieval_ranks_once_and_carries_both_gripper_labels():
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = True
     cfg.retrieval.k = 5
     records = fabricate_records(cfg, 20)
-    index = ExperienceIndex(cfg).fit(records)
+    index = ExperienceIndex(cfg, FakeEmbeddingProvider(cfg.retrieval.embedding.dim)).fit(records)
     probe = records[0]
     query = Query(
         object_id=probe.object_id,

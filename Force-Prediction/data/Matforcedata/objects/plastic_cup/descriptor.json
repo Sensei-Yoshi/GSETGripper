@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "Matforcedata",
+  "object_id": "plastic_cup",
+  "object_name": "plastic cup",
+  "image_name": "plastic_cup.jpg",
+  "image_path": "data/Matforcedata/plastic_cup.jpg",
+  "image_sha256": "2ce571fe82d4498a22e90d6be853e22bfe455bb71fa192ab430ca98d2c6ef7fc",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
+  "descriptor": {
+    "retrieval_description": "The contact region involves the opposing mid-height lateral surfaces of a smooth, thin-walled plastic cup. The compliant finger pads will interface with smooth, cylindrical curvature exhibiting slight upward taper.",
+    "contact_region": "Opposing mid-height lateral exterior surfaces of the cylindrical-conical body.",
+    "contact_material": "Smooth thin clear plastic.",
+    "visible_surface_material": "Clear transparent plastic.",
+    "visible_surface_condition": "Smooth, glossy, and uniform with faint vertical manufacturing lines visible.",
+    "local_geometry": "Convex cylindrical curvature tapering slightly inward toward the base.",
+    "contact_patch_visibility": "Fully visible and unobstructed.",
+    "uncertainty": "None."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "06e23860b3a2a51218784c80ca437bc93470eb36ede6175ce8ffb76fac16dd6e",
+  "embedding_cache_key": "cdcdc3534520f0ba1431eaad9a9db80d1c20dd15a615c761515c153957548982",
+  "embedding_sha256": "1f9b85b3ba43da2585e43271e4735f5a7951c72af109258e40e109e28a17211b",
+  "updated_at": "2026-07-27T00:05:04.027692+00:00"
+}

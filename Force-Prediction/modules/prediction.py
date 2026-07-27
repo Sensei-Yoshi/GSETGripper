@@ -70,6 +70,8 @@ def vlm_predict_joint(
     retrieval_mode: RetrievalMode | None = None,
 ) -> JointGripperPrediction:
     """Estimate both grippers and recommend one with exactly one force-generation call."""
+    if image_bgr is None:
+        raise ValueError("Gemini force prediction requires a decodable object image")
     payload: dict = {
         "query": _query_payload(query, cfg, include_measured=include_measured),
         "gripper_embodiments": embodiment_payload(cfg),
@@ -101,9 +103,6 @@ def vlm_predict_joint(
                 "sigma_contact": cfg.retrieval.sigma_contact,
             }
 
-    if cfg.models.dry_run:
-        return _joint_stub(cfg, query, retrieved if include_retrieval else [])
-
     raw = get_client(cfg).generate_json(
         system=cfg.prompts.prediction_system,
         instruction=instruction,
@@ -130,79 +129,6 @@ def predictions_from_joint(
         Gripper.GECKO: response.gecko,
         Gripper.SILICONE: response.silicone,
     }
-
-
-def _joint_stub(
-    cfg: Config,
-    query: Query,
-    retrieved: list[RetrievedObjectExperience],
-) -> JointGripperPrediction:
-    """Deterministic offline stand-in for plumbing tests; it is not an accuracy baseline."""
-    if retrieved:
-        predictions = {
-            gripper: _paired_retrieval_average_predict(cfg, retrieved, gripper)
-            for gripper in GRIPPERS
-        }
-    else:
-        base = 0.002 * query.mass_g + 0.25
-        gecko_scale = 0.88 if query.roughness_class <= 2 else 1.12
-        silicone_scale = 1.08 if query.roughness_class <= 2 else 0.94
-        predictions = {
-            Gripper.GECKO: PerGripperPrediction(
-                candidate_gripper=Gripper.GECKO,
-                feasible=True,
-                predicted_normal_force_n=clamp_force(base * gecko_scale, cfg),
-                reasoning_trace="dry-run joint stub",
-            ),
-            Gripper.SILICONE: PerGripperPrediction(
-                candidate_gripper=Gripper.SILICONE,
-                feasible=True,
-                predicted_normal_force_n=clamp_force(base * silicone_scale, cfg),
-                reasoning_trace="dry-run joint stub",
-            ),
-        }
-    recommendation = select(predictions).desired_gripper
-    return JointGripperPrediction(
-        gecko=predictions[Gripper.GECKO],
-        silicone=predictions[Gripper.SILICONE],
-        recommended_gripper=recommendation,
-        recommendation_summary="dry-run recommendation from the joint stub",
-    )
-
-
-def _paired_retrieval_average_predict(
-    cfg: Config,
-    retrieved: list[RetrievedObjectExperience],
-    gripper: Gripper,
-) -> PerGripperPrediction:
-    """Offline E4 stand-in using the same shared paired-object neighbor list."""
-    force_field = (
-        "gecko_min_force_n" if gripper is Gripper.GECKO else "silicone_min_force_n"
-    )
-    feasible_field = "gecko_feasible" if gripper is Gripper.GECKO else "silicone_feasible"
-    usable = [
-        item
-        for item in retrieved
-        if getattr(item, feasible_field) and getattr(item, force_field) is not None
-    ]
-    if not usable:
-        return PerGripperPrediction(
-            candidate_gripper=gripper,
-            feasible=False,
-            predicted_normal_force_n=cfg.force.limit_n,
-            reasoning_trace="no feasible paired neighbors in dry-run stub",
-        )
-    weights = np.asarray([max(0.0, item.score) for item in usable], dtype=float)
-    if weights.sum() <= 0:
-        weights = np.ones_like(weights)
-    forces = np.asarray([getattr(item, force_field) for item in usable], dtype=float)
-    estimate = float((weights * forces).sum() / weights.sum())
-    return PerGripperPrediction(
-        candidate_gripper=gripper,
-        feasible=True,
-        predicted_normal_force_n=clamp_force(estimate, cfg),
-        reasoning_trace="dry-run estimate from shared paired-object neighbors",
-    )
 
 
 def physics_predict(

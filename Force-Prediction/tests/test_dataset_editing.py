@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import csv
 import json
 
@@ -13,6 +14,7 @@ from modules.datasets import (
     update_csv_dataset_object,
 )
 from modules.expforce import load_rows
+from modules.perception import Description
 
 
 def _config_at(tmp_path):
@@ -58,19 +60,27 @@ def _write_source(root) -> None:
         )
 
 
-def test_csv_object_edit_refreshes_measurements_and_experiences_only(tmp_path) -> None:
+def test_csv_object_edit_refreshes_measurements_and_experiences_only(
+    tmp_path, monkeypatch
+) -> None:
     cfg = _config_at(tmp_path)
     root = tmp_path / "data/Physical"
     _write_source(root)
     object_dir = root / "objects/test_cup"
     object_dir.mkdir(parents=True)
-    (object_dir / "image.png").write_bytes(b"image")
+    (object_dir / "image.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    ))
     dataset = get_dataset(cfg, "Physical")
+    monkeypatch.setattr(
+        "modules.datasets.preparation.describe",
+        lambda _image, _cfg: Description(retrieval_description="Gemini test cup"),
+    )
     prepare_dataset_stages(
         cfg,
         dataset,
         [PreparationStage.DESCRIPTIONS],
-        live=False,
     )
     checkpoint_path = object_dir / "descriptor.json"
     checkpoint = json.loads(checkpoint_path.read_text())
@@ -106,7 +116,7 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(tmp_path) -
     assert row.favored_gripper == "silicone"
     assert object_dir.exists()
     edited_checkpoint = json.loads(checkpoint_path.read_text())
-    assert edited_checkpoint["descriptor_source"] == "object_name_fallback"
+    assert edited_checkpoint["descriptor_source"] == "live_gemini"
     assert edited_checkpoint["embedding_status"] == "ready"
     assert edited_checkpoint["embedding_model"] == "test-embedding"
     assert refreshed.objects["test_cup"].mass_g == 125
@@ -119,7 +129,7 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(tmp_path) -
     }
     assert all(record.mass_g == 125 for record in experiences)
     assert all(
-        record.semantic_description == "Test cup"
+        record.semantic_description == "Gemini test cup"
         for record in experiences
     )
     manifest = json.loads(refreshed.paths.preparation_manifest.read_text())

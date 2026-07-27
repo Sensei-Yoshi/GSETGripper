@@ -148,7 +148,7 @@ saved-run inspector:
   truth status, per-gripper predictions, physics trace, retrieval evidence, and formula.
 
 New tabs displaying a `PipelineRunResult` should call `render_prediction` rather than copying
-its layout. Pass the exact `Config` used for that result so retrieval counts and offline/live
+its layout. Pass the exact `Config` used for that result so retrieval counts and backend
 captions remain accurate. For an unscored result, set `counterfactual=True`; `truth` may only be
 absent on that branch.
 

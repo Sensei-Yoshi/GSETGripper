@@ -9,7 +9,6 @@ evaluates the E5 holding-force equations and never produces a force prediction.
 
 from __future__ import annotations
 
-import hashlib
 import math
 from enum import StrEnum
 from typing import Protocol, runtime_checkable
@@ -37,24 +36,6 @@ class EmbeddingProvider(Protocol):
     ) -> np.ndarray: ...
 
 
-class MockEmbeddingProvider:
-    """Deterministic hash-based vectors so offline retrieval is reproducible.
-
-    Ignores `is_query` (a hash mock has no learned query/doc alignment, so the
-    asymmetric template would break same-object query<->doc matching)."""
-
-    def __init__(self, dim: int) -> None:
-        self.dim = dim
-
-    def embed(
-        self, text: str, image_bgr: np.ndarray | None = None, is_query: bool = False
-    ) -> np.ndarray:
-        seed = int.from_bytes(hashlib.sha256(text.encode("utf-8")).digest()[:8], "big")
-        rng = np.random.default_rng(seed)
-        vec = rng.standard_normal(self.dim).astype(np.float32)
-        return vec / (np.linalg.norm(vec) + 1e-12)
-
-
 class GeminiEmbeddingProvider:
     """gemini-embedding-2: asymmetric retrieval formatting (Google's documented
     templates). Stored experiences are embedded as reference text, the query with the
@@ -76,8 +57,6 @@ class GeminiEmbeddingProvider:
 
 
 def get_embedding_provider(cfg: Config) -> EmbeddingProvider:
-    if cfg.models.dry_run or cfg.retrieval.embedding.provider == "mock":
-        return MockEmbeddingProvider(cfg.retrieval.embedding.dim)
     return GeminiEmbeddingProvider(cfg)
 
 

@@ -13,18 +13,27 @@ from modules.hardware import fabricate_records
 from modules.pipeline import Pipeline, query_input_from_object
 from modules.prediction import clamp_force
 from modules.retrieval import ExperienceIndex, RetrievalMode
+from tests.fakes import FakeEmbeddingProvider, install_gemini_fakes
+
+
+def _query_with_image(records, cfg):
+    query = query_input_from_object(records, cfg)
+    query.image_bgr = np.zeros((8, 8, 3), dtype=np.uint8)
+    return query
 
 
 @pytest.mark.parametrize("experiment", EXPERIMENT_IDS)
-def test_every_experiment_runs_offline_with_continuous_forces(experiment):
+def test_every_experiment_runs_with_explicit_gemini_fake_and_continuous_forces(
+    experiment, monkeypatch
+):
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = True
+    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     records = fabricate_records(cfg, 24)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
-    result = Pipeline(cfg, experiment).fit(train).predict(query_input_from_object(test, cfg))
+    result = Pipeline(cfg, experiment).fit(train).predict(_query_with_image(test, cfg))
 
     assert set(result.candidate_predictions) == {"gecko", "silicone"}
     assert all(
@@ -33,16 +42,16 @@ def test_every_experiment_runs_offline_with_continuous_forces(experiment):
     )
 
 
-def test_e4_detailed_result_contains_one_shared_top_k_list():
+def test_e4_detailed_result_contains_one_shared_top_k_list(monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = True
+    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     records = fabricate_records(cfg, 30)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
     detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
-        query_input_from_object(test, cfg)
+        _query_with_image(test, cfg)
     )
 
     assert detailed.experiment_id == "e4"
@@ -57,8 +66,6 @@ def test_e4_detailed_result_contains_one_shared_top_k_list():
 
 def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = False
-    cfg.retrieval.embedding.provider = "mock"
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
@@ -100,10 +107,14 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
 
     monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
     monkeypatch.setattr("modules.experiments.helper.get_client", lambda _cfg: client)
+    monkeypatch.setattr(
+        "modules.experiments.helper.get_embedding_provider",
+        lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
+    )
     monkeypatch.setattr(ExperienceIndex, "retrieve_objects", counted_retrieve)
 
     detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
-        query_input_from_object(test, cfg)
+        _query_with_image(test, cfg)
     )
 
     assert client.generation_calls == 1
@@ -124,13 +135,11 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
 def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
     """E4 adds paired experience retrieval; neither path may invoke E5/E6 physics."""
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = False
-    cfg.retrieval.embedding.provider = "mock"
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
-    query = query_input_from_object(test, cfg)
+    query = _query_with_image(test, cfg)
     payloads = []
 
     class CapturingClient:
@@ -157,6 +166,10 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
     client = CapturingClient()
     monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
     monkeypatch.setattr("modules.experiments.helper.get_client", lambda _cfg: client)
+    monkeypatch.setattr(
+        "modules.experiments.helper.get_embedding_provider",
+        lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
+    )
     monkeypatch.setattr("modules.experiments.e5.calibrate", unexpected)
     monkeypatch.setattr("modules.experiments.e6.calibrate", unexpected)
 
@@ -179,8 +192,6 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
 
 def test_e4_contact_ablation_removes_contact_from_joint_payload(monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = False
-    cfg.retrieval.embedding.provider = "mock"
     cfg.inputs.use_projected_contact = False
     records = fabricate_records(cfg, 12)
     held = records[0].object_id
@@ -207,10 +218,14 @@ def test_e4_contact_ablation_removes_contact_from_joint_payload(monkeypatch):
     client = CapturingClient()
     monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
     monkeypatch.setattr("modules.experiments.helper.get_client", lambda _cfg: client)
+    monkeypatch.setattr(
+        "modules.experiments.helper.get_embedding_provider",
+        lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
+    )
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
-    Pipeline(cfg, "e4").fit(train).predict_detailed(query_input_from_object(test, cfg))
+    Pipeline(cfg, "e4").fit(train).predict_detailed(_query_with_image(test, cfg))
 
     assert "projected_contact_fraction" not in captured["extra"]["query"]
     assert all(
@@ -234,7 +249,7 @@ def test_e5_loads_only_calibrated_physics(monkeypatch):
     monkeypatch.setattr("modules.experiments.helper.vlm_predict_joint", unexpected)
     monkeypatch.setattr("modules.experiments.helper.describe", unexpected)
     detailed = Pipeline(cfg, "e5").fit(train).predict_detailed(
-        query_input_from_object(test, cfg)
+        _query_with_image(test, cfg)
     )
 
     assert detailed.experiment_method == "calibrated_physics"
@@ -250,7 +265,7 @@ def test_e6_is_the_same_e5_physics_plus_the_learned_residual(monkeypatch):
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
-    query = query_input_from_object(test, cfg)
+    query = _query_with_image(test, cfg)
 
     class ConstantResidual:
         def __init__(self, _cfg):
@@ -282,7 +297,6 @@ def test_e6_is_the_same_e5_physics_plus_the_learned_residual(monkeypatch):
 
 def test_e6_keeps_semantic_embeddings_without_vlm_force_or_retrieval(monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = True
     records = fabricate_records(cfg, 24)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
@@ -293,18 +307,21 @@ def test_e6_keeps_semantic_embeddings_without_vlm_force_or_retrieval(monkeypatch
 
     monkeypatch.setattr("modules.experiments.helper.ExperienceIndex", unexpected)
     monkeypatch.setattr("modules.experiments.helper.vlm_predict_joint", unexpected)
+    provider = FakeEmbeddingProvider(cfg.retrieval.embedding.dim)
+    monkeypatch.setattr(
+        "modules.experiments.e6.get_embedding_provider", lambda _cfg: provider
+    )
     pipeline = Pipeline(cfg, "e6").fit(train)
-    detailed = pipeline.predict_detailed(query_input_from_object(test, cfg))
+    detailed = pipeline.predict_detailed(_query_with_image(test, cfg))
 
     assert pipeline.strategy.provider is not None
+    assert provider.client.embedding_calls > 0
     assert detailed.retrieved_objects == []
     assert detailed.selection.model_recommended_gripper is None
 
 
 def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = False
-    cfg.retrieval.embedding.provider = "mock"
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
@@ -333,12 +350,16 @@ def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
     client = CapturingClient()
     monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
     monkeypatch.setattr("modules.experiments.helper.get_client", lambda _cfg: client)
+    monkeypatch.setattr(
+        "modules.experiments.helper.get_embedding_provider",
+        lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
+    )
     monkeypatch.setattr("modules.retrieval.s_mass", sensors_must_not_score)
     monkeypatch.setattr("modules.retrieval.s_roughness", sensors_must_not_score)
     monkeypatch.setattr("modules.retrieval.s_contact", sensors_must_not_score)
 
     detailed = Pipeline(cfg, "e3").fit(train).predict_detailed(
-        query_input_from_object(test, cfg)
+        _query_with_image(test, cfg)
     )
 
     assert detailed.retrieval_mode == RetrievalMode.SEMANTIC_ONLY.value

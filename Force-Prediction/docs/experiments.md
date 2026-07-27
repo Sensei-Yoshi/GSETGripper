@@ -89,6 +89,8 @@ Per-object prediction tables support the proposed ground-truth-versus-prediction
 Treat fixture-based results as synthetic pipeline validation until real standardized
 grasp trials replace them.
 
-Run one condition with `python scripts/run_experiment.py --exp e3 --dry-run`, all active
-conditions with `python scripts/run_experiment.py --all --dry-run`, or create/resume an
-E1–E4 suite from the Streamlit **Runs Viewer**.
+Run a Gemini-backed condition with
+`python scripts/run_experiment.py --exp e3 --confirm-gemini-cost`, run all active
+conditions with `python scripts/run_experiment.py --all --confirm-gemini-cost`, or
+create/resume an E1–E4 suite from the Streamlit **Runs Viewer**. E5 can run without the
+confirmation flag because it is fully local.

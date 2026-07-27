@@ -29,7 +29,6 @@ from streamlit_app.prediction_ui import (
 def _run_config(
     base: Config,
     *,
-    live: bool,
     use_projected_contact: bool,
     semantic: float,
     mass: float,
@@ -40,7 +39,6 @@ def _run_config(
     validate_hybrid_weights: bool,
 ) -> Config:
     cfg = base.model_copy(deep=True)
-    cfg.models.dry_run = not live
     cfg.inputs.use_projected_contact = use_projected_contact
     cfg.retrieval.weights.semantic = semantic
     cfg.retrieval.weights.mass = mass
@@ -131,9 +129,6 @@ def render(context: AppContext) -> None:
                 f"{experiment.upper()} does not expose mass, roughness, or projected "
                 "contact to the estimator."
             )
-        mode = st.segmented_control("Execution", ["Offline", "Live Gemini"], default="Offline")
-        live_execution = mode == "Live Gemini"
-
         with st.expander("Input and retrieval tuning", expanded=True):
             use_projected_contact = st.checkbox(
                 "Use projected contact fraction",
@@ -183,7 +178,6 @@ def render(context: AppContext) -> None:
     try:
         cfg = _run_config(
             base_cfg,
-            live=live_execution,
             use_projected_contact=use_projected_contact,
             semantic=semantic_w,
             mass=mass_w,
@@ -256,7 +250,6 @@ def render(context: AppContext) -> None:
                 cfg,
                 detailed=detailed,
                 experiment=experiment,
-                execution_mode=mode or "Offline",
                 query={
                     "object_id": f"custom_{object_id}" if counterfactual else object_id,
                     "source_object_id": object_id,

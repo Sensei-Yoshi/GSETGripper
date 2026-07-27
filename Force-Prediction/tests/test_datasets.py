@@ -16,6 +16,8 @@ from modules.datasets import (
     prepare_dataset_stages,
 )
 from modules.expforce import source_path
+from modules.perception import Description
+from tests.fakes import FakeEmbeddingProvider
 
 
 def _config_at(tmp_path):
@@ -144,7 +146,6 @@ def test_surface_area_stage_is_rejected_when_any_second_view_is_missing(tmp_path
             cfg,
             dataset,
             [PreparationStage.SURFACE_AREA],
-            live=False,
         )
 
 
@@ -195,7 +196,6 @@ def test_surface_area_stage_uses_image_2_and_reuses_its_checkpoint(
         cfg,
         dataset,
         [PreparationStage.SURFACE_AREA],
-        live=False,
     )
 
     assert calls == [(object_dir / "image_2.png", "shared-rembg-session")]
@@ -213,7 +213,6 @@ def test_surface_area_stage_uses_image_2_and_reuses_its_checkpoint(
         cfg,
         dataset,
         [PreparationStage.SURFACE_AREA],
-        live=False,
     )
 
 
@@ -269,7 +268,6 @@ def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
         cfg,
         dataset,
         [PreparationStage.ROUGHNESS],
-        live=False,
     )
 
     assert calls == ["data/Photos/cup.png"]
@@ -285,22 +283,29 @@ def test_roughness_stage_runs_marigold_on_primary_image_and_reuses_result(
         cfg,
         dataset,
         [PreparationStage.ROUGHNESS],
-        live=False,
     )
 
 
-def test_description_stage_stops_without_running_downstream_stages(tmp_path) -> None:
+def test_description_stage_stops_without_running_downstream_stages(
+    tmp_path, monkeypatch
+) -> None:
     cfg = _config_at(tmp_path)
     root = tmp_path / "data/Photos"
     root.mkdir(parents=True)
-    (root / "cup.png").write_bytes(b"source image bytes")
+    (root / "cup.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    ))
     dataset = get_dataset(cfg, "Photos")
+    monkeypatch.setattr(
+        "modules.datasets.preparation.describe",
+        lambda _image, _cfg: Description(retrieval_description="Gemini cup"),
+    )
 
     result = prepare_dataset_stages(
         cfg,
         dataset,
         [PreparationStage.DESCRIPTIONS],
-        live=False,
     )
 
     checkpoint = json.loads((root / "objects/cup/descriptor.json").read_text())
@@ -308,32 +313,57 @@ def test_description_stage_stops_without_running_downstream_stages(tmp_path) -> 
     assert result["descriptors_completed"] == 1
     assert result["embeddings_completed"] == 0
     assert set(manifest["stages"]) == {"index", "descriptions"}
-    assert checkpoint["descriptor_source"] == "object_name_fallback"
+    assert checkpoint["descriptor_source"] == "live_gemini"
     assert checkpoint["embedding_status"] == "pending"
     assert not (tmp_path / "data/cache/Photos/experiences.jsonl").exists()
     assert get_dataset(cfg, "Photos").objects["cup"].description is not None
 
 
-def test_embedding_stage_adds_description_prerequisite_and_marks_mock_source(tmp_path) -> None:
+def test_description_stage_requires_a_source_image(tmp_path) -> None:
     cfg = _config_at(tmp_path)
     root = tmp_path / "data/Photos"
     root.mkdir(parents=True)
-    (root / "cup.png").write_bytes(b"source image bytes")
+    image = root / "missing.png"
+    image.write_bytes(b"discoverable placeholder")
     dataset = get_dataset(cfg, "Photos")
+    image.unlink()
+
+    with pytest.raises(FileNotFoundError, match="no source image"):
+        prepare_dataset_stages(cfg, dataset, [PreparationStage.DESCRIPTIONS])
+
+
+def test_embedding_stage_adds_description_prerequisite_and_uses_gemini_metadata(
+    tmp_path, monkeypatch
+) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Photos"
+    root.mkdir(parents=True)
+    (root / "cup.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    ))
+    dataset = get_dataset(cfg, "Photos")
+    monkeypatch.setattr(
+        "modules.datasets.preparation.describe",
+        lambda _image, _cfg: Description(retrieval_description="Gemini cup"),
+    )
+    monkeypatch.setattr(
+        "modules.datasets.preparation.get_embedding_provider",
+        lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
+    )
 
     prepare_dataset_stages(
         cfg,
         dataset,
         [PreparationStage.EMBEDDINGS],
-        live=False,
     )
 
     checkpoint = json.loads((root / "objects/cup/descriptor.json").read_text())
     manifest = json.loads((root / "preparation_manifest.json").read_text())
     assert set(manifest["stages"]) == {"index", "descriptions", "embeddings"}
     assert checkpoint["embedding_status"] == "ready"
-    assert checkpoint["embedding_model"].startswith("mock-sha256-")
-    assert checkpoint["embedding_cache_key"] is None
+    assert checkpoint["embedding_model"] == cfg.retrieval.embedding.model
+    assert checkpoint["embedding_cache_key"]
     assert not (tmp_path / "data/cache/Photos/experiences.jsonl").exists()
 
 

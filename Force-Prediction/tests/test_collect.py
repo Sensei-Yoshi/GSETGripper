@@ -18,7 +18,6 @@ def _config_at(tmp_path, dataset_id: str):
     cfg = load_config().model_copy(deep=True)
     cfg.root = tmp_path
     cfg.dataset_id = dataset_id
-    cfg.models.dry_run = True
     return cfg
 
 
@@ -30,6 +29,11 @@ def test_mock_collection_writes_canonical_dataset_without_segmentation(
         collect,
         "create_rembg_session",
         lambda: pytest.fail("mock collection must not load rembg"),
+    )
+    monkeypatch.setattr(
+        collect,
+        "describe",
+        lambda *_args: Description(retrieval_description="test Gemini descriptor"),
     )
 
     collect.collect_mock(cfg, 1, coarse=cfg.collection.coarse_step_n, fine=0.25)

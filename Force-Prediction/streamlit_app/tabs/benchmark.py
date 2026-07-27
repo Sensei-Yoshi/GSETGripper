@@ -30,9 +30,6 @@ def render(context: AppContext) -> None:
             format_func=format_experiment,
             key="benchmark_experiment",
         )
-        mode = st.segmented_control(
-            "Execution", ["Offline", "Live Gemini"], default="Offline", key="benchmark_mode"
-        )
         run = st.button(
             f"Run {object_count}-object leave-one-out benchmark",
             type="primary",
@@ -42,7 +39,6 @@ def render(context: AppContext) -> None:
 
     if run:
         cfg = base_cfg.model_copy(deep=True)
-        cfg.models.dry_run = mode != "Live Gemini"
         progress_bar = right.progress(0.0)
         status = right.empty()
 

@@ -1,11 +1,11 @@
 """Stage check for visual-semantic object description.
 
-    python scripts/check_perception.py             # deterministic dry run
-    python scripts/check_perception.py path.png    # describe a real image (needs GEMINI key unless dry_run)
+    python scripts/check_perception.py path.png
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -16,17 +16,16 @@ from modules.perception import describe  # noqa: E402
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("image", help="Object image to describe with Gemini.")
+    args = parser.parse_args()
     cfg = load_config()
+    import cv2
 
-    if len(sys.argv) > 1:
-        import cv2
-
-        image = cv2.imread(sys.argv[1])  # live description (needs GEMINI_API_KEY)
-        print("description:", describe(image, cfg))
-        return 0
-
-    cfg.models.dry_run = True
-    print("description:", describe(None, cfg))
+    image = cv2.imread(args.image)
+    if image is None:
+        raise SystemExit(f"Could not decode object image: {args.image}")
+    print("description:", describe(image, cfg))
     return 0
 
 

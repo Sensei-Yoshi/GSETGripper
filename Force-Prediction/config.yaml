@@ -77,7 +77,6 @@ retrieval:
   sigma_mass: 0.7       # scale for exp(-|log m_q - log m_i| / sigma) ; log-grams
   sigma_contact: 0.25   # scale for exp(-|a_q - a_i| / sigma)
   embedding:
-    provider: gemini          # 'gemini' or 'mock'
     model: gemini-embedding-2-preview
     dim: 1536                 # Matryoshka truncation (<= 3072)
 
@@ -115,7 +114,6 @@ models:
   temperature: 0.0
   max_retries: 4
   cache: true               # content-hashed disk cache of every embedding/VLM call
-  dry_run: false            # if true, no network calls; deterministic stub responses
 
 # --- Learning (residual models for E6) ---------------------------------------
 learning:

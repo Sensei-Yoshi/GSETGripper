@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import shutil
 
+import pytest
+
 from modules.config import (
     PromptBundle,
     load_config,
@@ -15,7 +17,7 @@ from modules.reporting import (
     export_comparison,
     metrics_rows,
 )
-from modules.suites import create_suite, load_suite, suite_manifest_path
+from modules.suites import create_suite, load_suite, run_suite, suite_manifest_path
 
 
 def _artifact(offset: float) -> dict:
@@ -87,7 +89,9 @@ def test_suite_manifest_snapshots_primary_experiments(tmp_path):
 
     assert persisted["experiments"] == ["e1", "e2", "e3", "e4"]
     assert persisted["snapshot"]["experiment_definition_version"] == 5
-    assert persisted["snapshot"]["models"]["dry_run"] is source_cfg.models.dry_run
+    assert persisted["schema_version"] == 6
+    assert persisted["backend"] == "gemini_joint_generation"
+    assert persisted["snapshot"]["backend"] == "gemini_joint_generation"
     assert persisted["snapshot"]["prompt_bundle_sha256"]
     assert set(persisted["prompt_context"]["experiment_instructions"]) == {
         "e1",
@@ -96,6 +100,11 @@ def test_suite_manifest_snapshots_primary_experiments(tmp_path):
         "e4",
     }
     assert all(state["status"] == "pending" for state in persisted["runs"].values())
+
+
+def test_legacy_suite_is_read_only():
+    with pytest.raises(ValueError, match="Legacy suites are read-only"):
+        run_suite(load_config(), {"schema_version": 5})
 
 
 def test_calibration_export_has_eight_panels_and_no_identity_lines(tmp_path):

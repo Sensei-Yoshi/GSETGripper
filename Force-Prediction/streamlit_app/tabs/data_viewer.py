@@ -297,7 +297,7 @@ def pipeline_run_inspector(context: AppContext) -> None:
     labels = {
         (
             f"{run['created_at'][:19]} | {run['query'].get('object_name', run['query']['object_id'])} "
-            f"| {run['experiment_display_name']} | {run['execution_mode']}"
+            f"| {run['experiment_display_name']} | {run['backend_label']}"
         ): run
         for run in runs
     }
@@ -331,7 +331,7 @@ def pipeline_run_inspector(context: AppContext) -> None:
             f"**Method/version:** {run.get('experiment_method', 'legacy')} / "
             f"{run.get('experiment_definition_version', 'legacy')}"
         )
-        st.write(f"**Execution:** {run['execution_mode']}")
+        st.write(f"**Backend:** {run['backend_label']}")
         st.write(f"**VLM:** {run['models']['vlm']}")
         st.write(f"**Text embedding:** {run['models']['embedding']}")
         st.write(f"**Protocol:** {run['evaluation_protocol'].replace('-', ' ')}")
@@ -373,7 +373,6 @@ def pipeline_run_inspector(context: AppContext) -> None:
     with output_col:
         st.subheader("Pipeline output")
         cfg = base_cfg.model_copy(deep=True)
-        cfg.models.dry_run = run["execution_mode"] != "Live Gemini"
         cfg.retrieval = type(cfg.retrieval).model_validate(run["retrieval_config"])
         cfg.inputs.use_projected_contact = run.get("inputs", {}).get(
             "use_projected_contact",

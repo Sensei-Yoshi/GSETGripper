@@ -1,7 +1,8 @@
-"""Stage check: E4 hybrid paired-object retrieval (offline mock embeddings)."""
+"""Stage check: E4 hybrid paired-object retrieval with Gemini embeddings."""
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -14,8 +15,12 @@ from modules.retrieval import ExperienceIndex  # noqa: E402
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--confirm-gemini-cost", action="store_true")
+    args = parser.parse_args()
+    if not args.confirm_gemini_cost:
+        parser.error("retrieval check requires --confirm-gemini-cost")
     cfg = load_config().model_copy(deep=True)
-    cfg.models.dry_run = True
     records = load_experiences(cfg.path("experiences")) or fabricate_records(cfg, 40)
     index = ExperienceIndex(cfg).fit(records)
     probe = records[0]

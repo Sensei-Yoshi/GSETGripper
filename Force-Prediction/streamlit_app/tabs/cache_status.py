@@ -31,7 +31,7 @@ def render(context: AppContext) -> None:
     if "single_result" in st.session_state:
         detailed = st.session_state["single_result"][0]
         st.subheader("Latest run telemetry")
-        st.json(detailed.cache_stats or {"mode": "offline", "backend_attempts": 0})
+        st.json(detailed.cache_stats or {"backend": "local", "backend_attempts": 0})
     st.caption(
         "Cache keys include model, prompt, schema, image bytes, embedding dimension, and full prediction payload."
     )

@@ -14,28 +14,28 @@ typecheck:
 test:
 	pytest
 
-# Generate a synthetic dataset on the mock bench (no hardware, no API).
+# Generate a synthetic dataset on the mock bench; descriptions use Gemini.
 collect:
-	$(PY) -m modules.collect --mock --dataset mock --n 40
+	$(PY) -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
 
-# Run the paired-retrieval VLM method (E4) offline. Use E=e5 for calibrated physics.
+# E1-E4 and E6 require --confirm-gemini-cost; E5 is fully local.
 E ?= e4
 run:
-	$(PY) scripts/run_experiment.py --exp $(E) --dry-run
+	$(PY) scripts/run_experiment.py --exp $(E) $(if $(filter e5,$(E)),,--confirm-gemini-cost)
 
 run-all:
-	$(PY) scripts/run_experiment.py --all --dry-run --out results.json
+	$(PY) scripts/run_experiment.py --all --confirm-gemini-cost --out results.json
 
 prepare-viewer:
-	$(PY) scripts/prepare_expforce_viewer.py
+	$(PY) scripts/prepare_expforce_viewer.py --confirm-gemini-cost
 
 viewer:
 	$(PY) -m streamlit run app.py
 
-# End-to-end smoke: dataset -> full experiment suite, all offline.
+# End-to-end Gemini smoke: dataset -> full experiment suite.
 smoke: collect run-all
 
 all: lint typecheck test
 
 clean:
-	rm -rf data/cache/mock data/mock results.json
+	rm -rf data

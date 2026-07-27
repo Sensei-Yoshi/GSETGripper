@@ -17,12 +17,10 @@ dependencies = [
     "scikit-learn>=1.4",
     "tenacity>=8.2",
     "platformdirs>=4.0",
-    # google-genai is only needed for live Gemini calls; the whole pipeline
-    # runs on mocks without it. Kept optional so CI/tests need no API key.
+    "google-genai>=0.3",
 ]
 
 [project.optional-dependencies]
-gemini = ["google-genai>=0.3"]
 segmentation = ["rembg[cpu]>=2.0.50"]
 roughness = [
     "torch>=2.1",
@@ -54,3 +52,4 @@ check_untyped_defs = true
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-q"
+markers = ["gemini_integration: opt-in test that may call the Gemini API"]

@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "Matforcedata",
+  "object_id": "orange",
+  "object_name": "orange",
+  "image_name": "orange.jpg",
+  "image_path": "data/Matforcedata/orange.jpg",
+  "image_sha256": "e5ead1aebd4881827ace29423575209f8859c3278ee51421b3d9eff73e22865e",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
+  "descriptor": {
+    "retrieval_description": "The target is a small, spherical citrus fruit with a textured peel, positioned on a flat surface. Opposing compliant fingers will contact the lateral surfaces along the centered grasp band.",
+    "contact_region": "Left and right lateral surface patches along the equator of the spherical object.",
+    "contact_material": "Porous, textured citrus peel.",
+    "visible_surface_material": "Citrus peel.",
+    "visible_surface_condition": "Pitted with small oil glands and fine surface texture, showing mild natural color variations.",
+    "local_geometry": "Globular and convex curvature with continuous smooth rounding.",
+    "contact_patch_visibility": "Fully visible.",
+    "uncertainty": "Low uncertainty."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "cc668f1e154772d194a27ac76b507a343e75d8a017a85f61e3fde3540927ba8c",
+  "embedding_cache_key": "cb28e0db333677121390d0babca0433cb3602a0f64078e657b0e01677f96858b",
+  "embedding_sha256": "97bffe9277a7ad5820636caf1beb6583fd895094ebd386946fc87419afb5f511",
+  "updated_at": "2026-07-27T00:05:03.832875+00:00"
+}

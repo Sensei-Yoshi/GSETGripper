@@ -94,7 +94,7 @@ estimate = estimate_contact(points_mm)
 ratio = estimate.combined_contact_fraction
 ```
 
-This path is deterministic and offline. It is the preferred path for tests and
+This path is deterministic and local. It is the preferred path for tests and
 regressions because it does not require a camera or the `rembg` model.
 
 ### 3. A raw image requiring outline extraction

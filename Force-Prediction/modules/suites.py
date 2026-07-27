@@ -46,8 +46,8 @@ def _suite_snapshot(cfg: Config) -> dict:
             "vlm": cfg.models.vlm,
             "embedding": cfg.retrieval.embedding.model,
             "embedding_dim": cfg.retrieval.embedding.dim,
-            "dry_run": cfg.models.dry_run,
         },
+        "backend": "gemini_joint_generation",
         "retrieval": cfg.retrieval.model_dump(mode="json"),
         "inputs": cfg.inputs.model_dump(mode="json"),
         "evaluation_protocol": "leave-one-object-out",
@@ -65,12 +65,12 @@ def create_suite(cfg: Config) -> dict:
     suite_id = created_at.strftime("%Y%m%dT%H%M%S%fZ_primary_e1_e4")
     snapshot = _suite_snapshot(cfg)
     manifest = {
-        "schema_version": 5,
+        "schema_version": 6,
         "suite_id": suite_id,
         "created_at": created_at.isoformat(),
         "updated_at": created_at.isoformat(),
         "status": "pending",
-        "execution_mode": "Offline" if cfg.models.dry_run else "Live Gemini",
+        "backend": "gemini_joint_generation",
         "experiments": list(PRIMARY_EXPERIMENTS),
         "snapshot": snapshot,
         "snapshot_sha256": _snapshot_hash(snapshot),
@@ -114,6 +114,11 @@ def run_suite(
 ) -> dict:
     """Run or resume a suite, checkpointing after every completed experiment."""
     manifest = manifest or create_suite(cfg)
+    if manifest.get("schema_version") != 6:
+        raise ValueError(
+            "Legacy suites are read-only because their execution backend is not compatible "
+            "with the Gemini-only suite contract; start a new suite instead"
+        )
     current_snapshot = _suite_snapshot(cfg)
     if _snapshot_hash(current_snapshot) != manifest["snapshot_sha256"]:
         raise ValueError(

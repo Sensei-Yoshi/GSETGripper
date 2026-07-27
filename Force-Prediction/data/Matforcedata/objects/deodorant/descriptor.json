@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "Matforcedata",
+  "object_id": "deodorant",
+  "object_name": "deodorant",
+  "image_name": "deodorant.jpg",
+  "image_path": "data/Matforcedata/deodorant.jpg",
+  "image_sha256": "8d56ba9ed6783d608840b6c6fb7443be12170bbfbd6bd84c95a100489f738f62",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
+  "descriptor": {
+    "retrieval_description": "The grasp band targets the opposing curved lateral surfaces of a small cylindrical deodorant bottle. The surface consists of smooth plastic with paper product labelling.",
+    "contact_region": "Opposing lateral surfaces of the lower cylindrical body.",
+    "contact_material": "Smooth rigid plastic",
+    "visible_surface_material": "Smooth rigid plastic and paper label",
+    "visible_surface_condition": "Smooth and intact with printed branding labels",
+    "local_geometry": "Convex cylindrical curvature",
+    "contact_patch_visibility": "Fully visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "1a57d34c89d0c43adb016124cc7a9520c3e27a147c1db10b80899c2f745a8c3e",
+  "embedding_cache_key": "b475e75c18fc40fb6442843a25db49fe28de7f4b70b05282f73ec6ed2fb154d6",
+  "embedding_sha256": "f46308330694f43ac21b1fc53ce85c7912fce522e36321eefdde406133ca2ae9",
+  "updated_at": "2026-07-27T00:05:02.802529+00:00"
+}

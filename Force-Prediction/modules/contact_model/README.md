@@ -86,7 +86,7 @@ The pytest suite covers analytic rectangles/circles, curvature rejection,
 antipodality, contiguity, resampling stability, and the committed water-bottle
 and 3D-print outlines bundled under `modules/contact_model/test_contact_area/`.
 Raw-image rembg coverage
-is opt-in with `RUN_CONTACT_IMAGE_INTEGRATION=1` so normal tests stay offline.
+is opt-in with `RUN_CONTACT_IMAGE_INTEGRATION=1` so normal tests remain network-independent.
 
 ## Usage
 
@@ -95,6 +95,4 @@ is opt-in with `RUN_CONTACT_IMAGE_INTEGRATION=1` so normal tests stay offline.
   modules/contact_model/test_contact_area/water_bottle/water_bottle_spline_points.csv \
   --px-per-mm 2.1852
 
-../../env/bin/python -m modules.contact_model.capture_and_analyze \
-  --dataset collected --image sample.png --px-per-mm 2.1852 --no-show
-```
+../../env/bin/python -m modules.contact_mode

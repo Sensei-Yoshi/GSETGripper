@@ -2,7 +2,7 @@
 
     python scripts/run_experiment.py --exp e4
     python scripts/run_experiment.py --all
-    python scripts/run_experiment.py --exp e6 --dry-run     # no paid calls
+    python scripts/run_experiment.py --exp e5               # local physics, no Gemini
 
 Leak-safe by construction: the pipeline is re-fit on each fold's training objects
 (physics calibration, residual model, retrieval index all fold-local), and both
@@ -62,7 +62,11 @@ def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--exp", choices=EXPERIMENT_IDS, default="e4", help="Experiment ID.")
     p.add_argument("--all", action="store_true", help="Run every experiment.")
-    p.add_argument("--dry-run", action="store_true", help="Force offline (no paid calls).")
+    p.add_argument(
+        "--confirm-gemini-cost",
+        action="store_true",
+        help="Required for experiments that make Gemini generation or embedding calls.",
+    )
     p.add_argument("--refresh-splits", action="store_true", help="Regenerate splits.json.")
     p.add_argument("--out", default=None, help="Write results JSON here.")
     return p.parse_args()
@@ -71,14 +75,16 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     cfg = load_config()
-    if args.dry_run:
-        cfg.models.dry_run = True
+    names = EXPERIMENT_IDS if args.all else [args.exp]
+    if any(name != "e5" for name in names) and not args.confirm_gemini_cost:
+        raise SystemExit(
+            "Gemini-backed evaluation requires --confirm-gemini-cost; E5 can run without it"
+        )
     records = load_experiences(cfg.path("experiences"))
     if not records:
         print("No experiences found. Run: python -m modules.collect --mock --dataset mock --n 40")
         return 1
     folds = get_or_make_splits(records, cfg, args.refresh_splits)
-    names = EXPERIMENT_IDS if args.all else [args.exp]
 
     results = {}
     for name in names:

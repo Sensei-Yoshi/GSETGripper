@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "Matforcedata",
+  "object_id": "red_bull",
+  "object_name": "red bull",
+  "image_name": "red_bull.jpg",
+  "image_path": "data/Matforcedata/red_bull.jpg",
+  "image_sha256": "ef4c637a55f99fc2954b047edaac63bab60338fc7a14a30b25198f96b59d32dd",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
+  "descriptor": {
+    "retrieval_description": "The contact region involves the smooth cylindrical metal body of an open energy drink can. Opposing compliant fingers will interface with the curved painted aluminum exterior.",
+    "contact_region": "Opposing lateral surface patches on the central cylindrical body of the can",
+    "contact_material": "Painted aluminum",
+    "visible_surface_material": "Painted aluminum",
+    "visible_surface_condition": "Smooth, glossy finish with printed branding and minimal wear",
+    "local_geometry": "Convex cylindrical curvature with smooth continuous walls",
+    "contact_patch_visibility": "Fully visible",
+    "uncertainty": "Low"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "1bbcef4667294d261829fa81352964c6347547a1f5f162fc07825faf6978509d",
+  "embedding_cache_key": "fc018742772e544547d522cb0e9d059f53137b80a523352cfb0108409c201871",
+  "embedding_sha256": "93784098b565d27aa6cbb64eb0ac90c612c2c9dd4340c65ddbe5f8940f151ede",
+  "updated_at": "2026-07-27T00:05:04.419088+00:00"
+}

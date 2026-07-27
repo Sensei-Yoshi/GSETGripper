@@ -34,9 +34,9 @@ def _parser() -> argparse.ArgumentParser:
         ),
     )
     parser.add_argument(
-        "--live",
+        "--confirm-gemini-cost",
         action="store_true",
-        help="Use Gemini for descriptions/embeddings and permit remote source-image download.",
+        help="Required when selected stages use Gemini descriptions or embeddings.",
     )
     parser.add_argument(
         "--list",
@@ -65,6 +65,15 @@ def main() -> int:
         available = ", ".join(by_id)
         raise SystemExit(f"Unknown dataset {dataset_id!r}. Available datasets: {available}")
     dataset = by_id[dataset_id]
+    semantic_stages = {
+        PreparationStage.DESCRIPTIONS.value,
+        PreparationStage.EMBEDDINGS.value,
+        PreparationStage.EXPERIENCES.value,
+    }
+    if semantic_stages.intersection(args.stages) and not args.confirm_gemini_cost:
+        raise SystemExit(
+            "Gemini-backed preparation requires --confirm-gemini-cost"
+        )
 
     def progress(done: int, total: int, label: str) -> None:
         print(f"[{done:3}/{total}] {label}")
@@ -73,7 +82,6 @@ def main() -> int:
         cfg,
         dataset,
         args.stages,
-        live=args.live,
         progress=progress,
     )
     print(json.dumps(manifest, indent=2))

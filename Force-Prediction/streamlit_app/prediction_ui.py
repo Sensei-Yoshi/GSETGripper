@@ -214,16 +214,10 @@ def render_prediction(
     st.subheader(f"Top {cfg.retrieval.k} reference matches")
     if detailed.retrieved_objects:
         retrieval_label = "E3" if detailed.retrieval_mode == "semantic_only" else "E4"
-        if cfg.models.dry_run:
-            st.caption(
-                f"{retrieval_label} retrieves each object once with both gripper outcomes. Offline mode "
-                "uses the deterministic paired-neighbor stand-in and makes no VLM request."
-            )
-        else:
-            st.caption(
-                f"{retrieval_label} retrieves each object once. Both gripper outcomes come from the same "
-                "paired experience and are sent together in one VLM request."
-            )
+        st.caption(
+            f"{retrieval_label} retrieves each object once. Both gripper outcomes come from the same "
+            "paired experience and are sent together in one Gemini request."
+        )
         st.dataframe(
             paired_retrieval_table(detailed),
             hide_index=True,

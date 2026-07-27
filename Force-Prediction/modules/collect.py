@@ -382,17 +382,20 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Dataset folder under data/ (default: collected).",
     )
     p.add_argument("--config", default=None, help="Path to config.yaml.")
-    p.add_argument("--dry-run", action="store_true",
-                   help="Skip live VLM description calls (implied by --mock).")
+    p.add_argument(
+        "--confirm-gemini-cost",
+        action="store_true",
+        help="Required because every collected object receives a Gemini descriptor.",
+    )
     return p.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if not args.confirm_gemini_cost:
+        raise SystemExit("collection requires --confirm-gemini-cost")
     cfg = load_config(args.config) if args.config else load_config()
     cfg.dataset_id = slug(args.dataset)
-    if args.mock or args.dry_run:
-        cfg.models.dry_run = True  # mock collection is fully offline
     coarse = cfg.collection.coarse_step_n
     fine = cfg.collection.fine_step_n
     if args.mock:

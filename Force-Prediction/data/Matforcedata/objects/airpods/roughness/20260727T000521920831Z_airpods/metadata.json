@@ -1,0 +1,64 @@
+{
+  "schema_version": 2,
+  "run_id": "20260727T000521920831Z_airpods",
+  "created_at": "2026-07-27T00:05:21.920831+00:00",
+  "duration_seconds": 15.788,
+  "source": {
+    "label": "airpods",
+    "dataset_id": "Matforcedata",
+    "object_id": "airpods",
+    "path": "data/Matforcedata/airpods.jpg",
+    "image_sha256": "540f3347da7eb80556b4cabe4563cd5dd812b809709345efa5f60a9771dac2ca",
+    "original_size": [
+      5712,
+      4284
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 640,
+    "processed_size": [
+      640,
+      480
+    ],
+    "num_inference_steps": 1,
+    "seed": 20260721
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.016188151041666668
+  },
+  "roughness": {
+    "mean": 0.14456497132778168,
+    "median": 0.1304931640625,
+    "std": 0.043645039200782776,
+    "min": 0.10394287109375,
+    "max": 0.449462890625,
+    "p05": 0.11865234375,
+    "p95": 0.23027343749999996
+  },
+  "metallicity": {
+    "mean": 0.14399616420269012,
+    "median": 0.11572265625,
+    "std": 0.07775254547595978,
+    "min": 0.1014404296875,
+    "max": 0.62890625,
+    "p05": 0.10751953125,
+    "p95": 0.3251464843749998
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_data": "roughness.npy",
+    "metallicity_data": "metallicity.npy",
+    "foreground_mask_data": "foreground_mask.npy"
+  }
+}

@@ -46,7 +46,6 @@ def prepare_dataset_stages(
     dataset: Dataset,
     stages: Iterable[PreparationStage | str],
     *,
-    live: bool = True,
     progress: Progress | None = None,
 ) -> dict:
     selected = {PreparationStage(stage) for stage in stages}
@@ -65,7 +64,6 @@ def prepare_dataset_stages(
         )
 
     run_cfg = dataset.runtime_config(cfg)
-    run_cfg.models.dry_run = not live
     manifest = load_manifest(dataset)
     if manifest.source_fingerprint != dataset.source_fingerprint:
         manifest = PreparationManifest(
@@ -116,15 +114,12 @@ def prepare_dataset_stages(
             elif stage is PreparationStage.DESCRIPTIONS:
                 for item in dataset.objects.values():
                     active_object = item.object_id
-                    available = _ensure_image(cfg, item) if live else (
-                        cfg.root / item.image.path
-                    ).is_file()
+                    available = _ensure_image(cfg, item)
                     checkpoint = _prepare_description(
                         run_cfg,
                         dataset,
                         item,
                         checkpoints,
-                        live,
                         image_available=available,
                     )
                     checkpoints[item.object_id] = checkpoint
@@ -133,11 +128,7 @@ def prepare_dataset_stages(
                     report(f"description: {item.name}")
             elif stage is PreparationStage.EMBEDDINGS:
                 provider = get_embedding_provider(run_cfg)
-                embedding_model = (
-                    run_cfg.retrieval.embedding.model
-                    if live
-                    else f"mock-sha256-{run_cfg.retrieval.embedding.dim}"
-                )
+                embedding_model = run_cfg.retrieval.embedding.model
                 for item in dataset.objects.values():
                     active_object = item.object_id
                     embedding_checkpoint = checkpoints.get(item.object_id)
@@ -160,8 +151,8 @@ def prepare_dataset_stages(
                         embedding_checkpoint.embedding_sha256 = hashlib.sha256(
                             vector.tobytes()
                         ).hexdigest()
-                        embedding_checkpoint.embedding_cache_key = (
-                            _embedding_cache_key(run_cfg, text) if live else None
+                        embedding_checkpoint.embedding_cache_key = _embedding_cache_key(
+                            run_cfg, text
                         )
                         embedding_checkpoint.updated_at = datetime.now(UTC).isoformat()
                         write_json_atomic(
@@ -249,7 +240,6 @@ def _prepare_description(
     dataset: Dataset,
     item,
     checkpoints: dict[str, PreparedObjectCheckpoint],
-    live: bool,
     *,
     image_available: bool,
 ) -> PreparedObjectCheckpoint:
@@ -265,20 +255,13 @@ def _prepare_description(
     )
     if reusable and existing is not None:
         return existing
-    if live and not image_available:
+    if not image_available:
         raise FileNotFoundError(f"no source image is available for {item.name!r}")
-    if live:
-        image = cv2.imread(str(image_path))
-        if image is None:
-            raise ValueError(f"could not decode {image_path}")
-        value = describe(image, cfg)
-        source = "live_gemini"
-    elif existing is not None and existing.descriptor_source == "live_gemini":
-        value = existing.descriptor
-        source = existing.descriptor_source
-    else:
-        value = _fallback_description(item.name, "offline object-name fallback")
-        source = "object_name_fallback"
+    image = cv2.imread(str(image_path))
+    if image is None:
+        raise ValueError(f"could not decode {image_path}")
+    value = describe(image, cfg)
+    source = "live_gemini"
     checkpoint = PreparedObjectCheckpoint(
         dataset_id=dataset.dataset_id,
         object_id=item.object_id,
@@ -508,19 +491,6 @@ def _embedding_cache_key(cfg: Config, text: str) -> str:
     formatted = f"title: none | text: {text}"
     return DiskCache.key(
         "embed", cfg.retrieval.embedding.model, cfg.retrieval.embedding.dim, formatted, None
-    )
-
-
-def _fallback_description(name: str, reason: str) -> Description:
-    return Description(
-        retrieval_description=name,
-        contact_region="centered lateral grasp band",
-        contact_material="unknown",
-        visible_surface_material="unknown",
-        visible_surface_condition="unknown",
-        local_geometry="unknown",
-        contact_patch_visibility=reason,
-        uncertainty="No Gemini image descriptor is available.",
     )
 
 

@@ -1,13 +1,14 @@
-"""Stage check: the paired-retrieval VLM pipeline (E4), offline.
+"""Stage check: the Gemini-backed paired-retrieval VLM pipeline (E4).
 
 Prints every stage: per-gripper physics estimate, prediction, and the final
 deterministic selection.
 
-    python scripts/check_pipeline.py
+    python scripts/check_pipeline.py path.png --confirm-gemini-cost
 """
 
 from __future__ import annotations
 
+import argparse
 import sys
 from pathlib import Path
 
@@ -20,16 +21,28 @@ from modules.pipeline import Pipeline, query_input_from_object  # noqa: E402
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("image", help="Object image for the held-out pipeline query.")
+    parser.add_argument("--confirm-gemini-cost", action="store_true")
+    args = parser.parse_args()
+    if not args.confirm_gemini_cost:
+        parser.error("pipeline check requires --confirm-gemini-cost")
     cfg = load_config()
-    cfg.models.dry_run = True  # self-contained, no network
 
     records = load_experiences(cfg.path("experiences")) or fabricate_records(cfg, 40)
     held_out = records[0].object_id
     train = [r for r in records if r.object_id != held_out]
     test = [r for r in records if r.object_id == held_out]
+    import cv2
+
+    image = cv2.imread(args.image)
+    if image is None:
+        raise SystemExit(f"Could not decode object image: {args.image}")
+    query = query_input_from_object(test, cfg)
+    query.image_bgr = image
 
     pipe = Pipeline(cfg, "e4").fit(train)
-    result = pipe.predict(query_input_from_object(test, cfg))
+    result = pipe.predict(query)
 
     print(f"held-out object: {held_out}")
     for g, p in result.candidate_predictions.items():

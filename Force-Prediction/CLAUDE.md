@@ -23,7 +23,7 @@ prediction, calibrated analytical physics, and physics-residual learning.
 - `pipeline.py` is deliberately thin: `Pipeline(cfg, "e4").fit(train).predict(query)`.
 - `contracts.py` owns shared Pydantic data shapes; do not create ad-hoc response dicts.
 - Every learned resource is fit inside the current object-grouped training fold.
-- Offline mocks and dry-run VLM responses keep tests free of hardware and network calls.
+- Explicit test-only Gemini fakes and a network guard keep unit tests free of paid calls.
 
 ## Active experiments
 
@@ -73,7 +73,7 @@ lowest-feasible-force choice; VLM recommendation is stored and scored separately
 | `datasets/` | Dataset discovery, aggregate/object contracts, artifact storage, preparation stages |
 | `models/` | Lazy Gemini, rembg background-removal, and Marigold integrations |
 | `cache.py` | Dataset-scoped API caches and legacy Exp-Force read-through |
-| `expforce.py` | Viewer data preparation, schema-v5 artifacts, provenance, benchmark |
+| `expforce.py` | Viewer data preparation, schema-v6 artifacts, provenance, benchmark |
 | `suites.py` / `reporting.py` | Resumable E1–E4 suites and comparison exports |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 
@@ -102,10 +102,10 @@ VENV=/Users/premshah/Desktop/Robotics/GSET/env/bin/python
 $VENV -m pytest
 $VENV -m ruff check .
 $VENV -m mypy modules
-$VENV scripts/run_experiment.py --all --dry-run
-$VENV scripts/check_pipeline.py
+$VENV scripts/run_experiment.py --all --confirm-gemini-cost
+$VENV scripts/check_pipeline.py path/to/object.png --confirm-gemini-cost
 $VENV scripts/prepare_dataset.py --list
-$VENV scripts/prepare_dataset.py --dataset MatForce --stages descriptions --live
+$VENV scripts/prepare_dataset.py --dataset MatForce --stages descriptions --confirm-gemini-cost
 $VENV -m streamlit run app.py
 ```
 

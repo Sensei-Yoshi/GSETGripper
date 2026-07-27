@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "Matforcedata",
+  "object_id": "curved_water_bottle",
+  "object_name": "curved water bottle",
+  "image_name": "curved_water_bottle.jpg",
+  "image_path": "data/Matforcedata/curved_water_bottle.jpg",
+  "image_sha256": "b7186e84646e85d9d4f9659b344fbcabc277a5d9a589a1a9e0196a0d2b9a5a28",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
+  "descriptor": {
+    "retrieval_description": "The grasp-experience retrieval target is the smooth, cylindrical midsection of a gradient-blue insulated metal bottle. The opposing finger pads engage the curved lateral surfaces directly.",
+    "contact_region": "centered lateral surfaces of the bottle body",
+    "contact_material": "painted metal",
+    "visible_surface_material": "painted metal",
+    "visible_surface_condition": "matte textured coating with a smooth gradient finish",
+    "local_geometry": "convex cylindrical curvature with continuous smooth surface",
+    "contact_patch_visibility": "fully visible on the front-facing lateral sides",
+    "uncertainty": "none"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "3f1217b16be8b470817bbadac741d32371ac7e9fa5e3ff55e5d00af775605364",
+  "embedding_cache_key": "deb36e4b5382abdfddffb6ab9979bf8a9e35d45c0f7b2a27a2e33a7146ceaf04",
+  "embedding_sha256": "f236f8ea32b64f1462074367ec2103ceb516de048cf153066e8582248c25e406",
+  "updated_at": "2026-07-27T00:05:02.577569+00:00"
+}

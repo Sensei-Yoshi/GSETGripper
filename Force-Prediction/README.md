@@ -24,18 +24,17 @@ recommendation, but Python's lowest-feasible-force rule remains authoritative.
 ```bash
 make setup
 make test
-make smoke
 ```
 
-Stage checks, all offline unless `--live` is passed:
+Gemini stage checks require `GEMINI_API_KEY` or `GOOGLE_API_KEY`; exact requests are cached:
 
 ```bash
 python scripts/check_hardware.py
-python scripts/check_perception.py
-python scripts/check_retrieval.py
+python scripts/check_perception.py path/to/object.png
+python scripts/check_retrieval.py --confirm-gemini-cost
 python scripts/check_physics.py
-python scripts/check_prediction.py
-python scripts/check_pipeline.py
+python scripts/check_prediction.py path/to/object.png
+python scripts/check_pipeline.py path/to/object.png --confirm-gemini-cost
 ```
 
 ## Streamlit research lab
@@ -54,9 +53,9 @@ configured semantic + physical hybrid score. Both make one structured force requ
 both grippers.
 
 ```bash
-pip install -e ".[viewer,gemini,roughness]"
+pip install -e ".[viewer,roughness]"
 python scripts/prepare_dataset.py --list
-python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --live
+python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --confirm-gemini-cost
 streamlit run app.py
 ```
 
@@ -84,7 +83,7 @@ E5/E6 physics still requires the measured contact fraction.
 Use `scripts/prepare_dataset.py --dataset <folder> --stages <stage...>` to run only
 `descriptions`, `embeddings`, or `experiences`. Prerequisites are automatic, but downstream
 stages are opt-in. For example, the MatForce command above makes only Gemini descriptions;
-they appear in Data Viewer immediately on the next rerun. Live calls are content-hash cached
+they appear in Data Viewer immediately on the next rerun. Gemini calls are content-hash cached
 under `data/cache/<dataset>/{generation,embeddings}` and resumable. The legacy flat files in
 `data/cache` remain readable as Exp-Force entries. See
 [`docs/streamlit-architecture.md`](docs/streamlit-architecture.md) for the full contract.
@@ -92,21 +91,23 @@ under `data/cache/<dataset>/{generation,embeddings}` and resumable. The legacy f
 ## Experiment runner
 
 ```bash
-python scripts/run_experiment.py --exp e4 --dry-run
-python scripts/run_experiment.py --all --dry-run
+python scripts/run_experiment.py --exp e4 --confirm-gemini-cost
+python scripts/run_experiment.py --all --confirm-gemini-cost
+python scripts/run_experiment.py --exp e5
 ```
 
-For live Gemini execution, set `GEMINI_API_KEY` or `GOOGLE_API_KEY`, install the Gemini
-extra, and omit `--dry-run`.
+E1–E4 use Gemini generation, E3/E4 use Gemini embeddings, and E6 uses Gemini embeddings
+with its local residual model. E5 is fully local. Cached identical requests make no new call.
 
 ## Data collection
 
 ```bash
-python -m modules.collect --mock --dataset mock --n 40
-python -m modules.collect --dataset collected --port /dev/cu.usbmodemXXXX
+python -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
+python -m modules.collect --dataset collected --port /dev/cu.usbmodemXXXX --confirm-gemini-cost
 ```
 
-The coarse/fine staircase controls ground-truth search resolution only. It does not limit
+Mock collection simulates hardware but still uses Gemini for object descriptions. The
+coarse/fine staircase controls ground-truth search resolution only. It does not limit
 the precision of predictions or hardware commands. See
 [`docs/data_collection_sop.md`](docs/data_collection_sop.md).
 
@@ -122,13 +123,4 @@ the precision of predictions or hardware commands. See
 | `modules/retrieval.py` | Paired-object embeddings and hybrid retrieval |
 | `modules/physics.py` | Reduced-order equations, bounded calibration, solver |
 | `modules/learning.py` | E6 residual regressor and semantic PCA |
-| `modules/evaluation.py` | Grouped splits and force/selection/recommendation metrics |
-| `modules/datasets/` | Dataset catalog, object/artifact models, storage, and preparation stages |
-| `modules/cache.py` | Dataset-isolated response caches plus Exp-Force legacy read-through |
-| `modules/expforce.py` | Synthetic fixture preparation, persistence, and benchmark |
-| `modules/suites.py` / `reporting.py` | Resumable E1–E4 suites and paper-ready comparisons |
-| `modules/models/` | Gemini, background-removal, and Marigold model adapters |
-| `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
-
-See [`docs/experiments.md`](docs/experiments.md) for the scientific comparison and
-[`docs/project-context.md`](docs/project-context.md) for the complete current context.
+| `modules/evaluation.py` | Grouped split

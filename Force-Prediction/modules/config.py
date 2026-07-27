@@ -91,7 +91,6 @@ class RetrievalWeights(BaseModel):
 
 
 class EmbeddingConfig(BaseModel):
-    provider: Literal["gemini", "mock"]
     model: str
     dim: int = Field(gt=0)
 
@@ -128,7 +127,6 @@ class ModelsConfig(BaseModel):
     temperature: float = Field(ge=0)
     max_retries: int = Field(ge=0)
     cache: bool
-    dry_run: bool
 
 
 class LearningConfig(BaseModel):
@@ -261,6 +259,16 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
     path = Path(path).resolve()
     with path.open("r", encoding="utf-8") as fh:
         raw = yaml.safe_load(fh)
+    if "dry_run" in raw.get("models", {}):
+        raise ValueError(
+            "models.dry_run is no longer supported; Gemini is the production backend "
+            "for descriptions, embeddings, and E1-E4 prediction"
+        )
+    if "provider" in raw.get("retrieval", {}).get("embedding", {}):
+        raise ValueError(
+            "retrieval.embedding.provider is no longer supported; Gemini embeddings "
+            "are always used"
+        )
     prompts_name = str(raw.get("prompts_file", "prompts.yaml"))
     bundle = load_prompt_bundle(path.parent / prompts_name)
     raw["prompts"] = bundle.prompts.model_dump(mode="python")

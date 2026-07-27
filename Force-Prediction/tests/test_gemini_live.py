@@ -63,6 +63,7 @@ def _load_image(path: str):  # noqa: ANN202
     not _live_tests_enabled() or not _have_key() or not Path(DEFAULT_IMAGE).exists(),
     reason="set RUN_LIVE_GEMINI_TESTS=1 with an API key and image to run live",
 )
+@pytest.mark.gemini_integration
 def test_gemini_structured_image() -> None:
     """One real structured-output call with an image -> valid joint prediction."""
     cfg = load_config()

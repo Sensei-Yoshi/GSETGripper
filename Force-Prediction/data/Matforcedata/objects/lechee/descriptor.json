@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "Matforcedata",
+  "object_id": "lechee",
+  "object_name": "lechee",
+  "image_name": "lechee.jpg",
+  "image_path": "data/Matforcedata/lechee.jpg",
+  "image_sha256": "772dbf1e28636d14f44ea62279f363d3a91c92a3f09ed69261961205ca0ac6f5",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
+  "descriptor": {
+    "retrieval_description": "The object is a small lychee fruit with a bumpy, textured rind suited for grasping along its opposing rounded lateral surfaces. The contact interface features a rigid, pebbled organic rind with high friction.",
+    "contact_region": "Opposing lateral sides of the rounded fruit body within the centered grasp band",
+    "contact_material": "Organic fruit skin with a leathery and pebbled exterior",
+    "visible_surface_material": "Organic fruit peel",
+    "visible_surface_condition": "Rough, bumpy, and textured with small scale-like tubercles across the rind",
+    "local_geometry": "Globular and convex curvature with continuous rounded contours",
+    "contact_patch_visibility": "Fully visible",
+    "uncertainty": "Low"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "4b5f59fab4e5452151b060bf9cc80541319ec5cf06a4fd8557b40531b463dfbc",
+  "embedding_cache_key": "2498905851cc76201e3f5791f9ad58b93105e76e500d27512a68148582237aea",
+  "embedding_sha256": "02cfc63afb0718150a648bfa23825baafaf72abaa83deaac70a0199d63284856",
+  "updated_at": "2026-07-27T00:05:03.629559+00:00"
+}

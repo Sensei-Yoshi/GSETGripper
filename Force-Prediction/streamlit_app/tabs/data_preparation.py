@@ -49,15 +49,9 @@ def render(context: AppContext) -> None:
     if distributions:
         st.dataframe(pd.DataFrame(distributions), hide_index=True, width="stretch")
 
-    execution = st.segmented_control(
-        "Gemini execution",
-        ["Live Gemini", "Offline stubs"],
-        default="Live Gemini",
-        key="preparation_execution",
-    )
     st.caption(
-        "The Gemini mode applies to descriptions and embeddings. Marigold and the local "
-        "surface/contact estimator always run their real local pipelines."
+        "Descriptions and embeddings use Gemini with content-hash caching. Marigold and "
+        "the surface/contact estimator run locally."
     )
     st.markdown("#### Semantic preparation")
     descriptions = st.checkbox(
@@ -148,7 +142,6 @@ def render(context: AppContext) -> None:
                 context.config,
                 dataset,
                 selected,
-                live=execution == "Live Gemini",
                 progress=progress,
             )
         except Exception as error:  # noqa: BLE001

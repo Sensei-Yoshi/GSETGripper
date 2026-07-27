@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
+from modules.expforce import artifact_backend_label
 from modules.reporting import (
     calibration_figure,
     comparison_rows,
@@ -27,9 +28,10 @@ from streamlit_app.tabs.data_viewer import pipeline_run_inspector
 
 
 def _suite_label(manifest: dict) -> str:
+    backend = manifest.get("backend") or f"Legacy {manifest.get('execution_mode', 'Unknown')}"
     return (
         f"{manifest['created_at'][:19]} | {manifest['status'].title()} | "
-        f"{manifest['execution_mode']} | {manifest['suite_id']}"
+        f"{backend} | {manifest['suite_id']}"
     )
 
 
@@ -37,7 +39,8 @@ def _render_suite_provenance(manifest: dict) -> None:
     snapshot = manifest["snapshot"]
     st.write(f"**Suite ID:** `{manifest['suite_id']}`")
     st.write(f"**Status:** {manifest['status'].title()}")
-    st.write(f"**Execution:** {manifest['execution_mode']}")
+    backend = manifest.get("backend") or f"Legacy {manifest.get('execution_mode', 'Unknown')}"
+    st.write(f"**Backend:** {backend}")
     st.write(f"**Dataset SHA-256:** `{snapshot['source_sha256']}`")
     st.write(f"**Prompt bundle SHA-256:** `{snapshot['prompt_bundle_sha256']}`")
     st.write(f"**Definition version:** {snapshot['experiment_definition_version']}")
@@ -120,27 +123,16 @@ def _suite_comparison(context: AppContext) -> None:
         "A suite snapshots one dataset, prompt bundle, model, retrieval configuration, "
         "and experiment-definition version. Completed conditions are resumable."
     )
-    controls = st.columns([0.25, 0.25, 0.5])
-    mode = controls[0].segmented_control(
-        "Execution",
-        ["Offline", "Live Gemini"],
-        default="Offline",
-        key="suite_execution_mode",
-    )
-    live = mode == "Live Gemini"
-    confirmed = controls[1].checkbox(
-        "Confirm live cost",
+    controls = st.columns([0.25, 0.75])
+    confirmed = controls[0].checkbox(
+        "Confirm Gemini cost",
         value=False,
-        disabled=not live,
-        help="A full live suite can make up to 516 force-prediction calls.",
-        key="suite_live_confirmation",
+        help="A full suite can make up to 516 Gemini force-prediction calls.",
+        key="suite_cost_confirmation",
     )
-    if live:
-        controls[2].warning(
-            "Maximum 516 force-prediction calls, plus descriptor/embedding preparation."
-        )
-    else:
-        controls[2].info("Offline mode uses deterministic plumbing stubs, not accuracy results.")
+    controls[1].warning(
+        "Maximum 516 Gemini force-prediction calls; exact cached requests are reused."
+    )
 
     suites = list_suites(cfg)
     options = {_suite_label(item): item for item in suites}
@@ -150,24 +142,20 @@ def _suite_comparison(context: AppContext) -> None:
         key="suite_selector",
     )
     selected = options.get(selected_label)
-    mode_matches = (
-        selected is None or selected["execution_mode"] == mode
-    )
-    if not mode_matches:
-        assert selected is not None
+    resumable = selected is None or selected.get("schema_version") == 6
+    if not resumable:
         st.error(
-            f"This suite was created as {selected['execution_mode']}. Select that "
-            "execution mode to resume it, or start a new suite."
+            "This legacy suite is available for inspection only. Start a new Gemini suite "
+            "to run or resume work."
         )
     action_label = "Resume selected suite" if selected else "Run new E1–E4 suite"
     if st.button(
         action_label,
         type="primary",
-        disabled=(live and not confirmed) or not mode_matches,
+        disabled=not confirmed or not resumable,
         key="run_primary_suite",
     ):
         run_cfg = cfg.model_copy(deep=True)
-        run_cfg.models.dry_run = not live
         if selected is None:
             selected = create_suite(run_cfg)
         progress_bar = st.progress(0.0)
@@ -212,7 +200,7 @@ def _benchmark_runs(context: AppContext) -> None:
         (
             f"{item['metadata']['created_at'][:19]} | "
             f"{item['metadata']['experiment'].upper()} | "
-            f"{'Offline' if item['metadata']['dry_run'] else 'Live Gemini'}"
+            f"{artifact_backend_label(item)}"
         ): item
         for item in artifacts
     }

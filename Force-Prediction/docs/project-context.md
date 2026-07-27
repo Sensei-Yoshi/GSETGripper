@@ -271,8 +271,8 @@ The descriptor must not recommend a gripper, predict force, or restate measured 
 values. One descriptor is generated per object and reused for both gripper labels.
 
 Embeddings contain semantic description text only. Mass, roughness, and projected contact
-remain explicit numeric retrieval terms. The live provider uses the configured Gemini text
-embedding model with document/query formatting; dry runs use deterministic hash vectors.
+remain explicit numeric retrieval terms. The configured Gemini text embedding model uses
+document/query formatting for every production retrieval request.
 Exact in-memory search is sufficient for the current corpus, so no vector database is used.
 
 ## 7. Active experiment suite
@@ -632,7 +632,7 @@ written to artifacts.
 
 ## 16. Verification expectations
 
-Offline verification must cover:
+Network-isolated verification with explicit Gemini test fakes must cover:
 
 - only E1–E6 accepted;
 - one joint force-generation call for E1–E4;
@@ -647,9 +647,9 @@ Offline verification must cover:
 - fold-local calibration, PCA, and residual fitting;
 - continuous force clamps and infeasibility behavior;
 - selector authority and recommendation disagreement metrics;
-- schema-v5 prompt/embodiment metadata, resumable suite snapshots, and legacy E4/E5 labels;
+- schema-v6 backend/prompt/embodiment metadata, resumable suite snapshots, and legacy E4/E5 labels;
 - comparison panels contain no identity line and export PNG, SVG, and CSV;
-- cache reuse, grouped splits, and full offline benchmark execution.
+- cache reuse, grouped splits, and full benchmark execution through fake Gemini interfaces.
 
 The installed mypy 2.3.0 may currently terminate with its own internal error. Verification
 should still invoke it and distinguish that tool crash from source diagnostics.
@@ -684,13 +684,14 @@ From `GSETGripper/Force-Prediction`:
 ../../env/bin/python -m pytest
 ../../env/bin/python -m ruff check .
 ../../env/bin/python -m mypy modules
-../../env/bin/python scripts/run_experiment.py --exp e4 --dry-run
-../../env/bin/python scripts/run_experiment.py --all --dry-run
+../../env/bin/python scripts/run_experiment.py --exp e4 --confirm-gemini-cost
+../../env/bin/python scripts/run_experiment.py --all --confirm-gemini-cost
+../../env/bin/python scripts/run_experiment.py --exp e5
 ../../env/bin/python scripts/prepare_dataset.py --list
-../../env/bin/python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --live
-../../env/bin/python scripts/prepare_dataset.py --dataset expforce --stages descriptions embeddings experiences --live
+../../env/bin/python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --confirm-gemini-cost
+../../env/bin/python scripts/prepare_dataset.py --dataset expforce --stages descriptions embeddings experiences --confirm-gemini-cost
 ../../env/bin/python -m streamlit run app.py
-../../env/bin/python -m modules.collect --mock --dataset mock --n 40
+../../env/bin/python -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
 ```
 
 ## 19. Invariants
@@ -710,7 +711,7 @@ From `GSETGripper/Force-Prediction`:
 11. Keep Python selection authoritative and score model recommendation separately.
 12. Persist stable method/version/prompt/embodiment provenance and preserve legacy
    artifacts read-only.
-13. Keep offline tests independent of hardware, credentials, and network access.
+13. Keep unit tests independent of hardware, credentials, and network access through explicit fakes.
 14. Treat current viewer results as synthetic pipeline validation only.
 15. Scope all dataset-dependent artifacts and caches to the active dataset; do not hard-code
     new workflows to `data/expforce`.

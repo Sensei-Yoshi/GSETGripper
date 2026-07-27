@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "Matforcedata",
+  "object_id": "camera_cardboard_box",
+  "object_name": "camera cardboard box",
+  "image_name": "camera_cardboard_box.jpg",
+  "image_path": "data/Matforcedata/camera_cardboard_box.jpg",
+  "image_sha256": "699306f082ff2e540757a6e7d44d71262989dcbfc16cfa667de76bffb1676f74",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "2ff1ad7f221ebc0b36a014b97caf6bd0177e9a2e5242f5c36d686edaf3a82ab4",
+  "descriptor": {
+    "retrieval_description": "Opposing contact patches on the left and right lateral vertical panels of a rectangular cardboard box. The surfaces are flat with vertical corner edges.",
+    "contact_region": "Left and right lateral vertical side panels near the center height of the box",
+    "contact_material": "Corrugated cardboard",
+    "visible_surface_material": "Cardboard",
+    "visible_surface_condition": "Smooth matte paper finish with a glued paper product label on the front face, clear vertical edge folds",
+    "local_geometry": "Flat planar surfaces meeting at 90-degree vertical corner edges",
+    "contact_patch_visibility": "Fully visible",
+    "uncertainty": "Low uncertainty"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "bf1e8afc7cb428a3181446adee1b9b18635b465f175fadd41c20f1981415118f",
+  "embedding_cache_key": "9354a19d381a4db83a1fae9aa0d0b8463f17544447629d7cc441a39882caed6c",
+  "embedding_sha256": "d3fce5705837ae5f39bd6b4a0a72dc63a86a27011a28b06906df185fd4e15f47",
+  "updated_at": "2026-07-27T00:05:02.179649+00:00"
+}

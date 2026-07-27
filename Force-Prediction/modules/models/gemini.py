@@ -3,11 +3,7 @@
 One client, used by perception (descriptor), retrieval (embeddings), and
 prediction (joint two-gripper force response). Every call is content-hash cached on disk and
 wrapped with retries. This is the only module that imports google-genai, and it
-is imported lazily so mock / dry-run runs need neither the package nor a key.
-
-Offline behaviour lives in the callers: perception/prediction build deterministic
-stubs when cfg.models.dry_run is set, and retrieval uses a mock embedder, so the
-full pipeline runs with no network. This module is exercised only for live calls.
+is imported lazily so E5 can run without initializing the Gemini SDK.
 """
 
 from __future__ import annotations
@@ -95,7 +91,7 @@ class GeminiClient:
             load_dotenv()  # pick up GEMINI_API_KEY from a repo-root .env if present
             api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
             if not api_key:
-                raise RuntimeError("Set GEMINI_API_KEY (or GOOGLE_API_KEY) for live Gemini calls.")
+                raise RuntimeError("Set GEMINI_API_KEY (or GOOGLE_API_KEY) for Gemini calls.")
             self._client = genai.Client(api_key=api_key)
         return self._client
 

@@ -7,7 +7,6 @@ import hashlib
 import json
 import re
 import tempfile
-import urllib.request
 from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -22,12 +21,10 @@ from .config import (
     ExperimentMethod,
     prompt_bundle_sha256,
 )
-from .contracts import ExperienceRecord, Gripper, Meta, group_by_object, save_experiences
+from .contracts import ExperienceRecord, Gripper, Meta, group_by_object
 from .evaluation import EvalRow, compute_metrics
 from .experiments import EXPERIMENT_CATALOG, experiment_display_name
-from .perception import Description, describe
 from .pipeline import Pipeline, PipelineRunResult, QueryInput
-from .retrieval import build_embedding_text, get_embedding_provider
 
 BASE_URL = "https://raw.githubusercontent.com/expforcesubmission/Exp-Force-Website/main"
 SOURCE_RELATIVE = Path("data/expforce/dataset.csv")
@@ -254,24 +251,6 @@ def to_experiences(
     return records
 
 
-class PreparedDescriptor(BaseModel):
-    schema_version: int = 2
-    object_id: str
-    object_name: str
-    image_name: str
-    image_path: str
-    image_sha256: str | None = None
-    descriptor_source: str
-    descriptor_model: str | None = None
-    descriptor_signature: str
-    descriptor: Description
-    embedding_status: str = "pending"
-    embedding_model: str | None = None
-    embedding_dim: int | None = None
-    embedding_sha256: str | None = None
-    updated_at: str
-
-
 def _write_json_atomic(path: Path, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile("w", dir=path.parent, delete=False) as fh:
@@ -281,231 +260,25 @@ def _write_json_atomic(path: Path, payload: dict) -> None:
     temporary.replace(path)
 
 
-def _descriptor_signature(cfg: Config) -> str:
-    payload = {
-        "model": cfg.models.vlm,
-        "system": cfg.prompts.descriptor_system,
-        "instruction": cfg.prompts.descriptor,
-        "schema": Description.model_json_schema(),
-    }
-    return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
-
-
-def _file_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
-
-
-def _descriptor_path(cfg: Config, object_id: str) -> Path:
-    return _dataset_root(cfg) / "objects" / object_id / "descriptor.json"
-
-
-def load_prepared_descriptors(cfg: Config) -> dict[str, PreparedDescriptor]:
-    output: dict[str, PreparedDescriptor] = {}
-    canonical = sorted((_dataset_root(cfg) / "objects").glob("*/descriptor.json"))
-    legacy = sorted((_dataset_root(cfg) / "descriptors").glob("*.json"))
-    for path in [*canonical, *legacy]:
-        try:
-            item = PreparedDescriptor.model_validate_json(path.read_text())
-        except (OSError, ValueError):
-            continue
-        output[item.object_id] = item
-    return output
-
-
-def _fallback_description(row: ExpForceRow, reason: str) -> Description:
-    return Description(
-        retrieval_description=row.object_name,
-        contact_region="centered lateral grasp band",
-        contact_material="unknown",
-        visible_surface_material="unknown",
-        visible_surface_condition="unknown",
-        local_geometry="unknown",
-        contact_patch_visibility=reason,
-        uncertainty="No Gemini image descriptor is available.",
-    )
-
-
-def _download_image(image_name: str, destination: Path) -> bool:
-    if destination.exists():
-        return True
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(dir=destination.parent, delete=False) as fh:
-        temporary = Path(fh.name)
-    try:
-        urllib.request.urlretrieve(f"{BASE_URL}/images/{image_name}", temporary)
-    except Exception:  # noqa: BLE001 - caller reports every missing image
-        temporary.unlink(missing_ok=True)
-        return False
-    temporary.replace(destination)
-    return True
-
-
 def prepare_dataset(
     cfg: Config,
     *,
-    live: bool,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> dict:
-    rows = load_rows(cfg)
-    prepared = load_prepared_descriptors(cfg)
-    missing_images: list[str] = []
-    run_cfg = cfg.model_copy(deep=True)
-    run_cfg.models.dry_run = not live
-    run_cfg.paths.cache = str(Path("data") / "cache" / cfg.dataset_id)
-    signature = _descriptor_signature(run_cfg)
-    manifest_path = _dataset_root(cfg) / "preparation_manifest.json"
-    total_steps = len(rows) * (2 if live else 1)
-    completed_steps = 0
-    descriptors_completed = 0
-    embeddings_completed = 0
-    manifest = {
-        "schema_version": 2,
-        "created_at": datetime.now(UTC).isoformat(),
-        "updated_at": datetime.now(UTC).isoformat(),
-        "status": "running",
-        "source_sha256": source_sha256(cfg),
-        "descriptor_signature": signature,
-        "descriptor_mode": "live_gemini" if live else "offline_or_checkpoint",
-        "objects": len(rows),
-        "experience_rows": 2 * len(rows),
-        "descriptors_completed": 0,
-        "embeddings_completed": 0,
-        "missing_images": missing_images,
-        "failed_stage": None,
-        "failed_object": None,
-        "error": None,
-    }
+    """Compatibility wrapper around the canonical Gemini preparation pipeline."""
+    from .datasets import PreparationStage, get_dataset, prepare_dataset_stages
 
-    def save_manifest() -> None:
-        manifest["updated_at"] = datetime.now(UTC).isoformat()
-        manifest["missing_images"] = list(missing_images)
-        _write_json_atomic(manifest_path, manifest)
-
-    def report(name: str) -> None:
-        nonlocal completed_steps
-        completed_steps += 1
-        if progress is not None:
-            progress(completed_steps, total_steps, name)
-
-    for row in rows:
-        descriptors_completed += 1
-        destination = cfg.root / _object_image_relative(cfg, row)
-        available = destination.exists() or (live and _download_image(row.image_name, destination))
-        image_hash = _file_sha256(destination) if available else None
-        existing = prepared.get(row.object_id)
-        reusable_live = bool(
-            existing
-            and existing.descriptor_source == "live_gemini"
-            and existing.descriptor_signature == signature
-            and existing.image_sha256 == image_hash
-        )
-        if not available:
-            missing_images.append(row.image_name)
-            descriptor = _fallback_description(row, "image unavailable")
-            source = "missing_image_fallback"
-        elif reusable_live and existing is not None:
-            descriptor = existing.descriptor
-            source = existing.descriptor_source
-        elif live:
-            try:
-                import cv2
-
-                image = cv2.imread(str(destination))
-                if image is None:
-                    raise ValueError(f"could not decode {destination}")
-                descriptor = describe(image, run_cfg)
-                source = "live_gemini"
-            except Exception as error:  # noqa: BLE001 - checkpoint progress before surfacing API failure
-                manifest.update(
-                    status="failed",
-                    failed_stage="descriptor",
-                    failed_object=row.object_id,
-                    error=f"{type(error).__name__}: {error}",
-                )
-                save_manifest()
-                raise
-        elif existing is not None and existing.descriptor_source == "live_gemini":
-            descriptor = existing.descriptor
-            source = existing.descriptor_source
-        else:
-            descriptor = _fallback_description(row, "offline object-name fallback")
-            source = "object_name_fallback"
-
-        checkpoint = PreparedDescriptor(
-            object_id=row.object_id,
-            object_name=row.object_name,
-            image_name=row.image_name,
-            image_path=str(_object_image_relative(cfg, row)),
-            image_sha256=image_hash,
-            descriptor_source=source,
-            descriptor_model=run_cfg.models.vlm if source == "live_gemini" else None,
-            descriptor_signature=signature,
-            descriptor=descriptor,
-            embedding_status=(existing.embedding_status if reusable_live and existing else "pending"),
-            embedding_model=(existing.embedding_model if reusable_live and existing else None),
-            embedding_dim=(existing.embedding_dim if reusable_live and existing else None),
-            embedding_sha256=(existing.embedding_sha256 if reusable_live and existing else None),
-            updated_at=datetime.now(UTC).isoformat(),
-        )
-        _write_json_atomic(
-            _descriptor_path(cfg, row.object_id), checkpoint.model_dump(mode="json")
-        )
-        prepared[row.object_id] = checkpoint
-        manifest["descriptors_completed"] = descriptors_completed
-        save_manifest()
-        report(f"descriptor: {row.object_name}")
-
-    descriptions = {key: value.descriptor for key, value in prepared.items()}
-    records = to_experiences(
+    dataset = get_dataset(cfg, cfg.dataset_id)
+    return prepare_dataset_stages(
         cfg,
-        rows,
-        {object_id: descriptor.description for object_id, descriptor in descriptions.items()},
+        dataset,
+        [
+            PreparationStage.DESCRIPTIONS,
+            PreparationStage.EMBEDDINGS,
+            PreparationStage.EXPERIENCES,
+        ],
+        progress=progress,
     )
-    save_experiences(_experience_cache_path(cfg), records)
-
-    if live:
-        provider = get_embedding_provider(run_cfg)
-        for row in rows:
-            embeddings_completed += 1
-            checkpoint = prepared[row.object_id]
-            try:
-                vector = provider.embed(
-                    build_embedding_text(checkpoint.descriptor.description),
-                    is_query=False,
-                )
-            except Exception as error:  # noqa: BLE001 - cache keeps every prior successful vector
-                manifest.update(
-                    status="failed",
-                    failed_stage="embedding",
-                    failed_object=row.object_id,
-                    error=f"{type(error).__name__}: {error}",
-                )
-                save_manifest()
-                raise
-            checkpoint.embedding_status = "ready"
-            checkpoint.embedding_model = run_cfg.retrieval.embedding.model
-            checkpoint.embedding_dim = len(vector)
-            checkpoint.embedding_sha256 = hashlib.sha256(vector.tobytes()).hexdigest()
-            checkpoint.updated_at = datetime.now(UTC).isoformat()
-            _write_json_atomic(
-                _descriptor_path(cfg, row.object_id), checkpoint.model_dump(mode="json")
-            )
-            manifest["embeddings_completed"] = embeddings_completed
-            save_manifest()
-            report(f"text embedding: {row.object_name}")
-
-    manifest.update(
-        status="complete",
-        experience_rows=len(records),
-        descriptor_source_counts=dict(
-            sorted(Counter(item.descriptor_source for item in prepared.values()).items())
-        ),
-        failed_stage=None,
-        failed_object=None,
-        error=None,
-    )
-    save_manifest()
-    return manifest
 
 
 def load_experience_pool(cfg: Config) -> list[ExperienceRecord]:
@@ -604,12 +377,49 @@ def prompt_provenance(cfg: Config, prompt_key: str | None) -> dict:
     }
 
 
+def backend_provenance(cfg: Config, experiment: str) -> dict[str, str | None]:
+    """Record the actual force and semantic backends used by an experiment."""
+    if experiment in {"e1", "e2", "e3", "e4"}:
+        return {
+            "force": "gemini_joint_generation",
+            "semantic_embedding": (
+                cfg.retrieval.embedding.model if experiment in {"e3", "e4"} else None
+            ),
+        }
+    if experiment == "e5":
+        return {"force": "local_calibrated_physics", "semantic_embedding": None}
+    if experiment == "e6":
+        return {
+            "force": "local_physics_semantic_residual",
+            "semantic_embedding": (
+                cfg.retrieval.embedding.model
+                if cfg.learning.embedding_pca_dims > 0
+                else None
+            ),
+        }
+    raise KeyError(f"unknown experiment {experiment!r}")
+
+
+def artifact_backend_label(payload: dict) -> str:
+    """Human-readable backend label, including read-only legacy provenance."""
+    backend = payload.get("backend") or payload.get("metadata", {}).get("backend")
+    if backend:
+        force = backend.get("force", "unknown")
+        embedding = backend.get("semantic_embedding")
+        return f"{force} + {embedding}" if embedding else force
+    if "execution_mode" in payload:
+        return f"Legacy {payload['execution_mode']}"
+    metadata = payload.get("metadata", payload)
+    if "dry_run" in metadata:
+        return "Legacy Offline" if metadata["dry_run"] else "Legacy Live Gemini"
+    return "Unknown"
+
+
 def save_pipeline_run(
     cfg: Config,
     *,
     detailed: PipelineRunResult,
     experiment: str,
-    execution_mode: str,
     query: dict,
     truth: dict | None,
     counterfactual: bool,
@@ -645,7 +455,7 @@ def save_pipeline_run(
     prompt_key = definition.prompt
     prompt_context = prompt_provenance(cfg, prompt_key)
     artifact = {
-        "schema_version": 5,
+        "schema_version": 6,
         "dataset_id": cfg.dataset_id,
         "run_id": run_id,
         "created_at": created_at.isoformat(),
@@ -659,7 +469,7 @@ def save_pipeline_run(
         "experiment_definition": definition.model_dump(mode="json"),
         "prediction_prompts": prompt_context["prediction"],
         "prompt_context": prompt_context,
-        "execution_mode": execution_mode,
+        "backend": backend_provenance(cfg, experiment),
         "models": {
             "vlm": cfg.models.vlm,
             "embedding": cfg.retrieval.embedding.model,
@@ -696,6 +506,7 @@ def load_saved_runs(cfg: Config) -> list[dict]:
         run.setdefault("experiment_definition_version", 0)
         run["artifact_path"] = str(path)
         run["experiment_display_name"] = saved_run_experiment_label(run)
+        run["backend_label"] = artifact_backend_label(run)
         runs.append(run)
     return runs
 
@@ -811,14 +622,14 @@ def run_benchmark(
     prompt_context = prompt_provenance(cfg, prompt_key)
     retrieval_mode = EXPERIMENT_CATALOG[experiment].retrieval_mode
     metadata = {
-        "schema_version": 5,
+        "schema_version": 6,
         "dataset_id": cfg.dataset_id,
         "created_at": datetime.now(UTC).isoformat(),
         "experiment": experiment,
         "experiment_method": definition.method.value,
         "experiment_definition_version": EXPERIMENT_DEFINITION_VERSION,
         "experiment_definition": definition.model_dump(mode="json"),
-        "dry_run": cfg.models.dry_run,
+        "backend": backend_provenance(cfg, experiment),
         "source_sha256": source_sha256(cfg),
         "evaluation_protocol": "leave-one-object-out",
         "experience_pool_objects": len(object_ids),

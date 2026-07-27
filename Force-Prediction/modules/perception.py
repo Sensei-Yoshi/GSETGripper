@@ -27,8 +27,8 @@ class Description(BaseModel):
 
 def describe(image_bgr: np.ndarray | None, cfg: Config) -> Description:
     """Visual-semantic description of an object for the grasping database."""
-    if cfg.models.dry_run or image_bgr is None:
-        return Description(retrieval_description="synthetic object (dry-run)")
+    if image_bgr is None:
+        raise ValueError("Gemini description requires a decodable object image")
     raw = get_client(cfg).generate_json(
         system=cfg.prompts.descriptor_system,
         instruction=cfg.prompts.descriptor,

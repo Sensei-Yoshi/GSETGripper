@@ -117,7 +117,7 @@ class ExperimentStrategy(ABC):
         effective_inputs: tuple[str, ...] = (),
     ) -> PipelineRunResult:
         cache_stats: dict[str, Any] = {}
-        if used_client and not self.cfg.models.dry_run:
+        if used_client:
             cache_stats = get_client(self.cfg).cache_stats()
         return PipelineRunResult(
             experiment_id=self.spec.experiment_id,
