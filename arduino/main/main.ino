@@ -141,7 +141,11 @@ const long GRIP_MIN_STEPS = 0;
 // Fully closed: the whole 101.6 mm of travel consumed.
 const long GRIP_MAX_STEPS = (long)(GRIP_MAX_OPENING_MM * GRIP_STEPS_PER_MM);  // 20320
 
-bool gripMovePending = false;
+// Grip-axis lifecycle. GRIP_POSITION is the classic position move (what the
+// old gripMovePending flag tracked). GRIP_SEEKING and GRIP_LIFTING are the
+// force-controlled grasp, serviced in loop().
+enum GripPhase { GRIP_IDLE, GRIP_POSITION, GRIP_SEEKING, GRIP_LIFTING };
+GripPhase gripPhase = GRIP_IDLE;
 
 // ---- HX711 LOAD CELLS (HX711_ADC) ----
 // Cell 1 (index 0): DOUT -> A5,  SCK -> A9   -- GEKKO head
@@ -352,8 +356,8 @@ void loop() {
     selectMovePending = false;
     Serial.println("DONE SELECT");
   }
-  if (gripMovePending && stepperGrip.distanceToGo() == 0) {
-    gripMovePending = false;
+  if (gripPhase == GRIP_POSITION && stepperGrip.distanceToGo() == 0) {
+    gripPhase = GRIP_IDLE;
     Serial.println("DONE GRIP");
   }
 }
@@ -516,7 +520,7 @@ void moveSelectTo(long targetSteps) {
 void moveGripToSteps(long targetSteps) {
   long clamped = clampSteps(targetSteps, GRIP_MIN_STEPS, GRIP_MAX_STEPS, "GRIP");
   stepperGrip.moveTo(GRIP_CLOSE_SIGN * clamped);
-  gripMovePending = true;
+  gripPhase = GRIP_POSITION;
 }
 
 // Converts an object width into a jaw position: close by however much travel
