@@ -26,6 +26,9 @@ rembg[cpu]>=2.0.50
 streamlit>=1.40
 pandas>=2.0
 
+# --- Marigold / Transformers image processors ---
+torchvision>=0.16
+
 # --- dev / CI ---
 pytest>=8.0
 ruff>=0.4

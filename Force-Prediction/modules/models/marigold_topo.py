@@ -453,6 +453,8 @@ def run_marigold_topography(
     mask_erosion_ratio: float = DEFAULT_MASK_EROSION_RATIO,
     base_surface_sigma_ratio: float = DEFAULT_BASE_SURFACE_SIGMA_RATIO,
     display_max_angle_deg: float = DEFAULT_DISPLAY_MAX_ANGLE_DEG,
+    scoring_mask_source: Image.Image | None = None,
+    scoring_mask_rationale: str | None = None,
     run_key: str | None = None,
 ) -> dict[str, Any]:
     """Run normal-based topography directly from an RGB image.
@@ -501,16 +503,34 @@ def run_marigold_topography(
         warnings.append("background_removal_disabled")
     if bbox_fill_fraction < MIN_MASK_BBOX_FILL_FRACTION:
         warnings.append("sparse_foreground_mask")
-    eroded_foreground, erosion_radius = _erode_mask(foreground, mask_erosion_ratio)
-    scoring_mask = _central_principal_axis_band(eroded_foreground, contact_band_fraction)
-    if int(eroded_foreground.sum()) < MIN_SCORING_PIXELS:
-        warnings.append("erosion_removed_too_much_foreground")
-        eroded_foreground = foreground
-        scoring_mask = _central_principal_axis_band(foreground, contact_band_fraction)
+    if scoring_mask_source is not None:
+        scoring_mask = np.asarray(
+            scoring_mask_source.convert("L").resize(
+                crop.size,
+                resample=Image.Resampling.NEAREST,
+            ),
+            dtype=np.uint8,
+        ) >= 128
+        if int(scoring_mask.sum()) < MIN_SCORING_PIXELS:
+            raise RuntimeError("The supplied manual region is too small for analysis.")
+        outside = scoring_mask & ~foreground
+        if float(outside.sum() / scoring_mask.sum()) > 0.01:
+            warnings.append("manual_mask_extends_beyond_automatic_foreground")
+        foreground = foreground | scoring_mask
         erosion_radius = 0
-    if int(scoring_mask.sum()) < MIN_SCORING_PIXELS:
-        warnings.append("contact_band_too_small")
-        scoring_mask = eroded_foreground
+        scoring_strategy = "manual_rectangular_region"
+    else:
+        eroded_foreground, erosion_radius = _erode_mask(foreground, mask_erosion_ratio)
+        scoring_mask = _central_principal_axis_band(eroded_foreground, contact_band_fraction)
+        if int(eroded_foreground.sum()) < MIN_SCORING_PIXELS:
+            warnings.append("erosion_removed_too_much_foreground")
+            eroded_foreground = foreground
+            scoring_mask = _central_principal_axis_band(foreground, contact_band_fraction)
+            erosion_radius = 0
+        if int(scoring_mask.sum()) < MIN_SCORING_PIXELS:
+            warnings.append("contact_band_too_small")
+            scoring_mask = eroded_foreground
+        scoring_strategy = "eroded_central_principal_axis_band"
 
     foreground_source = Image.fromarray(foreground.astype(np.uint8) * 255, mode="L")
     scoring_source = Image.fromarray(scoring_mask.astype(np.uint8) * 255, mode="L")
@@ -562,10 +582,11 @@ def run_marigold_topography(
                 "size": list(crop.size),
             },
             "scoring": {
-                "strategy": "eroded_central_principal_axis_band",
+                "strategy": scoring_strategy,
                 "contact_band_fraction": contact_band_fraction,
                 "mask_erosion_ratio": mask_erosion_ratio,
                 "erosion_radius_pixels": erosion_radius,
+                "rationale": scoring_mask_rationale,
             },
         },
     )

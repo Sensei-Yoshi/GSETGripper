@@ -145,3 +145,26 @@ def test_direct_topography_reuses_stable_run_directory(tmp_path: Path) -> None:
     assert len(list_saved_topography_runs(tmp_path)) == 1
     for artifact in second["artifacts"].values():
         assert (Path(second["run_dir"]) / artifact).is_file()
+
+
+def test_direct_topography_uses_manual_scoring_region(tmp_path: Path) -> None:
+    image = Image.new("RGB", (64, 64), color=(180, 100, 60))
+    mask_array = np.zeros((64, 64), dtype=np.uint8)
+    mask_array[20:44, 20:44] = 255
+
+    run = run_marigold_topography(
+        FakeNormalsAnalyzer(),  # type: ignore[arg-type]
+        image,
+        tmp_path,
+        source_label="Manual fruit region",
+        num_inference_steps=2,
+        ensemble_size=3,
+        seed=11,
+        scoring_mask_source=Image.fromarray(mask_array),
+        scoring_mask_rationale="User-selected ROI.",
+    )
+
+    assert run["scoring"]["strategy"] == "manual_rectangular_region"
+    assert run["scoring"]["rationale"] == "User-selected ROI."
+    saved_mask = Image.open(Path(run["run_dir"]) / run["artifacts"]["scoring_mask"])
+    assert int((np.asarray(saved_mask) >= 128).sum()) == 24 * 24

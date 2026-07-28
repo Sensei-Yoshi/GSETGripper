@@ -24,6 +24,7 @@ dependencies = [
 segmentation = ["rembg[cpu]>=2.0.50"]
 roughness = [
     "torch>=2.1",
+    "torchvision>=0.16",
     "diffusers>=0.30",
     "transformers>=4.39",
     "accelerate>=0.28",

@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 import streamlit as st
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageDraw, ImageOps, UnidentifiedImageError
 
 from modules.models.background_remover import (
     DEFAULT_BACKGROUND_MODEL,
@@ -77,9 +77,65 @@ def _open_upload(uploaded: Any) -> Image.Image | None:
     if uploaded is None:
         return None
     try:
-        return Image.open(io.BytesIO(uploaded.getvalue())).convert("RGB")
+        with Image.open(io.BytesIO(uploaded.getvalue())) as source:
+            return ImageOps.exif_transpose(source).convert("RGB")
     except (OSError, UnidentifiedImageError):
         return None
+
+
+def _manual_region_controls(selection: _SelectedImage) -> tuple[int, int, int, int]:
+    """Render normalized ROI controls and return an original-image XYXY box."""
+    key = _slug(selection.target_key)
+    horizontal = st.slider(
+        "Horizontal extent (%)",
+        0,
+        100,
+        (15, 85),
+        key=f"marigold_manual_horizontal_{key}",
+    )
+    vertical = st.slider(
+        "Vertical extent (%)",
+        0,
+        100,
+        (15, 85),
+        key=f"marigold_manual_vertical_{key}",
+    )
+    width, height = selection.image.size
+    x0 = min(width - 1, round(horizontal[0] * width / 100))
+    x1 = max(x0 + 1, min(width, round(horizontal[1] * width / 100)))
+    y0 = min(height - 1, round(vertical[0] * height / 100))
+    y1 = max(y0 + 1, min(height, round(vertical[1] * height / 100)))
+
+    preview = selection.image.copy()
+    line_width = max(2, round(min(width, height) / 150))
+    ImageDraw.Draw(preview).rectangle(
+        (x0, y0, max(x0, x1 - 1), max(y0, y1 - 1)),
+        outline=(255, 45, 45),
+        width=line_width,
+    )
+    st.image(preview, caption=f"Selected region: {x0}, {y0} to {x1}, {y1}", width="stretch")
+    return x0, y0, x1, y1
+
+
+def _prepare_manual_region(
+    image: Image.Image,
+    bbox: tuple[int, int, int, int],
+    padding_ratio: float,
+) -> tuple[Image.Image, Image.Image, tuple[int, int, int, int]]:
+    """Crop around a manual ROI and build its scoring mask in crop coordinates."""
+    x0, y0, x1, y1 = bbox
+    width, height = image.size
+    pad_x = round((x1 - x0) * padding_ratio)
+    pad_y = round((y1 - y0) * padding_ratio)
+    px0, py0 = max(0, x0 - pad_x), max(0, y0 - pad_y)
+    px1, py1 = min(width, x1 + pad_x), min(height, y1 + pad_y)
+    crop = image.crop((px0, py0, px1, py1))
+    mask = Image.new("L", crop.size, color=0)
+    ImageDraw.Draw(mask).rectangle(
+        (x0 - px0, y0 - py0, x1 - px0 - 1, y1 - py0 - 1),
+        fill=255,
+    )
+    return crop, mask, (px0, py0, px1, py1)
 
 
 def _artifact_path(run: dict[str, Any], name: str) -> Path | None:
@@ -266,7 +322,7 @@ def _dataset_selection(context: AppContext, row: Any) -> _SelectedImage | None:
         return None
     try:
         with Image.open(image_path) as source:
-            image = source.convert("RGB")
+            image = ImageOps.exif_transpose(source).convert("RGB")
     except (OSError, UnidentifiedImageError):
         st.warning(f"The dataset image for {row.name!r} could not be decoded.")
         return None
@@ -414,6 +470,16 @@ def _run_workbench(context: AppContext) -> None:
     if not analyses:
         st.warning("Select at least one analysis.")
 
+    manual_region = st.checkbox(
+        "Manually select the analysis region (override automatic segmentation)",
+        value=False,
+        key="marigold_manual_region",
+        help=(
+            "Skips background removal, crops each image around your rectangle, and scores "
+            "only pixels inside that rectangle."
+        ),
+    )
+
     view_history = st.toggle(
         "View saved Marigold results",
         value=False,
@@ -507,6 +573,17 @@ def _run_workbench(context: AppContext) -> None:
             "background-removal weights."
         )
 
+    manual_bboxes: dict[str, tuple[int, int, int, int]] = {}
+    if manual_region and selections:
+        st.subheader("Manual analysis regions")
+        st.caption(
+            "Adjust the horizontal and vertical ranges; the red rectangle is the only "
+            "region included in the reported statistics."
+        )
+        for selection in selections:
+            with st.expander(selection.display_label, expanded=len(selections) == 1):
+                manual_bboxes[selection.target_key] = _manual_region_controls(selection)
+
     run_requested = st.button(
         "Run Marigold",
         type="primary",
@@ -516,13 +593,31 @@ def _run_workbench(context: AppContext) -> None:
     )
     if run_requested and selections and analyses:
         device = available_device()
-        remover = _background_remover(DEFAULT_BACKGROUND_MODEL) if remove_background else None
+        remover = (
+            _background_remover(DEFAULT_BACKGROUND_MODEL)
+            if remove_background and not manual_region
+            else None
+        )
         results_by_target: dict[str, dict[str, Any]] = {}
         errors: list[str] = []
         completed_results = 0
         requested_results = len(selections) * len(analyses)
         progress = st.progress(0.0, text="Preparing Marigold batch...")
         for selection in selections:
+            analysis_image = selection.image
+            manual_mask: Image.Image | None = None
+            manual_rationale: str | None = None
+            if manual_region:
+                bbox = manual_bboxes[selection.target_key]
+                analysis_image, manual_mask, padded_bbox = _prepare_manual_region(
+                    selection.image,
+                    bbox,
+                    float(crop_padding_ratio),
+                )
+                manual_rationale = (
+                    f"User-selected original-image ROI xyxy={bbox}; "
+                    f"padded inference crop xyxy={padded_bbox}."
+                )
             results: dict[str, dict[str, Any]] = {}
             if ROUGHNESS in analyses:
                 progress.progress(
@@ -532,7 +627,7 @@ def _run_workbench(context: AppContext) -> None:
                 try:
                     results[ROUGHNESS] = run_marigold(
                         _roughness_analyzer(device, int(processing_resolution)),
-                        selection.image,
+                        analysis_image,
                         selection.roughness_root,
                         background_remover=remover,
                         source_label=selection.source_label,
@@ -545,6 +640,8 @@ def _run_workbench(context: AppContext) -> None:
                         crop_padding_ratio=float(crop_padding_ratio),
                         contact_band_fraction=float(contact_band_fraction),
                         mask_erosion_ratio=float(mask_erosion_ratio),
+                        scoring_mask_source=manual_mask,
+                        scoring_mask_rationale=manual_rationale,
                         run_key=STABLE_RUN_KEY,
                     )
                 except Exception as error:  # optional model failures belong in the UI
@@ -558,7 +655,7 @@ def _run_workbench(context: AppContext) -> None:
                 try:
                     results[TOPOGRAPHY] = run_marigold_topography(
                         _topography_analyzer(device, int(processing_resolution)),
-                        selection.image,
+                        analysis_image,
                         selection.topography_root,
                         background_remover=remover,
                         source_label=selection.source_label,
@@ -572,6 +669,8 @@ def _run_workbench(context: AppContext) -> None:
                         contact_band_fraction=float(contact_band_fraction),
                         mask_erosion_ratio=float(mask_erosion_ratio),
                         base_surface_sigma_ratio=float(base_surface_sigma_ratio),
+                        scoring_mask_source=manual_mask,
+                        scoring_mask_rationale=manual_rationale,
                         run_key=STABLE_RUN_KEY,
                     )
                 except Exception as error:  # optional model failures belong in the UI

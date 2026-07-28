@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T15:04:03.115853+00:00",
+  "duration_seconds": 102.086,
+  "source": {
+    "label": "apple",
+    "dataset_id": "MatForceFinal",
+    "object_id": "apple",
+    "path": "data/MatForceFinal/apple.jpg",
+    "image_sha256": "be9fa5875073ae883bbedef2fff09d07e307d427c2f64d88ba4eab613a9b1e7f",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      758,
+      768
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.021774927291177908,
+    "bbox_fill_fraction": 0.7819646966281582
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1406,
+      3478,
+      2475,
+      4560
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1069,
+      1082
+    ],
+    "foreground_fraction": 0.46065062939753737
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 6,
+    "foreground_pixels": 268165,
+    "scoring_pixels": 171558,
+    "scoring_fraction_of_foreground": 0.6397479163947569,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.5978107452392578,
+    "median": 0.6005859375,
+    "std": 0.012649839743971825,
+    "min": 0.50341796875,
+    "max": 0.63623046875,
+    "p05": 0.57080078125,
+    "p25": 0.59521484375,
+    "p75": 0.60498046875,
+    "p95": 0.611328125
+  },
+  "metallicity": {
+    "mean": 0.4825861155986786,
+    "median": 0.4833984375,
+    "std": 0.013210415840148926,
+    "min": 0.4208984375,
+    "max": 0.5849609375,
+    "p05": 0.457275390625,
+    "p25": 0.476318359375,
+    "p75": 0.490234375,
+    "p95": 0.5009765625
+  },
+  "roughness_uncertainty": {
+    "mean": 0.006339332554489374,
+    "median": 0.00634765625,
+    "std": 0.0041045877151191235,
+    "min": 0.0,
+    "max": 0.0810546875,
+    "p05": 0.00048828125,
+    "p25": 0.00341796875,
+    "p75": 0.0087890625,
+    "p95": 0.0126953125
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.01319085992872715,
+    "median": 0.012939453125,
+    "std": 0.007535099983215332,
+    "min": 0.0,
+    "max": 0.106201171875,
+    "p05": 0.001708984375,
+    "p25": 0.007568359375,
+    "p75": 0.018310546875,
+    "p95": 0.025634765625
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}
