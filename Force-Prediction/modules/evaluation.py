@@ -110,7 +110,8 @@ def compute_metrics(rows: list[EvalRow], cfg: Config) -> Metrics:
 
     # --- force + feasibility, per gripper --------------------------------- #
     all_pairs: list[tuple[float, float]] = []
-    for gripper in Gripper:
+    active_grippers = cfg.prediction.active_grippers
+    for gripper in active_grippers:
         pairs: list[tuple[float, float]] = []
         tp = fp = tn = fn = 0
         for row in rows:
@@ -140,6 +141,12 @@ def compute_metrics(rows: list[EvalRow], cfg: Config) -> Metrics:
         }
     m.force["overall"] = _force_stats(all_pairs, cfg)
 
+    # A one-candidate run evaluates force and feasibility, not gripper choice.
+    if len(active_grippers) == 1:
+        m.selection = {"applicable": False, "n": 0}
+        m.model_recommendation = {"applicable": False, "n": 0}
+        return m
+
     # --- selection + regret ----------------------------------------------- #
     correct = 0
     considered = 0
@@ -164,6 +171,7 @@ def compute_metrics(rows: list[EvalRow], cfg: Config) -> Metrics:
         else:  # chose "none" despite a feasible option existing
             regrets.append(cfg.force.limit_n - (oracle_f or 0.0))
     m.selection = {
+        "applicable": True,
         "n": considered,
         "accuracy": (correct / considered) if considered else float("nan"),
         "infeasible_pick_rate": (infeasible_picks / considered) if considered else float("nan"),
@@ -187,6 +195,7 @@ def compute_metrics(rows: list[EvalRow], cfg: Config) -> Metrics:
             selector_agreement += 1
     recommendation_count = len(recommendation_rows)
     m.model_recommendation = {
+        "applicable": True,
         "n": recommendation_count,
         "accuracy": (
             recommendation_correct / recommendation_count

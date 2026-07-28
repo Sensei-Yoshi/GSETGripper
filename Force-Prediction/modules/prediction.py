@@ -51,10 +51,63 @@ def _query_payload(query: Query, cfg: Config, *, include_measured: bool) -> dict
     return payload
 
 
-def embodiment_payload(cfg: Config) -> dict[str, str]:
+def embodiment_payload(
+    cfg: Config,
+    active_grippers: tuple[Gripper, ...] = GRIPPERS,
+) -> dict[str, str]:
     return {
-        name: cfg.embodiments[name].description for name in ("gecko", "silicone")
+        gripper.value: cfg.embodiments[gripper.value].description
+        for gripper in active_grippers
     }
+
+
+def _generation_payload(
+    cfg: Config,
+    query: Query,
+    retrieved: list[RetrievedObjectExperience],
+    *,
+    active_grippers: tuple[Gripper, ...],
+    include_measured: bool,
+    include_retrieval: bool,
+    retrieval_mode: RetrievalMode | None,
+) -> dict:
+    payload: dict = {
+        "query": _query_payload(query, cfg, include_measured=include_measured),
+        "active_grippers": [gripper.value for gripper in active_grippers],
+        "gripper_embodiments": embodiment_payload(cfg, active_grippers),
+        "force_constraints": _force_constraints(cfg),
+    }
+    if include_measured and cfg.inputs.use_roughness:
+        payload["roughness_scale"] = cfg.roughness.labels
+    if not include_retrieval:
+        return payload
+
+    mode = retrieval_mode or RetrievalMode.HYBRID
+    payload["query_semantic_description"] = query.semantic_description
+    payload["retrieved_objects"] = [
+        item.to_payload(
+            mode=mode,
+            active_grippers=active_grippers,
+            include_roughness=cfg.inputs.use_roughness,
+            include_contact=cfg.inputs.use_projected_contact,
+        )
+        for item in retrieved
+    ]
+    if mode is RetrievalMode.SEMANTIC_ONLY:
+        payload["retrieval_config"] = {
+            "mode": mode.value,
+            "k": cfg.retrieval.k,
+            "score": "cosine_semantic_embedding_only",
+        }
+    else:
+        payload["retrieval_config"] = {
+            "mode": mode.value,
+            "k": cfg.retrieval.k,
+            "normalized_weights": normalized_weights(cfg),
+            "sigma_mass": cfg.retrieval.sigma_mass,
+            "sigma_contact": cfg.retrieval.sigma_contact,
+        }
+    return payload
 
 
 def vlm_predict_joint(
@@ -71,38 +124,15 @@ def vlm_predict_joint(
     """Estimate both grippers and recommend one with exactly one force-generation call."""
     if image_bgr is None:
         raise ValueError("Gemini force prediction requires a decodable object image")
-    payload: dict = {
-        "query": _query_payload(query, cfg, include_measured=include_measured),
-        "gripper_embodiments": embodiment_payload(cfg),
-        "force_constraints": _force_constraints(cfg),
-    }
-    if include_measured and cfg.inputs.use_roughness:
-        payload["roughness_scale"] = cfg.roughness.labels
-    if include_retrieval:
-        mode = retrieval_mode or RetrievalMode.HYBRID
-        payload["query_semantic_description"] = query.semantic_description
-        payload["retrieved_objects"] = [
-            item.to_payload(
-                mode=mode,
-                include_roughness=cfg.inputs.use_roughness,
-                include_contact=cfg.inputs.use_projected_contact,
-            )
-            for item in retrieved
-        ]
-        if mode is RetrievalMode.SEMANTIC_ONLY:
-            payload["retrieval_config"] = {
-                "mode": mode.value,
-                "k": cfg.retrieval.k,
-                "score": "cosine_semantic_embedding_only",
-            }
-        else:
-            payload["retrieval_config"] = {
-                "mode": mode.value,
-                "k": cfg.retrieval.k,
-                "normalized_weights": normalized_weights(cfg),
-                "sigma_mass": cfg.retrieval.sigma_mass,
-                "sigma_contact": cfg.retrieval.sigma_contact,
-            }
+    payload = _generation_payload(
+        cfg,
+        query,
+        retrieved,
+        active_grippers=GRIPPERS,
+        include_measured=include_measured,
+        include_retrieval=include_retrieval,
+        retrieval_mode=retrieval_mode,
+    )
 
     raw = get_client(cfg).generate_json(
         system=cfg.prompts.prediction_system,
@@ -119,6 +149,45 @@ def vlm_predict_joint(
     )
     response.silicone.predicted_normal_force_n = clamp_force(
         response.silicone.predicted_normal_force_n, cfg
+    )
+    return response
+
+
+def vlm_predict_single(
+    cfg: Config,
+    query: Query,
+    image_bgr: np.ndarray | None,
+    retrieved: list[RetrievedObjectExperience],
+    *,
+    gripper: Gripper,
+    instruction: str,
+    include_measured: bool,
+    include_retrieval: bool,
+    retrieval_mode: RetrievalMode | None = None,
+) -> PerGripperPrediction:
+    """Estimate one requested gripper with the per-gripper response schema."""
+    if image_bgr is None:
+        raise ValueError("Gemini force prediction requires a decodable object image")
+    payload = _generation_payload(
+        cfg,
+        query,
+        retrieved,
+        active_grippers=(gripper,),
+        include_measured=include_measured,
+        include_retrieval=include_retrieval,
+        retrieval_mode=retrieval_mode,
+    )
+    raw = get_client(cfg).generate_json(
+        system=cfg.prompts.prediction_system,
+        instruction=instruction,
+        schema=PerGripperPrediction,
+        image_bgr=image_bgr,
+        extra=payload,
+    )
+    response = PerGripperPrediction.model_validate(raw)
+    response.candidate_gripper = gripper
+    response.predicted_normal_force_n = clamp_force(
+        response.predicted_normal_force_n, cfg
     )
     return response
 

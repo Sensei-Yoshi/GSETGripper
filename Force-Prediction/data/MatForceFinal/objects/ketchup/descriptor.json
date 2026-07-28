@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "ketchup",
+  "object_name": "ketchup",
+  "image_name": "ketchup.jpg",
+  "image_path": "data/MatForceFinal/ketchup.jpg",
+  "image_sha256": "2139ba472e0e2209d6ae8ffe9978c62b1da4a1204b94e2172a6f4ad3f0d36689",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
+    "contact_region": "Lateral opposing mid-body surfaces of the squeeze bottle",
+    "contact_material": "Plastic substrate and paper label",
+    "visible_surface_material": "Plastic and paper label",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Convex, flat-sided rectangular prism with rounded vertical corners",
+    "contact_patch_visibility": "Clearly visible on the front and sides",
+    "uncertainty": "The exact friction coefficient and precise compliance of the plastic wall are not determinable from visual inspection alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "f029854f076a5aae805b2d293f94bfb7beb149846b4ecd344b1f44aa66ffb2dd",
+  "embedding_cache_key": "46d6e68ed5efa28b4796842c16d306755f93f6e7e80a9a4f3c3b61389ba4ec09",
+  "embedding_sha256": "688afd48ea3e665561ebfc1a7a85a306bc3e8ebba81a3d2f1d18e069c476a25f",
+  "updated_at": "2026-07-28T17:57:47.982647+00:00"
+}

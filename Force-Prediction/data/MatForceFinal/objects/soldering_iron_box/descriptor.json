@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "soldering_iron_box",
+  "object_name": "Soldering Iron Box",
+  "image_name": "Soldering Iron Box.jpg",
+  "image_path": "data/MatForceFinal/Soldering Iron Box.jpg",
+  "image_sha256": "2ba3f688e7dd93c78c342b99b155b82f0c3bc23ab61c79f6f3ff1a839d0c5d49",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Matte black box object with a smooth, dry, rigid lateral surface and flat geometry. The intended contact region has no visible seams or interruptions across the opposing lateral sides.",
+    "contact_region": "Opposing lateral vertical sidewalls of the box object",
+    "contact_material": "Painted metal or hard plastic substrate",
+    "visible_surface_material": "Painted metal or hard plastic",
+    "visible_surface_condition": "Clean, dry, and matte",
+    "local_geometry": "Flat, vertical planar surfaces with sharp 90-degree corner edges bounding the sides",
+    "contact_patch_visibility": "Clearly visible on the front-facing lateral side, while the exact opposing rear side is partially occluded",
+    "uncertainty": "The rear lateral contact patch is occluded by perspective, though the overall rectangular prismatic geometry implies symmetry."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "ea4b53eabfd672416f624bd9e0ab508158e5640ff514da56a126b176dd56f41b",
+  "embedding_cache_key": "2bf96c4387c62a98b80f3667d955cd8ff87024da33ff6843dc784c2b5d72063c",
+  "embedding_sha256": "1c42bf6a3d48c2debd45d2817c8fddfef8b5eea5c9f8c552ed724d38a94c52a3",
+  "updated_at": "2026-07-28T17:57:45.573820+00:00"
+}

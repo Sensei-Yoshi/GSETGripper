@@ -26,24 +26,25 @@ def render(context: AppContext) -> None:
 3. Open **Single Run**, choose one of the {object_count} active objects, or upload an image.
    E1 can run from an image alone; other conditions report exactly which inputs or references
    are still missing.
-4. For conditions that use measurements, record mass and optionally enable roughness and
-   projected contact beside the Dataset selector. E1 and E3 ignore all three.
+4. Select Gecko, silicone, or both with the global prediction checkboxes. For conditions
+   that use measurements, record mass and optionally enable roughness and projected contact.
 5. Choose an experiment. Adjust retrieval weights and hybrid similarity constants for E4;
    E3 is fixed to semantic cosine similarity.
-6. Click **Run pipeline**. Read the selected gripper and force first, then compare both
-   predictions, evidence summaries, and the top-five matches.
-7. Use **Benchmark** for one condition or **Runs Viewer** for a resumable E1–E4
-   comparison and saved-run inspection. Use **Data Viewer** for the experience catalog and
+6. Click **Run pipeline**. Single-target runs show force and feasibility; paired runs also
+   compare candidates and select the lowest-force feasible gripper.
+7. Use **Benchmark** to save truth-free predictions and evaluate them later without model
+   calls. Use **Runs Viewer** for versioned results, a resumable E1–E4 comparison, and
+   saved-run inspection. Use **Data Viewer** for the experience catalog and
    **Cache Status** to confirm that repeated Gemini requests are being reused.
         """
     )
 
     st.header("Experiment definitions")
     uses = {
-        "e1": "Image + joint VLM",
-        "e2": "Image + sensors + joint VLM",
-        "e3": "Image + semantic-only paired retrieval + joint VLM",
-        "e4": "Sensors + paired retrieval + joint VLM",
+        "e1": "Image + target-aware VLM",
+        "e2": "Image + sensors + target-aware VLM",
+        "e3": "Image + semantic-only retrieval + target-aware VLM",
+        "e4": "Sensors + hybrid retrieval + target-aware VLM",
     }
     experiments = pd.DataFrame(
         [
@@ -79,10 +80,10 @@ def render(context: AppContext) -> None:
         """
 For a known dataset object, the pipeline excludes that object and uses eligible outcomes from the other objects.
 For a custom query, it uses the eligible outcomes in the active dataset. It reuses one cached text embedding per reference object for
-both grippers and embeds the query description. E3 ranks by semantic cosine only and hides
+the active grippers and embeds the query description. E3 ranks by semantic cosine only and hides
 all sensor values. E4 ranks with the displayed semantic + sensor hybrid similarity. Each
-retrieves five objects once, with both Gecko and silicone outcomes attached to each object.
-One Gemini request returns both force estimates and an explicit recommendation. Neither
+retrieves five objects once, with only active-gripper outcomes attached to each object.
+One target uses a per-gripper response; two targets use one joint response. Neither
 condition constructs or sends a physics estimate. Python selects the lower feasible
 predicted force and explicitly reports a prediction tie only when the continuous estimates are equal.
 
@@ -130,11 +131,11 @@ refresh visual descriptions and reference embeddings.
             },
             {
                 "Section": "Benchmark",
-                "Purpose": "Evaluate every object using leave-one-object-out training.",
+                "Purpose": "Generate immutable predictions, then evaluate available truth separately.",
             },
             {
                 "Section": "Runs Viewer",
-                "Purpose": "Resume E1–E4 suites, compare/export results, and inspect saved runs.",
+                "Purpose": "Inspect prediction/evaluation history and run two-stage E1–E4 suites.",
             },
             {
                 "Section": "Data Viewer",

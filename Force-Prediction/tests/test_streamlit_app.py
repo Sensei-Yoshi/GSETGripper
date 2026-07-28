@@ -33,8 +33,9 @@ def test_default_app_structure_matches_research_lab() -> None:
     assert [item.label for item in app.tabs] == EXPECTED_TABS
     assert [item.label for item in app.button] == [
         "Run pipeline",
-        "Run 129-object leave-one-out benchmark",
-        "Run new E1–E4 suite",
+        "Run predictions for 129 objects",
+        "Run/Resume suite predictions",
+        "Evaluate suite & generate comparison",
         "Validate prompt bundle",
         "Save prompts & embodiments",
         "Capture & Analyze",
@@ -67,6 +68,8 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Experience records",
         "Consider roughness class",
         "Consider projected contact fraction",
+        "Predict Gecko force",
+        "Predict silicone force",
     } <= checkbox_labels
     markdown_values = {item.value for item in app.markdown}
     assert "**Image 1 — Perception view**" in markdown_values
@@ -79,13 +82,17 @@ def test_default_app_structure_matches_research_lab() -> None:
         "active_dataset_id",
         "consider_roughness",
         "consider_projected_contact",
+        "predict_gecko_force",
+        "predict_silicone_force",
         "benchmark_experiment",
+        "run_benchmark_predictions",
         "catalog_page",
         "catalog_page_size",
         "runs_viewer_mode",
         "suite_cost_confirmation",
         "suite_selector",
         "run_primary_suite",
+        "evaluate_primary_suite",
         "validate_prompt_bundle",
         "save_prompt_bundle",
         "roughness_view_history",
@@ -109,6 +116,8 @@ def test_default_app_structure_matches_research_lab() -> None:
         "prompt_instruction_e2",
         "prompt_instruction_e3",
         "prompt_instruction_e4",
+        "prompt_target_single",
+        "prompt_target_joint",
         "embodiment_description_gecko",
         "embodiment_description_silicone",
         "prepare_descriptions",
@@ -119,6 +128,25 @@ def test_default_app_structure_matches_research_lab() -> None:
         "run_preparation_stages",
     }
     assert expected_state <= set(app.session_state.filtered_state)
+
+
+def test_global_gripper_controls_require_at_least_one_target() -> None:
+    app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
+    gecko = next(item for item in app.checkbox if item.label == "Predict Gecko force")
+    silicone = next(
+        item for item in app.checkbox if item.label == "Predict silicone force"
+    )
+
+    assert gecko.value is True and silicone.value is True
+    gecko.set_value(False)
+    app.run(timeout=30)
+
+    silicone = next(
+        item for item in app.checkbox if item.label == "Predict silicone force"
+    )
+    assert app.session_state["predict_gecko_force"] is False
+    assert app.session_state["predict_silicone_force"] is True
+    assert silicone.disabled is True
 
 
 def test_descriptor_editor_shows_the_standard_retrieval_template() -> None:

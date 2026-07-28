@@ -24,6 +24,8 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
+from .contracts import Gripper
+
 # Repo root = parent of the modules package directory.
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_CONFIG_PATH = REPO_ROOT / "config.yaml"
@@ -61,6 +63,27 @@ class CollectionConfig(BaseModel):
 class InputsConfig(BaseModel):
     use_roughness: bool = True
     use_projected_contact: bool = True
+
+
+class PredictionConfig(BaseModel):
+    """Candidate grippers requested from every experiment in this runtime."""
+
+    active_grippers: tuple[Gripper, ...] = (Gripper.GECKO, Gripper.SILICONE)
+
+    @model_validator(mode="after")
+    def _validate_active_grippers(self) -> PredictionConfig:
+        if not self.active_grippers:
+            raise ValueError("prediction.active_grippers must contain at least one gripper")
+        if len(self.active_grippers) != len(set(self.active_grippers)):
+            raise ValueError("prediction.active_grippers must not contain duplicates")
+        if len(self.active_grippers) > len(Gripper):
+            raise ValueError("prediction.active_grippers contains too many grippers")
+        expected = tuple(gripper for gripper in Gripper if gripper in self.active_grippers)
+        if self.active_grippers != expected:
+            raise ValueError(
+                "prediction.active_grippers must use stable order: gecko, then silicone"
+            )
+        return self
 
 
 class GeometryConfig(BaseModel):
@@ -140,6 +163,13 @@ class Prompts(BaseModel):
     prediction_system: str
     descriptor: str
     experiments: dict[str, str]
+    target_instructions: dict[str, str]
+
+    @model_validator(mode="after")
+    def _validate_target_instructions(self) -> Prompts:
+        if set(self.target_instructions) != {"single", "joint"}:
+            raise ValueError("target_instructions keys must be exactly ['single', 'joint']")
+        return self
 
 
 class EmbodimentContext(BaseModel):
@@ -164,14 +194,14 @@ class PromptBundle(BaseModel):
 class ExperimentMethod(StrEnum):
     """Supported estimators; each maps to one explicit strategy implementation."""
 
-    JOINT_VLM = "joint_vlm"
-    JOINT_VLM_MEASURED = "joint_vlm_measured"
+    VISION_VLM = "vision_vlm"
+    MEASURED_VLM = "measured_vlm"
     SEMANTIC_RETRIEVAL_VLM = "semantic_retrieval_vlm"
-    PAIRED_RETRIEVAL_VLM = "paired_retrieval_vlm"
+    HYBRID_RETRIEVAL_VLM = "hybrid_retrieval_vlm"
 
 
 EXPERIMENT_IDS = ("e1", "e2", "e3", "e4")
-EXPERIMENT_DEFINITION_VERSION = 6
+EXPERIMENT_DEFINITION_VERSION = 7
 
 
 class ExperimentConfig(BaseModel):
@@ -185,6 +215,7 @@ class Config(BaseModel):
     force: ForceConfig
     collection: CollectionConfig
     inputs: InputsConfig
+    prediction: PredictionConfig
     geometry: GeometryConfig
     roughness: RoughnessConfig
     retrieval: RetrievalConfig
@@ -207,10 +238,10 @@ class Config(BaseModel):
             raise ValueError(f"experiments keys must be exactly {list(EXPERIMENT_IDS)}")
 
         vlm_methods = {
-            ExperimentMethod.JOINT_VLM,
-            ExperimentMethod.JOINT_VLM_MEASURED,
+            ExperimentMethod.VISION_VLM,
+            ExperimentMethod.MEASURED_VLM,
             ExperimentMethod.SEMANTIC_RETRIEVAL_VLM,
-            ExperimentMethod.PAIRED_RETRIEVAL_VLM,
+            ExperimentMethod.HYBRID_RETRIEVAL_VLM,
         }
         for name, experiment in self.experiments.items():
             if experiment.method in vlm_methods:

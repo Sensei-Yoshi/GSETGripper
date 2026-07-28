@@ -142,6 +142,9 @@ class DatasetCapabilities(BaseModel):
     has_roughness: bool = False
     has_measurements: bool = False
     has_paired_labels: bool = False
+    complete_gecko_labels: int = 0
+    complete_silicone_labels: int = 0
+    complete_pair_count: int = 0
     can_build_experiences: bool = False
     can_estimate_surface_area: bool = False
     can_run_pipeline: bool = False
@@ -174,6 +177,23 @@ class Dataset(BaseModel):
     source_fingerprint: str
     objects: dict[str, DatasetObject] = Field(default_factory=dict)
     capabilities: DatasetCapabilities = Field(default_factory=DatasetCapabilities)
+
+    def default_active_grippers(self) -> tuple[Gripper, ...]:
+        """Availability-aware UI default; unlabeled datasets retain zero-shot use."""
+        counts = self.capabilities
+        labeled = tuple(
+            gripper
+            for gripper, count in (
+                (Gripper.GECKO, counts.complete_gecko_labels),
+                (Gripper.SILICONE, counts.complete_silicone_labels),
+            )
+            if count > 0
+        )
+        return labeled or (Gripper.GECKO, Gripper.SILICONE)
+
+    def selectable_grippers(self) -> tuple[Gripper, ...]:
+        """Targets backed by labels, or both targets for an unlabeled dataset."""
+        return self.default_active_grippers()
 
     def runtime_config(self, base: Config) -> Config:
         """Return an isolated config whose data/cache paths belong to this dataset."""
@@ -230,6 +250,9 @@ class Dataset(BaseModel):
             "source_sha256": self.source_fingerprint,
             "roughness_counts": dict(sorted(roughness.items())),
             "favored_counts": dict(sorted(favored.items())),
+            "default_active_grippers": [
+                gripper.value for gripper in self.default_active_grippers()
+            ],
             "capabilities": self.capabilities.model_dump(mode="json"),
         }
 

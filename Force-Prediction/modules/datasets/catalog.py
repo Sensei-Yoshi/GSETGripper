@@ -312,6 +312,20 @@ def _capabilities(
             for gripper in Gripper
         )
     ]
+    complete_gecko_labels = sum(
+        bool(
+            (outcome := item.gripper_outcomes.get(Gripper.GECKO)) is not None
+            and outcome.complete
+        )
+        for item in values
+    )
+    complete_silicone_labels = sum(
+        bool(
+            (outcome := item.gripper_outcomes.get(Gripper.SILICONE)) is not None
+            and outcome.complete
+        )
+        for item in values
+    )
     return DatasetCapabilities(
         has_images=bool(values) and all(item.image.available for item in values),
         has_second_images=has_second_images,
@@ -323,6 +337,9 @@ def _capabilities(
             for item in values
         ),
         has_paired_labels=bool(values) and len(complete_pairs) == len(values),
+        complete_gecko_labels=complete_gecko_labels,
+        complete_silicone_labels=complete_silicone_labels,
+        complete_pair_count=len(complete_pairs),
         can_build_experiences=bool(complete_outcomes),
         can_estimate_surface_area=has_second_images,
         can_run_pipeline=any(item.image.available for item in values),

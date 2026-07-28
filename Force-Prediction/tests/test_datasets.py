@@ -9,6 +9,7 @@ import pytest
 
 from modules.cache import DiskCache
 from modules.config import load_config
+from modules.contracts import Gripper
 from modules.datasets import (
     DatasetObjectEdit,
     PreparationStage,
@@ -55,6 +56,10 @@ def test_catalog_discovers_direct_data_folders_and_excludes_artifacts(tmp_path) 
     assert item.roughness_class is None
     assert item.projected_contact_fraction is None
     assert not item.gripper_outcomes
+    assert photos_dataset.default_active_grippers() == (
+        Gripper.GECKO,
+        Gripper.SILICONE,
+    )
     assert photos_dataset.runtime_config(cfg).path("cache") == (
         tmp_path / "data/cache/Photos"
     )
@@ -80,6 +85,53 @@ def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
     }
     assert not dataset.capabilities.can_run_pipeline
     assert dataset.capabilities.can_benchmark
+    assert dataset.capabilities.complete_gecko_labels == 129
+    assert dataset.capabilities.complete_silicone_labels == 129
+    assert dataset.capabilities.complete_pair_count == 129
+    assert dataset.default_active_grippers() == (Gripper.GECKO, Gripper.SILICONE)
+
+
+def test_single_gripper_dataset_capabilities_and_eligibility(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/GeckoOnly/objects"
+    image_bytes = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    )
+    for object_id in ("one", "two"):
+        image = root / object_id / "image.png"
+        image.parent.mkdir(parents=True)
+        image.write_bytes(image_bytes)
+    dataset = get_dataset(cfg, "GeckoOnly")
+    for index, object_id in enumerate(("one", "two"), start=1):
+        dataset = update_dataset_object(
+            cfg,
+            dataset,
+            object_id,
+            DatasetObjectEdit(
+                mass_g=100 + index,
+                roughness_class=2,
+                projected_contact_fraction=0.7,
+                gecko_feasible=True,
+                gecko_force_n=1.0 + index / 10,
+            ),
+        )
+
+    assert dataset.capabilities.complete_gecko_labels == 2
+    assert dataset.capabilities.complete_silicone_labels == 0
+    assert dataset.capabilities.complete_pair_count == 0
+    assert dataset.default_active_grippers() == (Gripper.GECKO,)
+
+    run_cfg = dataset.runtime_config(cfg)
+    run_cfg.prediction.active_grippers = (Gripper.GECKO,)
+    report = experiment_eligibility(dataset, run_cfg, "e3")
+    assert report.reference_ids == ("one", "two")
+    assert report.benchmark_ids == ("one", "two")
+
+    run_cfg.prediction.active_grippers = (Gripper.GECKO, Gripper.SILICONE)
+    paired = experiment_eligibility(dataset, run_cfg, "e3")
+    assert paired.reference_ids == ()
+    assert paired.benchmark_ids == ()
 
 
 def test_experiment_eligibility_uses_only_enabled_inputs(tmp_path) -> None:

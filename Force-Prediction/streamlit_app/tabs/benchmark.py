@@ -1,105 +1,196 @@
-"""Leave-one-object-out benchmark tab."""
+"""Two-stage benchmark prediction and evaluation controls."""
 
 from __future__ import annotations
 
-import pandas as pd
 import streamlit as st
 
+from modules.benchmarking import (
+    BenchmarkEvaluation,
+    BenchmarkPredictionBatch,
+    evaluation_readiness,
+    generate_benchmark_predictions,
+    get_or_create_benchmark_evaluation,
+    list_batch_evaluations,
+    list_prediction_batches,
+    save_prediction_batch,
+)
 from modules.config import EXPERIMENT_IDS
 from modules.experiments import experiment_eligibility
-from modules.expforce import run_benchmark, save_benchmark
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import format_experiment
 
 
+def _batch_label(batch: BenchmarkPredictionBatch) -> str:
+    targets = "+".join(batch.metadata["active_grippers"])
+    return (
+        f"{batch.metadata['created_at'][:19]} | {targets} | "
+        f"{len(batch.rows)} predictions"
+    )
+
+
+def _render_evaluation_summary(
+    evaluation: BenchmarkEvaluation,
+    *,
+    reused: bool = False,
+) -> None:
+    coverage = evaluation.metadata["coverage"]
+    force = evaluation.metrics["force"]["overall"]
+    selection = evaluation.metrics["selection"]
+    columns = st.columns(4)
+    columns[0].metric(
+        "Coverage",
+        f"{coverage['evaluated']}/{coverage['predicted']}",
+    )
+    columns[1].metric(
+        "Force MAE",
+        f"{force['mae']:.3f} N" if force.get("n") else "N/A",
+    )
+    columns[2].metric(
+        "Force RMSE",
+        f"{force['rmse']:.3f} N" if force.get("n") else "N/A",
+    )
+    columns[3].metric(
+        "Selection accuracy",
+        f"{selection['accuracy']:.1%}" if selection.get("applicable") else "N/A",
+    )
+    if reused:
+        st.info("Current truth matches an existing evaluation; no duplicate was created.")
+    st.caption(
+        "Detailed plots, evaluated rows, all predictions, and provenance are available "
+        "in Runs Viewer → Benchmark Runs."
+    )
+
+
 def render(context: AppContext) -> None:
-    base_cfg = context.config
-    left, right = st.columns([0.28, 0.72], gap="large")
-    with left:
-        st.subheader("Benchmark run")
+    cfg = context.config
+    control_col, summary_col = st.columns([0.38, 0.62], gap="large")
+
+    def clear_benchmark_summary() -> None:
+        st.session_state.pop("benchmark_prediction_result", None)
+        st.session_state.pop("benchmark_evaluation_result", None)
+
+    def clear_evaluation_summary() -> None:
+        st.session_state.pop("benchmark_evaluation_result", None)
+
+    with control_col:
+        st.subheader("1. Generate predictions")
         experiment = st.selectbox(
             "Experiment",
             list(EXPERIMENT_IDS),
-            index=3,
+            index=0,
             format_func=format_experiment,
             key="benchmark_experiment",
+            on_change=clear_benchmark_summary,
         )
-        eligibility = experiment_eligibility(context.dataset, base_cfg, experiment)
-        object_count = len(eligibility.benchmark_ids)
+        generation = experiment_eligibility(context.dataset, cfg, experiment)
         st.caption(
-            f"{object_count} eligible of {len(context.dataset.objects)} objects for "
-            f"{experiment.upper()}."
+            f"{len(generation.query_ids)} query-ready of "
+            f"{len(context.dataset.objects)} objects for {experiment.upper()}."
         )
-        if eligibility.skipped_benchmarks:
-            with st.expander("Skipped objects and reasons"):
-                st.json(eligibility.skipped_benchmarks, expanded=False)
-        run = st.button(
-            f"Run {object_count}-object leave-one-out benchmark",
+        if generation.skipped_queries:
+            with st.expander("Generation exclusions"):
+                st.json(generation.skipped_queries, expanded=False)
+
+        run_predictions = st.button(
+            f"Run predictions for {len(generation.query_ids)} objects",
             type="primary",
             width="stretch",
-            disabled=object_count == 0,
+            disabled=not generation.query_ids,
+            key="run_benchmark_predictions",
         )
-        st.caption("Results are synthetic pipeline diagnostics, not real-world performance claims.")
+        st.caption(
+            "This calls Gemini and saves immutable predictions. Force labels are not required."
+        )
 
-    if run:
-        cfg = base_cfg.model_copy(deep=True)
-        progress_bar = right.progress(0.0)
-        status = right.empty()
+    if run_predictions:
+        progress_bar = summary_col.progress(0.0)
+        status = summary_col.empty()
 
-        def progress(done: int, total: int, name: str) -> None:
+        def progress(done: int, total: int, object_id: str) -> None:
             progress_bar.progress(done / total)
-            status.caption(f"{done}/{total}: {name.replace('_', ' ')}")
+            status.caption(f"{done}/{total}: {object_id.replace('_', ' ')}")
 
-        with right, st.spinner("Evaluating all objects with leave-one-out training..."):
-            benchmark = run_benchmark(cfg, experiment, progress=progress)
-            paths = save_benchmark(cfg, benchmark)
-            st.session_state["benchmark_result"] = (benchmark, paths)
+        with summary_col, st.spinner("Generating and saving prediction batch…"):
+            st.session_state.pop("benchmark_evaluation_result", None)
+            batch = generate_benchmark_predictions(cfg, experiment, progress=progress)
+            paths = save_prediction_batch(cfg, batch)
+            st.session_state["benchmark_prediction_result"] = (batch, paths)
         progress_bar.empty()
         status.empty()
 
-    with right:
-        st.subheader("Leave-one-out results")
-        if "benchmark_result" not in st.session_state:
-            if object_count:
-                st.info(
-                    f"Run {object_count} eligible objects with each query excluded from its "
-                    "own reference set."
+    batches = list_prediction_batches(cfg, experiment=experiment)
+    with control_col:
+        st.divider()
+        st.subheader("2. Evaluate saved predictions")
+        if not batches:
+            st.info(f"No saved {experiment.upper()} prediction batches yet.")
+            selected_batch = None
+        else:
+            labels = {_batch_label(batch): batch for batch in batches}
+            selected_label = st.selectbox(
+                "Prediction batch",
+                list(labels),
+                key="benchmark_prediction_batch",
+                on_change=clear_evaluation_summary,
+            )
+            selected_batch = labels[selected_label]
+
+        if selected_batch is not None:
+            readiness = evaluation_readiness(cfg, selected_batch)
+            st.caption(
+                f"{len(readiness.eligible_ids)} of {len(selected_batch.rows)} predictions "
+                "currently have evaluation-ready truth."
+            )
+            if readiness.skipped:
+                with st.expander("Truth still needed"):
+                    st.json(readiness.skipped, expanded=False)
+            evaluate = st.button(
+                "Evaluate & generate plots",
+                width="stretch",
+                disabled=not readiness.eligible_ids,
+                key="evaluate_benchmark_predictions",
+            )
+            st.caption("Evaluation uses saved predictions and makes no model calls.")
+        else:
+            evaluate = False
+
+    if evaluate and selected_batch is not None:
+        with summary_col, st.spinner("Scoring current truth and generating plots…"):
+            evaluation, paths, reused = get_or_create_benchmark_evaluation(
+                cfg,
+                selected_batch,
+            )
+            st.session_state["benchmark_evaluation_result"] = (
+                evaluation,
+                paths,
+                reused,
+            )
+
+    with summary_col:
+        st.subheader("Benchmark status")
+        latest_state = st.session_state.get("benchmark_evaluation_result")
+        if latest_state is not None:
+            evaluation, paths, reused = latest_state
+            _render_evaluation_summary(evaluation, reused=reused)
+            if paths:
+                st.caption(
+                    "Saved: " + ", ".join(path.name for path in paths.values())
                 )
+        elif selected_batch is not None:
+            evaluations = list_batch_evaluations(cfg, selected_batch.batch_id)
+            if evaluations:
+                _render_evaluation_summary(evaluations[0])
             else:
-                st.info(f"No objects currently satisfy {experiment.upper()} benchmark truth and inputs.")
-            return
-        benchmark, paths = st.session_state["benchmark_result"]
-        force = benchmark.metrics["force"]["overall"]
-        selection = benchmark.metrics["selection"]
-        recommendation = benchmark.metrics["model_recommendation"]
-        metrics = st.columns(5)
-        metrics[0].metric("Force MAE", f"{force.get('mae', float('nan')):.3f} N")
-        metrics[1].metric("Force RMSE", f"{force.get('rmse', float('nan')):.3f} N")
-        metrics[2].metric("Selection accuracy", f"{selection['accuracy']:.1%}")
-        metrics[3].metric("Mean regret", f"{selection['mean_regret_n']:.3f} N")
-        metrics[4].metric(
-            "VLM recommendation accuracy",
-            f"{recommendation['accuracy']:.1%}" if recommendation["n"] else "N/A",
+                st.success(
+                    f"Prediction batch contains {len(selected_batch.rows)} immutable rows."
+                )
+                st.info(
+                    "Add force/feasibility labels, then return here to evaluate without "
+                    "rerunning Gemini."
+                )
+        else:
+            st.info("Generate a prediction batch to begin.")
+
+        st.caption(
+            "Benchmark outputs are pipeline diagnostics and are not real-world performance claims."
         )
-        result_frame = pd.DataFrame(benchmark.rows)
-        plot_frame = pd.concat(
-            [
-                result_frame[["object_id", "true_gecko_force_n", "pred_gecko_force_n"]]
-                .rename(columns={"true_gecko_force_n": "true", "pred_gecko_force_n": "pred"})
-                .assign(gripper="gecko"),
-                result_frame[["object_id", "true_silicone_force_n", "pred_silicone_force_n"]]
-                .rename(columns={"true_silicone_force_n": "true", "pred_silicone_force_n": "pred"})
-                .assign(gripper="silicone"),
-            ],
-            ignore_index=True,
-        )
-        st.scatter_chart(plot_frame, x="true", y="pred", color="gripper", size=70)
-        display_columns = [
-            "object_id", "mass_g", "roughness_class", "projected_contact_fraction",
-            "true_gecko_force_n", "pred_gecko_force_n", "true_silicone_force_n",
-            "pred_silicone_force_n", "true_favored", "predicted_gripper",
-            "selection_correct", "regret_n",
-            "model_recommended_gripper", "recommendation_agrees_with_selector",
-        ]
-        st.dataframe(result_frame[display_columns], hide_index=True, width="stretch")
-        st.caption(f"Saved: {paths[0].name} and {paths[1].name}")

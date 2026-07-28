@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "sponge",
+  "object_name": "sponge",
+  "image_name": "sponge.jpeg",
+  "image_path": "data/MatForceFinal/sponge.jpeg",
+  "image_sha256": "8667e7f5baad84d32755941552e96ec97a1c56d0b64c86fa9545eb6670021eb4",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Porous yellow cellulose sponge with a flat, compressible rectangular form. The intended contact region is dry, textured with visible pores, and presents opposing flat vertical sides.",
+    "contact_region": "Opposing lateral vertical sides of the rectangular sponge",
+    "contact_material": "Cellulose sponge substrate",
+    "visible_surface_material": "Cellulose sponge substrate",
+    "visible_surface_condition": "Dry, clean, highly porous",
+    "local_geometry": "Flat planar vertical surfaces with sharp corners and textured porosity",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible surface properties, though exact compliance behavior under compression can only be estimated from visual texture."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "44650064f79f7c9cc43241dd7970b2c89c1d177ab0e9315f42b6290dd52157b8",
+  "embedding_cache_key": "86324d69e5374351cc62eb0e71dc8b8ea8b8e2082d52be9e9dbd868dc6183cdb",
+  "embedding_sha256": "095b5e1c038f3a394f14eb6496adb29ecd61193aea8cddc1c79b32bf00d131d2",
+  "updated_at": "2026-07-28T17:57:50.076675+00:00"
+}

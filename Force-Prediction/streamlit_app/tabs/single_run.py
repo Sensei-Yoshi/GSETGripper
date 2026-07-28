@@ -294,7 +294,11 @@ def render(context: AppContext) -> None:
                         dataset_object.image.path if uploaded is None else None
                     ),
                 },
-                truth=truth_payload(truth) if truth is not None else None,
+                truth=(
+                    truth_payload(truth, detailed.active_grippers)
+                    if truth is not None
+                    else None
+                ),
                 counterfactual=counterfactual or truth is None,
                 image_bgr=query_image,
                 baseline=baseline,

@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "cetaphil",
+  "object_name": "cetaphil",
+  "image_name": "cetaphil.jpg",
+  "image_path": "data/MatForceFinal/cetaphil.jpg",
+  "image_sha256": "63255770c850e254592b09fe559f34e3bc4eb5fd2d809631e5d96067630eb125",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
+    "contact_region": "Lateral sidewall of the plastic jar within the centered grasp band",
+    "contact_material": "Plastic substrate",
+    "visible_surface_material": "Plastic substrate",
+    "visible_surface_condition": "Clean, dry, and smooth with minor printed label text",
+    "local_geometry": "Cylindrical with continuous smooth curvature",
+    "contact_patch_visibility": "Clearly visible on the front-facing lateral surfaces",
+    "uncertainty": "The exact friction coefficient and precise wall thickness are not visible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "039a61b0f2ab95c2004b04dbf75c91b0dc2c3406d35e0a84d6480d721eeb859f",
+  "embedding_cache_key": "dc318a569823c74cc3163d91a750f094390c0d602875f5d7e0c03777db672bfc",
+  "embedding_sha256": "bb24f67930192e571b492b0130e55d885c77ad847bf74663244b2f5fa1ff8be2",
+  "updated_at": "2026-07-28T17:57:47.509009+00:00"
+}

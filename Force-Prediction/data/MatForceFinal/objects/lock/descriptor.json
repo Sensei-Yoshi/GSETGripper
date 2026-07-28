@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "lock",
+  "object_name": "lock",
+  "image_name": "lock.jpg",
+  "image_path": "data/MatForceFinal/lock.jpg",
+  "image_sha256": "dba59204eef67e1a250f5319392962716623eb332020379f007b0bce29766f36",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Metallic cylindrical combination lock body with smooth, dry, nonporous lateral surfaces and curved geometry. The intended contact region has no visible contamination, but features a raised dial on the front face.",
+    "contact_region": "Left and right lateral curved cylindrical surfaces of the lock body.",
+    "contact_material": "Metal substrate.",
+    "visible_surface_material": "Metal and plastic dial.",
+    "visible_surface_condition": "Clean, dry, and smooth.",
+    "local_geometry": "Curved cylindrical surface with continuous curvature on the sides.",
+    "contact_patch_visibility": "Clearly visible on the lateral sides.",
+    "uncertainty": "The rear side of the lock body is not visible in the image."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "0e595ac5aa1f0433d5d203e7667ef66a4f5b514c7b45c11990431d5880f9d20b",
+  "embedding_cache_key": "7e87eb4c1e5bc65e2634b3c277ec5a2131248e34f81e4747450e7fd853a803c5",
+  "embedding_sha256": "2bb6999e61452b56dfc3b97888e6fc2562428b563fe8b2b848cc0b2e157bfb38",
+  "updated_at": "2026-07-28T17:57:48.630881+00:00"
+}

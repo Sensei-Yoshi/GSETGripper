@@ -34,6 +34,10 @@ def _sync_widgets_from_config(cfg: Config) -> str:
                 for experiment in ("e1", "e2", "e3", "e4")
             },
             **{
+                f"prompt_target_{mode}": cfg.prompts.target_instructions[mode]
+                for mode in ("single", "joint")
+            },
+            **{
                 f"embodiment_description_{name}": cfg.embodiments[name].description
                 for name in ("gecko", "silicone")
             },
@@ -54,6 +58,10 @@ def _bundle_from_widgets(context: AppContext) -> PromptBundle:
             prediction_system=st.session_state["prompt_prediction_system"],
             descriptor=st.session_state["prompt_descriptor_instruction"],
             experiments=experiments,
+            target_instructions={
+                mode: st.session_state[f"prompt_target_{mode}"]
+                for mode in ("single", "joint")
+            },
         ),
         embodiments={
             name: EmbodimentContext(
@@ -100,6 +108,16 @@ def render(context: AppContext) -> None:
             height=170,
             key=f"prompt_instruction_{experiment}",
         )
+
+    st.subheader("Output-target instructions")
+    target_columns = st.columns(2, gap="large")
+    for column, mode in zip(target_columns, ("single", "joint"), strict=True):
+        with column:
+            st.text_area(
+                f"{mode.title()}-candidate instruction",
+                height=180,
+                key=f"prompt_target_{mode}",
+            )
 
     st.subheader("Fixed gripper context")
     columns = st.columns(2, gap="large")

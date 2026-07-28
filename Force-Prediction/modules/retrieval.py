@@ -1,7 +1,7 @@
-"""Paired-object retrieval over semantics and optional measured properties.
+"""Object-level retrieval over semantics and optional measured properties.
 
 E3 ranks by semantic cosine only; E4 uses the configured hybrid score. Both return
-the paired gripper labels for every neighbor.
+the available gripper labels for every neighbor; request payloads expose only active ones.
 Exact search is appropriate for this dataset (<1k objects), so no vector database
 is required. The hybrid score is only a neighbor-ranking heuristic: it never
 evaluates no holding-force equations and never produces a force prediction.
@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 from .config import Config
 from .contracts import (
     ExperienceRecord,
+    Gripper,
     ObjectRecord,
     Query,
     group_by_object,
@@ -137,7 +138,7 @@ class SimilarityBreakdown(BaseModel):
 
 
 class RetrievedObjectExperience(BaseModel):
-    """One object-level neighbor with its paired gecko and silicone labels."""
+    """One object-level neighbor with optional Gecko and silicone labels."""
 
     object_id: str
     image_path: str = ""
@@ -157,9 +158,24 @@ class RetrievedObjectExperience(BaseModel):
         self,
         *,
         mode: RetrievalMode = RetrievalMode.HYBRID,
+        active_grippers: tuple[Gripper, ...] = (
+            Gripper.GECKO,
+            Gripper.SILICONE,
+        ),
         include_roughness: bool = True,
         include_contact: bool = True,
     ) -> dict:
+        outcomes: dict[str, float | bool | None] = {}
+        if Gripper.GECKO in active_grippers:
+            outcomes.update(
+                gecko_min_force_n=self.gecko_min_force_n,
+                gecko_feasible=self.gecko_feasible,
+            )
+        if Gripper.SILICONE in active_grippers:
+            outcomes.update(
+                silicone_min_force_n=self.silicone_min_force_n,
+                silicone_feasible=self.silicone_feasible,
+            )
         if mode is RetrievalMode.SEMANTIC_ONLY:
             return {
                 "rank": self.rank,
@@ -167,17 +183,18 @@ class RetrievedObjectExperience(BaseModel):
                 "semantic_description": self.semantic_description,
                 "semantic_similarity": self.similarity.semantic,
                 "score": self.score,
-                "gecko_min_force_n": self.gecko_min_force_n,
-                "gecko_feasible": self.gecko_feasible,
-                "silicone_min_force_n": self.silicone_min_force_n,
-                "silicone_feasible": self.silicone_feasible,
+                **{key: value for key, value in outcomes.items() if value is not None},
             }
-        excluded = {"image_path"}
+        excluded = {"image_path", "gecko_min_force_n", "gecko_feasible",
+                    "silicone_min_force_n", "silicone_feasible"}
         if not include_roughness:
             excluded.add("roughness_class")
         if not include_contact:
             excluded.add("projected_contact_fraction")
-        return self.model_dump(mode="json", exclude=excluded, exclude_none=True)
+        return {
+            **self.model_dump(mode="json", exclude=excluded, exclude_none=True),
+            **{key: value for key, value in outcomes.items() if value is not None},
+        }
 
 
 # --------------------------------------------------------------------------- #
@@ -284,7 +301,7 @@ class ExperienceIndex:
         exclude_object_id: str | None = None,
         mode: RetrievalMode = RetrievalMode.HYBRID,
     ) -> list[RetrievedObjectExperience]:
-        """Rank each object once and expose both gripper outcomes in one result."""
+        """Rank each object once and retain its available gripper outcomes."""
         k = k or self.cfg.retrieval.k
         scored: list[RetrievedObjectExperience] = []
         for object_id, obj in self.objects.items():

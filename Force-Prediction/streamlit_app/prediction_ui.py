@@ -20,7 +20,16 @@ def format_force(value: float, *, signed: bool = False) -> str:
 def format_experiment(value: str) -> str:
     return experiment_display_name(value) if value.lower() in EXPERIMENT_CATALOG else value
 
-def truth_for_display(obj) -> dict:  # noqa: ANN001
+def truth_for_display(
+    obj, active_grippers: tuple[str, ...] = ("gecko", "silicone")
+) -> dict:  # noqa: ANN001
+    if len(active_grippers) == 1:
+        name = active_grippers[0]
+        record = obj.get(Gripper(name))
+        return {
+            f"true_{name}_force_n": record.min_force_n if record else None,
+            "true_selection": None,
+        }
     optimal, _ = obj.optimal_grippers()
     if len(optimal) != 1:
         raise ValueError(f"validation object {obj.object_id!r} does not have a strict winner")
@@ -31,29 +40,40 @@ def truth_for_display(obj) -> dict:  # noqa: ANN001
     }
 
 
-def truth_payload(obj) -> dict:  # noqa: ANN001
-    return {
-        **truth_for_display(obj),
+def truth_payload(
+    obj, active_grippers: tuple[str, ...] = ("gecko", "silicone")
+) -> dict:  # noqa: ANN001
+    payload = {
+        **truth_for_display(obj, active_grippers),
         "object_id": obj.object_id,
-        "gecko_feasible": obj.gecko.feasible if obj.gecko else None,
-        "silicone_feasible": obj.silicone.feasible if obj.silicone else None,
+        "active_grippers": list(active_grippers),
     }
+    for name in active_grippers:
+        record = obj.get(Gripper(name))
+        payload[f"{name}_feasible"] = record.feasible if record else None
+    return payload
 
 
 def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
     rows = []
     for item in result.retrieved_objects:
         sim = item.similarity
-        row = {
+        row: dict = {
                 "rank": item.rank,
                 "object": item.object_id.replace("_", " "),
                 "score": item.score,
                 "semantic": sim.semantic,
-                "gecko_force_n": item.gecko_min_force_n,
-                "gecko_feasible": item.gecko_feasible,
-                "silicone_force_n": item.silicone_min_force_n,
-                "silicone_feasible": item.silicone_feasible,
             }
+        if "gecko" in result.active_grippers:
+            row.update(
+                gecko_force_n=item.gecko_min_force_n,
+                gecko_feasible=item.gecko_feasible,
+            )
+        if "silicone" in result.active_grippers:
+            row.update(
+                silicone_force_n=item.silicone_min_force_n,
+                silicone_feasible=item.silicone_feasible,
+            )
         if result.retrieval_mode == "hybrid":
             row.update(mass=sim.mass, mass_g=item.mass_g)
             if sim.roughness is not None:
@@ -107,23 +127,34 @@ def render_prediction(
     experiment: str | None = None,
 ) -> None:
     result = detailed.selection
+    active_grippers = detailed.active_grippers
     metric_cols = st.columns(4)
-    selected_label = result.desired_gripper.title()
-    if result.prediction_tie:
-        selected_label += " (tie-break)"
-    metric_cols[0].metric("Selected gripper", selected_label)
-    metric_cols[1].metric(
-        "Selected force",
-        format_force(result.predicted_normal_force_n)
-        if result.predicted_normal_force_n is not None
-        else "None",
-    )
-    metric_cols[2].metric(
-        "VLM recommendation",
-        result.model_recommended_gripper.title()
-        if result.model_recommended_gripper is not None
-        else "Not applicable",
-    )
+    if len(active_grippers) == 1:
+        prediction = result.candidate_predictions[active_grippers[0]]
+        metric_cols[0].metric("Target gripper", active_grippers[0].title())
+        metric_cols[1].metric(
+            "Predicted force", format_force(prediction.predicted_normal_force_n)
+        )
+        metric_cols[2].metric(
+            "Predicted feasibility", "Feasible" if prediction.feasible else "Infeasible"
+        )
+    else:
+        selected_label = result.desired_gripper.title()
+        if result.prediction_tie:
+            selected_label += " (tie-break)"
+        metric_cols[0].metric("Selected gripper", selected_label)
+        metric_cols[1].metric(
+            "Selected force",
+            format_force(result.predicted_normal_force_n)
+            if result.predicted_normal_force_n is not None
+            else "None",
+        )
+        metric_cols[2].metric(
+            "VLM recommendation",
+            result.model_recommended_gripper.title()
+            if result.model_recommended_gripper is not None
+            else "Not applicable",
+        )
     active_experiment = experiment or st.session_state.get("last_experiment", "e4")
     metric_cols[3].metric("Experiment", format_experiment(active_experiment))
 
@@ -156,32 +187,40 @@ def render_prediction(
             )
             st.metric("Selected-force change from baseline", format_force(delta, signed=True))
     else:
-        truth_values = truth_for_display(truth)
-        predicted_correct = (
-            result.desired_gripper in {g.value for g in truth.optimal_grippers()[0]}
-        )
-        st.markdown(
-            f'<p class="status-ok">Leave-one-out truth: {truth_values["true_selection"]}; '
-            f'prediction {"correct" if predicted_correct else "incorrect"}.</p>',
-            unsafe_allow_html=True,
-        )
-        ground_truth = st.columns(3)
-        ground_truth[0].metric(
-            "True gecko force",
-            format_force(truth_values["true_gecko_force_n"])
-            if truth_values["true_gecko_force_n"] is not None
-            else "Infeasible",
-        )
-        ground_truth[1].metric(
-            "True silicone force",
-            format_force(truth_values["true_silicone_force_n"])
-            if truth_values["true_silicone_force_n"] is not None
-            else "Infeasible",
-        )
-        ground_truth[2].metric("True winning gripper", truth_values["true_selection"].title())
+        truth_values = truth_for_display(truth, active_grippers)
+        if len(active_grippers) == 1:
+            name = active_grippers[0]
+            force = truth_values[f"true_{name}_force_n"]
+            st.markdown(
+                f'<p class="status-ok">Leave-one-out {name} truth is available.</p>',
+                unsafe_allow_html=True,
+            )
+            st.metric(
+                f"True {name} force",
+                format_force(force) if force is not None else "Infeasible",
+            )
+        else:
+            predicted_correct = (
+                result.desired_gripper in {g.value for g in truth.optimal_grippers()[0]}
+            )
+            st.markdown(
+                f'<p class="status-ok">Leave-one-out truth: {truth_values["true_selection"]}; '
+                f'prediction {"correct" if predicted_correct else "incorrect"}.</p>',
+                unsafe_allow_html=True,
+            )
+            ground_truth = st.columns(3)
+            for index, name in enumerate(active_grippers):
+                force = truth_values[f"true_{name}_force_n"]
+                ground_truth[index].metric(
+                    f"True {name} force",
+                    format_force(force) if force is not None else "Infeasible",
+                )
+            ground_truth[2].metric(
+                "True winning gripper", truth_values["true_selection"].title()
+            )
 
-    pred_cols = st.columns(2)
-    for column, gripper in zip(pred_cols, ("gecko", "silicone"), strict=True):
+    pred_cols = st.columns(len(active_grippers))
+    for column, gripper in zip(pred_cols, active_grippers, strict=True):
         pred = result.candidate_predictions[gripper]
         with column:
             st.subheader(gripper.title())
@@ -218,7 +257,7 @@ def render_prediction(
                 for item in pred.assumptions_and_uncertainty:
                     st.markdown(f"- {item}")
 
-    if result.model_recommendation_summary:
+    if len(active_grippers) > 1 and result.model_recommendation_summary:
         st.subheader("VLM comparison rationale")
         st.write(result.model_recommendation_summary)
         for item in result.model_comparison_evidence:
@@ -228,8 +267,8 @@ def render_prediction(
     if detailed.retrieved_objects:
         retrieval_label = "E3" if detailed.retrieval_mode == "semantic_only" else "E4"
         st.caption(
-            f"{retrieval_label} retrieves each object once. Both gripper outcomes come from the same "
-            "paired experience and are sent together in one Gemini request."
+            f"{retrieval_label} retrieves each object once and sends outcomes only for "
+            f"the active grippers: {', '.join(active_grippers)}."
         )
         st.dataframe(
             paired_retrieval_table(detailed),

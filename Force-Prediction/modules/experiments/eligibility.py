@@ -6,7 +6,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ..config import Config
-from ..contracts import Gripper
 
 if TYPE_CHECKING:
     from ..datasets.models import Dataset, DatasetObject
@@ -23,6 +22,14 @@ class ExperimentEligibility:
 
     def query_reasons(self, object_id: str) -> tuple[str, ...]:
         return self.skipped_queries.get(object_id, ())
+
+
+@dataclass(frozen=True)
+class EvaluationTruthEligibility:
+    """Truth readiness for an already-generated prediction batch."""
+
+    eligible_ids: tuple[str, ...]
+    skipped: dict[str, tuple[str, ...]]
 
 
 def _input_reasons(item: DatasetObject, cfg: Config, experiment_id: str) -> list[str]:
@@ -43,7 +50,11 @@ def _input_reasons(item: DatasetObject, cfg: Config, experiment_id: str) -> list
 
 
 def _reference_ready(item: DatasetObject, cfg: Config, experiment_id: str) -> bool:
-    if not any(outcome.complete for outcome in item.gripper_outcomes.values()):
+    if not all(
+        (outcome := item.gripper_outcomes.get(gripper)) is not None
+        and outcome.complete
+        for gripper in cfg.prediction.active_grippers
+    ):
         return False
     if experiment_id == "e4":
         if item.mass_g is None:
@@ -55,10 +66,14 @@ def _reference_ready(item: DatasetObject, cfg: Config, experiment_id: str) -> bo
     return True
 
 
-def _truth_reasons(item: DatasetObject) -> list[str]:
-    outcomes = [item.gripper_outcomes.get(gripper) for gripper in Gripper]
+def _truth_reasons(item: DatasetObject, cfg: Config) -> list[str]:
+    active = cfg.prediction.active_grippers
+    outcomes = [item.gripper_outcomes.get(gripper) for gripper in active]
     if any(outcome is None or not outcome.complete for outcome in outcomes):
-        return ["complete paired gripper truth not recorded"]
+        names = ", ".join(gripper.value for gripper in active)
+        return [f"complete truth not recorded for active grippers: {names}"]
+    if len(active) == 1:
+        return []
     candidates = [
         outcome.min_force_n
         for outcome in outcomes
@@ -69,6 +84,30 @@ def _truth_reasons(item: DatasetObject) -> list[str]:
     if len(candidates) == 2 and candidates[0] == candidates[1]:
         return ["paired truth does not have a strict winner"]
     return []
+
+
+def evaluation_truth_eligibility(
+    dataset: Dataset,
+    cfg: Config,
+    object_ids: tuple[str, ...] | list[str],
+) -> EvaluationTruthEligibility:
+    """Return truth readiness without rechecking historical generation inputs."""
+    eligible: list[str] = []
+    skipped: dict[str, tuple[str, ...]] = {}
+    for object_id in object_ids:
+        item = dataset.objects.get(object_id)
+        if item is None:
+            skipped[object_id] = ("object no longer exists in the dataset",)
+            continue
+        reasons = _truth_reasons(item, cfg)
+        if reasons:
+            skipped[object_id] = tuple(reasons)
+        else:
+            eligible.append(object_id)
+    return EvaluationTruthEligibility(
+        eligible_ids=tuple(eligible),
+        skipped=skipped,
+    )
 
 
 def experiment_eligibility(
@@ -103,7 +142,7 @@ def experiment_eligibility(
         else:
             query_ids.append(item.object_id)
 
-        benchmark_reasons = [*reasons, *_truth_reasons(item)]
+        benchmark_reasons = [*reasons, *_truth_reasons(item, cfg)]
         if benchmark_reasons:
             skipped_benchmarks[item.object_id] = tuple(dict.fromkeys(benchmark_reasons))
         else:

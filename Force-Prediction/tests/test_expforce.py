@@ -8,7 +8,16 @@ import numpy as np
 import pytest
 import yaml
 
-from modules.config import EXPERIMENT_IDS, ExperimentMethod, load_config
+from modules.benchmarking import (
+    evaluate_benchmark_predictions,
+    generate_benchmark_predictions,
+)
+from modules.config import (
+    EXPERIMENT_IDS,
+    ExperimentMethod,
+    PredictionConfig,
+    load_config,
+)
 from modules.contracts import (
     Gripper,
     JointGripperPrediction,
@@ -21,7 +30,6 @@ from modules.expforce import (
     backend_provenance,
     load_rows,
     prepare_dataset,
-    run_benchmark,
     save_pipeline_run,
     saved_run_experiment_label,
     source_path,
@@ -82,16 +90,28 @@ def test_config_exposes_only_the_final_explicit_experiment_methods():
     cfg = load_config().model_copy(deep=True)
 
     assert tuple(cfg.experiments) == EXPERIMENT_IDS
-    assert cfg.experiment("e1").method is ExperimentMethod.JOINT_VLM
-    assert cfg.experiment("e2").method is ExperimentMethod.JOINT_VLM_MEASURED
+    assert cfg.experiment("e1").method is ExperimentMethod.VISION_VLM
+    assert cfg.experiment("e2").method is ExperimentMethod.MEASURED_VLM
     assert cfg.experiment("e3").method is ExperimentMethod.SEMANTIC_RETRIEVAL_VLM
-    assert cfg.experiment("e4").method is ExperimentMethod.PAIRED_RETRIEVAL_VLM
+    assert cfg.experiment("e4").method is ExperimentMethod.HYBRID_RETRIEVAL_VLM
     with pytest.raises(KeyError, match="unknown experiment"):
         cfg.experiment("e5")
     assert "surface patches" in cfg.prompts.descriptor_system
     assert "text embedding" in cfg.prompts.descriptor_system
     assert not hasattr(cfg.models, "dry_run")
     assert not hasattr(cfg.retrieval.embedding, "provider")
+
+
+def test_prediction_config_requires_nonempty_unique_stable_gripper_order():
+    assert PredictionConfig(active_grippers=(Gripper.SILICONE,)).active_grippers == (
+        Gripper.SILICONE,
+    )
+    with pytest.raises(ValueError, match="at least one"):
+        PredictionConfig(active_grippers=())
+    with pytest.raises(ValueError, match="duplicates"):
+        PredictionConfig(active_grippers=(Gripper.GECKO, Gripper.GECKO))
+    with pytest.raises(ValueError, match="stable order"):
+        PredictionConfig(active_grippers=(Gripper.SILICONE, Gripper.GECKO))
 
 
 def _write_deprecated_config(tmp_path, *, dry_run=False, provider=False):
@@ -160,11 +180,13 @@ def test_new_single_run_artifact_uses_backend_provenance(tmp_path, monkeypatch):
     )
     artifact = json.loads(path.read_text())
 
-    assert artifact["schema_version"] == 7
+    assert artifact["schema_version"] == 8
     assert artifact["backend"] == {
         "force": "gemini_joint_generation",
         "semantic_embedding": None,
     }
+    assert artifact["active_grippers"] == ["gecko", "silicone"]
+    assert artifact["generation_mode"] == "joint"
     assert "execution_mode" not in artifact
 
 
@@ -346,17 +368,63 @@ def test_full_129_object_leave_one_out_benchmark_uses_gemini_contract(
         image.parent.mkdir(parents=True)
         image.write_bytes(b"test image")
 
-    benchmark = run_benchmark(cfg, "e4")
+    batch = generate_benchmark_predictions(cfg, "e4")
+    evaluation = evaluate_benchmark_predictions(cfg, batch)
 
-    assert len(benchmark.rows) == 129
-    assert benchmark.metrics["force"]["overall"]["n"] == 258
-    assert benchmark.metrics["selection"]["n"] == 129
-    assert benchmark.run_metadata["evaluation_protocol"] == "leave-one-object-out"
-    assert benchmark.run_metadata["training_objects_per_run"] == 128
-    assert benchmark.run_metadata["experiment_method"] == "paired_retrieval_vlm"
-    assert benchmark.run_metadata["backend"]["force"] == "gemini_joint_generation"
-    assert "dry_run" not in benchmark.run_metadata
-    assert benchmark.metrics["model_recommendation"]["n"] == 129
+    assert len(batch.rows) == 129
+    assert all(not any(key.startswith("true_") for key in row) for row in batch.rows)
+    assert evaluation.metrics["force"]["overall"]["n"] == 258
+    assert evaluation.metrics["selection"]["n"] == 129
+    assert batch.metadata["prediction_protocol"] == "query-excluded reference generation"
+    assert len(batch.metadata["reference_ids"]) == 129
+    assert batch.metadata["experiment_method"] == "hybrid_retrieval_vlm"
+    assert batch.metadata["backend"]["force"] == "gemini_joint_generation"
+    assert "dry_run" not in batch.metadata
+    assert evaluation.metrics["model_recommendation"]["n"] == 129
+    assert all(
+        row["object_id"]
+        not in {
+            item["object_id"]
+            for item in row["pipeline_result"]["retrieved_objects"]
+        }
+        for row in batch.rows
+    )
+
+
+def test_single_silicone_benchmark_omits_inactive_outputs(tmp_path, monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.root = tmp_path
+    cfg.dataset_id = "silicone_only"
+    cfg.prediction.active_grippers = (Gripper.SILICONE,)
+    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
+    monkeypatch.setattr(
+        cv2,
+        "imread",
+        lambda *_args, **_kwargs: np.zeros((8, 8, 3), dtype=np.uint8),
+    )
+    root = tmp_path / "data/silicone_only"
+    root.mkdir(parents=True)
+    (root / "dataset.csv").write_text(
+        "Object,Image,Mass_g,roughness_class,projected_contact_fraction,"
+        "silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible,favored_gripper\n"
+        "Cup,cup.png,100,2,0.7,1.1,True,,,\n"
+        "Box,box.png,120,3,0.6,1.4,True,,,\n",
+        encoding="utf-8",
+    )
+    (root / "cup.png").write_bytes(b"image")
+    (root / "box.png").write_bytes(b"image")
+
+    batch = generate_benchmark_predictions(cfg, "e1")
+    evaluation = evaluate_benchmark_predictions(cfg, batch)
+
+    assert len(batch.rows) == 2
+    assert set(evaluation.metrics["force"]) == {"silicone", "overall"}
+    assert evaluation.metrics["selection"] == {"applicable": False, "n": 0}
+    assert batch.metadata["active_grippers"] == ["silicone"]
+    assert batch.metadata["generation_mode"] == "single"
+    assert batch.metadata["backend"]["force"] == "gemini_single_generation"
+    assert all("pred_gecko_force_n" not in row for row in batch.rows)
+    assert all("pred_silicone_force_n" in row for row in batch.rows)
 
 
 def test_gemini_preparation_checkpoints_and_resumes(tmp_path, monkeypatch):

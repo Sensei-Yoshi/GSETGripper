@@ -3,27 +3,36 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
+from modules.benchmarking import (
+    BenchmarkEvaluation,
+    BenchmarkPredictionBatch,
+    evaluation_readiness,
+    list_batch_evaluations,
+    list_prediction_batches,
+)
 from modules.experiments import experiment_eligibility
 from modules.expforce import artifact_backend_label
 from modules.reporting import (
     calibration_figure,
     common_intersection_artifacts,
     comparison_rows,
-    export_comparison,
+    individual_calibration_figure,
     metrics_rows,
 )
 from modules.suites import (
+    SUITE_SCHEMA_VERSION,
     create_suite,
+    evaluate_suite,
     list_suites,
     load_suite,
-    run_suite,
+    run_suite_predictions,
     suite_benchmarks,
-    update_suite_exports,
+    suite_evaluation_artifacts,
+    suite_prediction_batches,
 )
 from streamlit_app.context import AppContext
 from streamlit_app.tabs.data_viewer import pipeline_run_inspector
@@ -32,28 +41,35 @@ from streamlit_app.tabs.data_viewer import pipeline_run_inspector
 def _suite_label(manifest: dict) -> str:
     backend = manifest.get("backend") or f"Legacy {manifest.get('execution_mode', 'Unknown')}"
     return (
-        f"{manifest['created_at'][:19]} | {manifest['status'].title()} | "
+        f"{manifest['created_at'][:19]} | {manifest['status'].replace('_', ' ').title()} | "
         f"{backend} | {manifest['suite_id']}"
     )
 
 
 def _render_suite_provenance(manifest: dict) -> None:
-    snapshot = manifest["snapshot"]
+    snapshot = manifest.get("definition_snapshot") or manifest.get("snapshot", {})
     st.write(f"**Suite ID:** `{manifest['suite_id']}`")
-    st.write(f"**Status:** {manifest['status'].title()}")
+    st.write(f"**Status:** {manifest['status'].replace('_', ' ').title()}")
     backend = manifest.get("backend") or f"Legacy {manifest.get('execution_mode', 'Unknown')}"
     st.write(f"**Backend:** {backend}")
-    st.write(f"**Dataset SHA-256:** `{snapshot['source_sha256']}`")
-    st.write(f"**Prompt bundle SHA-256:** `{snapshot['prompt_bundle_sha256']}`")
-    st.write(f"**Definition version:** {snapshot['experiment_definition_version']}")
-    st.write(f"**VLM:** {snapshot['models']['vlm']}")
-    st.write(f"**Embedding:** {snapshot['models']['embedding']}")
-    with st.expander("Experiment definitions and retrieval snapshot"):
+    st.write(f"**Prompt bundle SHA-256:** `{snapshot.get('prompt_bundle_sha256', 'unknown')}`")
+    st.write(
+        f"**Definition version:** {snapshot.get('experiment_definition_version', 'unknown')}"
+    )
+    st.write(
+        "**Active grippers:** "
+        + ", ".join(snapshot.get("active_grippers", ("gecko", "silicone")))
+    )
+    if "source_sha256" in snapshot:
+        st.write(f"**Legacy dataset SHA-256:** `{snapshot['source_sha256']}`")
+    st.write(f"**VLM:** {snapshot.get('models', {}).get('vlm', 'unknown')}")
+    st.write(f"**Embedding:** {snapshot.get('models', {}).get('embedding', 'unknown')}")
+    with st.expander("Experiment definitions and configuration lock"):
         st.json(
             {
-                "experiments": snapshot["experiment_definitions"],
-                "retrieval": snapshot["retrieval"],
-                "inputs": snapshot["inputs"],
+                "experiments": snapshot.get("experiment_definitions", {}),
+                "retrieval": snapshot.get("retrieval", {}),
+                "inputs": snapshot.get("inputs", {}),
             },
             expanded=True,
         )
@@ -61,40 +77,39 @@ def _render_suite_provenance(manifest: dict) -> None:
         st.json(manifest.get("prompt_context", {}), expanded=True)
 
 
-def _render_comparison(context: AppContext, manifest: dict) -> None:
-    artifacts = suite_benchmarks(context.config, manifest)
+def _render_comparison(
+    context: AppContext,
+    manifest: dict,
+    artifacts: dict[str, dict],
+    suite_evaluation: dict | None = None,
+) -> None:
     completed = [name.upper() for name in artifacts]
-    st.caption(f"Available benchmark artifacts: {', '.join(completed) or 'none'}")
+    st.caption(f"Available evaluation artifacts: {', '.join(completed) or 'none'}")
+    if not artifacts:
+        st.info(
+            "No suite predictions have evaluation-ready truth yet. Generated predictions "
+            "remain saved and can be evaluated later."
+        )
+        return
+
     counts = {
         experiment.upper(): len(artifact.get("rows", []))
         for experiment, artifact in artifacts.items()
     }
-    st.write("**Per-experiment eligible samples:**", counts)
-    skipped = {
-        experiment.upper(): state.get("reason")
-        for experiment, state in manifest.get("runs", {}).items()
-        if state.get("status") == "skipped"
-    }
-    if skipped:
-        st.warning(f"Skipped conditions: {skipped}")
-    if not artifacts:
-        st.info("No experiment currently has eligible benchmark objects.")
-        return
-
+    st.write("**Per-experiment evaluated samples:**", counts)
     st.subheader("Per-experiment metrics")
     st.dataframe(pd.DataFrame(metrics_rows(artifacts)), hide_index=True, width="stretch")
 
     comparable, common_ids = common_intersection_artifacts(artifacts, context.config)
     if not common_ids:
         st.info(
-            "A cross-experiment comparison needs at least one object eligible for all E1–E4 "
+            "A cross-experiment comparison needs at least one object evaluated in all E1–E4 "
             "conditions. Individual metrics remain available above."
         )
         return
     st.caption(
         f"Cross-experiment comparison uses the common intersection of {len(common_ids)} objects."
     )
-
     figure = calibration_figure(comparable)
     st.pyplot(figure, width="stretch")
     import matplotlib.pyplot as plt
@@ -110,61 +125,40 @@ def _render_comparison(context: AppContext, manifest: dict) -> None:
         sorted(long_frame["object_id"].unique()),
         key="suite_object_detail",
     )
-    detail = long_frame[long_frame["object_id"] == selected_object][
-        [
-            "experiment",
-            "gripper",
-            "true_force_n",
-            "predicted_force_n",
-            "signed_error_n",
-            "absolute_error_n",
-            "predicted_gripper",
-            "selection_correct",
-            "regret_n",
-        ]
+    detail_columns = [
+        "experiment",
+        "gripper",
+        "true_force_n",
+        "predicted_force_n",
+        "signed_error_n",
+        "absolute_error_n",
+        "predicted_gripper",
+        "selection_correct",
+        "regret_n",
     ]
-    st.dataframe(detail, hide_index=True, width="stretch")
-
-    if st.button("Export PNG, SVG, and CSV", key="export_suite_comparison"):
-        destination = (
-            context.dataset.paths.suites
-            / manifest["suite_id"]
-            / "exports"
-        )
-        exports = export_comparison(comparable, destination)
-        relative = {
-            name: str(Path(path).relative_to(context.config.root))
-            for name, path in exports.items()
-        }
-        update_suite_exports(context.config, manifest, relative)
-        st.success("Saved publication exports.")
-        st.json(relative, expanded=True)
-    elif manifest.get("exports"):
-        st.caption("Saved exports")
-        st.json(manifest["exports"], expanded=False)
+    st.dataframe(
+        long_frame[long_frame["object_id"] == selected_object][detail_columns],
+        hide_index=True,
+        width="stretch",
+    )
+    exports = (suite_evaluation or {}).get("exports") or manifest.get("exports")
+    if exports:
+        st.caption("Saved comparison exports")
+        st.json(exports, expanded=False)
 
 
 def _suite_comparison(context: AppContext) -> None:
     cfg = context.config
     st.subheader("E1–E4 suite comparison")
     st.caption(
-        "A suite snapshots one dataset, prompt bundle, model, retrieval configuration, "
-        "and experiment-definition version. Completed conditions are resumable."
+        "Prediction generation and evaluation are separate. Completed prediction batches "
+        "remain immutable while missing conditions can become ready later."
     )
-    controls = st.columns([0.25, 0.75])
-    confirmed = controls[0].checkbox(
+    confirmed = st.checkbox(
         "Confirm Gemini cost",
         value=False,
         help="A full suite can make up to 516 Gemini force-prediction calls.",
         key="suite_cost_confirmation",
-    )
-    eligible_calls = sum(
-        len(experiment_eligibility(context.dataset, cfg, experiment).benchmark_ids)
-        for experiment in ("e1", "e2", "e3", "e4")
-    )
-    controls[1].warning(
-        f"Up to {eligible_calls} Gemini force-prediction calls for currently eligible rows; "
-        "exact cached requests are reused."
     )
 
     suites = list_suites(cfg)
@@ -175,33 +169,47 @@ def _suite_comparison(context: AppContext) -> None:
         key="suite_selector",
     )
     selected = options.get(selected_label)
-    resumable = selected is None or selected.get("schema_version") == 7
-    if not resumable:
-        st.error(
-            "This legacy suite is available for inspection only. Start a new Gemini suite "
-            "to run or resume work."
+    if selected is not None and selected.get("manifest_path"):
+        selected = load_suite(selected["manifest_path"])
+
+    resumable = selected is None or selected.get("schema_version") == SUITE_SCHEMA_VERSION
+    if selected is not None and not resumable:
+        st.warning(
+            "This schema-v8 suite is read-only. Its saved results remain inspectable below."
         )
-    action_label = "Resume selected suite" if selected else "Run new E1–E4 suite"
-    if st.button(
-        action_label,
+
+    pending_counts: dict[str, int] = {}
+    for experiment in ("e1", "e2", "e3", "e4"):
+        completed = (
+            selected is not None
+            and selected.get("schema_version") == SUITE_SCHEMA_VERSION
+            and selected["runs"][experiment].get("status") == "completed"
+        )
+        pending_counts[experiment] = (
+            0
+            if completed
+            else len(experiment_eligibility(context.dataset, cfg, experiment).query_ids)
+        )
+    call_count = sum(pending_counts.values())
+    st.caption(
+        f"Up to {call_count} currently ready prediction calls; exact cached requests are reused."
+    )
+
+    action_columns = st.columns(2)
+    run_clicked = action_columns[0].button(
+        "Run/Resume suite predictions",
         type="primary",
-        disabled=not confirmed or not resumable,
+        disabled=not confirmed or not resumable or call_count == 0,
         key="run_primary_suite",
-    ):
-        run_cfg = cfg.model_copy(deep=True)
+        width="stretch",
+    )
+
+    if run_clicked:
         if selected is None:
-            selected = create_suite(run_cfg)
-        counts = {
-            experiment: len(
-                selected["snapshot"]["eligibility"][experiment][
-                    "eligible_benchmark_ids"
-                ]
-            )
-            for experiment in ("e1", "e2", "e3", "e4")
-        }
+            selected = create_suite(cfg.model_copy(deep=True))
         offsets: dict[str, int] = {}
         cumulative = 0
-        for experiment, count in counts.items():
+        for experiment, count in pending_counts.items():
             offsets[experiment] = cumulative
             cumulative += count
         total_calls = max(cumulative, 1)
@@ -214,55 +222,257 @@ def _suite_comparison(context: AppContext) -> None:
                 f"{experiment.upper()} | {done}/{total} | {object_id.replace('_', ' ')}"
             )
 
-        with st.spinner("Running provenance-locked experiment suite…"):
-            selected = run_suite(run_cfg, selected, progress=progress)
+        with st.spinner("Generating provenance-locked suite predictions…"):
+            selected = run_suite_predictions(cfg, selected, progress=progress)
         progress_bar.empty()
         status.empty()
-        st.success("Suite completed and saved.")
+        st.success("Currently ready suite predictions were saved.")
 
-    if selected is not None:
-        path = selected.get("manifest_path")
-        if path:
-            selected = load_suite(path)
-        _render_suite_provenance(selected)
-        _render_comparison(context, selected)
+    can_evaluate = False
+    if selected is not None and selected.get("schema_version") == SUITE_SCHEMA_VERSION:
+        can_evaluate = any(
+            evaluation_readiness(cfg, batch).eligible_ids
+            for batch in suite_prediction_batches(cfg, selected).values()
+        )
+    evaluate_clicked = action_columns[1].button(
+        "Evaluate suite & generate comparison",
+        disabled=not can_evaluate,
+        key="evaluate_primary_suite",
+        width="stretch",
+    )
 
+    if evaluate_clicked and selected is not None:
+        with st.spinner("Evaluating saved suite predictions and generating plots…"):
+            selected = evaluate_suite(cfg, selected)
+        st.success("Suite evaluation was saved without model calls.")
 
-def _benchmark_runs(context: AppContext) -> None:
-    root = context.dataset.paths.results
-    paths = sorted(root.glob("*.json"), reverse=True)
-    if not paths:
-        st.info("No saved benchmark runs. Use Benchmark or Suite Comparison first.")
+    if selected is None:
         return
-    artifacts = []
-    for path in paths:
+
+    _render_suite_provenance(selected)
+    states = pd.DataFrame(
+        [
+            {
+                "experiment": experiment.upper(),
+                "status": state.get("status"),
+                "prediction_count": state.get("query_count", 0),
+                "prediction_batch_id": state.get("prediction_batch_id"),
+                "reason": state.get("reason"),
+            }
+            for experiment, state in selected.get("runs", {}).items()
+        ]
+    )
+    st.subheader("Prediction status")
+    st.dataframe(states, hide_index=True, width="stretch")
+
+    if selected.get("schema_version") == SUITE_SCHEMA_VERSION:
+        evaluations = list(reversed(selected.get("evaluations", [])))
+        if evaluations:
+            labels = {
+                f"{item['created_at'][:19]} | {item['evaluation_id']}": item
+                for item in evaluations
+            }
+            selected_evaluation = labels[
+                st.selectbox(
+                    "Suite evaluation version",
+                    list(labels),
+                    key="suite_evaluation_selector",
+                )
+            ]
+            artifacts = suite_evaluation_artifacts(
+                cfg,
+                selected,
+                selected_evaluation,
+            )
+            _render_comparison(context, selected, artifacts, selected_evaluation)
+        else:
+            _render_comparison(context, selected, {})
+    else:
+        _render_comparison(context, selected, suite_benchmarks(cfg, selected))
+
+
+def _batch_label(batch: BenchmarkPredictionBatch) -> str:
+    targets = "+".join(batch.metadata["active_grippers"])
+    return (
+        f"{batch.metadata['created_at'][:19]} | "
+        f"{batch.metadata['experiment'].upper()} | {targets} | {len(batch.rows)} rows"
+    )
+
+
+def _scalar_frame(rows: list[dict]) -> pd.DataFrame:
+    return pd.DataFrame(
+        [
+            {key: value for key, value in row.items() if key != "pipeline_result"}
+            for row in rows
+        ]
+    )
+
+
+def _render_metrics(evaluation: BenchmarkEvaluation) -> None:
+    coverage = evaluation.metadata["coverage"]
+    force = evaluation.metrics["force"]["overall"]
+    selection = evaluation.metrics["selection"]
+    columns = st.columns(4)
+    columns[0].metric("Coverage", f"{coverage['evaluated']}/{coverage['predicted']}")
+    columns[1].metric(
+        "Force MAE",
+        f"{force['mae']:.3f} N" if force.get("n") else "N/A",
+    )
+    columns[2].metric(
+        "Force RMSE",
+        f"{force['rmse']:.3f} N" if force.get("n") else "N/A",
+    )
+    columns[3].metric(
+        "Selection accuracy",
+        f"{selection['accuracy']:.1%}" if selection.get("applicable") else "N/A",
+    )
+
+
+def _render_prediction_batch(
+    context: AppContext,
+    batch: BenchmarkPredictionBatch,
+) -> None:
+    evaluations = list_batch_evaluations(context.config, batch.batch_id)
+    if evaluations:
+        labels = {
+            f"{item.metadata['created_at'][:19]} | "
+            f"{item.metadata['coverage']['evaluated']}/{item.metadata['coverage']['predicted']}": item
+            for item in evaluations
+        }
+        selected_evaluation = labels[
+            st.selectbox(
+                "Evaluation version",
+                list(labels),
+                key="benchmark_evaluation_viewer",
+            )
+        ]
+    else:
+        selected_evaluation = None
+
+    summary_tab, plots_tab, evaluated_tab, predictions_tab, provenance_tab = st.tabs(
+        ["Summary", "Plots", "Evaluated Rows", "All Predictions", "Provenance"]
+    )
+    with summary_tab:
+        st.write(f"**Prediction batch:** `{batch.batch_id}`")
+        st.write(
+            f"**Experiment/method:** {batch.metadata['experiment'].upper()} / "
+            f"{batch.metadata['experiment_method']}"
+        )
+        st.write(f"**Predictions:** {len(batch.rows)}")
+        st.write(f"**Active grippers:** {', '.join(batch.metadata['active_grippers'])}")
+        if selected_evaluation is None:
+            readiness = evaluation_readiness(context.config, batch)
+            st.info(
+                f"No saved evaluation. {len(readiness.eligible_ids)} of {len(batch.rows)} "
+                "rows currently have evaluation-ready truth."
+            )
+        else:
+            _render_metrics(selected_evaluation)
+            if selected_evaluation.metadata.get("skipped_truth"):
+                with st.expander("Unevaluated predictions"):
+                    st.json(selected_evaluation.metadata["skipped_truth"], expanded=False)
+
+    with plots_tab:
+        if selected_evaluation is None:
+            st.info("Plots become available after this batch is evaluated.")
+        else:
+            png_relative = selected_evaluation.metadata.get("exports", {}).get("png")
+            png_path = context.config.root / png_relative if png_relative else None
+            if png_path is not None and png_path.is_file():
+                st.image(str(png_path), width="stretch")
+            else:
+                figure = individual_calibration_figure(selected_evaluation.to_artifact())
+                st.pyplot(figure, width="stretch")
+                import matplotlib.pyplot as plt
+
+                plt.close(figure)
+
+    with evaluated_tab:
+        if selected_evaluation is None:
+            st.info("No evaluated rows yet.")
+        else:
+            st.dataframe(
+                _scalar_frame(selected_evaluation.rows),
+                hide_index=True,
+                width="stretch",
+            )
+
+    with predictions_tab:
+        st.dataframe(_scalar_frame(batch.rows), hide_index=True, width="stretch")
+
+    with provenance_tab:
+        st.json(batch.metadata, expanded=True)
+        selected_object = st.selectbox(
+            "Prediction evidence for object",
+            [row["object_id"] for row in batch.rows],
+            key="benchmark_prediction_evidence",
+        )
+        row = next(row for row in batch.rows if row["object_id"] == selected_object)
+        st.json(row["pipeline_result"], expanded=False)
+        if selected_evaluation is not None:
+            st.subheader("Evaluation provenance")
+            st.json(selected_evaluation.metadata, expanded=True)
+
+
+def _load_legacy_benchmarks(context: AppContext) -> list[dict]:
+    artifacts: list[dict] = []
+    for path in sorted(context.dataset.paths.results.glob("*.json"), reverse=True):
         try:
             artifact = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        if artifact.get("schema_version") == 9:
+            continue
         artifact["artifact_path"] = path
         artifacts.append(artifact)
-    labels = {
-        (
-            f"{item['metadata']['created_at'][:19]} | "
-            f"{item['metadata']['experiment'].upper()} | "
-            f"{artifact_backend_label(item)}"
-        ): item
-        for item in artifacts
-    }
-    selected = labels[st.selectbox("Benchmark run", list(labels), key="benchmark_run_viewer")]
-    metadata = selected["metadata"]
-    st.write(f"**Artifact:** `{selected['artifact_path'].name}`")
-    st.write(f"**Experiment/method:** {metadata['experiment'].upper()} / {metadata['experiment_method']}")
-    st.write(f"**Definition version:** {metadata['experiment_definition_version']}")
-    st.write(f"**Dataset SHA-256:** `{metadata['source_sha256']}`")
-    st.write(f"**Retrieval mode:** {metadata.get('retrieval_mode') or 'none'}")
-    with st.expander("Exact run provenance"):
+    return artifacts
+
+
+def _render_legacy_benchmark(artifact: dict) -> None:
+    metadata = artifact["metadata"]
+    st.warning("Schema-v8 benchmark: read-only and not eligible for reevaluation.")
+    st.write(f"**Artifact:** `{artifact['artifact_path'].name}`")
+    st.write(
+        f"**Experiment/method:** {metadata['experiment'].upper()} / "
+        f"{metadata['experiment_method']}"
+    )
+    st.write(f"**Backend:** {artifact_backend_label(artifact)}")
+    with st.expander("Exact legacy provenance"):
         st.json(metadata, expanded=True)
     st.subheader("Metrics")
-    st.json(selected["metrics"], expanded=True)
+    st.json(artifact["metrics"], expanded=True)
     st.subheader("Object rows")
-    st.dataframe(pd.DataFrame(selected["rows"]), hide_index=True, width="stretch")
+    st.dataframe(pd.DataFrame(artifact["rows"]), hide_index=True, width="stretch")
+
+
+def _benchmark_runs(context: AppContext) -> None:
+    batches = list_prediction_batches(context.config)
+    legacy = _load_legacy_benchmarks(context)
+    if not batches and not legacy:
+        st.info("No saved benchmark predictions. Use Benchmark first.")
+        return
+    options: dict[str, tuple[str, object]] = {
+        _batch_label(batch): ("batch", batch) for batch in batches
+    }
+    options.update(
+        {
+            (
+                f"Legacy | {item['metadata']['created_at'][:19]} | "
+                f"{item['metadata']['experiment'].upper()}"
+            ): ("legacy", item)
+            for item in legacy
+        }
+    )
+    selected_label = st.selectbox(
+        "Benchmark artifact",
+        list(options),
+        key="benchmark_run_viewer",
+    )
+    kind, selected = options[selected_label]
+    if kind == "batch":
+        _render_prediction_batch(context, selected)  # type: ignore[arg-type]
+    else:
+        _render_legacy_benchmark(selected)  # type: ignore[arg-type]
 
 
 def render(context: AppContext) -> None:

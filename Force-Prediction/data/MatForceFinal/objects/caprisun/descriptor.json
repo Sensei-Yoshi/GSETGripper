@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "caprisun",
+  "object_name": "caprisun",
+  "image_name": "caprisun.jpeg",
+  "image_path": "data/MatForceFinal/caprisun.jpeg",
+  "image_sha256": "eb48b0254bd89c9684ce36c3d88daf3e6ad76723ffe9f7a0872e6362fa8ff9bd",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Flexible foil beverage pouch with printed plastic film laminate. The intended contact region is clean and dry, featuring broad compressible flat panels with soft longitudinal creases and sealed edge fins.",
+    "contact_region": "Lateral surfaces of the flexible pouch centered between front and back faces",
+    "contact_material": "Printed plastic film laminate over aluminum foil substrate",
+    "visible_surface_material": "Printed plastic film laminate",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Broad flexible panels with slight curvature, soft creases, and sealed vertical edge fins",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Internal fluid content and exact internal pressure level are not observable from the exterior."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "88eab6fd8502d8dc5ba5bd1d5cfdb569a467768a9c2f93d4f49dc96b9fc0dec8",
+  "embedding_cache_key": "96a1a9731211c897b5ccf326e7d7114ada4c2093bfe890a7c9cc5f541049f8c8",
+  "embedding_sha256": "028b5f53be0c7bf5b4c2631d0b8c58d3d496ffa56bd4c962cd490efc01eb50a3",
+  "updated_at": "2026-07-28T17:57:47.219135+00:00"
+}

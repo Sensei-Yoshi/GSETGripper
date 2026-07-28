@@ -1,4 +1,4 @@
-"""E1: image-only zero-shot joint VLM."""
+"""E1: image-only zero-shot VLM for the active grippers."""
 
 from .helper import JointVLMExperiment
 

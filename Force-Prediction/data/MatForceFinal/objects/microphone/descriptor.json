@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "microphone",
+  "object_name": "microphone",
+  "image_name": "microphone.jpg",
+  "image_path": "data/MatForceFinal/microphone.jpg",
+  "image_sha256": "8b9d8d0ad695109324303145e42715dda246a173bae4d26b41dbc9199bc12dec",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Matte plastic cylindrical handheld microphone handle with a smooth, dry surface and continuous curvature. The intended contact region has no visible seams or contamination within the central grasp band.",
+    "contact_region": "The lateral cylindrical body surface of the handle, located below the mesh grille and display panel.",
+    "contact_material": "Matte plastic substrate",
+    "visible_surface_material": "Matte plastic",
+    "visible_surface_condition": "clean, dry",
+    "local_geometry": "cylindrical with smooth continuous curvature and no major seams or ridges in the central grasp band",
+    "contact_patch_visibility": "clearly visible on the facing and lateral sides",
+    "uncertainty": "The rear side of the handle is not directly visible, but symmetry implies uniform material and geometry."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "1b31200913334511ed9a9e84aa2c0a275f8e0a6d024f5eb3c5b2ee9705243658",
+  "embedding_cache_key": "a94135c5f40ac27d382151234c7aa3e37bcd9de8d07c347fdd7a7083c6292d76",
+  "embedding_sha256": "29936b069317b45d136987a63ff66ab1b213852bea8ca80f7b54ca526a558757",
+  "updated_at": "2026-07-28T17:57:49.052057+00:00"
+}

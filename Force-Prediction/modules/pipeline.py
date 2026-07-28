@@ -27,7 +27,8 @@ class Pipeline:
         self.strategy = create_strategy(cfg, self.experiment_id)
 
     def fit(self, train_records: list[ExperienceRecord]) -> Pipeline:
-        self.strategy.fit(train_records)
+        active = set(self.cfg.prediction.active_grippers)
+        self.strategy.fit([record for record in train_records if record.gripper in active])
         return self
 
     def predict(self, query: QueryInput) -> SelectionResult:

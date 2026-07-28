@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "foam_roller",
+  "object_name": "Foam Roller",
+  "image_name": "Foam Roller.jpg",
+  "image_path": "data/MatForceFinal/Foam Roller.jpg",
+  "image_sha256": "95fc9b7249b1de6051edce1eb674f218e2a1cefdb1d22c8991c9577efbb94fe4",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Black foamed polymeric cylindrical grip object with a textured, dry, porous lateral sidewall and continuous curvature. The intended contact region is clean with no visible seams or interruptions.",
+    "contact_region": "Lateral sidewall surfaces in the centered grasp band",
+    "contact_material": "Foam polymer",
+    "visible_surface_material": "Foam polymer",
+    "visible_surface_condition": "Clean, dry, and textured",
+    "local_geometry": "Concavely curved cylindrical sidewall with continuous surface texture and no visible seams or ridges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None regarding the visible surface material and geometry from the current perspective."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "4ca8bebc9f0fb3b9ab94757417e56ce767fa4ddfbf579d936cc9442b5e923b13",
+  "embedding_cache_key": "3c13239e5a3b7bad73d48fa067c0bbabbbe19c454a8207923eb44b9cafded80a",
+  "embedding_sha256": "5f638de26e39a69af946be2ad4691c45a07193a66fd68b552930118cdc21eaac",
+  "updated_at": "2026-07-28T17:57:44.820205+00:00"
+}

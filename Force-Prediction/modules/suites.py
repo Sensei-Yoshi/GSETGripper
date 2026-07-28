@@ -1,46 +1,44 @@
-"""Resumable, provenance-locked E1–E4 benchmark suites."""
+"""Resumable two-stage E1–E4 prediction and evaluation suites."""
 
 from __future__ import annotations
 
 import hashlib
 import json
-import tempfile
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .benchmarking import (
+    BenchmarkEvaluation,
+    BenchmarkPredictionBatch,
+    evaluation_readiness,
+    generate_benchmark_predictions,
+    get_or_create_benchmark_evaluation,
+    load_benchmark_evaluation,
+    load_prediction_batch,
+    save_prediction_batch,
+)
 from .config import EXPERIMENT_DEFINITION_VERSION, Config, prompt_bundle_sha256
-from .datasets import get_dataset
+from .datasets.storage import write_json_atomic
 from .experiments import experiment_eligibility
-from .expforce import (
-    prompt_provenance,
-    run_benchmark,
-    save_benchmark,
-    source_sha256,
+from .expforce import prompt_provenance
+from .reporting import (
+    common_intersection_artifacts,
+    export_comparison,
 )
 
 PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4")
+SUITE_SCHEMA_VERSION = 9
 
 
-def _write_json_atomic(path: Path, payload: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", dir=path.parent, delete=False
-    ) as fh:
-        json.dump(payload, fh, indent=2, default=str)
-        fh.write("\n")
-        temporary = Path(fh.name)
-    temporary.replace(path)
-
-
-def _suite_snapshot(cfg: Config) -> dict:
-    dataset = get_dataset(cfg, cfg.dataset_id)
+def _definition_snapshot(cfg: Config) -> dict:
+    """Configuration lock that intentionally excludes mutable dataset truth."""
     definitions = {
-        name: cfg.experiment(name).model_dump(mode="json") for name in PRIMARY_EXPERIMENTS
+        name: cfg.experiment(name).model_dump(mode="json")
+        for name in PRIMARY_EXPERIMENTS
     }
     return {
         "dataset_id": cfg.dataset_id,
-        "source_sha256": source_sha256(cfg),
         "prompt_bundle_sha256": prompt_bundle_sha256(cfg),
         "experiment_definition_version": EXPERIMENT_DEFINITION_VERSION,
         "experiment_definitions": definitions,
@@ -49,22 +47,19 @@ def _suite_snapshot(cfg: Config) -> dict:
             "embedding": cfg.retrieval.embedding.model,
             "embedding_dim": cfg.retrieval.embedding.dim,
         },
-        "backend": "gemini_joint_generation",
+        "backend": (
+            "gemini_single_generation"
+            if len(cfg.prediction.active_grippers) == 1
+            else "gemini_joint_generation"
+        ),
+        "active_grippers": [
+            gripper.value for gripper in cfg.prediction.active_grippers
+        ],
+        "generation_mode": (
+            "single" if len(cfg.prediction.active_grippers) == 1 else "joint"
+        ),
         "retrieval": cfg.retrieval.model_dump(mode="json"),
         "inputs": cfg.inputs.model_dump(mode="json"),
-        "evaluation_protocol": "leave-one-object-out",
-        "object_count": len(dataset.objects),
-        "eligibility": {
-            name: {
-                "eligible_query_ids": list(report.query_ids),
-                "eligible_benchmark_ids": list(report.benchmark_ids),
-                "reference_ids": list(report.reference_ids),
-                "skipped_queries": report.skipped_queries,
-                "skipped_benchmarks": report.skipped_benchmarks,
-            }
-            for name in PRIMARY_EXPERIMENTS
-            for report in [experiment_eligibility(dataset, cfg, name)]
-        },
     }
 
 
@@ -73,33 +68,39 @@ def _snapshot_hash(snapshot: dict) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def suite_manifest_path(cfg: Config, suite_id: str) -> Path:
+    return cfg.root / "data" / cfg.dataset_id / "suites" / suite_id / "manifest.json"
+
+
 def create_suite(cfg: Config) -> dict:
     created_at = datetime.now(UTC)
     suite_id = created_at.strftime("%Y%m%dT%H%M%S%fZ_primary_e1_e4")
-    snapshot = _suite_snapshot(cfg)
+    snapshot = _definition_snapshot(cfg)
     manifest = {
-        "schema_version": 7,
+        "schema_version": SUITE_SCHEMA_VERSION,
         "suite_id": suite_id,
         "created_at": created_at.isoformat(),
         "updated_at": created_at.isoformat(),
         "status": "pending",
-        "backend": "gemini_joint_generation",
+        "backend": snapshot["backend"],
+        "active_grippers": snapshot["active_grippers"],
+        "generation_mode": snapshot["generation_mode"],
         "experiments": list(PRIMARY_EXPERIMENTS),
-        "snapshot": snapshot,
-        "snapshot_sha256": _snapshot_hash(snapshot),
+        "definition_snapshot": snapshot,
+        "definition_snapshot_sha256": _snapshot_hash(snapshot),
         "prompt_context": prompt_provenance(cfg, "e1"),
         "runs": {
-            name: {"status": "pending", "json_path": None, "csv_path": None}
+            name: {
+                "status": "pending",
+                "prediction_json_path": None,
+                "prediction_csv_path": None,
+            }
             for name in PRIMARY_EXPERIMENTS
         },
-        "exports": {},
+        "evaluations": [],
     }
-    _write_json_atomic(suite_manifest_path(cfg, suite_id), manifest)
+    write_json_atomic(suite_manifest_path(cfg, suite_id), manifest)
     return manifest
-
-
-def suite_manifest_path(cfg: Config, suite_id: str) -> Path:
-    return cfg.root / "data" / cfg.dataset_id / "suites" / suite_id / "manifest.json"
 
 
 def load_suite(path: str | Path) -> dict:
@@ -108,7 +109,7 @@ def load_suite(path: str | Path) -> dict:
 
 def list_suites(cfg: Config) -> list[dict]:
     root = cfg.root / "data" / cfg.dataset_id / "suites"
-    manifests = []
+    manifests: list[dict] = []
     for path in sorted(root.glob("*/manifest.json"), reverse=True):
         try:
             manifest = load_suite(path)
@@ -119,50 +120,74 @@ def list_suites(cfg: Config) -> list[dict]:
     return manifests
 
 
-def run_suite(
+def _validate_resumable(cfg: Config, manifest: dict) -> None:
+    if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
+        raise ValueError(
+            "Legacy suites are read-only; start a schema-v9 suite for two-stage execution"
+        )
+    current = _definition_snapshot(cfg)
+    if _snapshot_hash(current) != manifest["definition_snapshot_sha256"]:
+        raise ValueError(
+            "Current prompts, model, retrieval, inputs, active grippers, or experiment "
+            "definitions differ from this suite; start a new suite instead"
+        )
+
+
+def _suite_status(manifest: dict) -> str:
+    statuses = [state["status"] for state in manifest["runs"].values()]
+    if all(status == "completed" for status in statuses):
+        return "predictions_complete"
+    if any(status == "completed" for status in statuses):
+        return "partially_generated"
+    return "waiting"
+
+
+def run_suite_predictions(
     cfg: Config,
     manifest: dict | None = None,
     *,
     progress: Callable[[str, int, int, str], None] | None = None,
 ) -> dict:
-    """Run or resume a suite, checkpointing after every completed experiment."""
+    """Generate or resume immutable prediction batches for currently ready experiments."""
     manifest = manifest or create_suite(cfg)
-    if manifest.get("schema_version") != 7:
-        raise ValueError(
-            "Legacy suites are read-only because their execution backend is not compatible "
-            "with the Gemini-only suite contract; start a new suite instead"
-        )
-    current_snapshot = _suite_snapshot(cfg)
-    if _snapshot_hash(current_snapshot) != manifest["snapshot_sha256"]:
-        raise ValueError(
-            "Current data, prompts, model, retrieval, or experiment definitions differ "
-            "from this suite snapshot; start a new suite instead of resuming it."
-        )
+    _validate_resumable(cfg, manifest)
     path = suite_manifest_path(cfg, manifest["suite_id"])
-    manifest["status"] = "running"
+    manifest["status"] = "running_predictions"
     manifest["updated_at"] = datetime.now(UTC).isoformat()
-    _write_json_atomic(path, manifest)
+    write_json_atomic(path, manifest)
 
     try:
+        from .datasets import get_dataset
+
+        dataset = get_dataset(cfg, cfg.dataset_id)
         for experiment in PRIMARY_EXPERIMENTS:
             state = manifest["runs"][experiment]
-            saved = state.get("json_path")
-            if state.get("status") == "completed" and saved and (cfg.root / saved).is_file():
+            saved = state.get("prediction_json_path")
+            if (
+                state.get("status") == "completed"
+                and saved
+                and (cfg.root / saved).is_file()
+            ):
                 continue
-            eligible_ids = manifest["snapshot"]["eligibility"][experiment][
-                "eligible_benchmark_ids"
-            ]
-            if not eligible_ids:
+
+            readiness = experiment_eligibility(dataset, cfg, experiment)
+            if not readiness.query_ids:
                 state.update(
-                    status="skipped",
-                    reason="no eligible benchmark objects",
-                    object_count=0,
-                    completed_at=datetime.now(UTC).isoformat(),
+                    status="waiting",
+                    reason="no query-ready objects",
+                    query_count=0,
+                    skipped_queries=readiness.skipped_queries,
+                    checked_at=datetime.now(UTC).isoformat(),
                 )
-                _write_json_atomic(path, manifest)
+                write_json_atomic(path, manifest)
                 continue
-            state["status"] = "running"
-            _write_json_atomic(path, manifest)
+
+            state.update(
+                status="running",
+                reason=None,
+                query_count=len(readiness.query_ids),
+            )
+            write_json_atomic(path, manifest)
 
             def on_object(
                 done: int,
@@ -173,35 +198,167 @@ def run_suite(
                 if progress is not None:
                     progress(active_experiment, done, total, object_id)
 
-            benchmark = run_benchmark(cfg, experiment, progress=on_object)
-            json_path, csv_path = save_benchmark(cfg, benchmark)
+            batch = generate_benchmark_predictions(
+                cfg,
+                experiment,
+                progress=on_object,
+            )
+            json_path, csv_path = save_prediction_batch(cfg, batch)
             state.update(
                 status="completed",
-                json_path=str(json_path.relative_to(cfg.root)),
-                csv_path=str(csv_path.relative_to(cfg.root)),
+                prediction_batch_id=batch.batch_id,
+                prediction_json_path=str(json_path.relative_to(cfg.root)),
+                prediction_csv_path=str(csv_path.relative_to(cfg.root)),
                 completed_at=datetime.now(UTC).isoformat(),
-                object_count=len(eligible_ids),
+                query_count=len(batch.rows),
+                generation_source_sha256=batch.metadata[
+                    "generation_source_sha256"
+                ],
+                generation_input_sha256=batch.metadata[
+                    "generation_input_sha256"
+                ],
             )
             manifest["updated_at"] = datetime.now(UTC).isoformat()
-            _write_json_atomic(path, manifest)
+            write_json_atomic(path, manifest)
     except Exception as error:
         manifest["status"] = "failed"
         manifest["last_error"] = f"{type(error).__name__}: {error}"
         manifest["updated_at"] = datetime.now(UTC).isoformat()
-        _write_json_atomic(path, manifest)
+        write_json_atomic(path, manifest)
         raise
 
-    manifest["status"] = "completed"
+    manifest["status"] = _suite_status(manifest)
     manifest.pop("last_error", None)
     manifest["updated_at"] = datetime.now(UTC).isoformat()
-    _write_json_atomic(path, manifest)
+    write_json_atomic(path, manifest)
     return manifest
 
 
+def run_suite(
+    cfg: Config,
+    manifest: dict | None = None,
+    *,
+    progress: Callable[[str, int, int, str], None] | None = None,
+) -> dict:
+    """Compatibility alias for callers migrating to ``run_suite_predictions``."""
+    return run_suite_predictions(cfg, manifest, progress=progress)
+
+
+def suite_prediction_batches(
+    cfg: Config,
+    manifest: dict,
+) -> dict[str, BenchmarkPredictionBatch]:
+    batches: dict[str, BenchmarkPredictionBatch] = {}
+    if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
+        return batches
+    for experiment in PRIMARY_EXPERIMENTS:
+        relative = manifest["runs"][experiment].get("prediction_json_path")
+        if relative and (cfg.root / relative).is_file():
+            batches[experiment] = load_prediction_batch(cfg.root / relative)
+    return batches
+
+
+def _suite_evaluation_signature(
+    evaluations: dict[str, BenchmarkEvaluation],
+) -> str:
+    payload = {
+        experiment: evaluation.metadata["truth_snapshot_sha256"]
+        for experiment, evaluation in evaluations.items()
+    }
+    return _snapshot_hash(payload)
+
+
+def evaluate_suite(cfg: Config, manifest: dict) -> dict:
+    """Evaluate every generated suite batch against one current truth state."""
+    if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
+        raise ValueError("Legacy suites are read-only and cannot be reevaluated")
+    batches = suite_prediction_batches(cfg, manifest)
+    evaluations: dict[str, BenchmarkEvaluation] = {}
+    paths_by_experiment: dict[str, dict[str, str]] = {}
+    for experiment, batch in batches.items():
+        if not evaluation_readiness(cfg, batch).eligible_ids:
+            continue
+        evaluation, paths, _ = get_or_create_benchmark_evaluation(cfg, batch)
+        evaluations[experiment] = evaluation
+        paths_by_experiment[experiment] = {
+            name: str(path.relative_to(cfg.root)) for name, path in paths.items()
+        }
+    if not evaluations:
+        raise ValueError("no generated suite predictions currently have evaluation-ready truth")
+
+    signature = _suite_evaluation_signature(evaluations)
+    for existing in manifest.get("evaluations", []):
+        if existing.get("truth_snapshot_sha256") == signature:
+            return manifest
+
+    created_at = datetime.now(UTC)
+    suite_evaluation_id = created_at.strftime("%Y%m%dT%H%M%S%fZ")
+    artifacts = {
+        experiment: evaluation.to_artifact()
+        for experiment, evaluation in evaluations.items()
+    }
+    comparable, common_ids = common_intersection_artifacts(artifacts, cfg)
+    exports: dict[str, str] = {}
+    if common_ids:
+        destination = (
+            suite_manifest_path(cfg, manifest["suite_id"]).parent
+            / "evaluations"
+            / suite_evaluation_id
+        )
+        exported = export_comparison(comparable, destination)
+        exports = {
+            name: str(Path(path).relative_to(cfg.root))
+            for name, path in exported.items()
+        }
+
+    manifest.setdefault("evaluations", []).append(
+        {
+            "evaluation_id": suite_evaluation_id,
+            "created_at": created_at.isoformat(),
+            "truth_snapshot_sha256": signature,
+            "artifacts": paths_by_experiment,
+            "coverage": {
+                experiment: evaluation.metadata["coverage"]
+                for experiment, evaluation in evaluations.items()
+            },
+            "common_object_ids": list(common_ids),
+            "exports": exports,
+        }
+    )
+    manifest["status"] = "evaluated"
+    manifest["updated_at"] = created_at.isoformat()
+    write_json_atomic(suite_manifest_path(cfg, manifest["suite_id"]), manifest)
+    return manifest
+
+
+def suite_evaluation_artifacts(
+    cfg: Config,
+    manifest: dict,
+    suite_evaluation: dict | None = None,
+) -> dict[str, dict]:
+    """Load one suite evaluation's per-experiment evaluation artifacts."""
+    evaluations = manifest.get("evaluations", [])
+    selected = suite_evaluation or (evaluations[-1] if evaluations else None)
+    if selected is None:
+        return {}
+    artifacts: dict[str, dict] = {}
+    for experiment, paths in selected.get("artifacts", {}).items():
+        json_relative = paths.get("json")
+        if not json_relative:
+            continue
+        path = cfg.root / json_relative
+        if path.is_file():
+            artifacts[experiment] = load_benchmark_evaluation(path).to_artifact()
+    return artifacts
+
+
 def suite_benchmarks(cfg: Config, manifest: dict) -> dict[str, dict]:
+    """Compatibility reader: latest v9 evaluations or saved v8 benchmark artifacts."""
+    if manifest.get("schema_version") == SUITE_SCHEMA_VERSION:
+        return suite_evaluation_artifacts(cfg, manifest)
     artifacts: dict[str, dict] = {}
     for experiment in PRIMARY_EXPERIMENTS:
-        relative = manifest["runs"][experiment].get("json_path")
+        relative = manifest.get("runs", {}).get(experiment, {}).get("json_path")
         if not relative:
             continue
         path = cfg.root / relative
@@ -211,7 +368,8 @@ def suite_benchmarks(cfg: Config, manifest: dict) -> dict[str, dict]:
 
 
 def update_suite_exports(cfg: Config, manifest: dict, exports: dict[str, str]) -> dict:
+    """Compatibility helper for manually exported legacy suite comparisons."""
     manifest["exports"] = exports
     manifest["updated_at"] = datetime.now(UTC).isoformat()
-    _write_json_atomic(suite_manifest_path(cfg, manifest["suite_id"]), manifest)
+    write_json_atomic(suite_manifest_path(cfg, manifest["suite_id"]), manifest)
     return manifest

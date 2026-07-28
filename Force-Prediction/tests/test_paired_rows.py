@@ -41,6 +41,74 @@ def test_every_experiment_runs_with_explicit_gemini_fake_and_continuous_forces(
     )
 
 
+@pytest.mark.parametrize("experiment", EXPERIMENT_IDS)
+@pytest.mark.parametrize("gripper", (Gripper.GECKO, Gripper.SILICONE))
+def test_every_experiment_supports_one_active_gripper(
+    experiment, gripper, monkeypatch
+):
+    cfg = load_config().model_copy(deep=True)
+    cfg.prediction.active_grippers = (gripper,)
+    client = install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
+    records = fabricate_records(cfg, 16)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+
+    detailed = Pipeline(cfg, experiment).fit(train).predict_detailed(
+        _query_with_image(test, cfg)
+    )
+
+    assert set(detailed.selection.candidate_predictions) == {gripper.value}
+    assert detailed.active_grippers == (gripper.value,)
+    assert detailed.generation_mode == "single"
+    assert detailed.selection.model_recommended_gripper is None
+    assert client.generation_calls == 1
+
+
+def test_single_silicone_e4_uses_per_gripper_schema_and_filtered_payload(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.prediction.active_grippers = (Gripper.SILICONE,)
+    records = fabricate_records(cfg, 16)
+    held = records[0].object_id
+    captured = {}
+
+    class CapturingClient:
+        def generate_json(self, **kwargs):
+            captured.update(kwargs)
+            return PerGripperPrediction(
+                candidate_gripper=Gripper.GECKO,
+                predicted_normal_force_n=1.125,
+            ).model_dump(mode="json")
+
+        def cache_stats(self):
+            return {}
+
+    client = CapturingClient()
+    monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("modules.experiments.helper.get_client", lambda _cfg: client)
+    monkeypatch.setattr(
+        "modules.experiments.helper.get_embedding_provider",
+        lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
+    )
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+
+    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+        _query_with_image(test, cfg)
+    )
+
+    assert captured["schema"] is PerGripperPrediction
+    assert captured["extra"]["active_grippers"] == ["silicone"]
+    assert set(captured["extra"]["gripper_embodiments"]) == {"silicone"}
+    assert all(
+        "silicone_min_force_n" in item and "gecko_min_force_n" not in item
+        for item in captured["extra"]["retrieved_objects"]
+    )
+    prediction = detailed.selection.candidate_predictions["silicone"]
+    assert prediction.candidate_gripper is Gripper.SILICONE
+    assert prediction.predicted_normal_force_n == 1.125
+
+
 def test_e4_detailed_result_contains_one_shared_top_k_list(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
@@ -54,7 +122,7 @@ def test_e4_detailed_result_contains_one_shared_top_k_list(monkeypatch):
     )
 
     assert detailed.experiment_id == "e4"
-    assert detailed.experiment_method == "paired_retrieval_vlm"
+    assert detailed.experiment_method == "hybrid_retrieval_vlm"
     assert len(detailed.retrieved_objects) == cfg.retrieval.k
     assert len({item.object_id for item in detailed.retrieved_objects}) == cfg.retrieval.k
     assert all(item.object_id != held for item in detailed.retrieved_objects)
@@ -119,7 +187,8 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     assert client.generation_calls == 1
     assert retrieval_calls == 1
     assert captured["schema"] is JointGripperPrediction
-    assert captured["instruction"] == cfg.prompts.experiments["e4"]
+    assert captured["instruction"].startswith(cfg.prompts.experiments["e4"].strip())
+    assert cfg.prompts.target_instructions["joint"].strip() in captured["instruction"]
     paired_payload = captured["extra"]["retrieved_objects"]
     assert len(paired_payload) == cfg.retrieval.k
     assert all("gecko_min_force_n" in item for item in paired_payload)

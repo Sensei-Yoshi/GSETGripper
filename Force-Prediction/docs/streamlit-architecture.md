@@ -18,7 +18,7 @@ Each Streamlit rerun follows one path:
 2. The shell calls `st.set_page_config`, applies the unchanged global CSS, and imports the
    tab registry.
 3. The shell discovers every non-hidden direct folder under `data/` except `cache`, renders
-   the global **Dataset** selector, and calls `load_context()` for the selected folder.
+   the global dataset, measured-input, and active-gripper controls, and calls `load_context()`.
 4. `load_context()` creates a dataset-scoped runtime configuration and one immutable
    `AppContext` containing the catalog, active `Dataset`, object rows, and summary.
 5. The shell creates tabs from `TAB_SPECS`, in registry order, and calls each renderer with
@@ -44,8 +44,9 @@ used by the camera and background-removal model preserve this rule.
 | `modules/cache.py` | Dataset-scoped JSON cache with read-through for the legacy flat Exp-Force cache. |
 | `modules/models/` | Lazy Gemini, background-removal, and Marigold adapters. |
 
-The **Runs Viewer** owns saved single runs, saved benchmarks, and resumable E1–E4 suite
-comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
+The **Benchmark** tab owns the two actions: immutable prediction generation and later
+truth evaluation. The **Runs Viewer** owns saved single runs, prediction/evaluation histories,
+and resumable two-stage E1–E4 suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
 auto-saving measurement and partial outcome labels. CSV sources remain authoritative; image
 folders use `objects/<object_id>/measurements.json`. Each save is atomic, recalculates any
 complete derived label, and refreshes completed experience records. Names, images,
@@ -99,7 +100,8 @@ second view feeds projected two-pad contact estimation.
 The adapter selected from folder contents determines capabilities:
 
 - `dataset.csv` uses the paired CSV adapter and permits nullable physical fields and partial
-  outcomes. Single Run, benchmarks, and suites use per-experiment eligibility instead of a
+  outcomes. Single Run and benchmark generation use query eligibility; benchmark evaluation
+  independently uses current truth eligibility. Suites compose those same two APIs instead of a
   dataset-wide completeness gate.
 - other folders use the image-folder adapter. Source images may be at the folder root or in
   nested folders. Generated masks, cutouts, contact plots, descriptors, runs, results, and
@@ -149,10 +151,10 @@ saved-run inspector:
 - `format_force` and `format_experiment` preserve display formatting.
 - `truth_for_display` and `truth_payload` produce the validation labels used by the UI and
   saved run artifacts.
-- `paired_retrieval_table` builds the full paired-neighbor table.
+- `paired_retrieval_table` builds a neighbor table containing only active-gripper outcomes.
 - `render_formula` draws the hybrid-similarity formula with normalized weights.
-- `render_prediction` draws the complete result area, including metrics, counterfactual or
-  truth status, per-gripper predictions, physics trace, retrieval evidence, and formula.
+- `render_prediction` draws one or two active-gripper panels, target-appropriate metrics,
+  counterfactual or truth status, retrieval evidence, and formula.
 
 New tabs displaying a `PipelineRunResult` should call `render_prediction` rather than copying
 its layout. Pass the exact `Config` used for that result so retrieval counts and backend

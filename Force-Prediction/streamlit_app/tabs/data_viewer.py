@@ -369,6 +369,8 @@ def pipeline_run_inspector(context: AppContext) -> None:
         st.write(f"**VLM:** {run['models']['vlm']}")
         st.write(f"**Text embedding:** {run['models']['embedding']}")
         st.write(f"**Protocol:** {run['evaluation_protocol'].replace('-', ' ')}")
+        active_grippers = tuple(run.get("active_grippers", ("gecko", "silicone")))
+        st.write(f"**Active grippers:** {', '.join(active_grippers)}")
         st.write(f"**Description:** {query.get('semantic_description', '')}")
         with st.expander("Retrieval parameters"):
             retrieval = run["retrieval_config"]
@@ -397,11 +399,13 @@ def pipeline_run_inspector(context: AppContext) -> None:
         truth = run.get("truth")
         if truth:
             st.subheader("Saved synthetic truth")
-            st.write(
-                f"Gecko: {truth.get('true_gecko_force_n')} N | "
-                f"Silicone: {truth.get('true_silicone_force_n')} N | "
-                f"Winner: {truth.get('true_selection', 'unknown').title()}"
-            )
+            truth_parts = [
+                f"{name.title()}: {truth.get(f'true_{name}_force_n')} N"
+                for name in active_grippers
+            ]
+            if truth.get("true_selection"):
+                truth_parts.append(f"Winner: {truth['true_selection'].title()}")
+            st.write(" | ".join(truth_parts))
             if run.get("counterfactual"):
                 st.caption("Context only: counterfactual runs are not scored against this truth.")
 
@@ -410,6 +414,9 @@ def pipeline_run_inspector(context: AppContext) -> None:
         cfg = base_cfg.model_copy(deep=True)
         cfg.retrieval = type(cfg.retrieval).model_validate(run["retrieval_config"])
         cfg.inputs = type(cfg.inputs).model_validate(run.get("inputs", {}))
+        cfg.prediction.active_grippers = tuple(
+            Gripper(name) for name in run.get("active_grippers", ("gecko", "silicone"))
+        )
         detailed = pipeline_result_from_dict(run["result"])
         baseline = pipeline_result_from_dict(run["baseline"]) if run.get("baseline") else None
         records = load_experience_pool(base_cfg)

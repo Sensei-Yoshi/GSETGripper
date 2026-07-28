@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "pretzel_bag",
+  "object_name": "pretzel bag",
+  "image_name": "pretzel_bag.jpg",
+  "image_path": "data/MatForceFinal/pretzel_bag.jpg",
+  "image_sha256": "db5352ce968e9f94cbc6b665c91d7d3e97371327f9bc4c256c0e2ac34dbe60c0",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Flexible plastic snack pouch containing loose contents. The intended contact region is dry, flexible, and features slight wrinkles and soft lateral edges.",
+    "contact_region": "Lateral side panels of the flexible plastic pouch",
+    "contact_material": "Flexible plastic film wrapper",
+    "visible_surface_material": "Flexible plastic film",
+    "visible_surface_condition": "Dry and clean with slight wrinkles and folds",
+    "local_geometry": "Deformable flat-to-rounded lateral sides with crimped top and bottom edge seams",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact internal shifting of contents is not visible, but the external packaging material and flexible sidewalls are clearly discernible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "d782187c96540646f7e9ff3b82ed5af107bb6e16c51efaf0f8ddfc35b472130e",
+  "embedding_cache_key": "b7ce3f6d926a41af40c7e13bcda7756b557b8739c3b7594e836d050f52d5fa38",
+  "embedding_sha256": "4b9877380dde5af44cb982d34cb22ec13f30bff200aa61c4b0124546394c6512",
+  "updated_at": "2026-07-28T17:57:49.667138+00:00"
+}

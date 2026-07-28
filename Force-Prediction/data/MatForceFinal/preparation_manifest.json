@@ -1,0 +1,68 @@
+{
+  "schema_version": 4,
+  "dataset_id": "MatForceFinal",
+  "source_fingerprint": "07b330078b7067400d109a9607333d2590f2a1b68b048655455bf48234d4454b",
+  "created_at": "2026-07-28T17:49:54.162211+00:00",
+  "updated_at": "2026-07-28T17:57:50.538764+00:00",
+  "stages": {
+    "index": {
+      "status": "complete",
+      "completed": 32,
+      "total": 32,
+      "failed_object": null,
+      "error": null,
+      "updated_at": "2026-07-28T17:56:10.414137+00:00"
+    },
+    "descriptions": {
+      "status": "complete",
+      "completed": 32,
+      "total": 32,
+      "failed_object": null,
+      "error": null,
+      "updated_at": "2026-07-28T17:57:44.387018+00:00"
+    },
+    "embeddings": {
+      "status": "complete",
+      "completed": 32,
+      "total": 32,
+      "failed_object": null,
+      "error": null,
+      "updated_at": "2026-07-28T17:57:50.538753+00:00"
+    }
+  },
+  "missing_images": [],
+  "missing_second_images": [
+    "500g_weight",
+    "foam_roller",
+    "headphones_case",
+    "lunch_box",
+    "soldering_iron_box",
+    "toilet_paper",
+    "wallet_1",
+    "apple",
+    "banana",
+    "beaker",
+    "big_stone",
+    "book",
+    "camera_cardboard_box",
+    "caprisun",
+    "cetaphil",
+    "eraser",
+    "ketchup",
+    "leather_belt",
+    "leather_sunglasses_case",
+    "lock",
+    "metal_water_bottle",
+    "microphone",
+    "multimeter",
+    "orange",
+    "people_s_hospital",
+    "pretzel_bag",
+    "red_bull",
+    "rubber_tire",
+    "soda_can",
+    "sponge",
+    "wallet_2",
+    "wooden_block"
+  ]
+}

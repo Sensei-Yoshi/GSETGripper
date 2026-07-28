@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, Literal
 
 import numpy as np
 
@@ -17,7 +17,12 @@ from ..config import (
 from ..contracts import ExperienceRecord, Query, SelectionResult
 from ..models.gemini import get_client
 from ..perception import describe
-from ..prediction import predictions_from_joint, select, vlm_predict_joint
+from ..prediction import (
+    predictions_from_joint,
+    select,
+    vlm_predict_joint,
+    vlm_predict_single,
+)
 from ..retrieval import (
     ExperienceIndex,
     RetrievalMode,
@@ -62,6 +67,8 @@ class PipelineRunResult:
     retrieved_objects: list[RetrievedObjectExperience]
     physics_estimates: dict[str, dict[str, Any] | None]
     cache_stats: dict[str, Any]
+    active_grippers: tuple[str, ...] = ("gecko", "silicone")
+    generation_mode: Literal["single", "joint"] = "joint"
     retrieval_mode: str | None = None
     effective_inputs: tuple[str, ...] = ()
 
@@ -120,7 +127,54 @@ class ExperimentStrategy(ABC):
         prompt = self.definition.prompt
         if prompt is None:
             raise RuntimeError(f"{self.spec.experiment_id} has no configured VLM prompt")
-        return self.cfg.prompts.experiments[prompt]
+        mode = "single" if len(self.cfg.prediction.active_grippers) == 1 else "joint"
+        return (
+            self.cfg.prompts.experiments[prompt].rstrip()
+            + "\n\n"
+            + self.cfg.prompts.target_instructions[mode].strip()
+        )
+
+    def _predict_and_select(
+        self,
+        query: Query,
+        image_bgr: np.ndarray | None,
+        retrieved: list[RetrievedObjectExperience],
+        *,
+        include_measured: bool,
+        include_retrieval: bool,
+    ) -> SelectionResult:
+        active = self.cfg.prediction.active_grippers
+        if len(active) == 1:
+            gripper = active[0]
+            prediction = vlm_predict_single(
+                self.cfg,
+                query,
+                image_bgr,
+                retrieved,
+                gripper=gripper,
+                instruction=self._instruction(),
+                include_measured=include_measured,
+                include_retrieval=include_retrieval,
+                retrieval_mode=self.spec.retrieval_mode,
+            )
+            return select({gripper: prediction})
+
+        response = vlm_predict_joint(
+            self.cfg,
+            query,
+            image_bgr,
+            retrieved,
+            instruction=self._instruction(),
+            include_measured=include_measured,
+            include_retrieval=include_retrieval,
+            retrieval_mode=self.spec.retrieval_mode,
+        )
+        return select(
+            predictions_from_joint(response),
+            model_recommended_gripper=response.recommended_gripper,
+            model_comparison_evidence=response.comparison_evidence,
+            model_recommendation_summary=response.recommendation_summary,
+        )
 
     def _result(
         self,
@@ -144,6 +198,12 @@ class ExperimentStrategy(ABC):
             retrieved_objects=retrieved_objects or [],
             physics_estimates=physics_estimates or {},
             cache_stats=cache_stats,
+            active_grippers=tuple(
+                gripper.value for gripper in self.cfg.prediction.active_grippers
+            ),
+            generation_mode=(
+                "single" if len(self.cfg.prediction.active_grippers) == 1 else "joint"
+            ),
             retrieval_mode=(
                 self.spec.retrieval_mode.value if self.spec.retrieval_mode else None
             ),
@@ -163,20 +223,12 @@ class JointVLMExperiment(ExperimentStrategy):
         if self.include_measured:
             self._validate_measured_query(query_input)
         query = self._query(query_input, needs_description=False)
-        response = vlm_predict_joint(
-            self.cfg,
+        selection = self._predict_and_select(
             query,
             query_input.image_bgr,
             [],
-            instruction=self._instruction(),
             include_measured=self.include_measured,
             include_retrieval=False,
-        )
-        selection = select(
-            predictions_from_joint(response),
-            model_recommended_gripper=response.recommended_gripper,
-            model_comparison_evidence=response.comparison_evidence,
-            model_recommendation_summary=response.recommendation_summary,
         )
         inputs: tuple[str, ...] = ("object_image", "gripper_context")
         if self.include_measured:
@@ -194,7 +246,7 @@ class JointVLMExperiment(ExperimentStrategy):
 
 
 class RetrievalVLMExperiment(ExperimentStrategy):
-    """Shared E3/E4 paired-object retrieval lifecycle."""
+    """Shared E3/E4 active-gripper object-retrieval lifecycle."""
 
     include_measured = False
     retrieval_mode = RetrievalMode.SEMANTIC_ONLY
@@ -219,21 +271,12 @@ class RetrievalVLMExperiment(ExperimentStrategy):
             exclude_object_id=query_input.object_id,
             mode=self.retrieval_mode,
         )
-        response = vlm_predict_joint(
-            self.cfg,
+        selection = self._predict_and_select(
             query,
             query_input.image_bgr,
             retrieved,
-            instruction=self._instruction(),
             include_measured=self.include_measured,
             include_retrieval=True,
-            retrieval_mode=self.retrieval_mode,
-        )
-        selection = select(
-            predictions_from_joint(response),
-            model_recommended_gripper=response.recommended_gripper,
-            model_comparison_evidence=response.comparison_evidence,
-            model_recommendation_summary=response.recommendation_summary,
         )
         inputs: tuple[str, ...] = (
             "object_image",

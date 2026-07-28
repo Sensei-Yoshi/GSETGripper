@@ -244,8 +244,9 @@ stage manifest lives at `data/<dataset>/preparation_manifest.json`. No downstrea
 upstream stage was selected.
 
 Both gripper rows for an object must remain in the same training or test fold. A known query
-object is excluded from its own E3/E4 retrieval pool. The viewer uses leave-one-object-out
-evaluation for known objects and the full pool for custom counterfactual queries.
+object is excluded from its own E3/E4 retrieval pool. Benchmark generation uses every
+query-ready object and persists predictions without truth; later evaluation joins only the
+current truth-ready subset. Custom counterfactual queries use the full eligible reference pool.
 
 ## 6. Semantic description and embedding
 
@@ -272,24 +273,24 @@ The active IDs are E1 through E4 and form the VLM ablation suite.
 
 | ID | Method | Force-generation calls | Meaning |
 |---|---|---:|---|
-| E1 | `joint_vlm` | 1 | Object-image zero-shot prediction |
-| E2 | `joint_vlm_measured` | 1 | E1 plus authoritative physical measurements |
+| E1 | `vision_vlm` | 1 | Object-image zero-shot prediction |
+| E2 | `measured_vlm` | 1 | E1 plus authoritative physical measurements |
 | E3 | `semantic_retrieval_vlm` | 1 | Semantic-cosine experiential retrieval, without sensor inputs |
-| E4 | `paired_retrieval_vlm` | 1 | Semantic + sensor-fusion paired retrieval |
+| E4 | `hybrid_retrieval_vlm` | 1 | Semantic + sensor-fusion retrieval |
 
 “Force-generation call” means a VLM call that returns force predictions. E3 and E4
 may need descriptor or embedding calls when semantic data is not already cached. Those
 preparation calls are distinct from force generation.
 
-Live E1–E4 calls receive the query-object image and fixed written descriptions of both
-gripper embodiments. No gripper images are sent. The written context defines the hardware
-and is held constant across all four conditions. Embeddings remain text-only.
+Live E1–E4 calls receive the query-object image and fixed written descriptions of the
+globally active gripper embodiments. One target uses `PerGripperPrediction`; two targets
+use one `JointGripperPrediction`. No gripper images are sent.
 
 ### E1: vision-only zero-shot
 
 E1 sends no object-specific mass, roughness, contact, retrieved examples, or physics
-estimate. One structured response contains both gripper predictions and
-`recommended_gripper`. It establishes the zero-shot baseline.
+estimate. Its structured response covers only the active candidates; paired runs also
+return `recommended_gripper`.
 
 ### E2: measured-input zero-shot
 
@@ -299,11 +300,10 @@ therefore isolates the value of measured physical inputs.
 
 ### E3: semantic-only experience-conditioned VLM
 
-E3 generates or reuses one contact-region description, embeds that text, and ranks paired
+E3 generates or reuses one contact-region description, embeds that text, and ranks
 training objects only by `cosine(e_q, e_i)`. It retrieves `retrieval.k` neighbors,
 excluding the query object. Each neighbor sent to the VLM contains its semantic
-description, semantic similarity, and paired Gecko/silicone force and feasibility
-outcomes.
+description, semantic similarity, and force/feasibility outcomes for the active grippers.
 
 E3 sends no query or neighbor mass, roughness, projected contact, hybrid score components,
 or physics estimate. This hard boundary models semantic experiential retrieval in the
@@ -312,19 +312,20 @@ value.
 
 ### E4: semantic and sensor-fusion experience-conditioned VLM
 
-E4 shares E3's paired-object representation but ranks with semantic cosine similarity plus
+E4 shares E3's object-level representation but ranks with semantic cosine similarity plus
 closeness in mass, roughness, and optional projected contact. Its VLM payload also exposes
 the authoritative query measurements and corresponding neighbor measurements. It retrieves
-once and returns both gripper predictions in one structured response.
+once and returns predictions for the active candidates in one structured response.
 
 The score only ranks neighbors; it never computes force. Force evidence comes from the
-paired observed outcomes. E4 receives no physics value. Comparing E4 with E2 and E3
+observed active-gripper outcomes. E4 receives no physics value. Comparing E4 with E2 and E3
 tests the proposed fusion, but E4's superiority is an empirical hypothesis rather than an
 assumed result.
 
-## 8. Joint VLM response and authoritative selection
+## 8. Target-aware VLM response and authoritative selection
 
-E1–E4 share `JointGripperPrediction`:
+With one active gripper, E1–E4 use `PerGripperPrediction` directly. With both active,
+they use `JointGripperPrediction`:
 
 ```text
 gecko: PerGripperPrediction
@@ -339,8 +340,8 @@ surface properties, evidence used, an explicit calculation summary, assumptions 
 uncertainty, and a detailed auditable rationale. The implementation rebinds each nested
 candidate to the correct gripper and continuously clamps force to the configured range.
 
-`SelectionResult` stores both the authoritative Python choice and the raw model
-recommendation, plus `recommendation_agrees_with_selector`. This supports direct evaluation
+For paired runs, `SelectionResult` stores both the authoritative Python choice and the raw
+model recommendation, plus `recommendation_agrees_with_selector`. This supports direct evaluation
 of zero-shot/model gripper classification without allowing free-form model choice to bypass
 the force/feasibility rule.
 
@@ -351,7 +352,7 @@ those items to the force estimate. The joint response separately records the dec
 cross-gripper comparison. It may use object weight as a sanity check, but must not invent
 calibrated coefficients or treat weight as the required gripper normal force.
 
-## 9. Paired-object retrieval
+## 9. Object-level active-gripper retrieval
 
 E3 uses only the semantic term:
 
@@ -407,8 +408,9 @@ The package is organized by concern, with one module per experiment strategy:
 | `modules/evaluation.py` | Grouped splits and metrics |
 | `modules/datasets/` | Dataset catalog, object/artifact models, storage, and stage runner |
 | `modules/cache.py` | Dataset-scoped API caches and Exp-Force legacy read-through |
-| `modules/expforce.py` | Fixture preparation, persistence, and benchmark |
-| `modules/suites.py` | Frozen, resumable E1–E4 suite manifests |
+| `modules/expforce.py` | Fixture preparation and saved single-run provenance |
+| `modules/benchmarking.py` | Truth-free prediction batches and versioned evaluations |
+| `modules/suites.py` | Definition-locked, resumable two-stage E1–E4 suites |
 | `modules/reporting.py` | Comparison tables, panels, and paper exports |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 
@@ -427,8 +429,8 @@ detailed = pipe.predict_detailed(query)
 combinations. Resource loading is method-specific:
 
 - E1/E2: no descriptor, embedding, or retrieval fit;
-- E3: descriptor as needed, embedding provider, semantic-only paired-object index, joint VLM;
-- E4: descriptor as needed, embedding provider, hybrid paired-object index, joint VLM.
+- E3: descriptor as needed, embedding provider, semantic-only object index, target-aware VLM;
+- E4: descriptor as needed, embedding provider, hybrid object index, target-aware VLM.
 
 `PipelineRunResult` contains stable experiment ID/method/version, selection, semantic
 description, E3/E4 paired retrieval evidence, effective-input declaration, and cache telemetry.
@@ -439,10 +441,10 @@ The experiment section is explicit:
 
 ```yaml
 experiments:
-  e1: {method: joint_vlm, prompt: e1}
-  e2: {method: joint_vlm_measured, prompt: e2}
+  e1: {method: vision_vlm, prompt: e1}
+  e2: {method: measured_vlm, prompt: e2}
   e3: {method: semantic_retrieval_vlm, prompt: e3}
-  e4: {method: paired_retrieval_vlm, prompt: e4}
+  e4: {method: hybrid_retrieval_vlm, prompt: e4}
 ```
 
 The active force-prediction instructions are:
@@ -472,8 +474,8 @@ The application provides:
 - a global **Dataset** selector, populated from direct folders under `data/`, that controls
   every dataset-dependent tab and path;
 - **Single Run:** known leave-one-out or custom query with E1–E4 eligibility;
-- **Benchmark:** leave-one-object-out evaluation and saved JSON/CSV for capable datasets;
-- **Runs Viewer:** resumable E1–E4 suite comparison, saved benchmark/single-run inspection,
+- **Benchmark:** immutable prediction generation plus later partial-truth evaluation;
+- **Runs Viewer:** versioned benchmark results, resumable E1–E4 suite comparison, single-run inspection,
   provenance, separate gripper panels, and PNG/SVG/CSV exports;
 - **Data Viewer:** active-dataset images, optional measurements/outcomes, descriptions,
   embedding status, and an auto-saving nullable editor for measurements and outcomes;
@@ -496,8 +498,9 @@ score it against the unchanged source label; it displays a delta from the origin
 
 ## 13. Evaluation
 
-Each experiment evaluates every eligible object. E3/E4 retrieval references exclude the
-query, and E1–E4 cross-condition reporting uses the common eligible object intersection.
+Each experiment generates predictions for every query-ready object. Evaluation can happen
+later and scores only rows with complete required truth. E3/E4 retrieval references exclude
+the query, and E1–E4 cross-condition reporting uses the common evaluated object intersection.
 
 Metrics include:
 
@@ -512,7 +515,8 @@ It distinguishes a small force penalty from a materially poor selection.
 
 ## 14. Persistence, schema versions, and legacy artifacts
 
-New single-run and benchmark artifacts use schema version 5 and record:
+Single-run artifacts use schema version 8. Two-stage benchmark and suite artifacts use schema
+version 9. A prediction batch records:
 
 - experiment ID;
 - stable `experiment_method`;
@@ -521,12 +525,14 @@ New single-run and benchmark artifacts use schema version 5 and record:
 - source and image hashes;
 - model and embedding versions;
 - retrieval configuration including `k`;
-- query, truth when valid, selection, evidence, physics, and cache telemetry.
+- query snapshots, selection, evidence, physics, and cache telemetry, but no truth.
 
-Suite manifests additionally freeze the source/prompt hashes, experiment definitions,
-model IDs, retrieval settings, inputs, protocol settings, and object count before any
-condition runs. They checkpoint after each completed experiment, so interrupted E1–E4
-suites resume without recomputing completed conditions.
+Evaluation artifacts record the prediction batch ID, current truth snapshot hash, coverage,
+metrics, evaluated rows, and JSON/CSV/PNG/SVG exports. Repeating an unchanged truth snapshot
+reuses its evaluation; corrected truth creates a new version. Suite manifests lock prompts,
+experiment definitions, model IDs, retrieval settings, inputs, and active grippers while
+excluding mutable truth. They checkpoint each prediction batch so E1 can finish before E2–E4
+become data-ready.
 
 Historical files are never rewritten or deleted. Before definition version 3, E5 meant the
 paired-retrieval VLM method and E4 meant calibrated physics. The inspector infers their old
@@ -564,7 +570,7 @@ written to artifacts.
 Network-isolated verification with explicit Gemini test fakes must cover:
 
 - only E1–E4 accepted;
-- one joint force-generation call for E1–E4;
+- one single- or joint-target force-generation call for E1–E4;
 - E1 payload contains no measurements or retrieval;
 - E2 payload contains measurements but no retrieval or physics;
 - E3 ranks by semantic cosine only and exposes no query/neighbor sensor or physical-score
@@ -574,7 +580,7 @@ Network-isolated verification with explicit Gemini test fakes must cover:
 - E1/E3 run without physical measurements while E2/E4 report missing required inputs;
 - continuous force clamps and infeasibility behavior;
 - selector authority and recommendation disagreement metrics;
-- schema-v7 backend/input/eligibility metadata, resumable suite snapshots, and legacy E4/E5 labels;
+- schema-v9 truth-free batches, versioned partial evaluations, resumable suites, and schema-v8 read-only compatibility;
 - comparison panels contain no identity line and export PNG, SVG, and CSV;
 - cache reuse, grouped splits, and full benchmark execution through fake Gemini interfaces.
 

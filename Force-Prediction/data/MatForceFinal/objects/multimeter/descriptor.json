@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "multimeter",
+  "object_name": "multimeter",
+  "image_name": "multimeter.jpeg",
+  "image_path": "data/MatForceFinal/multimeter.jpeg",
+  "image_sha256": "cc2495f588d78fa8bf1620287b12a82b53cd751d6ec12d571969a596222d5c2c",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Yellow rubber-sleeved handheld electronic device with a smooth, slightly worn, dry lateral surface. The intended contact region has flat sides with rounded protective edges and slight surface dust.",
+    "contact_region": "Lateral sides of the handheld device covered by the yellow protective holster.",
+    "contact_material": "Rubber holster sleeve",
+    "visible_surface_material": "Rubber holster sleeve",
+    "visible_surface_condition": "Dry, slightly worn, with minor surface dust and scuffs",
+    "local_geometry": "Flat parallel sides with rounded, curved protective edges along the length",
+    "contact_patch_visibility": "Clearly visible on the top and bottom lateral faces in the centered grasp band",
+    "uncertainty": "The exact texture friction properties of the rubber sleeve are not fully quantifiable from visual inspection alone."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "50e81d298e6339a2f9618074274f268063b31497838404f575c9c0c820246adf",
+  "embedding_cache_key": "bd719d646af36cea495b21b0d6e47aca246cbf379aabfc76e2d6cb2cdf4108a0",
+  "embedding_sha256": "f63796addb2ebfeece23bb9306c5b36c0b723cb38fd9fc01f60f05515a1b2135",
+  "updated_at": "2026-07-28T17:57:49.254699+00:00"
+}

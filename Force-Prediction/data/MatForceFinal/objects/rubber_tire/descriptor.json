@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "rubber_tire",
+  "object_name": "rubber tire",
+  "image_name": "rubber tire.jpg",
+  "image_path": "data/MatForceFinal/rubber tire.jpg",
+  "image_sha256": "d93e441a8b7143b34585b84fc5b1aee16e73c7e618835fccff12df73baea333c",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Black rubber toy tire or ring with a smooth, dry exterior sidewall and continuous curvature. The intended contact region has no visible seams or contamination, presenting a compliant toroidal surface.",
+    "contact_region": "Lateral exterior sidewalls of the rubber ring, positioned for opposing parallel finger pads.",
+    "contact_material": "Rubber",
+    "visible_surface_material": "Rubber",
+    "visible_surface_condition": "Clean, dry, and matte",
+    "local_geometry": "Toroidal object with continuous convex curvature around the outer circumference and circular cross-section.",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None; the object and its exterior surfaces are fully visible."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "bbfbff058c1e75a7f14827652e37579b3ec631bd6a50464885ceeb7f140ac2e9",
+  "embedding_cache_key": "441c1ea4af7e5115c213fb7ba7893921026d2e5fd77e4f51aa4fd3631d6f5398",
+  "embedding_sha256": "bb0f9835f450df44c4d600969ce708e975f29a0a43a05701bfede6429a735e49",
+  "updated_at": "2026-07-28T17:57:49.877437+00:00"
+}

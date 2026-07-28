@@ -4,9 +4,9 @@ Read this file first, then `docs/project-context.md` for the complete rationale.
 
 ## Purpose
 
-Predict the minimum stationary-finger normal force for two compliant grippers—TPU–Gecko
-dry adhesive and TPU–silicone friction—and select the lowest-force feasible result. Force
-is an object–gripper interaction. The active experiments compare zero-shot and
+Predict the minimum stationary-finger normal force for a user-selected Gecko, silicone,
+or paired candidate set. Paired runs select the lowest-force feasible result. Force is an
+object–gripper interaction. The active experiments compare zero-shot and
 experience-conditioned VLM prediction.
 
 ## Environment
@@ -29,13 +29,14 @@ experience-conditioned VLM prediction.
 
 | ID | Method |
 |---|---|
-| E1 | One joint image-only zero-shot VLM response and recommendation |
-| E2 | One joint image + authoritative measurements VLM response |
-| E3 | Semantic-cosine experiential retrieval + one joint VLM response |
-| E4 | Semantic + sensor-fusion retrieval + one joint VLM response |
+| E1 | Image-only zero-shot VLM response for the active grippers |
+| E2 | Image + authoritative measurements VLM response |
+| E3 | Semantic-cosine experiential retrieval + VLM response |
+| E4 | Semantic + sensor-fusion retrieval + VLM response |
 
-Python always makes the final
-lowest-feasible-force choice; VLM recommendation is stored and scored separately.
+One active gripper uses `PerGripperPrediction`; both use one `JointGripperPrediction`.
+Python always makes the final feasible choice; paired VLM recommendation is stored and
+scored separately.
 
 ## Locked conventions
 
@@ -43,14 +44,14 @@ lowest-feasible-force choice; VLM recommendation is stored and scored separately
 - Hardware and predictions are continuous from `0` through `8 N`; never snap predictions
   to the collection staircase.
 - `retrieval.k` in `config.yaml` is the default used by E3/E4 and the UI.
-- Stored experiences are grouped by `object_id`; both gripper rows share every split.
+- Stored experiences are grouped by `object_id`; available gripper rows share every split.
 - Query objects must be excluded from their own E3/E4 retrieval pool.
 - Embeddings contain the semantic contact-region description only. Mass, roughness, and
   optional projected contact remain explicit E4 hybrid-score terms.
 - E3 ranking and its VLM payload must contain no query/neighbor mass, roughness, contact,
   physical-score components, or physics estimate.
-- Live E1–E4 calls receive the query-object image and fixed written descriptions of both
-  gripper embodiments; gripper images are not sent.
+- Live E1–E4 calls receive the query-object image and fixed written descriptions of only
+  the active gripper embodiments; gripper images are not sent.
 - E1/E3 never require physical measurements. E2/E4 always require mass and use roughness
   and projected contact only when their global input switches are enabled.
 
@@ -62,15 +63,16 @@ lowest-feasible-force choice; VLM recommendation is stored and scored separately
 | `experiments/` | Strategy catalog, shared helper, and per-ID implementations |
 | `pipeline.py` | Public facade and object-to-query adapter |
 | `contracts.py` | Experience, query, joint prediction, selection models |
-| `prediction.py` | Joint force request, continuous clamp, selector |
+| `prediction.py` | Single/joint force requests, continuous clamp, selector |
 | `retrieval.py` | Embedding providers and E3 semantic/E4 hybrid retrieval |
 | `physics.py` | Mock-hardware analytical equations and calibration diagnostics |
 | `evaluation.py` | Object-grouped splits and metrics |
 | `datasets/` | Dataset discovery, aggregate/object contracts, artifact storage, preparation stages |
 | `models/` | Lazy Gemini, rembg background-removal, and Marigold integrations |
 | `cache.py` | Dataset-scoped API caches and legacy Exp-Force read-through |
-| `expforce.py` | Viewer data preparation, schema-v7 artifacts, provenance, benchmark |
-| `suites.py` / `reporting.py` | Resumable E1–E4 suites and comparison exports |
+| `expforce.py` | Viewer data preparation and saved single-run provenance |
+| `benchmarking.py` | Schema-v9 prediction batches and versioned evaluation artifacts |
+| `suites.py` / `reporting.py` | Two-stage E1–E4 suites and comparison exports |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 
 Read `docs/streamlit-architecture.md` before adding or reorganizing UI tabs. It defines the
@@ -87,9 +89,10 @@ projected-contact-fraction, and gripper outcomes.
 `data/expforce/dataset.csv` is a synthetic 129-object validation fixture, not
 physical evidence. Derived descriptors, experience rows, runs, and results stay separate
 from the source CSV. API caches live in `data/cache/<dataset>/{generation,embeddings}`; flat
-legacy cache files are read-through Exp-Force entries and are not deleted. New run artifacts use schema v7 with prompt and
-embodiment provenance. Old artifacts are never rewritten;
-the inspector labels old E5 paired-VLM and old E4 physics runs as legacy meanings.
+legacy cache files are read-through Exp-Force entries and are not deleted. Single-run artifacts
+remain schema v8. New benchmark prediction/evaluation and suite artifacts use schema v9 with
+prompt, active-gripper, embodiment, generation-input, and truth-snapshot provenance. Old artifacts
+are never rewritten; schema-v8 benchmarks and suites are inspectable but read-only.
 
 ## Commands
 

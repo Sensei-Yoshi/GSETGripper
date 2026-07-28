@@ -1,7 +1,8 @@
 # Material-Aware Gripper Selection and Force Prediction
 
 Given an unseen object, estimate the continuous minimum stationary-finger normal force
-for TPU–Gecko and TPU–silicone grippers, then select the lowest-force feasible option.
+for the globally selected TPU–Gecko and/or TPU–silicone candidates. Paired runs then
+select the lowest-force feasible option.
 The command range is continuous from `0` to `8 N`; predictions are never rounded to a
 collection grid.
 
@@ -9,13 +10,13 @@ The active research suite has four explicit VLM ablation methods:
 
 | ID | Method |
 |---|---|
-| E1 | One joint vision-only zero-shot VLM response |
-| E2 | One joint image + measured-input VLM response |
-| E3 | Semantic-only experiential retrieval + one joint VLM response |
-| E4 | Semantic + sensor-fusion paired retrieval + one joint VLM response |
+| E1 | Vision-only zero-shot VLM response |
+| E2 | Image + measured-input VLM response |
+| E3 | Semantic-only experiential retrieval + VLM response |
+| E4 | Semantic + sensor-fusion retrieval + VLM response |
 
-E1–E4 also return an explicit model gripper
-recommendation, but Python's lowest-feasible-force rule remains authoritative.
+Single-candidate runs use a direct per-gripper response. Paired E1–E4 runs also return an
+explicit model recommendation, but Python's lowest-feasible-force rule remains authoritative.
 
 ## Quickstart
 
@@ -45,10 +46,16 @@ Marigold preparation. Datasets with a second view for every object also support 
 surface/contact estimation. Partial datasets can run any experiment whose object-specific
 inputs and reference outcomes are ready; they no longer wait for dataset-wide completion.
 
-For paired data, known-object runs are leave-one-object-out and custom queries use the
-entire experience pool. E3 retrieves by semantic cosine similarity only. E4 uses the
-configured semantic + physical hybrid score. Both make one structured force request for
-both grippers.
+Known-object runs are leave-one-object-out and custom queries use the entire eligible
+experience pool. E3 retrieves by semantic cosine similarity only. E4 uses the configured
+semantic + physical hybrid score. The global Gecko/silicone checkboxes request either one
+direct per-gripper response or one paired structured response.
+
+Benchmarks use two explicit stages. **Run predictions** saves immutable, truth-free E1–E4
+prediction batches for every query-ready object, so E1 works with images alone. **Evaluate &
+generate plots** later joins a saved batch to the currently available force labels, evaluates
+the labeled subset without model calls, and versions JSON, CSV, PNG, and SVG results. Detailed
+prediction/evaluation histories and suite comparisons live in **Runs Viewer**.
 
 ```bash
 pip install -e ".[viewer,roughness]"
@@ -138,8 +145,9 @@ the precision of predictions or hardware commands. See
 | `modules/evaluation.py` | Grouped splits and force/selection/recommendation metrics |
 | `modules/datasets/` | Dataset catalog, object/artifact models, storage, and preparation stages |
 | `modules/cache.py` | Dataset-isolated response caches plus Exp-Force legacy read-through |
-| `modules/expforce.py` | Synthetic fixture preparation, persistence, and benchmark |
-| `modules/suites.py` / `reporting.py` | Resumable E1–E4 suites and paper-ready comparisons |
+| `modules/expforce.py` | Synthetic fixture preparation and saved single-run provenance |
+| `modules/benchmarking.py` | Immutable prediction batches and versioned truth evaluation |
+| `modules/suites.py` / `reporting.py` | Two-stage E1–E4 suites and paper-ready comparisons |
 | `modules/models/` | Gemini, background-removal, and Marigold model adapters |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 

@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "big_stone",
+  "object_name": "big stone",
+  "image_name": "big_stone.jpg",
+  "image_path": "data/MatForceFinal/big_stone.jpg",
+  "image_sha256": "ae1e084bd9f61b939eb095f2255277e4ab6b83ca201e93a8a68d73ea1468ff34",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Rough concrete or asphalt fragment with a porous, highly textured surface and irregular planar geometry. The intended contact region is dry, rough, and presents jagged edges.",
+    "contact_region": "Opposing lateral sides of the flat fragment",
+    "contact_material": "Concrete substrate",
+    "visible_surface_material": "Concrete substrate",
+    "visible_surface_condition": "Dry, rough, and dusty",
+    "local_geometry": "Flat planar faces with rough textures and jagged edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "1da42d62f72e059eb90edc657c0426b8943e5c6aadcf818775782a5e7b3053cf",
+  "embedding_cache_key": "ff16944f04943ec53ef7c5ae38297974c928df691d14f0b5ded8773c79f09e98",
+  "embedding_sha256": "a9cf2c09ef919d37dfb477b59d2b5beb64501c876fea1774cbb4529e4919e1d6",
+  "updated_at": "2026-07-28T17:57:46.814993+00:00"
+}

@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "wooden_block",
+  "object_name": "wooden block",
+  "image_name": "wooden block.jpg",
+  "image_path": "data/MatForceFinal/wooden block.jpg",
+  "image_sha256": "791fa8f4138b26f58c9a265818a69d0cddd35cf246caf834b313324307b5982c",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Rectangular wooden block with a solid, dry, porous surface and flat lateral faces meeting at sharp 90-degree edges. The intended contact region is clean and uniform across the opposing parallel sides.",
+    "contact_region": "The opposing lateral vertical faces of the rectangular block.",
+    "contact_material": "Wood substrate",
+    "visible_surface_material": "Wood",
+    "visible_surface_condition": "Dry, clean, and slightly worn with minor surface grain texture.",
+    "local_geometry": "Flat planar surfaces meeting at distinct right-angled edges.",
+    "contact_patch_visibility": "Clearly visible on the front and back lateral faces.",
+    "uncertainty": "None regarding the visible lateral faces, though the exact friction coefficient of the specific wood finish is unmeasured."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "c63ef1d0c52373ad6431d85b4f64fb464977426df26df5957a2e12f9cd3b67d4",
+  "embedding_cache_key": "d619b200bc2123deae5b26a5f6f6f9ecb353a9ee995e4a308aba118b0c330ca7",
+  "embedding_sha256": "5151bd4c1ebcf382152c6ddce87d9baa925b19b2ae77845c0f46922d092d2ff0",
+  "updated_at": "2026-07-28T17:57:50.535830+00:00"
+}

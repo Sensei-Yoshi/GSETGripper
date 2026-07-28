@@ -39,6 +39,13 @@ class FakeGeminiClient:
                 recommended_gripper="gecko",
                 recommendation_summary="test Gemini recommendation",
             ).model_dump(mode="json")
+        if schema is PerGripperPrediction:
+            active = _kwargs.get("extra", {}).get("active_grippers", ["gecko"])
+            return PerGripperPrediction(
+                candidate_gripper=Gripper(active[0]),
+                predicted_normal_force_n=1.0,
+                reasoning_trace="test Gemini response",
+            ).model_dump(mode="json")
         raise AssertionError(f"unsupported Gemini schema in test: {schema}")
 
     def embed(self, *, text: str, image_bgr=None):  # noqa: ANN001, ANN201

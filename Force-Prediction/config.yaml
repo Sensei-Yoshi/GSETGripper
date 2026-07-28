@@ -43,6 +43,11 @@ inputs:
   use_roughness: true
   use_projected_contact: true
 
+# --- Requested gripper outputs ----------------------------------------------
+# Streamlit's global checkboxes override this default for the active session.
+prediction:
+  active_grippers: [gecko, silicone]
+
 # --- Geometry ----------------------------------------------------------------
 geometry:
   px_per_mm: 1.9173     # camera scale for the contact-fraction model (see
@@ -68,7 +73,7 @@ roughness:
 
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
-  k: 5                  # paired-object neighbors for E4
+  k: 5                  # object-level neighbors for E3/E4
   weights:              # hybrid score S = w_s*cos + w_m*Smass + w_r*Srough + w_a*Scontact
     semantic: 0.40
     mass: 0.25
@@ -129,7 +134,7 @@ prompts_file: prompts.yaml
 # See docs/experiments.md for the scientific rationale of each.
 # =============================================================================
 experiments:
-  e1: {method: joint_vlm, prompt: e1}
-  e2: {method: joint_vlm_measured, prompt: e2}
+  e1: {method: vision_vlm, prompt: e1}
+  e2: {method: measured_vlm, prompt: e2}
   e3: {method: semantic_retrieval_vlm, prompt: e3}
-  e4: {method: paired_retrieval_vlm, prompt: e4}
+  e4: {method: hybrid_retrieval_vlm, prompt: e4}

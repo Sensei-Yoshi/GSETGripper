@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "500g_weight",
+  "object_name": "500g weight",
+  "image_name": "500g_weight.jpg",
+  "image_path": "data/MatForceFinal/500g_weight.jpg",
+  "image_sha256": "1639f58fa8e9357efa86f3207028c03baaca8716f1d46e83337fb13d3f3c448d",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Cylindrical black object with a smooth, dry lateral surface and continuous curvature. The intended contact region has no visible seams, texture, or contamination.",
+    "contact_region": "Lateral cylindrical surface",
+    "contact_material": "Plastic",
+    "visible_surface_material": "Plastic",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Continuous cylindrical curvature",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "a724a035ddfa57c2302709631863eafa7db13164c4a520a060a5ac887a88ef1b",
+  "embedding_cache_key": "dcd45ad96cc292d9f94e676924acc1892585c1002eab55069940de574c2347eb",
+  "embedding_sha256": "8f5978cdbb247ec78c293ebd527b5f8a27ad5b85536c8d894e36a4eb9e81e234",
+  "updated_at": "2026-07-28T17:57:44.602168+00:00"
+}

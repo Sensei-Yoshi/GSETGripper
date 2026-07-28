@@ -1,4 +1,4 @@
-"""Exp-Force experience-pool preparation, inspection, and benchmark tools."""
+"""Exp-Force preparation, inspection, and saved single-run provenance tools."""
 
 from __future__ import annotations
 
@@ -9,7 +9,6 @@ import re
 import tempfile
 from collections import Counter
 from collections.abc import Callable
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -21,10 +20,9 @@ from .config import (
     ExperimentMethod,
     prompt_bundle_sha256,
 )
-from .contracts import ExperienceRecord, Gripper, Meta, group_by_object
-from .evaluation import EvalRow, compute_metrics
+from .contracts import ExperienceRecord, Gripper, Meta
 from .experiments import EXPERIMENT_CATALOG, experiment_display_name
-from .pipeline import Pipeline, PipelineRunResult, QueryInput
+from .pipeline import PipelineRunResult
 
 BASE_URL = "https://raw.githubusercontent.com/expforcesubmission/Exp-Force-Website/main"
 SOURCE_RELATIVE = Path("data/expforce/dataset.csv")
@@ -362,13 +360,6 @@ def load_image(cfg: Config, record: ExperienceRecord):  # noqa: ANN201
     return cv2.imread(str(path))
 
 
-@dataclass
-class BenchmarkResult:
-    metrics: dict
-    rows: list[dict]
-    run_metadata: dict
-
-
 def _object_retrieval_payload(detailed: PipelineRunResult) -> list[dict]:
     return [item.model_dump(mode="json") for item in detailed.retrieved_objects]
 
@@ -383,6 +374,8 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
         "retrieved_objects": _object_retrieval_payload(detailed),
         "physics_estimates": detailed.physics_estimates,
         "cache_stats": detailed.cache_stats,
+        "active_grippers": list(detailed.active_grippers),
+        "generation_mode": detailed.generation_mode,
         "retrieval_mode": detailed.retrieval_mode,
         "effective_inputs": list(detailed.effective_inputs),
     }
@@ -392,11 +385,17 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
     from .contracts import SelectionResult
     from .retrieval import RetrievedObjectExperience
 
+    selection = SelectionResult.model_validate(payload["selection"])
+    active_grippers = tuple(
+        payload.get("active_grippers")
+        or selection.candidate_predictions.keys()
+        or ("gecko", "silicone")
+    )
     return PipelineRunResult(
         experiment_id=payload.get("experiment_id", "legacy"),
         experiment_method=payload.get("experiment_method", "legacy"),
         experiment_definition_version=payload.get("experiment_definition_version", 0),
-        selection=SelectionResult.model_validate(payload["selection"]),
+        selection=selection,
         semantic_description=payload.get("semantic_description", ""),
         retrieved_objects=[
             RetrievedObjectExperience.model_validate(item)
@@ -404,6 +403,10 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
         ],
         physics_estimates=payload.get("physics_estimates", {}),
         cache_stats=payload.get("cache_stats", {}),
+        active_grippers=active_grippers,
+        generation_mode=payload.get(
+            "generation_mode", "single" if len(active_grippers) == 1 else "joint"
+        ),
         retrieval_mode=payload.get("retrieval_mode"),
         effective_inputs=tuple(payload.get("effective_inputs", ())),
     )
@@ -414,6 +417,7 @@ def prompt_provenance(cfg: Config, prompt_key: str | None) -> dict:
     embodiments = {
         name: {"description": context.description}
         for name, context in cfg.embodiments.items()
+        if Gripper(name) in cfg.prediction.active_grippers
     }
     prediction = None
     if prompt_key is not None:
@@ -421,11 +425,18 @@ def prompt_provenance(cfg: Config, prompt_key: str | None) -> dict:
             "system": cfg.prompts.prediction_system,
             "instruction_key": prompt_key,
             "instruction": cfg.prompts.experiments[prompt_key],
+            "target_instruction_key": (
+                "single" if len(cfg.prediction.active_grippers) == 1 else "joint"
+            ),
+            "target_instruction": cfg.prompts.target_instructions[
+                "single" if len(cfg.prediction.active_grippers) == 1 else "joint"
+            ],
         }
     return {
         "bundle_file": cfg.prompts_file,
         "bundle_sha256": prompt_bundle_sha256(cfg),
         "experiment_instructions": dict(cfg.prompts.experiments),
+        "target_instructions": dict(cfg.prompts.target_instructions),
         "prediction": prediction,
         "descriptor": {
             "system": cfg.prompts.descriptor_system,
@@ -439,7 +450,11 @@ def backend_provenance(cfg: Config, experiment: str) -> dict[str, str | None]:
     """Record the actual force and semantic backends used by an experiment."""
     if experiment in {"e1", "e2", "e3", "e4"}:
         return {
-            "force": "gemini_joint_generation",
+            "force": (
+                "gemini_single_generation"
+                if len(cfg.prediction.active_grippers) == 1
+                else "gemini_joint_generation"
+            ),
             "semantic_embedding": (
                 cfg.retrieval.embedding.model if experiment in {"e3", "e4"} else None
             ),
@@ -502,7 +517,7 @@ def save_pipeline_run(
     prompt_key = definition.prompt
     prompt_context = prompt_provenance(cfg, prompt_key)
     artifact = {
-        "schema_version": 7,
+        "schema_version": 8,
         "dataset_id": cfg.dataset_id,
         "run_id": run_id,
         "created_at": created_at.isoformat(),
@@ -523,6 +538,12 @@ def save_pipeline_run(
             "embedding_dim": cfg.retrieval.embedding.dim,
         },
         "inputs": cfg.inputs.model_dump(mode="json"),
+        "active_grippers": [
+            gripper.value for gripper in cfg.prediction.active_grippers
+        ],
+        "generation_mode": (
+            "single" if len(cfg.prediction.active_grippers) == 1 else "joint"
+        ),
         "retrieval_config": cfg.retrieval.model_dump(mode="json"),
         "query": {
             **query,
@@ -569,7 +590,7 @@ def _legacy_experiment_method(run: dict) -> str:
         and toggles.get("use_retrieval")
         and toggles.get("use_vlm")
     ):
-        return ExperimentMethod.PAIRED_RETRIEVAL_VLM.value
+        return "paired_retrieval_vlm"
     if toggles.get("use_vlm"):
         return "legacy_per_gripper_vlm"
     if toggles.get("use_retrieval"):
@@ -590,8 +611,10 @@ def saved_run_experiment_label(run: dict) -> str:
             return label if version == EXPERIMENT_DEFINITION_VERSION else f"{label} (v{version})"
 
     legacy_labels = {
+        "joint_vlm": "joint vision VLM",
+        "joint_vlm_measured": "joint measured-input VLM",
         ExperimentMethod.SEMANTIC_RETRIEVAL_VLM.value: "semantic experiential retrieval",
-        ExperimentMethod.PAIRED_RETRIEVAL_VLM.value: "paired retrieval VLM",
+        "paired_retrieval_vlm": "paired retrieval VLM",
         "calibrated_physics": "calibrated physics",
         "physics_semantic_residual": "physics + semantic residual",
         "legacy_per_gripper_vlm": "per-gripper VLM",
@@ -599,157 +622,3 @@ def saved_run_experiment_label(run: dict) -> str:
         "legacy_unknown": "unknown method",
     }
     return f"Legacy {experiment.upper()} — {legacy_labels.get(method, method)}"
-
-
-def run_benchmark(
-    cfg: Config,
-    experiment: str,
-    *,
-    progress: Callable[[int, int, str], None] | None = None,
-) -> BenchmarkResult:
-    from .datasets import get_dataset
-    from .experiments import experiment_eligibility
-
-    dataset = get_dataset(cfg, cfg.dataset_id)
-    eligibility = experiment_eligibility(dataset, cfg, experiment)
-    records = load_experience_pool(cfg)
-    by_object = group_by_object(records)
-    object_ids = list(eligibility.benchmark_ids)
-    eval_rows: list[EvalRow] = []
-    output_rows: list[dict] = []
-
-    for index, object_id in enumerate(object_ids, start=1):
-        train = [
-            record
-            for record in records
-            if record.object_id != object_id
-            and (
-                experiment not in {"e3", "e4"}
-                or record.object_id in eligibility.reference_ids
-            )
-        ]
-        pipe = Pipeline(cfg, experiment).fit(train)
-        truth = by_object[object_id]
-        item = dataset.objects[object_id]
-        image_path = cfg.root / item.image.path
-        image = None
-        if image_path.is_file():
-            import cv2
-
-            image = cv2.imread(str(image_path))
-        query = QueryInput(
-            object_id=object_id,
-            mass_g=item.mass_g,
-            roughness_class=item.roughness_class,
-            projected_contact_fraction=item.projected_contact_fraction,
-            image_bgr=image,
-            image_path=item.image.path,
-            semantic_description=(
-                item.description.value.description if item.description is not None else None
-            ),
-        )
-        detailed = pipe.predict_detailed(query)
-        result = detailed.selection
-        eval_rows.append(EvalRow(object_id=object_id, truth=truth, result=result))
-        optimal, oracle_force = truth.optimal_grippers()
-        if len(optimal) != 1:
-            raise ValueError(f"validation object {object_id!r} does not have a strict winner")
-        chosen = result.desired_gripper
-        chosen_truth = truth.get(Gripper(chosen)) if chosen in {"gecko", "silicone"} else None
-        regret = None
-        if oracle_force is not None and chosen_truth and chosen_truth.feasible:
-            regret = (chosen_truth.min_force_n or 0.0) - oracle_force
-        row = {
-            "object_id": object_id,
-            "mass_g": item.mass_g,
-            "roughness_class": item.roughness_class,
-            "projected_contact_fraction": item.projected_contact_fraction,
-            "true_gecko_force_n": truth.gecko.min_force_n if truth.gecko else None,
-            "true_gecko_feasible": truth.gecko.feasible if truth.gecko else None,
-            "pred_gecko_force_n": result.candidate_predictions["gecko"].predicted_normal_force_n,
-            "pred_gecko_feasible": result.candidate_predictions["gecko"].feasible,
-            "true_silicone_force_n": truth.silicone.min_force_n if truth.silicone else None,
-            "true_silicone_feasible": truth.silicone.feasible if truth.silicone else None,
-            "pred_silicone_force_n": result.candidate_predictions["silicone"].predicted_normal_force_n,
-            "pred_silicone_feasible": result.candidate_predictions["silicone"].feasible,
-            "true_favored": next(iter(optimal)).value,
-            "predicted_gripper": chosen,
-            "selection_correct": chosen in {gripper.value for gripper in optimal},
-            "regret_n": regret,
-            "model_recommended_gripper": result.model_recommended_gripper,
-            "recommendation_agrees_with_selector": result.recommendation_agrees_with_selector,
-            "semantic_description": detailed.semantic_description,
-            "retrieved_objects": _object_retrieval_payload(detailed),
-            "physics_estimates": detailed.physics_estimates,
-            "cache_stats": detailed.cache_stats,
-        }
-        output_rows.append(row)
-        if progress is not None:
-            progress(index, len(object_ids), object_id)
-
-    metrics = compute_metrics(eval_rows, cfg).to_dict()
-    definition = cfg.experiment(experiment)
-    prompt_key = definition.prompt
-    prompt_context = prompt_provenance(cfg, prompt_key)
-    retrieval_mode = EXPERIMENT_CATALOG[experiment].retrieval_mode
-    metadata = {
-        "schema_version": 7,
-        "dataset_id": cfg.dataset_id,
-        "created_at": datetime.now(UTC).isoformat(),
-        "experiment": experiment,
-        "experiment_method": definition.method.value,
-        "experiment_definition_version": EXPERIMENT_DEFINITION_VERSION,
-        "experiment_definition": definition.model_dump(mode="json"),
-        "backend": backend_provenance(cfg, experiment),
-        "source_sha256": source_sha256(cfg),
-        "evaluation_protocol": "leave-one-object-out",
-        "experience_pool_objects": len(object_ids),
-        "training_objects_per_run": max(0, len(eligibility.reference_ids) - 1),
-        "model": cfg.models.vlm,
-        "embedding_model": cfg.retrieval.embedding.model,
-        "embedding_dim": cfg.retrieval.embedding.dim,
-        "inputs": cfg.inputs.model_dump(mode="json"),
-        "retrieval": cfg.retrieval.model_dump(mode="json"),
-        "prediction_prompts": prompt_context["prediction"],
-        "prompt_context": prompt_context,
-        "retrieval_mode": retrieval_mode.value if retrieval_mode is not None else None,
-        "eligibility": {
-            "eligible_query_ids": list(eligibility.query_ids),
-            "eligible_benchmark_ids": list(eligibility.benchmark_ids),
-            "reference_ids": list(eligibility.reference_ids),
-            "skipped_queries": eligibility.skipped_queries,
-            "skipped_benchmarks": eligibility.skipped_benchmarks,
-        },
-    }
-    return BenchmarkResult(metrics=metrics, rows=output_rows, run_metadata=metadata)
-
-
-def save_benchmark(cfg: Config, benchmark: BenchmarkResult) -> tuple[Path, Path]:
-    output_dir = _dataset_root(cfg) / "results"
-    output_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
-    stem = f"{timestamp}_{benchmark.run_metadata['experiment']}"
-    json_path = output_dir / f"{stem}.json"
-    csv_path = output_dir / f"{stem}.csv"
-    json_path.write_text(
-        json.dumps(
-            {
-                "metadata": benchmark.run_metadata,
-                "metrics": benchmark.metrics,
-                "rows": benchmark.rows,
-            },
-            indent=2,
-            default=str,
-        )
-        + "\n"
-    )
-    flat_fields = [
-        key
-        for key in benchmark.rows[0]
-        if key not in {"retrieved_objects", "cache_stats"}
-    ]
-    with csv_path.open("w", newline="", encoding="utf-8") as fh:
-        writer = csv.DictWriter(fh, fieldnames=flat_fields, extrasaction="ignore")
-        writer.writeheader()
-        writer.writerows(benchmark.rows)
-    return json_path, csv_path

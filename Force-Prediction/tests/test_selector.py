@@ -81,6 +81,35 @@ def test_model_recommendation_is_diagnostic_not_authoritative():
     assert result.recommendation_agrees_with_selector is False
 
 
+def test_single_gripper_metrics_exclude_inactive_and_selection_scores():
+    cfg = load_config().model_copy(deep=True)
+    cfg.prediction.active_grippers = (Gripper.SILICONE,)
+    truth = ObjectRecord(
+        object_id="single",
+        silicone=ExperienceRecord(
+            object_id="single",
+            image_path="",
+            gripper=Gripper.SILICONE,
+            min_force_n=2.0,
+        ),
+    )
+    prediction = _p(Gripper.SILICONE, 2.25)
+    result = SelectionResult(
+        desired_gripper="silicone",
+        predicted_normal_force_n=2.25,
+        candidate_predictions={"silicone": prediction},
+    )
+
+    metrics = compute_metrics(
+        [EvalRow(object_id="single", truth=truth, result=result)], cfg
+    )
+
+    assert set(metrics.force) == {"silicone", "overall"}
+    assert metrics.force["silicone"]["mae"] == 0.25
+    assert metrics.selection == {"applicable": False, "n": 0}
+    assert metrics.model_recommendation == {"applicable": False, "n": 0}
+
+
 def test_evaluation_accepts_either_gripper_for_true_force_tie():
     truth = ObjectRecord(
         object_id="tie",

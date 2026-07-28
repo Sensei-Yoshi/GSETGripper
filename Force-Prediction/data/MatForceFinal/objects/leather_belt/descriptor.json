@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "leather_belt",
+  "object_name": "leather belt",
+  "image_name": "leather belt.jpg",
+  "image_path": "data/MatForceFinal/leather belt.jpg",
+  "image_sha256": "8c0b0881722e354d578457b65120a3bb3b33d8e7d6aef2a2e2afd520cbc386ea",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor": {
+    "retrieval_description": "Woven leather monkey fist knot object. The intended contact region is dry, highly irregular with interwoven strands, ridges, and varying curvature, presenting a complex textured surface.",
+    "contact_region": "Lateral opposing exterior surfaces of the woven leather knot where the grip pads would engage the intertwined strands.",
+    "contact_material": "Leather",
+    "visible_surface_material": "Leather",
+    "visible_surface_condition": "Dry, clean, and textured with natural leather grain.",
+    "local_geometry": "Highly irregular and complex due to interwoven braided leather strands creating multiple ridges, gaps, and varying curvature.",
+    "contact_patch_visibility": "Clearly visible on the exterior portions of the knot.",
+    "uncertainty": "Exact points of contact depend heavily on the precise orientation of the gripper relative to the complex interlaced strands of the knot."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "242df2c525edad63e9bd5f2676fcf4e1e96ade0941948e33661dcaa2ec96486f",
+  "embedding_cache_key": "f56b6724781238bc3a1930fe0cca57940c628b518a273577b9c5ae2b5b3cf6b2",
+  "embedding_sha256": "aca9ab12610350e24db10f725eb87caffca5e999d80bcf792dd8acf8e28aa2e8",
+  "updated_at": "2026-07-28T17:57:48.194713+00:00"
+}

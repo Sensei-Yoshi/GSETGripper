@@ -30,9 +30,8 @@ prompts:
 
     stationary-finger normal force required to lift the object under the standardized
 
-    test protocol. Some experiments intentionally hide measurements or retrieved
-
-    examples. Use only evidence present in the request, and never claim that an absent
+    test protocol. Use only evidence present in the request, and never claim that
+    an absent
 
     value was measured or retrieved.
 
@@ -50,27 +49,20 @@ prompts:
 
     AVAILABLE GRIPPERS
 
-    The request supplies fixed written descriptions for the Gecko and silicone gripper
+    The request supplies fixed written descriptions for the requested gripper embodiment
 
-    embodiments. Apply that context consistently to both candidate
+    or embodiments. Predict only those requested candidates and apply their context
 
-    predictions.
+    consistently.
 
 
     MATERIAL REASONING
 
-    Gecko adhesion depends on intimate surface contact. It is generally more favorable
+    Use the supplied active embodiment descriptions to reason about contact mechanics,
 
-    on clean, dry, smooth, nonporous surfaces with broad projected contact. Its benefit
+    visible material, surface condition, and local geometry. Do not assume an inactive
 
-    may decrease on rough, porous, fibrous, dusty, wet, oily, contaminated, or loosely
-
-    coated surfaces. Silicone relies primarily on friction and viscoelastic surface
-
-    interaction; it may need more normal force on smooth surfaces but can be more
-    robust
-
-    on rough or poorly adhesive ones. Do not choose a gripper from roughness alone.
+    gripper is available, and do not infer compatibility from roughness alone.
 
 
     MEASUREMENTS
@@ -87,7 +79,9 @@ prompts:
     When retrieved experiences are supplied, treat them as empirical observations
     under
 
-    the same force convention. Paired experiences report both Gecko and silicone outcomes.
+    the same force convention. Experiences report outcomes only for the requested
+
+    candidate or candidates.
 
     Use only comparison fields actually present in the request. If no experiences
     are
@@ -107,10 +101,9 @@ prompts:
 
     OUTPUT
 
-    Return only valid JSON matching the supplied schema, including an explicit
+    Return only valid JSON matching the supplied schema. For each requested gripper,
 
-    recommended_gripper. For each gripper, record every material piece of supplied
-    or
+    record every material piece of supplied or
 
     visible evidence in evidence_used, show equations/substitutions/scaling in
 
@@ -118,11 +111,11 @@ prompts:
 
     assumptions_and_uncertainty. reasoning_trace must connect those items to the force
 
-    estimate in a detailed, auditable explanation. comparison_evidence and
+    estimate in a detailed, auditable explanation. When multiple candidates are requested,
 
-    recommendation_summary must explain the decisive comparison and why the alternative
+    comparison_evidence and recommendation_summary must explain the decisive comparison.
 
-    requires more force or is infeasible. Do not return an unsupported number or omit
+    Do not return an unsupported number or omit
 
     evidence merely to keep the answer short.
 
@@ -148,9 +141,10 @@ prompts:
   experiments:
     e1: 'E1 ZERO-SHOT VISION-ONLY CONDITION.
 
-      From the object image and fixed gripper embodiment context, estimate the minimum
+      From the object image and requested gripper embodiment context, estimate the
+      minimum
 
-      stationary-finger normal force for both Gecko and silicone. No authoritative
+      stationary-finger normal force for each requested candidate. No authoritative
       mass,
 
       roughness, projected contact measurement, physics estimate, or retrieved experience
@@ -178,11 +172,14 @@ prompts:
 
       Use the object image, fixed gripper embodiment context, and the ranked semantic
 
-      experience list to predict both forces. Neighbors were selected only by cosine
+      experience list to predict the requested force or forces. Neighbors were selected
+      only by cosine
 
-      similarity between semantic contact-region descriptions and provide paired Gecko
+      similarity between semantic contact-region descriptions and provide outcomes
+      for
 
-      and silicone outcomes. No authoritative query or neighbor mass, roughness, projected
+      the requested candidate or candidates. No authoritative query or neighbor mass,
+      roughness, projected
 
       contact, hybrid physical score, or physics estimate is available. Do not imply
       that
@@ -192,12 +189,34 @@ prompts:
 
       Use the object image, fixed gripper embodiment context, supplied authoritative
 
-      measurements, and one hybrid-ranked paired-object list to estimate both forces.
+      measurements, and one hybrid-ranked object list to estimate the requested force
+      or forces.
 
-      Explain how close paired outcomes and available mass/contact scaling support
+      Explain how close retrieved outcomes and available mass/contact scaling support
       the
 
       estimates. No calibrated physics estimate is available; do not invent one.
+
+      '
+  target_instructions:
+    single: 'SINGLE-CANDIDATE OUTPUT CONDITION.
+
+      Predict only the requested gripper''s minimum force and feasibility. Do not
+      estimate
+
+      the inactive gripper, compare grippers, or recommend an alternative. Return
+      only the
+
+      per-gripper JSON required by the supplied schema.
+
+      '
+    joint: 'JOINT-CANDIDATE OUTPUT CONDITION.
+
+      Predict both requested grippers, compare their force and feasibility estimates,
+      and
+
+      return an explicit recommendation with the comparison evidence required by the
+      schema.
 
       '
 embodiments:

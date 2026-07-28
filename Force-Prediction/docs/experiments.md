@@ -7,20 +7,19 @@ cross-experiment reporting uses the common eligible object intersection.
 ## Primary ablation suite
 
 All four VLM conditions receive the query-object image plus fixed written embodiment
-descriptions for Gecko and silicone. These descriptions define the hardware being
-predicted and are not object-specific sensor measurements. Gripper images are not sent.
+descriptions for the globally active Gecko and/or silicone candidates. These descriptions
+define the hardware being predicted and are not object-specific measurements.
 
 | ID | Object-specific evidence | Retrieval score | Research question |
 |---|---|---|---|
-| **E1** | Object image only | None | How accurately can the VLM predict both grippers zero-shot? |
+| **E1** | Object image only | None | How accurately can the VLM predict the active grippers zero-shot? |
 | **E2** | Image + mass + optional roughness/contact | None | What is the isolated benefit of measured physical inputs? |
-| **E3** | Image + semantic descriptor + paired retrieved outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval modeled after Exp-Force? |
-| **E4** | Image + measurements + semantic descriptor + paired retrieved outcomes | Semantic and physical fusion | What is the performance of the complete proposed pipeline? |
+| **E3** | Image + semantic descriptor + active-gripper outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval modeled after Exp-Force? |
+| **E4** | Image + measurements + semantic descriptor + active-gripper outcomes | Semantic and physical fusion | What is the performance of the complete proposed pipeline? |
 
-E1–E4 each produce both gripper force/feasibility predictions and an explicit VLM
-recommendation. The commanded gripper is still selected deterministically in Python as
-the lowest-force feasible prediction; recommendation accuracy and agreement with the
-selector are reported separately.
+One selected gripper produces one `PerGripperPrediction`; both selected grippers produce
+one joint response and an explicit recommendation. Python remains authoritative. Selection,
+regret, and recommendation metrics apply only to paired runs.
 
 ## E3: strictly semantic experience retrieval
 
@@ -49,7 +48,7 @@ expected ordering as a premise.
 
 ## E4: semantic and sensor-fusion retrieval
 
-E4 uses the same paired-object experience representation as E3, but ranks candidates with
+E4 uses the same object-level experience representation as E3, but ranks candidates with
 the configured hybrid score:
 
 `S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough + w_a S_contact`.
@@ -69,6 +68,12 @@ The force convention is stationary-finger load-cell normal force, never doubled.
 outputs are continuous from `0` to `8 N`; ground-truth search resolution does not quantize
 predictions. Report force MAE, RMSE, median absolute error, threshold accuracy,
 feasibility metrics, selection accuracy, infeasible-pick rate, and regret.
+
+Benchmark generation is deliberately truth-free. It persists each query input, prediction,
+retrieved evidence, target set, and model/prompt provenance under
+`results/predictions/`. Evaluation later joins current completed outcomes for the saved active
+grippers and writes a version under `results/evaluations/<batch_id>/`; unchanged truth reuses
+the existing version. This lets image-only E1 batches be generated before physical trials.
 
 The saved E1–E4 suite produces separate Gecko and silicone calibration panels, one panel
 per experiment, plus CSV metric and prediction exports. The panels show ground truth on
