@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T15:59:28.871254+00:00",
+  "duration_seconds": 27.034,
+  "source": {
+    "label": "leather belt",
+    "dataset_id": "MatForceFinal",
+    "object_id": "leather_belt",
+    "path": "data/MatForceFinal/leather belt.jpg",
+    "image_sha256": "462ce970df50566dcfeca0fcff912e11b9d42efd71a80a0aa33b87eafcdf0841",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      760,
+      768
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.03556316317376624,
+    "bbox_fill_fraction": 0.6667213177552193
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1359,
+      3456,
+      2838,
+      4950
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1479,
+      1494
+    ],
+    "foreground_fraction": 0.3938253837719298
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 6,
+    "foreground_pixels": 229868,
+    "scoring_pixels": 150479,
+    "scoring_fraction_of_foreground": 0.6546322237109994,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.515720009803772,
+    "median": 0.5185546875,
+    "std": 0.030603261664509773,
+    "min": 0.36767578125,
+    "max": 0.6455078125,
+    "p05": 0.458251953125,
+    "p25": 0.4990234375,
+    "p75": 0.53564453125,
+    "p95": 0.560546875
+  },
+  "metallicity": {
+    "mean": 0.6876510381698608,
+    "median": 0.6884765625,
+    "std": 0.07190264761447906,
+    "min": 0.40234375,
+    "max": 0.8681640625,
+    "p05": 0.56982421875,
+    "p25": 0.6357421875,
+    "p75": 0.7431640625,
+    "p95": 0.8037109375
+  },
+  "roughness_uncertainty": {
+    "mean": 0.015541058965027332,
+    "median": 0.01220703125,
+    "std": 0.013413815759122372,
+    "min": 0.0,
+    "max": 0.119384765625,
+    "p05": 0.0009765625,
+    "p25": 0.00537109375,
+    "p75": 0.02197265625,
+    "p95": 0.042236328125
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.01664557121694088,
+    "median": 0.0126953125,
+    "std": 0.014477682299911976,
+    "min": 0.0,
+    "max": 0.1240234375,
+    "p05": 0.0009765625,
+    "p25": 0.005859375,
+    "p75": 0.02392578125,
+    "p95": 0.04541015625
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

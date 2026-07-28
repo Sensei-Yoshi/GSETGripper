@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T16:02:18.347401+00:00",
+  "duration_seconds": 14.531,
+  "source": {
+    "label": "people s hospital",
+    "dataset_id": "MatForceFinal",
+    "object_id": "people_s_hospital",
+    "path": "data/MatForceFinal/people_s hospital.jpg",
+    "image_sha256": "720fe330a361b9fce333946c599b76d596fa8bee09f236bb3ddf6a15a451bf82",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      387,
+      768
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.09595639726478827,
+    "bbox_fill_fraction": 0.7220674226407842
+  },
+  "crop": {
+    "bbox_xyxy": [
+      996,
+      1006,
+      2979,
+      4939
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1983,
+      3933
+    ],
+    "foreground_fraction": 0.3010874246339363
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 2,
+    "foreground_pixels": 89488,
+    "scoring_pixels": 56236,
+    "scoring_fraction_of_foreground": 0.628419452887538,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.6140184998512268,
+    "median": 0.61083984375,
+    "std": 0.033091768622398376,
+    "min": 0.43115234375,
+    "max": 0.8046875,
+    "p05": 0.5556640625,
+    "p25": 0.59716796875,
+    "p75": 0.6357421875,
+    "p95": 0.66796875
+  },
+  "metallicity": {
+    "mean": 0.30599868297576904,
+    "median": 0.28662109375,
+    "std": 0.09446918219327927,
+    "min": 0.163330078125,
+    "max": 0.79638671875,
+    "p05": 0.223388671875,
+    "p25": 0.23291015625,
+    "p75": 0.33819580078125,
+    "p95": 0.529296875
+  },
+  "roughness_uncertainty": {
+    "mean": 0.012690072879195213,
+    "median": 0.00927734375,
+    "std": 0.012282146140933037,
+    "min": 0.0,
+    "max": 0.14208984375,
+    "p05": 0.0009765625,
+    "p25": 0.0048828125,
+    "p75": 0.01611328125,
+    "p95": 0.03662109375
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.023640519008040428,
+    "median": 0.017578125,
+    "std": 0.020283320918679237,
+    "min": 0.0,
+    "max": 0.2021484375,
+    "p05": 0.001953125,
+    "p25": 0.00830078125,
+    "p75": 0.034423828125,
+    "p95": 0.06298828125
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

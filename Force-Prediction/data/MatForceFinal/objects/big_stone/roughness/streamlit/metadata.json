@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T15:55:45.768212+00:00",
+  "duration_seconds": 21.214,
+  "source": {
+    "label": "big stone",
+    "dataset_id": "MatForceFinal",
+    "object_id": "big_stone",
+    "path": "data/MatForceFinal/big_stone.jpg",
+    "image_sha256": "f2260792795314d1796c0adfd3441fcf49cce6056c6b6b0e02da5467f8a14105",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      572
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.029370203963938517,
+    "bbox_fill_fraction": 0.8025466824787442
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1360,
+      3199,
+      2865,
+      4321
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1505,
+      1122
+    ],
+    "foreground_fraction": 0.42559914044289043
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 4,
+    "foreground_pixels": 186964,
+    "scoring_pixels": 110357,
+    "scoring_fraction_of_foreground": 0.5902580175862733,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.6523540616035461,
+    "median": 0.64306640625,
+    "std": 0.03260813280940056,
+    "min": 0.5654296875,
+    "max": 0.833984375,
+    "p05": 0.6171875,
+    "p25": 0.63134765625,
+    "p75": 0.66162109375,
+    "p95": 0.7255859375
+  },
+  "metallicity": {
+    "mean": 0.5019851326942444,
+    "median": 0.472900390625,
+    "std": 0.07493779063224792,
+    "min": 0.3876953125,
+    "max": 0.83154296875,
+    "p05": 0.435302734375,
+    "p25": 0.45361328125,
+    "p75": 0.52099609375,
+    "p95": 0.67529296875
+  },
+  "roughness_uncertainty": {
+    "mean": 0.009458896704018116,
+    "median": 0.0068359375,
+    "std": 0.009227314963936806,
+    "min": 0.0,
+    "max": 0.09375,
+    "p05": 0.00048828125,
+    "p25": 0.0029296875,
+    "p75": 0.0126953125,
+    "p95": 0.02783203125
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.011147256009280682,
+    "median": 0.0078125,
+    "std": 0.011256495490670204,
+    "min": 0.0,
+    "max": 0.11181640625,
+    "p05": 0.00048828125,
+    "p25": 0.00341796875,
+    "p75": 0.01513671875,
+    "p95": 0.03369140625
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

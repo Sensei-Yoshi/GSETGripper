@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T15:58:40.493526+00:00",
+  "duration_seconds": 24.821,
+  "source": {
+    "label": "Headphones Case",
+    "dataset_id": "MatForceFinal",
+    "object_id": "headphones_case",
+    "path": "data/MatForceFinal/Headphones Case.jpg",
+    "image_sha256": "f733178ef94d99e5c82b46e99f931015cf1de1eec6ecb6595ed05a41916e7035",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      695
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.11412224203406852,
+    "bbox_fill_fraction": 0.8063297838705458
+  },
+  "crop": {
+    "bbox_xyxy": [
+      735,
+      2524,
+      3318,
+      4863
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      2583,
+      2339
+    ],
+    "foreground_fraction": 0.46219836630695443
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 5,
+    "foreground_pixels": 246703,
+    "scoring_pixels": 157367,
+    "scoring_fraction_of_foreground": 0.6378803662703737,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.7026553153991699,
+    "median": 0.70361328125,
+    "std": 0.0075835674069821835,
+    "min": 0.59716796875,
+    "max": 0.72900390625,
+    "p05": 0.69287109375,
+    "p25": 0.7001953125,
+    "p75": 0.70654296875,
+    "p95": 0.7109375
+  },
+  "metallicity": {
+    "mean": 0.18689043819904327,
+    "median": 0.18359375,
+    "std": 0.013939689844846725,
+    "min": 0.16796875,
+    "max": 0.310302734375,
+    "p05": 0.176025390625,
+    "p25": 0.18017578125,
+    "p75": 0.187744140625,
+    "p95": 0.212890625
+  },
+  "roughness_uncertainty": {
+    "mean": 0.03125283122062683,
+    "median": 0.03271484375,
+    "std": 0.007481029722839594,
+    "min": 0.0,
+    "max": 0.05322265625,
+    "p05": 0.015625,
+    "p25": 0.02880859375,
+    "p75": 0.03564453125,
+    "p95": 0.0400390625
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.019510747864842415,
+    "median": 0.018310546875,
+    "std": 0.012422267347574234,
+    "min": 0.0,
+    "max": 0.107177734375,
+    "p05": 0.002197265625,
+    "p25": 0.010498046875,
+    "p75": 0.027587890625,
+    "p95": 0.03759765625
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

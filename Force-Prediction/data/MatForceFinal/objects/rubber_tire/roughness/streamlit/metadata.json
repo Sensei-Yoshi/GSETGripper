@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T16:03:29.999078+00:00",
+  "duration_seconds": 25.31,
+  "source": {
+    "label": "rubber tire",
+    "dataset_id": "MatForceFinal",
+    "object_id": "rubber_tire",
+    "path": "data/MatForceFinal/rubber tire.jpg",
+    "image_sha256": "129bda5460979246213169a320b523c39da7eb1f60f499757f2ac095fb15aa08",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      749,
+      768
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.04321320031280486,
+    "bbox_fill_fraction": 0.6731479512783265
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1194,
+      3345,
+      2810,
+      5000
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1616,
+      1655
+    ],
+    "foreground_fraction": 0.3953952492211838
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 6,
+    "foreground_pixels": 227444,
+    "scoring_pixels": 120516,
+    "scoring_fraction_of_foreground": 0.5298710891472187,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.5150153636932373,
+    "median": 0.58984375,
+    "std": 0.12515544891357422,
+    "min": 0.196533203125,
+    "max": 0.64208984375,
+    "p05": 0.28271484375,
+    "p25": 0.368408203125,
+    "p75": 0.6064453125,
+    "p95": 0.6201171875
+  },
+  "metallicity": {
+    "mean": 0.7750966548919678,
+    "median": 0.7861328125,
+    "std": 0.05708696320652962,
+    "min": 0.62109375,
+    "max": 0.88916015625,
+    "p05": 0.6875,
+    "p25": 0.71875,
+    "p75": 0.81298828125,
+    "p95": 0.87109375
+  },
+  "roughness_uncertainty": {
+    "mean": 0.01884717121720314,
+    "median": 0.0078125,
+    "std": 0.024629926308989525,
+    "min": 0.0,
+    "max": 0.111572265625,
+    "p05": 0.00048828125,
+    "p25": 0.0029296875,
+    "p75": 0.021484375,
+    "p95": 0.078857421875
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.027476273477077484,
+    "median": 0.02734375,
+    "std": 0.016255231574177742,
+    "min": 0.0,
+    "max": 0.1328125,
+    "p05": 0.00341796875,
+    "p25": 0.01416015625,
+    "p75": 0.0380859375,
+    "p95": 0.0537109375
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

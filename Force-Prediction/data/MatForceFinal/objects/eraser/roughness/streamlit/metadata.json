@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T15:57:53.966070+00:00",
+  "duration_seconds": 15.052,
+  "source": {
+    "label": "eraser",
+    "dataset_id": "MatForceFinal",
+    "object_id": "eraser",
+    "path": "data/MatForceFinal/eraser.jpg",
+    "image_sha256": "d71580ada14a3d72e849e4d3180d346890e546da997a9f3ef40ec66098d7fd80",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      448
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.03651105049863083,
+    "bbox_fill_fraction": 0.8585369088047232
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1147,
+      3116,
+      3105,
+      4259
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1958,
+      1143
+    ],
+    "foreground_fraction": 0.3991117931547619
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 3,
+    "foreground_pixels": 137320,
+    "scoring_pixels": 78568,
+    "scoring_fraction_of_foreground": 0.5721526361782697,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.5787072777748108,
+    "median": 0.5439453125,
+    "std": 0.07615511119365692,
+    "min": 0.32763671875,
+    "max": 0.80078125,
+    "p05": 0.4873046875,
+    "p25": 0.52001953125,
+    "p75": 0.6630859375,
+    "p95": 0.6982421875
+  },
+  "metallicity": {
+    "mean": 0.7280852198600769,
+    "median": 0.6416015625,
+    "std": 0.18176592886447906,
+    "min": 0.23046875,
+    "max": 1.0,
+    "p05": 0.490478515625,
+    "p25": 0.60986328125,
+    "p75": 0.92919921875,
+    "p95": 1.0
+  },
+  "roughness_uncertainty": {
+    "mean": 0.03172078728675842,
+    "median": 0.0283203125,
+    "std": 0.022175995633006096,
+    "min": 0.0,
+    "max": 0.222900390625,
+    "p05": 0.0029296875,
+    "p25": 0.01416015625,
+    "p75": 0.04541015625,
+    "p95": 0.07275390625
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.022687459364533424,
+    "median": 0.0185546875,
+    "std": 0.02004285156726837,
+    "min": 0.0,
+    "max": 0.21826171875,
+    "p05": 0.0,
+    "p25": 0.00634765625,
+    "p75": 0.03466796875,
+    "p95": 0.05908203125
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

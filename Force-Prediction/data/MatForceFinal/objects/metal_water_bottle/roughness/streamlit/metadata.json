@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T16:00:51.834564+00:00",
+  "duration_seconds": 13.734,
+  "source": {
+    "label": "metal water bottle",
+    "dataset_id": "MatForceFinal",
+    "object_id": "metal_water_bottle",
+    "path": "data/MatForceFinal/metal water bottle.jpg",
+    "image_sha256": "78d9af39a1620623811f799db326f8b90570c8e27d8caa2a85e09d8a53ed60f4",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      352,
+      768
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.08548296769688267,
+    "bbox_fill_fraction": 0.8098281068524971
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1187,
+      1375,
+      2948,
+      5213
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      1761,
+      3838
+    ],
+    "foreground_fraction": 0.30952222419507575
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 2,
+    "foreground_pixels": 83675,
+    "scoring_pixels": 50875,
+    "scoring_fraction_of_foreground": 0.6080071706005378,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.5455769896507263,
+    "median": 0.54541015625,
+    "std": 0.013584139756858349,
+    "min": 0.4443359375,
+    "max": 0.59033203125,
+    "p05": 0.52587890625,
+    "p25": 0.54052734375,
+    "p75": 0.55224609375,
+    "p95": 0.56591796875
+  },
+  "metallicity": {
+    "mean": 0.6050293445587158,
+    "median": 0.60693359375,
+    "std": 0.026563109830021858,
+    "min": 0.52880859375,
+    "max": 0.8037109375,
+    "p05": 0.560546875,
+    "p25": 0.5947265625,
+    "p75": 0.615234375,
+    "p95": 0.63525390625
+  },
+  "roughness_uncertainty": {
+    "mean": 0.021315954625606537,
+    "median": 0.02099609375,
+    "std": 0.012261326424777508,
+    "min": 0.0,
+    "max": 0.0771484375,
+    "p05": 0.00244140625,
+    "p25": 0.01220703125,
+    "p75": 0.02880859375,
+    "p95": 0.0439453125
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.03907095640897751,
+    "median": 0.0390625,
+    "std": 0.01325514167547226,
+    "min": 0.0,
+    "max": 0.11474609375,
+    "p05": 0.015625,
+    "p25": 0.03173828125,
+    "p75": 0.0458984375,
+    "p95": 0.06201171875
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}

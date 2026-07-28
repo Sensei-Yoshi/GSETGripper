@@ -1,0 +1,124 @@
+{
+  "schema_version": 3,
+  "run_id": "streamlit",
+  "created_at": "2026-07-28T16:04:13.516484+00:00",
+  "duration_seconds": 22.878,
+  "source": {
+    "label": "Soldering Iron Box",
+    "dataset_id": "MatForceFinal",
+    "object_id": "soldering_iron_box",
+    "path": "data/MatForceFinal/Soldering Iron Box.jpg",
+    "image_sha256": "c32183aed1047ad71e1948174a7c59793e1b2a4eca955de793676fe93328f453",
+    "original_size": [
+      4284,
+      5712
+    ]
+  },
+  "model": {
+    "id": "prs-eth/marigold-iid-appearance-v1-1",
+    "device": "mps",
+    "processing_resolution": 768,
+    "processed_size": [
+      768,
+      715
+    ],
+    "num_inference_steps": 4,
+    "ensemble_size": 3,
+    "seed": 2024
+  },
+  "background_removal": {
+    "enabled": true,
+    "model": "isnet-general-use",
+    "alpha_threshold": 120,
+    "foreground_fraction": 0.1284814579426542,
+    "bbox_fill_fraction": 0.8681922225864273
+  },
+  "crop": {
+    "bbox_xyxy": [
+      1141,
+      2304,
+      3732,
+      4719
+    ],
+    "padding_ratio": 0.15,
+    "size": [
+      2591,
+      2415
+    ],
+    "foreground_fraction": 0.5025295017482517
+  },
+  "scoring": {
+    "strategy": "eroded_central_principal_axis_band",
+    "contact_band_fraction": 0.6,
+    "mask_erosion_ratio": 0.01,
+    "erosion_radius_pixels": 5,
+    "foreground_pixels": 275949,
+    "scoring_pixels": 160072,
+    "scoring_fraction_of_foreground": 0.5800782028563249,
+    "manual_mask_outside_automatic_foreground_fraction": 0.0,
+    "rationale": null
+  },
+  "quality": {
+    "status": "ok",
+    "warnings": [],
+    "interpretation": "BRDF appearance roughness; not physical height roughness or friction"
+  },
+  "roughness": {
+    "mean": 0.4112814664840698,
+    "median": 0.37890625,
+    "std": 0.05075607821345329,
+    "min": 0.279052734375,
+    "max": 0.55810546875,
+    "p05": 0.369140625,
+    "p25": 0.37353515625,
+    "p75": 0.477783203125,
+    "p95": 0.491455078125
+  },
+  "metallicity": {
+    "mean": 0.9715937376022339,
+    "median": 0.9775390625,
+    "std": 0.014781839214265347,
+    "min": 0.775390625,
+    "max": 0.99609375,
+    "p05": 0.9482421875,
+    "p25": 0.9599609375,
+    "p75": 0.982421875,
+    "p95": 0.98681640625
+  },
+  "roughness_uncertainty": {
+    "mean": 0.009107818827033043,
+    "median": 0.00927734375,
+    "std": 0.004569515120238066,
+    "min": 0.0,
+    "max": 0.079345703125,
+    "p05": 0.00146484375,
+    "p25": 0.005859375,
+    "p75": 0.012451171875,
+    "p95": 0.016357421875
+  },
+  "metallicity_uncertainty": {
+    "mean": 0.02122730389237404,
+    "median": 0.02099609375,
+    "std": 0.0055448454804718494,
+    "min": 0.0,
+    "max": 0.0771484375,
+    "p05": 0.0126953125,
+    "p25": 0.017578125,
+    "p75": 0.025390625,
+    "p95": 0.0302734375
+  },
+  "artifacts": {
+    "input": "input.png",
+    "foreground_preview": "foreground_preview.png",
+    "cutout": "cutout.png",
+    "foreground_mask": "foreground_mask.png",
+    "inference_crop": "inference_crop.png",
+    "inference_mask": "inference_mask.png",
+    "analysis_foreground_mask": "analysis_foreground_mask.png",
+    "scoring_mask": "scoring_mask.png",
+    "albedo": "albedo.png",
+    "roughness": "roughness.png",
+    "metallicity": "metallicity.png",
+    "roughness_uncertainty": "roughness_uncertainty.png"
+  }
+}
