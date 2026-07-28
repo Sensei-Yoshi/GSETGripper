@@ -52,9 +52,10 @@ complete derived label, and refreshes completed experience records. Names, image
 descriptors, and generated artifact metrics remain read-only. The **Prompts & Embodiments** tab edits `prompts.yaml` atomically,
 including the fixed written descriptions of both grippers.
 
-The **Marigold Roughness** tab is intentionally independent of the force pipeline. Its
-multiselect can run IID appearance roughness, normals-based topography, or both on the active
-dataset's images or an uploaded override. The default background-removal pass saves a mask
+The **Marigold Roughness** tab is intentionally independent of the force pipeline. It can
+multi-select active-dataset images and uploads, then run IID appearance roughness,
+normals-based topography, or both sequentially across the batch. The default
+background-removal pass saves a mask
 and transparent cutout, crops the original RGB before inference, and restricts statistics to
 an eroded central grasp band. Topography smooths the normal field into a broad base surface
 and measures local angular residuals for bumps and grooves. Dataset outputs update stable

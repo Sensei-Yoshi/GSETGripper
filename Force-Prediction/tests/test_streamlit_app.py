@@ -48,9 +48,16 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Experiment profile",
         "Experiment",
         "Saved suite",
-        "Marigold dataset image",
     ):
         assert label in selectbox_labels
+    multiselect_labels = {item.label for item in app.multiselect}
+    assert {"Marigold dataset images", "Marigold analyses"} <= multiselect_labels
+    marigold_uploader = next(
+        item
+        for item in app.file_uploader
+        if item.label == "Upload one or more additional images"
+    )
+    assert marigold_uploader.accept_multiple_files is True
     checkbox_labels = {item.label for item in app.checkbox}
     assert {
         "Gemini descriptions",
@@ -82,8 +89,8 @@ def test_default_app_structure_matches_research_lab() -> None:
         "validate_prompt_bundle",
         "save_prompt_bundle",
         "roughness_view_history",
-        "roughness_dataset_image",
-        "roughness_override_image",
+        "roughness_dataset_images",
+        "roughness_override_images",
         "marigold_analysis_modes",
         "roughness_processing_resolution",
         "roughness_inference_steps",
@@ -126,6 +133,21 @@ def test_descriptor_editor_shows_the_standard_retrieval_template() -> None:
     ) in descriptor.value
 
 
+def test_marigold_tab_accepts_multiple_dataset_images() -> None:
+    app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
+    picker = next(
+        item for item in app.multiselect if item.label == "Marigold dataset images"
+    )
+    selected = picker.options[:2]
+
+    picker.set_value(selected)
+    app.run(timeout=30)
+
+    assert list(app.exception) == []
+    assert app.session_state["roughness_dataset_images"] == selected
+    assert any(item.value == "2 images selected" for item in app.caption)
+
+
 def test_tab_registry_has_unique_labels_and_common_renderer_contract() -> None:
     labels = [spec.label for spec in TAB_SPECS]
 
@@ -146,12 +168,15 @@ def test_streamlit_import_resolves_external_framework() -> None:
 def test_global_dataset_selector_switches_every_tab_to_image_only_dataset() -> None:
     app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
 
-    app.selectbox[0].set_value("MatForce")
+    image_only_dataset = next(
+        dataset_id for dataset_id in app.selectbox[0].options if dataset_id != "expforce"
+    )
+    app.selectbox[0].set_value(image_only_dataset)
     app.run(timeout=30)
 
     assert list(app.exception) == []
-    assert app.session_state["active_dataset_id"] == "MatForce"
-    assert any("11 objects · image folder" in item.value for item in app.caption)
+    assert app.session_state["active_dataset_id"] == image_only_dataset
+    assert any("objects · image folder" in item.value for item in app.caption)
     experiment = next(item for item in app.selectbox if item.label == "Experiment profile")
     experiment.set_value("e1")
     app.run(timeout=30)

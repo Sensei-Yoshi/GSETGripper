@@ -5,6 +5,7 @@ from __future__ import annotations
 import io
 import json
 import re
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
@@ -38,6 +39,19 @@ from streamlit_app.context import AppContext
 ROUGHNESS = "Roughness"
 TOPOGRAPHY = "Topography"
 STABLE_RUN_KEY = "streamlit"
+
+
+@dataclass(frozen=True)
+class _SelectedImage:
+    display_label: str
+    image: Image.Image
+    source_label: str
+    dataset_id: str | None
+    object_id: str | None
+    source_path: str | None
+    roughness_root: Path
+    topography_root: Path
+    target_key: str
 
 
 @st.cache_resource(show_spinner=False)
@@ -118,7 +132,11 @@ def _render_provenance(run: dict[str, Any], analysis: str) -> None:
             data=json.dumps(display, indent=2).encode(),
             file_name=f"{analysis.lower()}_{run.get('run_id', 'marigold')}_metadata.json",
             mime="application/json",
-            key=f"marigold_{analysis.lower()}_download_{run.get('run_id', 'unknown')}",
+            key=(
+                f"marigold_{analysis.lower()}_download_"
+                f"{_slug(str(run.get('source', {}).get('object_id') or run.get('source', {}).get('label') or run.get('run_dir', 'image')))}_"
+                f"{run.get('run_id', 'unknown')}"
+            ),
         )
 
 
@@ -241,98 +259,147 @@ def _render_topography_run(run: dict[str, Any]) -> None:
     _render_provenance(run, "Topography")
 
 
-def _output_roots(
-    context: AppContext,
-    selected_row: Any,
-    uploaded: Any,
-) -> tuple[Path, Path, str]:
-    if uploaded is not None:
-        base = (
-            context.config.root
-            / "test_data"
-            / "marigold_tests"
-            / f"upload_{_slug(str(uploaded.name))}"
-        )
-    else:
-        base = context.dataset.paths.object_dir(selected_row.object_id)
-    return base / "roughness", base / "topography", str(base)
+def _dataset_selection(context: AppContext, row: Any) -> _SelectedImage | None:
+    image_path = context.config.root / row.image.path
+    if not image_path.is_file():
+        st.warning(f"The dataset image for {row.name!r} is not available locally.")
+        return None
+    try:
+        with Image.open(image_path) as source:
+            image = source.convert("RGB")
+    except (OSError, UnidentifiedImageError):
+        st.warning(f"The dataset image for {row.name!r} could not be decoded.")
+        return None
+    base = context.dataset.paths.object_dir(row.object_id)
+    return _SelectedImage(
+        display_label=f"{row.name} ({row.object_id})",
+        image=image,
+        source_label=row.name,
+        dataset_id=context.dataset.dataset_id,
+        object_id=row.object_id,
+        source_path=str(row.image.path),
+        roughness_root=base / "roughness",
+        topography_root=base / "topography",
+        target_key=str(base),
+    )
+
+
+def _upload_selection(context: AppContext, uploaded: Any) -> _SelectedImage | None:
+    image = _open_upload(uploaded)
+    if image is None:
+        st.error(f"The uploaded file {uploaded.name!r} could not be decoded as an image.")
+        return None
+    base = (
+        context.config.root
+        / "test_data"
+        / "marigold_tests"
+        / f"upload_{_slug(str(uploaded.name))}"
+    )
+    return _SelectedImage(
+        display_label=f"Upload: {uploaded.name}",
+        image=image,
+        source_label=str(uploaded.name),
+        dataset_id=None,
+        object_id=None,
+        source_path=None,
+        roughness_root=base / "roughness",
+        topography_root=base / "topography",
+        target_key=str(base),
+    )
 
 
 def _history_section(
     analyses: list[str],
-    roughness_root: Path,
-    topography_root: Path,
+    selections: list[_SelectedImage],
 ) -> None:
-    for analysis in analyses:
-        if analysis == ROUGHNESS:
-            runs = list_saved_runs(roughness_root)
-            selector_key = "roughness_history_selector"
-            renderer = _render_roughness_run
-        else:
-            runs = list_saved_topography_runs(topography_root)
-            selector_key = "topography_history_selector"
-            renderer = _render_topography_run
-        if not runs:
-            st.info(f"No saved {analysis.lower()} result exists for this image yet.")
-            continue
-        labels = {
-            (
-                f"{run.get('created_at', '')[:19]} | "
-                f"{run.get('source', {}).get('label', run.get('run_id', 'run'))} | "
-                f"{run.get('run_id', 'run')}"
-            ): run
-            for run in runs
-        }
-        selected = st.selectbox(
-            f"Saved {analysis.lower()} result",
-            list(labels),
-            key=selector_key,
-        )
-        renderer(labels[selected])
+    if not selections:
+        st.info("Select at least one dataset or uploaded image to view its saved results.")
+        return
+    for image_index, selection in enumerate(selections):
+        if len(selections) > 1:
+            st.subheader(selection.display_label)
+        for analysis in analyses:
+            if analysis == ROUGHNESS:
+                runs = list_saved_runs(selection.roughness_root)
+                renderer = _render_roughness_run
+            else:
+                runs = list_saved_topography_runs(selection.topography_root)
+                renderer = _render_topography_run
+            if not runs:
+                st.info(
+                    f"No saved {analysis.lower()} result exists for "
+                    f"{selection.display_label}."
+                )
+                continue
+            labels = {
+                (
+                    f"{run.get('created_at', '')[:19]} | "
+                    f"{run.get('source', {}).get('label', run.get('run_id', 'run'))} | "
+                    f"{run.get('run_id', 'run')}"
+                ): run
+                for run in runs
+            }
+            selected = st.selectbox(
+                f"Saved {analysis.lower()} result for {selection.display_label}",
+                list(labels),
+                key=(
+                    f"marigold_history_{analysis.lower()}_{image_index}_"
+                    f"{_slug(selection.target_key)}"
+                ),
+            )
+            renderer(labels[selected])
 
 
 def _run_workbench(context: AppContext) -> None:
     rows = sorted(context.rows, key=lambda row: (row.name.casefold(), row.object_id))
     labels = {f"{row.name} ({row.object_id})": row for row in rows}
-    selected_row = None
+    selected_labels: list[str] = []
     if labels:
-        selected_label = st.selectbox(
-            "Marigold dataset image",
+        selected_labels = st.multiselect(
+            "Marigold dataset images",
             list(labels),
-            key="roughness_dataset_image",
+            default=[next(iter(labels))],
+            key="roughness_dataset_images",
+            help="Every selected object is processed with the same analysis settings.",
         )
-        selected_row = labels[selected_label]
     else:
-        st.info("This dataset contains no indexed images. Upload an override image below.")
+        st.info("This dataset contains no indexed images. Upload images below.")
 
-    uploaded = st.file_uploader(
-        "Override image",
+    uploaded_files = st.file_uploader(
+        "Upload one or more additional images",
         type=["png", "jpg", "jpeg", "webp", "bmp", "tif", "tiff"],
-        key="roughness_override_image",
+        accept_multiple_files=True,
+        key="roughness_override_images",
+        help=(
+            "Choose multiple files in the picker with Shift-click or Command-click. "
+            "You can also reopen the picker to add more files."
+        ),
     )
-    upload_image = _open_upload(uploaded)
-    if uploaded is not None and upload_image is None:
-        st.error("The uploaded file could not be decoded as an image.")
-
-    dataset_path = None
-    dataset_image = None
-    if selected_row is not None:
-        dataset_path = context.config.root / selected_row.image.path
-        if dataset_path.is_file():
-            try:
-                dataset_image = Image.open(dataset_path).convert("RGB")
-            except (OSError, UnidentifiedImageError):
-                st.warning("The selected dataset image could not be decoded.")
-        else:
-            st.warning("The selected dataset image is not available locally.")
-
-    query_image = upload_image or dataset_image
-    if query_image is not None:
-        st.image(
-            query_image,
-            caption="Override image" if upload_image is not None else "Dataset image",
-            width="stretch",
+    st.caption(
+        "The uploader accepts multiple files. On macOS, use Shift-click for a range or "
+        "Command-click for individual files."
+    )
+    selections = [
+        selection
+        for selection in (
+            _dataset_selection(context, labels[label]) for label in selected_labels
         )
+        if selection is not None
+    ]
+    selections.extend(
+        selection
+        for selection in (
+            _upload_selection(context, uploaded) for uploaded in (uploaded_files or [])
+        )
+        if selection is not None
+    )
+
+    if selections:
+        st.caption(f"{len(selections)} image{'s' if len(selections) != 1 else ''} selected")
+        preview_columns = st.columns(min(4, len(selections)), gap="medium")
+        for index, selection in enumerate(selections):
+            with preview_columns[index % len(preview_columns)]:
+                st.image(selection.image, caption=selection.display_label, width="stretch")
 
     analyses = st.multiselect(
         "Marigold analyses",
@@ -347,24 +414,13 @@ def _run_workbench(context: AppContext) -> None:
     if not analyses:
         st.warning("Select at least one analysis.")
 
-    if selected_row is None and uploaded is None:
-        roughness_root = context.config.root / "test_data" / "marigold_tests" / "empty"
-        topography_root = roughness_root
-        target_key = "empty"
-    else:
-        roughness_root, topography_root, target_key = _output_roots(
-            context,
-            selected_row,
-            uploaded,
-        )
-
     view_history = st.toggle(
         "View saved Marigold results",
         value=False,
         key="roughness_view_history",
     )
     if view_history:
-        _history_section(analyses, roughness_root, topography_root)
+        _history_section(analyses, selections)
         return
 
     with st.expander("Marigold settings"):
@@ -455,42 +511,34 @@ def _run_workbench(context: AppContext) -> None:
         "Run Marigold",
         type="primary",
         width="stretch",
-        disabled=query_image is None or not analyses,
+        disabled=not selections or not analyses,
         key="run_marigold",
     )
-    if run_requested and query_image is not None and analyses:
+    if run_requested and selections and analyses:
         device = available_device()
-        source_label = (
-            uploaded.name
-            if uploaded is not None
-            else selected_row.name
-            if selected_row is not None
-            else "image"
-        )
-        dataset_id = context.dataset.dataset_id if uploaded is None else None
-        object_id = (
-            selected_row.object_id if uploaded is None and selected_row is not None else None
-        )
-        source_path = (
-            str(selected_row.image.path)
-            if uploaded is None and selected_row is not None
-            else None
-        )
         remover = _background_remover(DEFAULT_BACKGROUND_MODEL) if remove_background else None
-        results: dict[str, dict[str, Any]] = {}
+        results_by_target: dict[str, dict[str, Any]] = {}
         errors: list[str] = []
-        with st.spinner(f"Running {', '.join(analyses).lower()} on {device}..."):
+        completed_results = 0
+        requested_results = len(selections) * len(analyses)
+        progress = st.progress(0.0, text="Preparing Marigold batch...")
+        for selection in selections:
+            results: dict[str, dict[str, Any]] = {}
             if ROUGHNESS in analyses:
+                progress.progress(
+                    completed_results / requested_results,
+                    text=f"Appearance roughness: {selection.display_label}",
+                )
                 try:
                     results[ROUGHNESS] = run_marigold(
                         _roughness_analyzer(device, int(processing_resolution)),
-                        query_image,
-                        roughness_root,
+                        selection.image,
+                        selection.roughness_root,
                         background_remover=remover,
-                        source_label=source_label,
-                        dataset_id=dataset_id,
-                        object_id=object_id,
-                        source_path=source_path,
+                        source_label=selection.source_label,
+                        dataset_id=selection.dataset_id,
+                        object_id=selection.object_id,
+                        source_path=selection.source_path,
                         num_inference_steps=int(inference_steps),
                         ensemble_size=int(ensemble_size),
                         seed=int(seed),
@@ -500,18 +548,23 @@ def _run_workbench(context: AppContext) -> None:
                         run_key=STABLE_RUN_KEY,
                     )
                 except Exception as error:  # optional model failures belong in the UI
-                    errors.append(f"Roughness: {error}")
+                    errors.append(f"{selection.display_label} · Roughness: {error}")
+                completed_results += 1
             if TOPOGRAPHY in analyses:
+                progress.progress(
+                    completed_results / requested_results,
+                    text=f"Topography: {selection.display_label}",
+                )
                 try:
                     results[TOPOGRAPHY] = run_marigold_topography(
                         _topography_analyzer(device, int(processing_resolution)),
-                        query_image,
-                        topography_root,
+                        selection.image,
+                        selection.topography_root,
                         background_remover=remover,
-                        source_label=source_label,
-                        dataset_id=dataset_id,
-                        object_id=object_id,
-                        source_path=source_path,
+                        source_label=selection.source_label,
+                        dataset_id=selection.dataset_id,
+                        object_id=selection.object_id,
+                        source_path=selection.source_path,
                         num_inference_steps=int(inference_steps),
                         ensemble_size=int(ensemble_size),
                         seed=int(seed),
@@ -522,21 +575,39 @@ def _run_workbench(context: AppContext) -> None:
                         run_key=STABLE_RUN_KEY,
                     )
                 except Exception as error:  # optional model failures belong in the UI
-                    errors.append(f"Topography: {error}")
-        if results:
+                    errors.append(f"{selection.display_label} · Topography: {error}")
+                completed_results += 1
+            if results:
+                results_by_target[selection.target_key] = {
+                    "display_label": selection.display_label,
+                    "results": results,
+                }
+        progress.progress(1.0, text="Marigold batch complete.")
+        if results_by_target:
             st.session_state["marigold_last_results"] = {
-                "target": target_key,
-                "results": results,
+                "results_by_target": results_by_target,
             }
-            saved = ", ".join(str(result["run_dir"]) for result in results.values())
-            st.success(f"Updated Marigold result files: {saved}")
+            successful_results = sum(
+                len(entry["results"]) for entry in results_by_target.values()
+            )
+            st.success(
+                f"Updated {successful_results} Marigold result"
+                f"{'s' if successful_results != 1 else ''} across "
+                f"{len(results_by_target)} image"
+                f"{'s' if len(results_by_target) != 1 else ''}."
+            )
         for error in errors:
             st.error(error)
 
     payload = st.session_state.get("marigold_last_results")
-    if isinstance(payload, dict) and payload.get("target") == target_key:
-        results = payload.get("results", {})
-        if isinstance(results, dict):
+    results_by_target = payload.get("results_by_target", {}) if isinstance(payload, dict) else {}
+    for selection in selections:
+        entry = results_by_target.get(selection.target_key, {})
+        results = entry.get("results", {}) if isinstance(entry, dict) else {}
+        if isinstance(results, dict) and results:
+            if len(selections) > 1:
+                st.divider()
+                st.subheader(f"Results for {selection.display_label}")
             if isinstance(results.get(ROUGHNESS), dict):
                 _render_roughness_run(results[ROUGHNESS])
             if isinstance(results.get(TOPOGRAPHY), dict):

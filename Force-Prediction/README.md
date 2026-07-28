@@ -67,8 +67,8 @@ the favored gripper after both labels are complete, and refreshes completed expe
 records. Image-folder values are stored under each object's `measurements.json`; names,
 images, and descriptors remain read-only in this tab.
 
-The **Marigold Roughness** tab can multi-select IID appearance roughness, normal-based
-topography, or both for any active-dataset image or uploaded override. Its default
+The **Marigold Roughness** tab can multi-select dataset images and uploaded images, then run
+IID appearance roughness, normal-based topography, or both across the selection. Its default
 background-removal pass creates a mask and transparent cutout, crops the RGB object, and
 scores an eroded central grasp band that rejects caps and end faces. Dataset results update
 in place under `objects/<object_id>/roughness/streamlit/` and
