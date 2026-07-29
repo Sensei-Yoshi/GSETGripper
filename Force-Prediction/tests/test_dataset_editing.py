@@ -38,6 +38,7 @@ def _write_source(root) -> None:
             fieldnames=(
                 "Object",
                 "Image",
+                "split",
                 "Mass_g",
                 "roughness_index",
                 "projected_contact_fraction",
@@ -53,6 +54,7 @@ def _write_source(root) -> None:
             {
                 "Object": "Test cup",
                 "Image": "test.png",
+                "split": "train",
                 "Mass_g": 100,
                 "roughness_index": 2,
                 "projected_contact_fraction": 0.5,
@@ -103,6 +105,7 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
         dataset,
         "test_cup",
         DatasetObjectEdit(
+            split="test",
             mass_g=125,
             roughness_index=4,
             projected_contact_fraction=0.75,
@@ -117,6 +120,7 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
     assert row.object_name == "Test cup"
     assert row.object_id == "test_cup"
     assert row.image_name == "test.png"
+    assert row.split == "test"
     assert row.mass_g == 125
     assert row.favored_gripper == "silicone"
     assert object_dir.exists()
@@ -125,6 +129,7 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
     assert edited_checkpoint["embedding_status"] == "ready"
     assert edited_checkpoint["embedding_model"] == "test-embedding"
     assert refreshed.objects["test_cup"].mass_g == 125
+    assert refreshed.objects["test_cup"].split == "test"
 
     experiences = load_experiences(refreshed.paths.experiences)
     assert len(experiences) == 2
@@ -161,6 +166,7 @@ def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcom
         dataset,
         "cup",
         DatasetObjectEdit(
+            split="test",
             mass_g=None,
             roughness_index=None,
             projected_contact_fraction=None,
@@ -174,7 +180,9 @@ def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcom
     measurement_path = image.parent / "measurements.json"
     persisted = json.loads(measurement_path.read_text())
     assert persisted["schema_version"] == 2
+    assert persisted["split"] == "test"
     assert persisted["mass_g"] is None
+    assert refreshed.objects["cup"].split == "test"
     assert refreshed.source_fingerprint != original_fingerprint
     assert refreshed.objects["cup"].gripper_outcomes[Gripper.GECKO].complete
     assert not refreshed.objects["cup"].gripper_outcomes[Gripper.SILICONE].complete
@@ -252,6 +260,7 @@ def test_csv_surface_supports_unlimited_shared_artifact_conditions(
     assert dataset.summary()["unique_photos"] == 1
     assert len(dataset.descriptions) == 1
     assert all(item.description is not None for item in dataset.objects.values())
+    assert {item.split for item in dataset.objects.values()} == {"train"}
     assert len(load_experiences(dataset.paths.experiences)) == 5
 
     with pytest.raises(ValueError, match="identical"):

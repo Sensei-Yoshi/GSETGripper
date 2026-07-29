@@ -119,6 +119,8 @@ The object's source image and derived contact artifacts live under
 is rebuildable and is not source data.
 
 ## Splitting (must not leak)
-Both rows of an object share a fold: `GroupKFold(object_id)` via
-`evaluation.make_folds`, frozen to `data/splits.json`. Group near-identical
-variants together with the `variant_groups` argument.
+Set the source CSV's `split` column to `train` or `test` before benchmark prediction.
+Every condition of one physical `surface_id` must use the same value. Fixed-holdout
+benchmarks predict and score only test rows; E3/E4 may retrieve only train rows.
+The CLI cross-validation runner separately supports grouped folds through
+`evaluation.make_folds`.

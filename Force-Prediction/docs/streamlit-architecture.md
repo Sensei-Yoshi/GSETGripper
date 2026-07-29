@@ -38,6 +38,7 @@ used by the camera and background-removal model preserve this rule.
 | `streamlit_app/context.py` | `AppContext` and the single context-loading function. |
 | `streamlit_app/style.py` | The page-wide CSS. Only the application shell applies it. |
 | `streamlit_app/prediction_ui.py` | Shared prediction metrics, truth display, retrieval table, formula, and formatting. |
+| `streamlit_app/benchmark_inspector.py` | Pure saved-batch reconstruction helpers plus the Benchmark Runs object-detail renderer. |
 | `streamlit_app/tabs/registry.py` | Ordered `TabSpec` declarations and the tab-renderer contract. |
 | `streamlit_app/tabs/*.py` | One renderer per visible top-level tab, plus private tab-specific helpers. |
 | `modules/datasets/` | Folder discovery, dataset/object contracts, artifact loading, and stage-selectable preparation. |
@@ -46,7 +47,8 @@ used by the camera and background-removal model preserve this rule.
 
 The **Benchmark** tab owns the two actions: immutable prediction generation and later
 truth evaluation. The **Runs Viewer** owns saved single runs, prediction/evaluation histories,
-and resumable two-stage E1–E4 suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
+a Single Run-style object inspector for every prediction in a selected benchmark batch, and
+resumable two-stage E1–E4 suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
 auto-saving measurement and partial outcome labels. CSV sources remain authoritative; image
 folders use `objects/<object_id>/measurements.json`. Each save is atomic, recalculates any
 complete derived label, and refreshes completed experience records. Names, images,
@@ -85,7 +87,7 @@ Changing it clears transient run/preparation/contact results, and every tab rece
 context on the same rerun. Empty folders are valid catalog entries; they show zero objects.
 
 `Dataset` is the aggregate. Its `objects` mapping contains `DatasetObject` values with stable
-attributes for primary `image`, optional second-view `image_2`, `description`, `embedding`, optional `mass_g`, optional
+attributes for primary `image`, optional second-view `image_2`, train/test `split`, `description`, `embedding`, optional `mass_g`, optional
 `roughness_index`, optional `projected_contact_fraction`, and optional paired
 `gripper_outcomes`. Description and embedding values are artifact objects with provenance,
 not loose parallel dictionaries. Convenience mappings (`dataset.images`,
@@ -122,13 +124,14 @@ artifacts plus a table of condition-level rows. **+ Add condition** atomically a
 `condition_N` CSV row; every condition independently stores mass, continuous LED roughness,
 projected contact fraction, and active-gripper outcomes. Added conditions can be edited or
 explicitly confirmed for deletion; the baseline cannot be deleted. Every valid change auto-saves;
+train/test membership is visible and editable, with all sibling conditions kept together, and
 `favored_gripper` is derived only after both outcomes are complete. Saved runs and
 results remain historical and are not rewritten; their source fingerprint mismatch is shown
 by inspectors.
 
-Benchmarking exposes separate **new-surface generalization** and **known-surface condition
-interpolation** protocols plus **Run both**. The former excludes all siblings from training;
-the latter removes only the exact query condition and retains its siblings.
+Benchmarking uses the source CSV's fixed train/test holdout. It generates predictions only
+for query-ready test rows, and E3/E4 may retrieve only from eligible train rows. If a legacy
+dataset has no test rows, the existing leave-one-surface-out behavior remains available.
 
 `roughness_index` is the nonnegative numerical output recorded from the LED measurement
 system, with larger values indicating rougher surfaces. It is intentionally distinct from
@@ -170,9 +173,16 @@ saved-run inspector:
   counterfactual or truth status, retrieval evidence, and formula.
 
 New tabs displaying a `PipelineRunResult` should call `render_prediction` rather than copying
-its layout. Pass the exact `Config` used for that result so retrieval counts and backend
-captions remain accurate. For an unscored result, set `counterfactual=True`; `truth` may only be
-absent on that branch.
+its layout. Pass the exact `Config` used for that result so retrieval counts and formulas
+remain accurate. Use `counterfactual=True` only for a modified query. A truth-free saved
+prediction passes `truth=None` and may supply `unscored_message` to explain why it is not
+evaluated.
+
+The Benchmark Runs **Object Inspector** reconstructs its `PipelineRunResult`, active grippers,
+retrieval settings, and enabled inputs from the immutable prediction batch. It reconstructs
+truth only from the selected saved evaluation row; it never silently joins the mutable current
+CSV. The query image path is checked against its batch-time SHA-256, and raw pipeline JSON is
+kept in an optional expander rather than serving as the primary detail view.
 
 ## Behavior that must remain stable
 

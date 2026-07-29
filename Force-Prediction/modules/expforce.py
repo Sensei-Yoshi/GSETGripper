@@ -11,6 +11,7 @@ from collections import Counter
 from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -57,11 +58,21 @@ def _parse_optional_int(value: str | None) -> int | None:
     return int(value) if value and value.strip() else None
 
 
+def _parse_split(value: str | None) -> Literal["train", "test"]:
+    normalized = (value or "train").strip().lower()
+    if normalized == "train":
+        return "train"
+    if normalized == "test":
+        return "test"
+    raise ValueError(f"expected train/test split, got {value!r}")
+
+
 class ExpForceRow(BaseModel):
     object_name: str
     image_name: str
     image_name_2: str | None = None
     condition_id: str = "baseline"
+    split: Literal["train", "test"] = "train"
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
@@ -174,6 +185,7 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
                 (row.get("condition_id") or row.get("Condition_ID") or "").strip()
                 or "baseline"
             ),
+            split=_parse_split(row.get("split")),
             mass_g=_parse_optional_float(row.get("Mass_g")),
             roughness_index=_parse_optional_float(row.get("roughness_index")),
             legacy_roughness_class=_parse_optional_int(row.get("roughness_class")),
@@ -196,6 +208,15 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
         raise ValueError(f"expected 129 physical surfaces, found {len(surface_ids)}")
     if len(set(ids)) != len(ids):
         raise ValueError("object names do not produce unique IDs")
+    split_by_surface: dict[str, set[str]] = {}
+    for row in rows:
+        split_by_surface.setdefault(row.surface_id, set()).add(row.split)
+    mixed = sorted(surface for surface, splits in split_by_surface.items() if len(splits) > 1)
+    if mixed:
+        raise ValueError(
+            "all conditions of a physical surface must share one train/test split: "
+            + ", ".join(mixed)
+        )
     return rows
 
 
@@ -209,6 +230,7 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
         "Object",
         "Image",
         *(["Image_2"] if any(row.image_name_2 for row in rows) else []),
+        "split",
         "condition_id",
         "Mass_g",
         "roughness_index",
@@ -241,6 +263,7 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
             payload = {
                 "Object": row.object_name,
                 "Image": row.image_name,
+                "split": row.split,
                 "condition_id": row.condition_id,
                 "Mass_g": row.mass_g if row.mass_g is not None else "",
                 "roughness_index": (

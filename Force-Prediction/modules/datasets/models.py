@@ -6,6 +6,7 @@ from collections import Counter
 from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -98,6 +99,7 @@ class DatasetObjectMeasurements(BaseModel):
     object_id: str
     surface_id: str | None = None
     condition_id: str = "baseline"
+    split: Literal["train", "test"] = "train"
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     # Kept only so schema-v1 files remain inspectable. It is never used as an
@@ -128,6 +130,7 @@ class DatasetObject(BaseModel):
     object_id: str
     surface_id: str | None = None
     condition_id: str = "baseline"
+    split: Literal["train", "test"] = "train"
     name: str
     image: ImageArtifact
     image_2: ImageArtifact | None = None

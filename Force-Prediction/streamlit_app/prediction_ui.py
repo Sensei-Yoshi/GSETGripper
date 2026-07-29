@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from html import escape
+
 import pandas as pd
 import streamlit as st
 
@@ -129,6 +131,8 @@ def render_prediction(
     baseline: PipelineRunResult | None,
     cfg: Config,
     experiment: str | None = None,
+    unscored_message: str | None = None,
+    truth_context_label: str | None = None,
 ) -> None:
     result = detailed.selection
     active_grippers = detailed.active_grippers
@@ -176,7 +180,12 @@ def render_prediction(
 
     if truth is None:
         st.markdown(
-            '<p class="status-warn">Unscored run: complete paired truth is not recorded.</p>',
+            '<p class="status-warn">'
+            + escape(
+                unscored_message
+                or "Unscored run: complete paired truth is not recorded."
+            )
+            + "</p>",
             unsafe_allow_html=True,
         )
     elif counterfactual:
@@ -195,8 +204,9 @@ def render_prediction(
         if len(active_grippers) == 1:
             name = active_grippers[0]
             force = truth_values[f"true_{name}_force_n"]
+            status_label = truth_context_label or f"Leave-one-out {name} truth"
             st.markdown(
-                f'<p class="status-ok">Leave-one-out {name} truth is available.</p>',
+                f'<p class="status-ok">{escape(status_label)} is available.</p>',
                 unsafe_allow_html=True,
             )
             st.metric(
@@ -207,8 +217,10 @@ def render_prediction(
             predicted_correct = (
                 result.desired_gripper in {g.value for g in truth.optimal_grippers()[0]}
             )
+            status_label = truth_context_label or "Leave-one-out truth"
             st.markdown(
-                f'<p class="status-ok">Leave-one-out truth: {truth_values["true_selection"]}; '
+                f'<p class="status-ok">{escape(status_label)}: '
+                f'{truth_values["true_selection"]}; '
                 f'prediction {"correct" if predicted_correct else "incorrect"}.</p>',
                 unsafe_allow_html=True,
             )
@@ -229,7 +241,7 @@ def render_prediction(
         with column:
             st.subheader(gripper.title())
             truth_force = None
-            if not counterfactual:
+            if truth is not None and not counterfactual:
                 truth_record = truth.get(Gripper(gripper))
                 truth_force = truth_record.min_force_n if truth_record else None
             st.metric(

@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 FIGURES_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = FIGURES_DIR.parent / "Force-Prediction"
+PROJECT_ROOT = FIGURES_DIR.parents[1] / "Force-Prediction"
 RUN_ROOT = PROJECT_ROOT / "test_data" / "marigold_tests"
 
 GRITS = (120, 220, 400, 800, 1000, 2000)
@@ -86,18 +86,13 @@ def _set_paper_style() -> None:
             "xtick.labelsize": 9,
             "ytick.labelsize": 9,
             "axes.linewidth": 0.8,
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
             "savefig.facecolor": "white",
         }
     )
 
 
-def _save_figure(fig: plt.Figure, stem: str, *, svg: bool = False) -> None:
+def _save_figure(fig: plt.Figure, stem: str) -> None:
     fig.savefig(FIGURES_DIR / f"{stem}.png", dpi=300, bbox_inches="tight")
-    fig.savefig(FIGURES_DIR / f"{stem}.pdf", bbox_inches="tight")
-    if svg:
-        fig.savefig(FIGURES_DIR / f"{stem}.svg", bbox_inches="tight")
     plt.close(fig)
 
 
@@ -196,7 +191,7 @@ def _make_grit_plot(runs: list[SandpaperRun]) -> None:
         "OpenCV LED-system estimate",
     ]
     ax.legend(lines, labels, loc="upper right", frameon=False, fontsize=8.5)
-    _save_figure(fig, "sandpaper_grit_vs_appearance_roughness", svg=True)
+    _save_figure(fig, "sandpaper_grit_vs_appearance_roughness")
 
 
 def _image_for_plot(

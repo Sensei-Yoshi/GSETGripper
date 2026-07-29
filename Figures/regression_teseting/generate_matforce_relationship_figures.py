@@ -109,8 +109,6 @@ def _set_paper_style() -> None:
             "xtick.labelsize": 9,
             "ytick.labelsize": 9,
             "axes.linewidth": 0.8,
-            "pdf.fonttype": 42,
-            "ps.fonttype": 42,
             "savefig.facecolor": "white",
         }
     )
@@ -118,21 +116,20 @@ def _set_paper_style() -> None:
 
 def _save_figure(fig: plt.Figure, stem: str) -> None:
     fig.savefig(FIGURES_DIR / f"{stem}.png", dpi=300, bbox_inches="tight")
-    fig.savefig(FIGURES_DIR / f"{stem}.pdf", bbox_inches="tight")
-    fig.savefig(FIGURES_DIR / f"{stem}.svg", bbox_inches="tight")
     plt.close(fig)
 
 
 def _add_object_key(ax: plt.Axes, objects: list[MatForceObject]) -> None:
     ax.set_axis_off()
     ax.set_title("Object key", loc="left", pad=10, color=DARK)
-    rows_per_column = 15
+    rows_per_column = (len(objects) + 1) // 2
     x_positions = (0.0, 0.51)
+    row_step = 0.92 / max(rows_per_column - 1, 1)
     for index, item in enumerate(objects):
         column = index // rows_per_column
         row = index % rows_per_column
         x = x_positions[column]
-        y = 0.965 - row * 0.064
+        y = 0.965 - row * row_step
         ax.text(
             x,
             y,

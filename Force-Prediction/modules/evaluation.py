@@ -32,22 +32,10 @@ def make_folds(
     records: list[ExperienceRecord],
     cfg: Config,
     variant_groups: dict[str, str] | None = None,
-    *,
-    protocol: str = "new_surface",
 ) -> list[dict[str, list[str]]]:
     """GroupKFold over object_id (or a coarser variant group). Returns per-fold
     {"train": [object_id...], "test": [object_id...]}."""
     object_ids = sorted({r.object_id for r in records})
-    if protocol not in {"new_surface", "condition_interpolation"}:
-        raise ValueError(f"unknown evaluation protocol {protocol!r}")
-    if protocol == "condition_interpolation":
-        return [
-            {
-                "train": [candidate for candidate in object_ids if candidate != object_id],
-                "test": [object_id],
-            }
-            for object_id in object_ids
-        ]
     record_by_id = {record.object_id: record for record in records}
     groups = [
         (variant_groups or {}).get(

@@ -46,8 +46,9 @@ scored separately.
 - `retrieval.k` in `config.yaml` is the default used by E3/E4 and the UI.
 - `surface_id` identifies a physical contact surface; `condition_id` identifies one
   independently measured condition; baseline `object_id` values remain unchanged.
-- Gecko/silicone rows are paired by condition-level `object_id`. New-surface evaluation
-  groups every sibling condition by `surface_id`; interpolation excludes only the query condition.
+- Gecko/silicone rows are paired by condition-level `object_id`. The source CSV's
+  `split` column defines the canonical train/test holdout, and every sibling condition
+  of one `surface_id` must remain on the same side.
 - E3/E4 rank `retrieval.k` distinct surfaces and retain up to
   `retrieval.conditions_per_surface` condition observations from each.
 - Embeddings contain the semantic contact-region description only. Mass, roughness, and
@@ -70,7 +71,7 @@ scored separately.
 | `prediction.py` | Single/joint force requests, continuous clamp, selector |
 | `retrieval.py` | Embedding providers and E3 semantic/E4 hybrid retrieval |
 | `physics.py` | Mock-hardware analytical equations and calibration diagnostics |
-| `evaluation.py` | Surface-grouped and condition-interpolation splits and metrics |
+| `evaluation.py` | Surface-grouped cross-validation splits and metrics |
 | `datasets/` | Dataset discovery, aggregate/object contracts, artifact storage, preparation stages |
 | `models/` | Lazy Gemini, rembg background-removal, and Marigold integrations |
 | `cache.py` | Dataset-scoped API caches and legacy Exp-Force read-through |
@@ -87,8 +88,8 @@ shared context, tab registry, reusable prediction components, widget-key rules, 
 Every non-hidden direct directory under `data/`, except `cache`, is exposed by the global
 Streamlit Dataset selector. Dataset-dependent code must use `AppContext.dataset.paths` or
 the dataset runtime config, not hard-coded Exp-Force paths. Each `DatasetObject` always has
-primary-image/description/embedding attributes, an optional `image_2` geometry view, and optional mass, roughness,
-projected-contact-fraction, and gripper outcomes.
+primary-image/description/embedding attributes, a train/test split, an optional `image_2`
+geometry view, and optional mass, roughness, projected-contact-fraction, and gripper outcomes.
 
 `data/expforce/dataset.csv` is a synthetic 129-object validation fixture, not
 physical evidence. Derived descriptors, experience rows, runs, and results stay separate

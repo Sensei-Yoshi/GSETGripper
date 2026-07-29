@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel, Field, model_validator
 
 from ..config import Config
@@ -19,6 +21,7 @@ from .storage import (
 class DatasetObjectEdit(BaseModel):
     """Nullable measurements and partial outcome labels for one dataset object."""
 
+    split: Literal["train", "test"] | None = None
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
@@ -43,6 +46,7 @@ class DatasetObjectEdit(BaseModel):
             image_name=original.image_name,
             image_name_2=original.image_name_2,
             condition_id=original.condition_id,
+            split=self.split or original.split,
             mass_g=self.mass_g,
             roughness_index=self.roughness_index,
             legacy_roughness_class=original.legacy_roughness_class,
@@ -58,6 +62,7 @@ class DatasetObjectEdit(BaseModel):
             image_name=original.image_name,
             image_name_2=original.image_name_2,
             condition_id=original.condition_id,
+            split=self.split or original.split,
             mass_g=self.mass_g,
             roughness_index=self.roughness_index,
             legacy_roughness_class=original.legacy_roughness_class,
@@ -103,12 +108,21 @@ def update_dataset_object(
             raise ValueError(
                 "an identical mass/roughness/contact measurement tuple already exists"
             )
+        updated_rows = [
+            (
+                row.model_copy(update={"split": updated.split})
+                if row.surface_id == updated.surface_id
+                else row
+            )
+            for row in updated_rows
+        ]
         updated_rows[positions[0]] = updated
         save_rows(dataset.paths.root / "dataset.csv", updated_rows)
     elif dataset.adapter == "image_folder":
         measurements = DatasetObjectMeasurements(
             object_id=object_id,
-            **edit.model_dump(mode="python"),
+            split=edit.split or dataset.objects[object_id].split,
+            **edit.model_dump(mode="python", exclude={"split"}),
         )
         write_json_atomic(
             dataset.paths.object_dir(object_id) / "measurements.json",

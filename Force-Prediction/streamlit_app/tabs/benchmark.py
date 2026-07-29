@@ -7,7 +7,7 @@ import streamlit as st
 from modules.benchmarking import (
     BenchmarkEvaluation,
     BenchmarkPredictionBatch,
-    EvaluationProtocol,
+    benchmark_scope,
     evaluation_readiness,
     generate_benchmark_predictions,
     get_or_create_benchmark_evaluation,
@@ -16,7 +16,6 @@ from modules.benchmarking import (
     save_prediction_batch,
 )
 from modules.config import EXPERIMENT_IDS
-from modules.experiments import experiment_eligibility
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import format_experiment
 
@@ -24,7 +23,7 @@ from streamlit_app.prediction_ui import format_experiment
 def _batch_label(batch: BenchmarkPredictionBatch) -> str:
     targets = "+".join(batch.metadata["active_grippers"])
     protocol = batch.metadata.get(
-        "evaluation_protocol", EvaluationProtocol.NEW_SURFACE.value
+        "evaluation_protocol", "leave_one_surface_out"
     ).replace("_", " ")
     return (
         f"{batch.metadata['created_at'][:19]} | {protocol} | {targets} | "
@@ -86,76 +85,49 @@ def render(context: AppContext) -> None:
             key="benchmark_experiment",
             on_change=clear_benchmark_summary,
         )
-        generation = experiment_eligibility(context.dataset, cfg, experiment)
-        protocol = st.selectbox(
-            "Evaluation protocol",
-            list(EvaluationProtocol),
-            format_func=lambda value: (
-                "New-surface generalization"
-                if value is EvaluationProtocol.NEW_SURFACE
-                else "Known-surface condition interpolation"
-            ),
-            key="benchmark_protocol",
-            on_change=clear_benchmark_summary,
-        )
-        st.caption(
-            f"{len(generation.query_ids)} query-ready of "
-            f"{len(context.dataset.objects)} objects for {experiment.upper()}."
-        )
-        if generation.skipped_queries:
+        scope = benchmark_scope(cfg, experiment)
+        if scope.test_ids:
+            st.caption(
+                f"Fixed holdout: {len(scope.train_ids)} train · {len(scope.test_ids)} test · "
+                f"{len(scope.query_ids)} test objects ready for {experiment.upper()}."
+            )
+        else:
+            st.caption(
+                f"No test rows are assigned. {len(scope.query_ids)} objects are available "
+                "for the legacy leave-one-surface-out benchmark."
+            )
+        if scope.skipped_queries:
             with st.expander("Generation exclusions"):
-                st.json(generation.skipped_queries, expanded=False)
+                st.json(scope.skipped_queries, expanded=False)
 
-        button_columns = st.columns(2)
-        run_predictions = button_columns[0].button(
+        run_predictions = st.button(
             "Run selected",
             type="primary",
             width="stretch",
-            disabled=not generation.query_ids,
+            disabled=not scope.query_ids,
             key="run_benchmark_predictions",
-        )
-        run_both = button_columns[1].button(
-            "Run both",
-            width="stretch",
-            disabled=not generation.query_ids,
-            key="run_both_benchmark_protocols",
         )
         st.caption(
             "This calls Gemini and saves immutable predictions. Force labels are not required."
         )
 
-    if run_predictions or run_both:
+    if run_predictions:
         progress_bar = summary_col.progress(0.0)
         status = summary_col.empty()
         with summary_col, st.spinner("Generating and saving prediction batch…"):
             st.session_state.pop("benchmark_evaluation_result", None)
-            protocols = list(EvaluationProtocol) if run_both else [protocol]
-            last_result = None
-            for protocol_index, selected_protocol in enumerate(protocols):
-                def progress(
-                    done: int,
-                    total: int,
-                    object_id: str,
-                    protocol_index: int = protocol_index,
-                    selected_protocol: EvaluationProtocol = selected_protocol,
-                ) -> None:
-                    overall_total = total * len(protocols)
-                    overall_done = protocol_index * total + done
-                    progress_bar.progress(overall_done / overall_total)
-                    status.caption(
-                        f"{selected_protocol.value.replace('_', ' ')} — "
-                        f"{done}/{total}: {object_id.replace('_', ' ')}"
-                    )
 
-                batch = generate_benchmark_predictions(
-                    cfg,
-                    experiment,
-                    protocol=selected_protocol,
-                    progress=progress,
-                )
-                paths = save_prediction_batch(cfg, batch)
-                last_result = (batch, paths)
-            st.session_state["benchmark_prediction_result"] = last_result
+            def progress(done: int, total: int, object_id: str) -> None:
+                progress_bar.progress(done / total)
+                status.caption(f"{done}/{total}: {object_id.replace('_', ' ')}")
+
+            batch = generate_benchmark_predictions(
+                cfg,
+                experiment,
+                progress=progress,
+            )
+            paths = save_prediction_batch(cfg, batch)
+            st.session_state["benchmark_prediction_result"] = (batch, paths)
         progress_bar.empty()
         status.empty()
 

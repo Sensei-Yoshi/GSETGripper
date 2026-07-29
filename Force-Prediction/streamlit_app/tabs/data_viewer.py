@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from pathlib import Path
 
 import cv2
@@ -76,6 +77,7 @@ def _card_editor(
                 if status is not True:
                     st.session_state[f"{prefix}_{gripper}_force_n"] = None
             edit = DatasetObjectEdit(
+                split=st.session_state[f"{prefix}_split"].lower(),
                 mass_g=st.session_state[f"{prefix}_mass_g"],
                 roughness_index=(
                     st.session_state[f"{prefix}_roughness_index"]
@@ -106,7 +108,19 @@ def _card_editor(
     with st.expander(f"Edit {item.condition_id.replace('_', ' ')}"):
         st.caption(
             "Each valid change saves atomically and refreshes completed experience records. "
-            "Names, images, descriptors, and generated artifacts remain read-only."
+            "The train/test assignment and measurements are editable; names, images, "
+            "descriptors, and generated artifacts remain read-only."
+        )
+        st.selectbox(
+            "Dataset split",
+            ["Train", "Test"],
+            index=0 if item.split == "train" else 1,
+            key=f"{prefix}_split",
+            on_change=save_change,
+            help=(
+                "Train rows may be used as E3/E4 references. Test rows are the only "
+                "objects predicted and scored by a fixed-holdout benchmark."
+            ),
         )
         measurement_count = 1 + int(context.config.inputs.use_roughness) + int(
             context.config.inputs.use_projected_contact
@@ -391,7 +405,8 @@ def _description_catalog(context: AppContext) -> None:
                 surface_id = row.surface_id or row.object_id
                 conditions = grouped[surface_id]
                 st.caption(
-                    f"Surface ID: {surface_id} · {len(conditions)} measurement condition(s)"
+                    f"Surface ID: {surface_id} · Benchmark split: {row.split.upper()} · "
+                    f"{len(conditions)} measurement condition(s)"
                 )
 
                 st.markdown("**Measurement conditions**")
@@ -400,6 +415,7 @@ def _description_catalog(context: AppContext) -> None:
                     condition_row = {
                         "Condition": condition.condition_id,
                         "Data-point ID": condition.object_id,
+                        "Split": condition.split.title(),
                         "Mass (g)": condition.mass_g,
                     }
                     if base_cfg.inputs.use_roughness:
@@ -597,6 +613,14 @@ def pipeline_run_inspector(context: AppContext) -> None:
 
 def render(context: AppContext) -> None:
     st.header("Data Viewer")
+    split_by_surface: dict[str, str] = {}
+    for item in context.rows:
+        split_by_surface.setdefault(item.surface_id or item.object_id, item.split)
+    split_counts = Counter(split_by_surface.values())
+    st.caption(
+        f"Benchmark split · Train: {split_counts['train']} physical surfaces · "
+        f"Test: {split_counts['test']} physical surfaces"
+    )
     if message := st.session_state.pop("data_viewer_flash", None):
         st.success(message)
     _description_catalog(context)

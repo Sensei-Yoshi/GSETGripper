@@ -1,11 +1,11 @@
 model,inputs,train_r2,new_surface_grouped_r2,new_surface_grouped_rmse_n,new_surface_grouped_mae_n,condition_interpolation_r2,condition_interpolation_rmse_n,condition_interpolation_mae_n,sample_count,full_data_selected_parameters
-Mean baseline,none,0.000000,-0.072704,1.978831,1.529879,-0.072704,1.978831,1.529879,29,{}
-Roughness-only linear,roughness,0.000005,-0.140093,2.040040,1.579115,-0.140093,2.040040,1.579115,29,{}
-Log-mass-only linear,log10(mass),0.470530,0.400865,1.478873,1.138788,0.400865,1.478873,1.138788,29,{}
-Two-feature linear,log10(mass) + roughness,0.562165,0.471924,1.388407,1.102696,0.471924,1.388407,1.102696,29,{}
-Two-feature quadratic ridge,log10(mass) + roughness,0.599869,0.515003,1.330572,1.062651,0.536304,1.301024,1.036521,29,"{""model__alpha"": 5.623413251903491}"
-Log-mass-only RBF SVR,log10(mass),0.543024,0.471414,1.389078,1.129776,0.499223,1.352045,1.065700,29,"{""model__C"": 30.0, ""model__epsilon"": 0.4, ""model__gamma"": 0.03}"
-Two-feature RBF SVR,log10(mass) + roughness,0.709411,0.412700,1.464195,1.159051,0.390407,1.491725,1.120997,29,"{""model__C"": 30.0, ""model__epsilon"": 0.4, ""model__gamma"": 0.1}"
+Mean baseline,none,0.000000,-0.053324,1.921457,1.515348,-0.053324,1.921457,1.515348,39,{}
+Roughness-only linear,roughness,0.003174,-0.097625,1.961448,1.541859,-0.097625,1.961448,1.541859,39,{}
+Log-mass-only linear,log10(mass),0.401311,0.342966,1.517552,1.205317,0.342966,1.517552,1.205317,39,{}
+Two-feature linear,log10(mass) + roughness,0.516861,0.446932,1.392320,1.087254,0.446932,1.392320,1.087254,39,{}
+Two-feature quadratic ridge,log10(mass) + roughness,0.566793,0.463275,1.371594,1.058004,0.443485,1.396652,1.072710,39,"{""model__alpha"": 1.0}"
+Log-mass-only RBF SVR,log10(mass),0.442417,0.324039,1.539255,1.280594,0.356254,1.502128,1.228915,39,"{""model__C"": 30.0, ""model__epsilon"": 0.1, ""model__gamma"": 0.03}"
+Two-feature RBF SVR,log10(mass) + roughness,0.609147,0.479521,1.350677,1.007485,0.361549,1.495937,1.120507,39,"{""model__C"": 10.0, ""model__epsilon"": 0.1, ""model__gamma"": 0.1}"
 Mass + roughness + contact linear,log10(mass) + roughness + contact,nan,nan,nan,nan,nan,nan,nan,0,{}
 Mass + roughness + contact quadratic ridge,log10(mass) + roughness + contact,nan,nan,nan,nan,nan,nan,nan,0,{}
 Mass + roughness + contact RBF SVR,log10(mass) + roughness + contact,nan,nan,nan,nan,nan,nan,nan,0,{}

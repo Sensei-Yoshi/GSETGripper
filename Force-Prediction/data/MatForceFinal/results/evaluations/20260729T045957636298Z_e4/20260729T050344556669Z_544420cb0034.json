@@ -1,0 +1,4067 @@
+{
+  "schema_version": 10,
+  "artifact_type": "benchmark_evaluation",
+  "metadata": {
+    "evaluation_id": "20260729T050344556669Z_544420cb0034",
+    "prediction_batch_id": "20260729T045957636298Z_e4",
+    "dataset_id": "MatForceFinal",
+    "created_at": "2026-07-29T05:03:44.556669+00:00",
+    "experiment": "e4",
+    "experiment_method": "hybrid_retrieval_vlm",
+    "experiment_definition_version": 8,
+    "active_grippers": [
+      "gecko"
+    ],
+    "generation_mode": "single",
+    "evaluation_protocol": "fixed_train_test_holdout",
+    "backend": {
+      "force": "gemini_single_generation",
+      "semantic_embedding": "gemini-embedding-2-preview"
+    },
+    "prediction_created_at": "2026-07-29T04:59:57.636298+00:00",
+    "generation_source_sha256": "877fc51bbe02e9cae7c6f5c7b654e0e955d654dc383b9cbb76b2df38b7e60142",
+    "generation_input_sha256": "db0bce399da2f1fc06dfaa8fddc4e26257d4197526d8675b6ac43d2cf903d91a",
+    "truth_source_sha256": "877fc51bbe02e9cae7c6f5c7b654e0e955d654dc383b9cbb76b2df38b7e60142",
+    "truth_snapshot_sha256": "544420cb0034d6a2a8abffdf2668541322a45841b4d24a70d7e6b953c186659a",
+    "coverage": {
+      "predicted": 9,
+      "evaluated": 9,
+      "skipped": 0,
+      "fraction": 1.0
+    },
+    "skipped_truth": {},
+    "exports": {
+      "json": "data/MatForceFinal/results/evaluations/20260729T045957636298Z_e4/20260729T050344556669Z_544420cb0034.json",
+      "csv": "data/MatForceFinal/results/evaluations/20260729T045957636298Z_e4/20260729T050344556669Z_544420cb0034.csv",
+      "png": "data/MatForceFinal/results/evaluations/20260729T045957636298Z_e4/20260729T050344556669Z_544420cb0034.png",
+      "svg": "data/MatForceFinal/results/evaluations/20260729T045957636298Z_e4/20260729T050344556669Z_544420cb0034.svg"
+    }
+  },
+  "metrics": {
+    "force": {
+      "gecko": {
+        "n": 9,
+        "mae": 1.305777777777778,
+        "rmse": 2.1194410164527397,
+        "medae": 0.5860000000000001,
+        "within_0.25n": 0.1111111111111111,
+        "within_0.5n": 0.2222222222222222
+      },
+      "overall": {
+        "n": 9,
+        "mae": 1.305777777777778,
+        "rmse": 2.1194410164527397,
+        "medae": 0.5860000000000001,
+        "within_0.25n": 0.1111111111111111,
+        "within_0.5n": 0.2222222222222222
+      }
+    },
+    "feasibility": {
+      "gecko": {
+        "tp": 9,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    },
+    "selection": {
+      "applicable": false,
+      "n": 0
+    },
+    "model_recommendation": {
+      "applicable": false,
+      "n": 0
+    }
+  },
+  "rows": [
+    {
+      "object_id": "clay_bowl",
+      "surface_id": "clay_bowl",
+      "condition_id": "baseline",
+      "object_name": "Clay Bowl",
+      "image_path": "data/MatForceFinal/clay_bowl.jpg",
+      "image_sha256": "de1b845b4662fb46b27d674cefb9e02353ea1578cb272aaf90617b6a5e707d13",
+      "mass_g": 286.71,
+      "roughness_index": 1847.68,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 4.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 4.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Painted clay pot with a dry, matte painted surface",
+              "visible_surface_condition": "Irregular, curved lateral exterior with slight textural irregularities and minor surface undulations",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 4.5,
+              "evidence_used": [
+                "Query object mass: 286.71 g",
+                "Query object roughness index: 1847.68",
+                "Retrieved object 'big_stone' mass: 278.8 g, roughness: 2048.83, min force: 4.623 N",
+                "Retrieved object 'microphone' mass: 258.48 g, roughness: 2228.39, min force: 2.3 N",
+                "Retrieved object 'headphones_case' mass: 218.15 g, roughness: 1610.85, min force: 3.01 N",
+                "Gecko embodiment description: TP fin-ray finger with mushroom-cap Gecko-inspired dry-adhesive pad requiring broad intimate contact and degrading with roughness and surface undulations."
+              ],
+              "calculation_summary": "Interpolated expected normal force between retrieved similar mass and roughness conditions, specifically anchoring near the closest high-mass and comparable-roughness neighbors ('big_stone' at 4.623 N for 278.8 g and roughness 2048.83, and scaled up slightly relative to lighter items like 'headphones_case' due to the query mass of 286.71 g and high-frequency roughness index of 1847.68). Estimated normal force = 4.5 N.",
+              "assumptions_and_uncertainty": [
+                "Assumed uniform grip acquisition despite the irregular lateral exterior surface undulations.",
+                "Uncertainty arises from localized compliance variations in the handmade clay pot's paint layer affecting dry-adhesive patch engagement.",
+                "No direct physics calculation used; relied solely on retrieved nearest-neighbor comparisons and authoritative mass/roughness scaling."
+              ],
+              "reasoning_trace": "The query object is a handmade painted clay pot weighing 286.71 g with a roughness index of 1847.68. The gecko dry-adhesive gripper relies on intimate contact which can be hindered by roughness and surface irregularities. Reviewing the retrieved objects, 'big_stone' has a very similar mass (278.8 g) and comparable high roughness (2048.83), requiring 4.623 N. 'Headphones_case' has lower mass (218.15 g) and lower roughness (1610.85), requiring 3.01 N. Given that our query object's mass is very close to 'big_stone' and its roughness is slightly lower, the required normal force should be scaled closely to 'big_stone's requirement while acknowledging the irregular surface geometry. Thus, a stationary normal force estimate of 4.5 N is predicted, which is well within the 0 to 8 N limits and maintains feasibility."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Handmade painted clay pot object with an irregular, curved lateral exterior. The intended contact region has a dry, matte painted surface with slight textural irregularities and minor surface undulations.",
+        "object_id": "clay_bowl",
+        "surface_id": "clay_bowl",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "big_stone",
+            "surface_id": "big_stone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/big_stone/image.jpg",
+            "mass_g": 278.8,
+            "roughness_index": 2048.83,
+            "projected_contact_fraction": null,
+            "semantic_description": "Big Stone",
+            "gecko_min_force_n": 4.623,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7105581012823996,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5750324278876615,
+              "mass": 0.9608215944856899,
+              "roughness": 0.6687800815677631,
+              "contact": null,
+              "semantic_contribution": 0.2706034954765466,
+              "mass_contribution": 0.28259458661343817,
+              "roughness_contribution": 0.15736001919241485,
+              "contact_contribution": null,
+              "total": 0.7105581012823996
+            }
+          },
+          {
+            "object_id": "microphone",
+            "surface_id": "microphone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/microphone/image.jpg",
+            "mass_g": 258.48,
+            "roughness_index": 2228.39,
+            "projected_contact_fraction": null,
+            "semantic_description": "Microphone",
+            "gecko_min_force_n": 2.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6367539277929974,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5806220001010893,
+              "mass": 0.8623659047650496,
+              "roughness": 0.467002811961749,
+              "contact": null,
+              "semantic_contribution": 0.2732338824005126,
+              "mass_contribution": 0.25363703081324984,
+              "roughness_contribution": 0.10988301457923505,
+              "contact_contribution": null,
+              "total": 0.6367539277929974
+            }
+          },
+          {
+            "object_id": "headphones_case",
+            "surface_id": "headphones_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
+            "mass_g": 218.15,
+            "roughness_index": 1610.85,
+            "projected_contact_fraction": null,
+            "semantic_description": "Headphones Case",
+            "gecko_min_force_n": 3.01,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6122712890228076,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5667307495612505,
+              "mass": 0.6767780305646998,
+              "roughness": 0.622718941018557,
+              "contact": null,
+              "semantic_contribution": 0.26669682332294137,
+              "mass_contribution": 0.199052361930794,
+              "roughness_contribution": 0.14652210376907224,
+              "contact_contribution": null,
+              "total": 0.6122712890228076
+            }
+          },
+          {
+            "object_id": "leather_sunglasses_case",
+            "surface_id": "leather_sunglasses_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/leather_sunglasses_case/image.jpg",
+            "mass_g": 179.9,
+            "roughness_index": 2014.79,
+            "projected_contact_fraction": null,
+            "semantic_description": "Leather Sunglasses Case",
+            "gecko_min_force_n": 1.906,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.5952500312020685,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5857989005083564,
+              "mass": 0.5138548510957835,
+              "roughness": 0.7158962677223495,
+              "contact": null,
+              "semantic_contribution": 0.2756700708274618,
+              "mass_contribution": 0.15113377973405395,
+              "roughness_contribution": 0.1684461806405528,
+              "contact_contribution": null,
+              "total": 0.5952500312020685
+            }
+          },
+          {
+            "object_id": "ketchup",
+            "surface_id": "ketchup",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/ketchup/image.jpg",
+            "mass_g": 293.77,
+            "roughness_index": 705.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Ketchup",
+            "gecko_min_force_n": 0.24,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.5776697439998622,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5730076680146847,
+              "mass": 0.965845611091009,
+              "roughness": 0.10177406210628372,
+              "contact": null,
+              "semantic_contribution": 0.2696506673010281,
+              "mass_contribution": 0.2840722385561791,
+              "roughness_contribution": 0.02394683814265499,
+              "contact_contribution": null,
+              "total": 0.5776697439998622
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "big_stone",
+            "conditions": [
+              {
+                "object_id": "big_stone",
+                "surface_id": "big_stone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/big_stone/image.jpg",
+                "mass_g": 278.8,
+                "roughness_index": 2048.83,
+                "projected_contact_fraction": null,
+                "semantic_description": "Big Stone",
+                "gecko_min_force_n": 4.623,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7105581012823996,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5750324278876615,
+                  "mass": 0.9608215944856899,
+                  "roughness": 0.6687800815677631,
+                  "contact": null,
+                  "semantic_contribution": 0.2706034954765466,
+                  "mass_contribution": 0.28259458661343817,
+                  "roughness_contribution": 0.15736001919241485,
+                  "contact_contribution": null,
+                  "total": 0.7105581012823996
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "microphone",
+            "conditions": [
+              {
+                "object_id": "microphone",
+                "surface_id": "microphone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/microphone/image.jpg",
+                "mass_g": 258.48,
+                "roughness_index": 2228.39,
+                "projected_contact_fraction": null,
+                "semantic_description": "Microphone",
+                "gecko_min_force_n": 2.3,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6367539277929974,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5806220001010893,
+                  "mass": 0.8623659047650496,
+                  "roughness": 0.467002811961749,
+                  "contact": null,
+                  "semantic_contribution": 0.2732338824005126,
+                  "mass_contribution": 0.25363703081324984,
+                  "roughness_contribution": 0.10988301457923505,
+                  "contact_contribution": null,
+                  "total": 0.6367539277929974
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "headphones_case",
+            "conditions": [
+              {
+                "object_id": "headphones_case",
+                "surface_id": "headphones_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
+                "mass_g": 218.15,
+                "roughness_index": 1610.85,
+                "projected_contact_fraction": null,
+                "semantic_description": "Headphones Case",
+                "gecko_min_force_n": 3.01,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6122712890228076,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5667307495612505,
+                  "mass": 0.6767780305646998,
+                  "roughness": 0.622718941018557,
+                  "contact": null,
+                  "semantic_contribution": 0.26669682332294137,
+                  "mass_contribution": 0.199052361930794,
+                  "roughness_contribution": 0.14652210376907224,
+                  "contact_contribution": null,
+                  "total": 0.6122712890228076
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "leather_sunglasses_case",
+            "conditions": [
+              {
+                "object_id": "leather_sunglasses_case",
+                "surface_id": "leather_sunglasses_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/leather_sunglasses_case/image.jpg",
+                "mass_g": 179.9,
+                "roughness_index": 2014.79,
+                "projected_contact_fraction": null,
+                "semantic_description": "Leather Sunglasses Case",
+                "gecko_min_force_n": 1.906,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.5952500312020685,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5857989005083564,
+                  "mass": 0.5138548510957835,
+                  "roughness": 0.7158962677223495,
+                  "contact": null,
+                  "semantic_contribution": 0.2756700708274618,
+                  "mass_contribution": 0.15113377973405395,
+                  "roughness_contribution": 0.1684461806405528,
+                  "contact_contribution": null,
+                  "total": 0.5952500312020685
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "ketchup",
+            "conditions": [
+              {
+                "object_id": "ketchup",
+                "surface_id": "ketchup",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/ketchup/image.jpg",
+                "mass_g": 293.77,
+                "roughness_index": 705.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Ketchup",
+                "gecko_min_force_n": 0.24,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.5776697439998622,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5730076680146847,
+                  "mass": 0.965845611091009,
+                  "roughness": 0.10177406210628372,
+                  "contact": null,
+                  "semantic_contribution": 0.2696506673010281,
+                  "mass_contribution": 0.2840722385561791,
+                  "roughness_contribution": 0.02394683814265499,
+                  "contact_contribution": null,
+                  "total": 0.5776697439998622
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 28,
+          "misses": 5,
+          "writes": 5,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 2,
+            "writes": 2,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 28,
+            "misses": 3,
+            "writes": 3,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 2,
+            "embedding": 3
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 4.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 3.63,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.8700000000000001,
+      "absolute_error_gecko_n": 0.8700000000000001
+    },
+    {
+      "object_id": "golden_box",
+      "surface_id": "golden_box",
+      "condition_id": "baseline",
+      "object_name": "Golden Box",
+      "image_path": "data/MatForceFinal/golden_box.jpg",
+      "image_sha256": "1a034ec14d20ac0cea21f09a3239ec55cb2f6963090979ad2dad7392dfeeef16",
+      "mass_g": 231.63,
+      "roughness_index": 1544.73,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 3.25,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 3.25,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Metallic beaded and filigree structure",
+              "visible_surface_condition": "Dry, highly irregular, and textured with interrupted contact points",
+              "compatibility": "low",
+              "feasible": true,
+              "predicted_normal_force_n": 3.25,
+              "evidence_used": [
+                "Query mass: 231.63 g",
+                "Query roughness index: 1544.73",
+                "Retrieved object rank 1 headphones_case: mass 218.15 g, roughness index 1610.85, gecko_min_force_n 3.01 N",
+                "Retrieved object rank 3 wallet_1: mass 139.66 g, roughness index 1596.55, gecko_min_force_n 2.013 N",
+                "Retrieved object rank 5 microphone: mass 258.48 g, roughness index 2228.39, gecko_min_force_n 2.3 N",
+                "Active gripper embodiment: TPU fin-ray finger with mushroom-cap Gecko-inspired dry-adhesive pad requiring broad, intimate contact on smooth, nonporous surfaces"
+              ],
+              "calculation_summary": "Interpolated and scaled from nearest retrieved neighbours sharing similar mass (~218g-258g) and high roughness indices (~1544 to 2228). Specifically, headphones_case requires 3.01 N at 218.15 g and roughness 1610.85. Scaling slightly upwards to account for the query's higher mass (231.63 g) and extremely irregular metallic beaded surface yields approximately 3.25 N.",
+              "assumptions_and_uncertainty": [
+                "Assumes the metallic beaded surface allows sufficient micro-contact despite severe irregularity.",
+                "Uncertainty arises from interrupted contact points inherent to beaded and filigree structures which degrade dry adhesion effectiveness.",
+                "No direct calibrated friction coefficient was available, relying entirely on empirical retrieval proximity."
+              ],
+              "reasoning_trace": "The query object is an ornamental spherical object weighing 231.63 g with a high roughness index of 1544.73. The gecko dry adhesive requires smooth, intimate contact and degrades with roughness and interruptions. Retrieved experiences like headphones_case (mass 218.15 g, roughness 1610.85, force 3.01 N) and microphone (mass 258.48 g, roughness 2228.39, force 2.3 N) provide a strong empirical baseline. Scaling the nearest comparable forces relative to the query mass and rough texture leads to an estimated normal force of 3.25 N to ensure secure gripping despite the irregular surface."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Ornamental spherical object with a metallic beaded surface and complex textured structure. The intended contact region is dry, highly irregular due to beads and filigree, and presents a non-uniform gripping surface.",
+        "object_id": "golden_box",
+        "surface_id": "golden_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "headphones_case",
+            "surface_id": "headphones_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
+            "mass_g": 218.15,
+            "roughness_index": 1610.85,
+            "projected_contact_fraction": null,
+            "semantic_description": "Headphones Case",
+            "gecko_min_force_n": 3.01,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7463944686280413,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5743285063130825,
+              "mass": 0.9179110244526836,
+              "roughness": 0.8761306984771562,
+              "contact": null,
+              "semantic_contribution": 0.27027223826498,
+              "mass_contribution": 0.2699738307213775,
+              "roughness_contribution": 0.2061483996416838,
+              "contact_contribution": null,
+              "total": 0.7463944686280413
+            }
+          },
+          {
+            "object_id": "rubber_tire",
+            "surface_id": "rubber_tire",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
+            "mass_g": 163.84,
+            "roughness_index": 1349.28,
+            "projected_contact_fraction": null,
+            "semantic_description": "Rubber Tire",
+            "gecko_min_force_n": 0.464,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6294288882263521,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.618195088340023,
+              "mass": 0.6097878406760353,
+              "roughness": 0.6764477974369065,
+              "contact": null,
+              "semantic_contribution": 0.29091533568942257,
+              "mass_contribution": 0.17934936490471623,
+              "roughness_contribution": 0.1591641876322133,
+              "contact_contribution": null,
+              "total": 0.6294288882263521
+            }
+          },
+          {
+            "object_id": "wallet_1",
+            "surface_id": "wallet_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/wallet_1/image.jpg",
+            "mass_g": 139.66,
+            "roughness_index": 1596.55,
+            "projected_contact_fraction": null,
+            "semantic_description": "Wallet 1",
+            "gecko_min_force_n": 2.013,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.623451630935272,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5706774423891443,
+              "mass": 0.4854117998095466,
+              "roughness": 0.9015497969346844,
+              "contact": null,
+              "semantic_contribution": 0.2685540905360679,
+              "mass_contribution": 0.1427681764145725,
+              "roughness_contribution": 0.2121293639846316,
+              "contact_contribution": null,
+              "total": 0.623451630935272
+            }
+          },
+          {
+            "object_id": "banana",
+            "surface_id": "banana",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/banana/image.jpg",
+            "mass_g": 202.6,
+            "roughness_index": 1072.02,
+            "projected_contact_fraction": null,
+            "semantic_description": "Banana",
+            "gecko_min_force_n": 2.523,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6148391955881546,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5960954084055156,
+              "mass": 0.8258875237439303,
+              "roughness": 0.3885163597587135,
+              "contact": null,
+              "semantic_contribution": 0.2805154863084779,
+              "mass_contribution": 0.242908095218803,
+              "roughness_contribution": 0.09141561406087377,
+              "contact_contribution": null,
+              "total": 0.6148391955881546
+            }
+          },
+          {
+            "object_id": "microphone",
+            "surface_id": "microphone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/microphone/image.jpg",
+            "mass_g": 258.48,
+            "roughness_index": 2228.39,
+            "projected_contact_fraction": null,
+            "semantic_description": "Microphone",
+            "gecko_min_force_n": 2.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6012008103523431,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.615797079231444,
+              "mass": 0.8549763247723988,
+              "roughness": 0.25478887956907187,
+              "contact": null,
+              "semantic_contribution": 0.28978686081479715,
+              "mass_contribution": 0.25146362493305846,
+              "roughness_contribution": 0.0599503246044875,
+              "contact_contribution": null,
+              "total": 0.6012008103523431
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "headphones_case",
+            "conditions": [
+              {
+                "object_id": "headphones_case",
+                "surface_id": "headphones_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
+                "mass_g": 218.15,
+                "roughness_index": 1610.85,
+                "projected_contact_fraction": null,
+                "semantic_description": "Headphones Case",
+                "gecko_min_force_n": 3.01,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7463944686280413,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5743285063130825,
+                  "mass": 0.9179110244526836,
+                  "roughness": 0.8761306984771562,
+                  "contact": null,
+                  "semantic_contribution": 0.27027223826498,
+                  "mass_contribution": 0.2699738307213775,
+                  "roughness_contribution": 0.2061483996416838,
+                  "contact_contribution": null,
+                  "total": 0.7463944686280413
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "rubber_tire",
+            "conditions": [
+              {
+                "object_id": "rubber_tire",
+                "surface_id": "rubber_tire",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
+                "mass_g": 163.84,
+                "roughness_index": 1349.28,
+                "projected_contact_fraction": null,
+                "semantic_description": "Rubber Tire",
+                "gecko_min_force_n": 0.464,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6294288882263521,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.618195088340023,
+                  "mass": 0.6097878406760353,
+                  "roughness": 0.6764477974369065,
+                  "contact": null,
+                  "semantic_contribution": 0.29091533568942257,
+                  "mass_contribution": 0.17934936490471623,
+                  "roughness_contribution": 0.1591641876322133,
+                  "contact_contribution": null,
+                  "total": 0.6294288882263521
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "wallet_1",
+            "conditions": [
+              {
+                "object_id": "wallet_1",
+                "surface_id": "wallet_1",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/wallet_1/image.jpg",
+                "mass_g": 139.66,
+                "roughness_index": 1596.55,
+                "projected_contact_fraction": null,
+                "semantic_description": "Wallet 1",
+                "gecko_min_force_n": 2.013,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.623451630935272,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5706774423891443,
+                  "mass": 0.4854117998095466,
+                  "roughness": 0.9015497969346844,
+                  "contact": null,
+                  "semantic_contribution": 0.2685540905360679,
+                  "mass_contribution": 0.1427681764145725,
+                  "roughness_contribution": 0.2121293639846316,
+                  "contact_contribution": null,
+                  "total": 0.623451630935272
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "banana",
+            "conditions": [
+              {
+                "object_id": "banana",
+                "surface_id": "banana",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/banana/image.jpg",
+                "mass_g": 202.6,
+                "roughness_index": 1072.02,
+                "projected_contact_fraction": null,
+                "semantic_description": "Banana",
+                "gecko_min_force_n": 2.523,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6148391955881546,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5960954084055156,
+                  "mass": 0.8258875237439303,
+                  "roughness": 0.3885163597587135,
+                  "contact": null,
+                  "semantic_contribution": 0.2805154863084779,
+                  "mass_contribution": 0.242908095218803,
+                  "roughness_contribution": 0.09141561406087377,
+                  "contact_contribution": null,
+                  "total": 0.6148391955881546
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "microphone",
+            "conditions": [
+              {
+                "object_id": "microphone",
+                "surface_id": "microphone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/microphone/image.jpg",
+                "mass_g": 258.48,
+                "roughness_index": 2228.39,
+                "projected_contact_fraction": null,
+                "semantic_description": "Microphone",
+                "gecko_min_force_n": 2.3,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6012008103523431,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.615797079231444,
+                  "mass": 0.8549763247723988,
+                  "roughness": 0.25478887956907187,
+                  "contact": null,
+                  "semantic_contribution": 0.28978686081479715,
+                  "mass_contribution": 0.25146362493305846,
+                  "roughness_contribution": 0.0599503246044875,
+                  "contact_contribution": null,
+                  "total": 0.6012008103523431
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 58,
+          "misses": 8,
+          "writes": 8,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 4,
+            "writes": 4,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 58,
+            "misses": 4,
+            "writes": 4,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 4,
+            "embedding": 4
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 3.25,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 4.283,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -1.0330000000000004,
+      "absolute_error_gecko_n": 1.0330000000000004
+    },
+    {
+      "object_id": "large_cardboard_box",
+      "surface_id": "large_cardboard_box",
+      "condition_id": "baseline",
+      "object_name": "Large Cardboard Box",
+      "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+      "image_sha256": "e119fc42761f31ac4bcff77d75a64741c7a722dec19117b5e6b8235481899a4d",
+      "mass_g": 671.94,
+      "roughness_index": 810.34,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 5.75,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 5.75,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Cardboard",
+              "visible_surface_condition": "Flat, dry, porous lateral surfaces with sharp vertical edges and a visible manufacturing seam.",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 5.75,
+              "evidence_used": [
+                "Query object mass: 671.94 g",
+                "Query object roughness index: 810.34",
+                "Retrieved object 1 (Camera Cardboard Box): mass = 871.93 g, roughness = 804.32, gecko_min_force_n = 7.46 N",
+                "Retrieved object 2 (Metal Water Bottle): mass = 551.01 g, roughness = 892.99, gecko_min_force_n = 3.83 N",
+                "Gecko embodiment description: dry adhesion benefits from broad, intimate contact with clean, dry, smooth, nonporous surfaces and degrades with roughness, porosity, and interrupted contact."
+              ],
+              "calculation_summary": "Interpolated/scaled from the closest matching retrieved experiences. Retrieved Object 1 (Camera Cardboard Box) has similar roughness (804.32 vs 810.34) and requires 7.46 N for 871.93 g. Scaling by mass ratio (671.94 / 871.93) yields approximately 5.75 N.",
+              "assumptions_and_uncertainty": [
+                "Cardboard porosity introduces slight degradation in dry adhesion compared to smooth nonporous films.",
+                "Uncertainty exists due to slight variations in surface texture along the box's manufacturing seam."
+              ],
+              "reasoning_trace": "The query object is an elongated cardboard box very semantically and physically similar to the top retrieved Camera Cardboard Box. With a measured mass of 671.94 g and high-frequency scattering index of 810.34, the required normal force scales proportionally from the closest retrieved cardboard exemplar (7.46 N for 871.93 g), landing at an estimated 5.75 N to ensure secure friction and dry-adhesion contact without exceeding the 8 N controller limit."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Elongated rectangular cardboard box object with flat, dry, porous lateral surfaces and sharp vertical edges. The intended contact region has continuous planar faces with a visible manufacturing seam along one side.",
+        "object_id": "large_cardboard_box",
+        "surface_id": "large_cardboard_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "camera_cardboard_box",
+            "surface_id": "camera_cardboard_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/camera_cardboard_box/image.jpg",
+            "mass_g": 871.93,
+            "roughness_index": 804.32,
+            "projected_contact_fraction": null,
+            "semantic_description": "Camera Cardboard Box",
+            "gecko_min_force_n": 7.46,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7697421389510917,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7109257672010023,
+              "mass": 0.6892162922850178,
+              "roughness": 0.988032190783863,
+              "contact": null,
+              "semantic_contribution": 0.3345533022122364,
+              "mass_contribution": 0.2027106742014758,
+              "roughness_contribution": 0.23247816253737952,
+              "contact_contribution": null,
+              "total": 0.7697421389510917
+            }
+          },
+          {
+            "object_id": "metal_water_bottle",
+            "surface_id": "metal_water_bottle",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
+            "mass_g": 551.01,
+            "roughness_index": 892.99,
+            "projected_contact_fraction": null,
+            "semantic_description": "Metal Water Bottle",
+            "gecko_min_force_n": 3.83,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.70682521627993,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6074466449149502,
+              "mass": 0.7531796041853691,
+              "roughness": 0.847639374128091,
+              "contact": null,
+              "semantic_contribution": 0.2858572446658589,
+              "mass_contribution": 0.22152341299569675,
+              "roughness_contribution": 0.19944455861837435,
+              "contact_contribution": null,
+              "total": 0.70682521627993
+            }
+          },
+          {
+            "object_id": "book",
+            "surface_id": "book",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/book/image.jpg",
+            "mass_g": 540.59,
+            "roughness_index": 646.42,
+            "projected_contact_fraction": null,
+            "semantic_description": "Book",
+            "gecko_min_force_n": 2.68,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6847942317115168,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.63687674559632,
+              "mass": 0.7329149652573712,
+              "roughness": 0.7204782870095925,
+              "contact": null,
+              "semantic_contribution": 0.29970670381003295,
+              "mass_contribution": 0.2155632250756974,
+              "roughness_contribution": 0.16952430282578645,
+              "contact_contribution": null,
+              "total": 0.6847942317115168
+            }
+          },
+          {
+            "object_id": "cetaphil",
+            "surface_id": "cetaphil",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+            "mass_g": 403.68,
+            "roughness_index": 797.68,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cetaphil",
+            "gecko_min_force_n": 1.923,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6465919711218688,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5846898611086028,
+              "mass": 0.4829106338109696,
+              "roughness": 0.9749978627870248,
+              "contact": null,
+              "semantic_contribution": 0.27514816993346014,
+              "mass_contribution": 0.1420325393561675,
+              "roughness_contribution": 0.22941126183224114,
+              "contact_contribution": null,
+              "total": 0.6465919711218688
+            }
+          },
+          {
+            "object_id": "wooden_block",
+            "surface_id": "wooden_block",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/wooden_block/image.jpg",
+            "mass_g": 403.41,
+            "roughness_index": 557.48,
+            "projected_contact_fraction": null,
+            "semantic_description": "Wooden Block",
+            "gecko_min_force_n": 1.32,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6143573125101572,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7024428844451904,
+              "mass": 0.4824492811791562,
+              "roughness": 0.603071207803842,
+              "contact": null,
+              "semantic_contribution": 0.330561357385972,
+              "mass_contribution": 0.14189684740563416,
+              "roughness_contribution": 0.14189910771855108,
+              "contact_contribution": null,
+              "total": 0.6143573125101572
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "camera_cardboard_box",
+            "conditions": [
+              {
+                "object_id": "camera_cardboard_box",
+                "surface_id": "camera_cardboard_box",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/camera_cardboard_box/image.jpg",
+                "mass_g": 871.93,
+                "roughness_index": 804.32,
+                "projected_contact_fraction": null,
+                "semantic_description": "Camera Cardboard Box",
+                "gecko_min_force_n": 7.46,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7697421389510917,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7109257672010023,
+                  "mass": 0.6892162922850178,
+                  "roughness": 0.988032190783863,
+                  "contact": null,
+                  "semantic_contribution": 0.3345533022122364,
+                  "mass_contribution": 0.2027106742014758,
+                  "roughness_contribution": 0.23247816253737952,
+                  "contact_contribution": null,
+                  "total": 0.7697421389510917
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "metal_water_bottle",
+            "conditions": [
+              {
+                "object_id": "metal_water_bottle",
+                "surface_id": "metal_water_bottle",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
+                "mass_g": 551.01,
+                "roughness_index": 892.99,
+                "projected_contact_fraction": null,
+                "semantic_description": "Metal Water Bottle",
+                "gecko_min_force_n": 3.83,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.70682521627993,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6074466449149502,
+                  "mass": 0.7531796041853691,
+                  "roughness": 0.847639374128091,
+                  "contact": null,
+                  "semantic_contribution": 0.2858572446658589,
+                  "mass_contribution": 0.22152341299569675,
+                  "roughness_contribution": 0.19944455861837435,
+                  "contact_contribution": null,
+                  "total": 0.70682521627993
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "book",
+            "conditions": [
+              {
+                "object_id": "book",
+                "surface_id": "book",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/book/image.jpg",
+                "mass_g": 540.59,
+                "roughness_index": 646.42,
+                "projected_contact_fraction": null,
+                "semantic_description": "Book",
+                "gecko_min_force_n": 2.68,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6847942317115168,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.63687674559632,
+                  "mass": 0.7329149652573712,
+                  "roughness": 0.7204782870095925,
+                  "contact": null,
+                  "semantic_contribution": 0.29970670381003295,
+                  "mass_contribution": 0.2155632250756974,
+                  "roughness_contribution": 0.16952430282578645,
+                  "contact_contribution": null,
+                  "total": 0.6847942317115168
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "cetaphil",
+            "conditions": [
+              {
+                "object_id": "cetaphil",
+                "surface_id": "cetaphil",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+                "mass_g": 403.68,
+                "roughness_index": 797.68,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cetaphil",
+                "gecko_min_force_n": 1.923,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6465919711218688,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5846898611086028,
+                  "mass": 0.4829106338109696,
+                  "roughness": 0.9749978627870248,
+                  "contact": null,
+                  "semantic_contribution": 0.27514816993346014,
+                  "mass_contribution": 0.1420325393561675,
+                  "roughness_contribution": 0.22941126183224114,
+                  "contact_contribution": null,
+                  "total": 0.6465919711218688
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "wooden_block",
+            "conditions": [
+              {
+                "object_id": "wooden_block",
+                "surface_id": "wooden_block",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/wooden_block/image.jpg",
+                "mass_g": 403.41,
+                "roughness_index": 557.48,
+                "projected_contact_fraction": null,
+                "semantic_description": "Wooden Block",
+                "gecko_min_force_n": 1.32,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6143573125101572,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7024428844451904,
+                  "mass": 0.4824492811791562,
+                  "roughness": 0.603071207803842,
+                  "contact": null,
+                  "semantic_contribution": 0.330561357385972,
+                  "mass_contribution": 0.14189684740563416,
+                  "roughness_contribution": 0.14189910771855108,
+                  "contact_contribution": null,
+                  "total": 0.6143573125101572
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 88,
+          "misses": 11,
+          "writes": 11,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 6,
+            "writes": 6,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 88,
+            "misses": 5,
+            "writes": 5,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 6,
+            "embedding": 5
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 5.75,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 6.156,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.4059999999999997,
+      "absolute_error_gecko_n": 0.4059999999999997
+    },
+    {
+      "object_id": "medicine_bottle",
+      "surface_id": "medicine_bottle",
+      "condition_id": "baseline",
+      "object_name": "Medicine Bottle",
+      "image_path": "data/MatForceFinal/medicine_bottle.jpg",
+      "image_sha256": "80fe4da593f50b540359a51d606c6c2c73ba15879ad75b71abb0ae4004d9d766",
+      "mass_g": 517.12,
+      "roughness_index": 934.84,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 3.65,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 3.65,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Smooth plastic bottle with a paper label",
+              "visible_surface_condition": "Dry, smooth, nonporous lateral sides partially interrupted by a paper label seam",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 3.65,
+              "evidence_used": [
+                "Query object mass: 517.12 g",
+                "Query object roughness index: 934.84",
+                "Query semantic description: Cylindrical plastic bottle with a smooth, dry, nonporous label surface",
+                "Retrieved object rank 1 (Metal Water Bottle): mass 551.01 g, roughness_index 892.99, gecko_min_force_n 3.83",
+                "Retrieved object rank 4 (Book): mass 540.59 g, roughness_index 646.42, gecko_min_force_n 2.68",
+                "Gecko embodiment description: dry adhesion benefits from broad intimate contact with clean, dry, smooth surfaces and degrades with interrupted contact."
+              ],
+              "calculation_summary": "Interpolating between retrieved experiences matching close mass and surface characteristics (Rank 1 mass 551.01 g -> 3.83 N; Rank 4 mass 540.59 g -> 2.68 N) and scaling relative to the query mass (517.12 g) and roughness (934.84), leading to a predicted normal force estimate of approximately 3.65 N.",
+              "assumptions_and_uncertainty": [
+                "Assumption that the paper label seam does not critically disrupt pad engagement across the entire contact width.",
+                "Uncertainty in exact local friction and adhesion coefficients due to minor surface texture variations.",
+                "Assumes stable normal force delivery within the 0 to 8 N gripper command range."
+              ],
+              "reasoning_trace": "The query object is a cylindrical plastic bottle with a mass of 517.12 g and a roughness index of 934.84. The gecko gripper relies on intimate contact with smooth, nonporous surfaces, and its adhesion degrades with interruptions like label seams. Retrieved examples with comparable mass and surface properties (such as the metal water bottle at 551.01 g requiring 3.83 N and the book at 540.59 g requiring 2.68 N) provide a reliable empirical bracket. Scaling appropriately for the query object's mass and roughness relative to these neighbors yields a robust estimate of 3.65 N, which is well within the 8 N maximum constraint and confirms feasibility."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Cylindrical plastic bottle with a smooth, dry, nonporous label surface wrapping the lateral sides. The intended contact region has continuous curvature and is partially interrupted by a paper label seam.",
+        "object_id": "medicine_bottle",
+        "surface_id": "medicine_bottle",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "metal_water_bottle",
+            "surface_id": "metal_water_bottle",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
+            "mass_g": 551.01,
+            "roughness_index": 892.99,
+            "projected_contact_fraction": null,
+            "semantic_description": "Metal Water Bottle",
+            "gecko_min_force_n": 3.83,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.8012624196187591,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.672012008661266,
+              "mass": 0.9133073113653576,
+              "roughness": 0.9197071268504975,
+              "contact": null,
+              "semantic_contribution": 0.31624094525236046,
+              "mass_contribution": 0.26861979746039927,
+              "roughness_contribution": 0.2164016769059994,
+              "contact_contribution": null,
+              "total": 0.8012624196187591
+            }
+          },
+          {
+            "object_id": "500g_weight",
+            "surface_id": "500g_weight",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/500g_weight/image.jpg",
+            "mass_g": 500.0,
+            "roughness_index": 1129.82,
+            "projected_contact_fraction": null,
+            "semantic_description": "500g Weight",
+            "gecko_min_force_n": 1.03,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7306065638963481,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6183452465122644,
+              "mass": 0.9530427569761227,
+              "roughness": 0.6770839573147974,
+              "contact": null,
+              "semantic_contribution": 0.29098599835871264,
+              "mass_contribution": 0.28030669322827134,
+              "roughness_contribution": 0.15931387230936409,
+              "contact_contribution": null,
+              "total": 0.7306065638963481
+            }
+          },
+          {
+            "object_id": "soda_can",
+            "surface_id": "soda_can",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/soda_can/image.jpg",
+            "mass_g": 321.71,
+            "roughness_index": 954.75,
+            "projected_contact_fraction": null,
+            "semantic_description": "Soda Can",
+            "gecko_min_force_n": 1.816,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6875254428042883,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6632519181957635,
+              "mass": 0.5076135189676838,
+              "roughness": 0.9609623968170935,
+              "contact": null,
+              "semantic_contribution": 0.3121185497391828,
+              "mass_contribution": 0.14929809381402462,
+              "roughness_contribution": 0.22610879925108082,
+              "contact_contribution": null,
+              "total": 0.6875254428042883
+            }
+          },
+          {
+            "object_id": "book",
+            "surface_id": "book",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/book/image.jpg",
+            "mass_g": 540.59,
+            "roughness_index": 646.42,
+            "projected_contact_fraction": null,
+            "semantic_description": "Book",
+            "gecko_min_force_n": 2.68,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6840057729117441,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5860772421083776,
+              "mass": 0.9385596854775717,
+              "roughness": 0.5616704438111927,
+              "contact": null,
+              "semantic_contribution": 0.2758010551098248,
+              "mass_contribution": 0.2760469663169328,
+              "roughness_contribution": 0.1321577514849865,
+              "contact_contribution": null,
+              "total": 0.6840057729117441
+            }
+          },
+          {
+            "object_id": "cetaphil",
+            "surface_id": "cetaphil",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+            "mass_g": 403.68,
+            "roughness_index": 797.68,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cetaphil",
+            "gecko_min_force_n": 1.923,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6794428165734427,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.625007264317381,
+              "mass": 0.7020229071045772,
+              "roughness": 0.7600888079216486,
+              "contact": null,
+              "semantic_contribution": 0.29412106556112044,
+              "mass_contribution": 0.20647732561899323,
+              "roughness_contribution": 0.17884442539332907,
+              "contact_contribution": null,
+              "total": 0.6794428165734427
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "metal_water_bottle",
+            "conditions": [
+              {
+                "object_id": "metal_water_bottle",
+                "surface_id": "metal_water_bottle",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
+                "mass_g": 551.01,
+                "roughness_index": 892.99,
+                "projected_contact_fraction": null,
+                "semantic_description": "Metal Water Bottle",
+                "gecko_min_force_n": 3.83,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.8012624196187591,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.672012008661266,
+                  "mass": 0.9133073113653576,
+                  "roughness": 0.9197071268504975,
+                  "contact": null,
+                  "semantic_contribution": 0.31624094525236046,
+                  "mass_contribution": 0.26861979746039927,
+                  "roughness_contribution": 0.2164016769059994,
+                  "contact_contribution": null,
+                  "total": 0.8012624196187591
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "500g_weight",
+            "conditions": [
+              {
+                "object_id": "500g_weight",
+                "surface_id": "500g_weight",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/500g_weight/image.jpg",
+                "mass_g": 500.0,
+                "roughness_index": 1129.82,
+                "projected_contact_fraction": null,
+                "semantic_description": "500g Weight",
+                "gecko_min_force_n": 1.03,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7306065638963481,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6183452465122644,
+                  "mass": 0.9530427569761227,
+                  "roughness": 0.6770839573147974,
+                  "contact": null,
+                  "semantic_contribution": 0.29098599835871264,
+                  "mass_contribution": 0.28030669322827134,
+                  "roughness_contribution": 0.15931387230936409,
+                  "contact_contribution": null,
+                  "total": 0.7306065638963481
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "soda_can",
+            "conditions": [
+              {
+                "object_id": "soda_can",
+                "surface_id": "soda_can",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/soda_can/image.jpg",
+                "mass_g": 321.71,
+                "roughness_index": 954.75,
+                "projected_contact_fraction": null,
+                "semantic_description": "Soda Can",
+                "gecko_min_force_n": 1.816,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6875254428042883,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6632519181957635,
+                  "mass": 0.5076135189676838,
+                  "roughness": 0.9609623968170935,
+                  "contact": null,
+                  "semantic_contribution": 0.3121185497391828,
+                  "mass_contribution": 0.14929809381402462,
+                  "roughness_contribution": 0.22610879925108082,
+                  "contact_contribution": null,
+                  "total": 0.6875254428042883
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "book",
+            "conditions": [
+              {
+                "object_id": "book",
+                "surface_id": "book",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/book/image.jpg",
+                "mass_g": 540.59,
+                "roughness_index": 646.42,
+                "projected_contact_fraction": null,
+                "semantic_description": "Book",
+                "gecko_min_force_n": 2.68,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6840057729117441,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5860772421083776,
+                  "mass": 0.9385596854775717,
+                  "roughness": 0.5616704438111927,
+                  "contact": null,
+                  "semantic_contribution": 0.2758010551098248,
+                  "mass_contribution": 0.2760469663169328,
+                  "roughness_contribution": 0.1321577514849865,
+                  "contact_contribution": null,
+                  "total": 0.6840057729117441
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "cetaphil",
+            "conditions": [
+              {
+                "object_id": "cetaphil",
+                "surface_id": "cetaphil",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+                "mass_g": 403.68,
+                "roughness_index": 797.68,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cetaphil",
+                "gecko_min_force_n": 1.923,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6794428165734427,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.625007264317381,
+                  "mass": 0.7020229071045772,
+                  "roughness": 0.7600888079216486,
+                  "contact": null,
+                  "semantic_contribution": 0.29412106556112044,
+                  "mass_contribution": 0.20647732561899323,
+                  "roughness_contribution": 0.17884442539332907,
+                  "contact_contribution": null,
+                  "total": 0.6794428165734427
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 118,
+          "misses": 14,
+          "writes": 14,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 8,
+            "writes": 8,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 118,
+            "misses": 6,
+            "writes": 6,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 8,
+            "embedding": 6
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 3.65,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.669,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 1.9809999999999999,
+      "absolute_error_gecko_n": 1.9809999999999999
+    },
+    {
+      "object_id": "rough_tile",
+      "surface_id": "rough_tile",
+      "condition_id": "baseline",
+      "object_name": "Rough Tile",
+      "image_path": "data/MatForceFinal/rough_tile.jpg",
+      "image_sha256": "75c2b235a9adb7857d13db6611a0f5aaae21da37a6316b27702850c3fbe8c0e0",
+      "mass_g": 178.52,
+      "roughness_index": 1992.71,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.95,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.95,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "ceramic or terracotta shard with a painted surface pattern",
+              "visible_surface_condition": "flat, clean, textured and dry painted pattern",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 1.95,
+              "evidence_used": [
+                "Query mass = 178.52 g",
+                "Query roughness index = 1992.71",
+                "Retrieved object 1 (Leather Sunglasses Case): mass = 179.9 g, roughness = 2014.79, gecko_min_force_n = 1.906",
+                "Retrieved object 2 (Big Stone): mass = 278.8 g, roughness = 2048.83, gecko_min_force_n = 4.623",
+                "Retrieved object 4 (Headphones Case): mass = 218.15 g, roughness = 1610.85, gecko_min_force_n = 3.01"
+              ],
+              "calculation_summary": "Interpolated nearest-neighbor force from retrieved instances with similar mass (~178.52 g) and high roughness (~1992.71). Leather Sunglasses Case provides a very close mass match (179.9 g) and similar roughness (2014.79) yielding 1.906 N. Scaling slightly upwards due to minor surface texture pattern variations results in an estimated normal force of approximately 1.95 N.",
+              "assumptions_and_uncertainty": [
+                "Assumes the painted surface pattern does not significantly interfere with dry adhesive micro-structure engagement.",
+                "Uncertainty arises from localized variations in surface texture and porosity of the terracotta material."
+              ],
+              "reasoning_trace": "The target object has a mass of 178.52 g and a roughness index of 1992.71, matching closely with the top retrieved Leather Sunglasses Case (mass 179.9 g, roughness 2014.79, force 1.906 N). Since the gecko gripper relies heavily on smooth, intimate contact, the textured painted surface introduces a moderate penalty compared to ideal flat glass, but the close mass and roughness neighbors validate a low pre-grasp force requirement near 1.95 N for secure lifting."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Flat ceramic or terracotta shard object with a textured, dry, painted surface pattern. The intended contact region is clean and bounded by flat sides and edges.",
+        "object_id": "rough_tile",
+        "surface_id": "rough_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "leather_sunglasses_case",
+            "surface_id": "leather_sunglasses_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/leather_sunglasses_case/image.jpg",
+            "mass_g": 179.9,
+            "roughness_index": 2014.79,
+            "projected_contact_fraction": null,
+            "semantic_description": "Leather Sunglasses Case",
+            "gecko_min_force_n": 1.906,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7896326427252789,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5814067056127784,
+              "mass": 0.9890595706149363,
+              "roughness": 0.9568008570882085,
+              "contact": null,
+              "semantic_contribution": 0.27360315558248394,
+              "mass_contribution": 0.29089987371027537,
+              "roughness_contribution": 0.22512961343251964,
+              "contact_contribution": null,
+              "total": 0.7896326427252789
+            }
+          },
+          {
+            "object_id": "big_stone",
+            "surface_id": "big_stone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/big_stone/image.jpg",
+            "mass_g": 278.8,
+            "roughness_index": 2048.83,
+            "projected_contact_fraction": null,
+            "semantic_description": "Big Stone",
+            "gecko_min_force_n": 4.623,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6525565457189548,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6091698408126831,
+              "mass": 0.5289567400441759,
+              "roughness": 0.8938297126249722,
+              "contact": null,
+              "semantic_contribution": 0.2866681603824391,
+              "mass_contribution": 0.15557551177769877,
+              "roughness_contribution": 0.210312873558817,
+              "contact_contribution": null,
+              "total": 0.6525565457189548
+            }
+          },
+          {
+            "object_id": "rubber_tire",
+            "surface_id": "rubber_tire",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
+            "mass_g": 163.84,
+            "roughness_index": 1349.28,
+            "projected_contact_fraction": null,
+            "semantic_description": "Rubber Tire",
+            "gecko_min_force_n": 0.464,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6213156793883294,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6293340104421383,
+              "mass": 0.8846296997728715,
+              "roughness": 0.27613649180003424,
+              "contact": null,
+              "semantic_contribution": 0.2961571813845357,
+              "mass_contribution": 0.26018520581555044,
+              "roughness_contribution": 0.06497329218824335,
+              "contact_contribution": null,
+              "total": 0.6213156793883294
+            }
+          },
+          {
+            "object_id": "headphones_case",
+            "surface_id": "headphones_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
+            "mass_g": 218.15,
+            "roughness_index": 1610.85,
+            "projected_contact_fraction": null,
+            "semantic_description": "Headphones Case",
+            "gecko_min_force_n": 3.01,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.5907064658765906,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5529364284352746,
+              "mass": 0.7509597466677972,
+              "roughness": 0.4659299397702147,
+              "contact": null,
+              "semantic_contribution": 0.260205378087188,
+              "mass_contribution": 0.22087051372582267,
+              "roughness_contribution": 0.10963057406357993,
+              "contact_contribution": null,
+              "total": 0.5907064658765906
+            }
+          },
+          {
+            "object_id": "microphone",
+            "surface_id": "microphone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/microphone/image.jpg",
+            "mass_g": 258.48,
+            "roughness_index": 2228.39,
+            "projected_contact_fraction": null,
+            "semantic_description": "Microphone",
+            "gecko_min_force_n": 2.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.5886776573204852,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5705215082687706,
+              "mass": 0.5893473473092203,
+              "roughness": 0.6241528429379957,
+              "contact": null,
+              "semantic_contribution": 0.2684807097735391,
+              "mass_contribution": 0.17333745509094714,
+              "roughness_contribution": 0.14685949245599897,
+              "contact_contribution": null,
+              "total": 0.5886776573204852
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "leather_sunglasses_case",
+            "conditions": [
+              {
+                "object_id": "leather_sunglasses_case",
+                "surface_id": "leather_sunglasses_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/leather_sunglasses_case/image.jpg",
+                "mass_g": 179.9,
+                "roughness_index": 2014.79,
+                "projected_contact_fraction": null,
+                "semantic_description": "Leather Sunglasses Case",
+                "gecko_min_force_n": 1.906,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7896326427252789,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5814067056127784,
+                  "mass": 0.9890595706149363,
+                  "roughness": 0.9568008570882085,
+                  "contact": null,
+                  "semantic_contribution": 0.27360315558248394,
+                  "mass_contribution": 0.29089987371027537,
+                  "roughness_contribution": 0.22512961343251964,
+                  "contact_contribution": null,
+                  "total": 0.7896326427252789
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "big_stone",
+            "conditions": [
+              {
+                "object_id": "big_stone",
+                "surface_id": "big_stone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/big_stone/image.jpg",
+                "mass_g": 278.8,
+                "roughness_index": 2048.83,
+                "projected_contact_fraction": null,
+                "semantic_description": "Big Stone",
+                "gecko_min_force_n": 4.623,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6525565457189548,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6091698408126831,
+                  "mass": 0.5289567400441759,
+                  "roughness": 0.8938297126249722,
+                  "contact": null,
+                  "semantic_contribution": 0.2866681603824391,
+                  "mass_contribution": 0.15557551177769877,
+                  "roughness_contribution": 0.210312873558817,
+                  "contact_contribution": null,
+                  "total": 0.6525565457189548
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "rubber_tire",
+            "conditions": [
+              {
+                "object_id": "rubber_tire",
+                "surface_id": "rubber_tire",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
+                "mass_g": 163.84,
+                "roughness_index": 1349.28,
+                "projected_contact_fraction": null,
+                "semantic_description": "Rubber Tire",
+                "gecko_min_force_n": 0.464,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6213156793883294,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6293340104421383,
+                  "mass": 0.8846296997728715,
+                  "roughness": 0.27613649180003424,
+                  "contact": null,
+                  "semantic_contribution": 0.2961571813845357,
+                  "mass_contribution": 0.26018520581555044,
+                  "roughness_contribution": 0.06497329218824335,
+                  "contact_contribution": null,
+                  "total": 0.6213156793883294
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "headphones_case",
+            "conditions": [
+              {
+                "object_id": "headphones_case",
+                "surface_id": "headphones_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
+                "mass_g": 218.15,
+                "roughness_index": 1610.85,
+                "projected_contact_fraction": null,
+                "semantic_description": "Headphones Case",
+                "gecko_min_force_n": 3.01,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.5907064658765906,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5529364284352746,
+                  "mass": 0.7509597466677972,
+                  "roughness": 0.4659299397702147,
+                  "contact": null,
+                  "semantic_contribution": 0.260205378087188,
+                  "mass_contribution": 0.22087051372582267,
+                  "roughness_contribution": 0.10963057406357993,
+                  "contact_contribution": null,
+                  "total": 0.5907064658765906
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "microphone",
+            "conditions": [
+              {
+                "object_id": "microphone",
+                "surface_id": "microphone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/microphone/image.jpg",
+                "mass_g": 258.48,
+                "roughness_index": 2228.39,
+                "projected_contact_fraction": null,
+                "semantic_description": "Microphone",
+                "gecko_min_force_n": 2.3,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.5886776573204852,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5705215082687706,
+                  "mass": 0.5893473473092203,
+                  "roughness": 0.6241528429379957,
+                  "contact": null,
+                  "semantic_contribution": 0.2684807097735391,
+                  "mass_contribution": 0.17333745509094714,
+                  "roughness_contribution": 0.14685949245599897,
+                  "contact_contribution": null,
+                  "total": 0.5886776573204852
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 148,
+          "misses": 17,
+          "writes": 17,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 10,
+            "writes": 10,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 148,
+            "misses": 7,
+            "writes": 7,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 10,
+            "embedding": 7
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 1.95,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 2.459,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.5090000000000001,
+      "absolute_error_gecko_n": 0.5090000000000001
+    },
+    {
+      "object_id": "small_book",
+      "surface_id": "small_book",
+      "condition_id": "baseline",
+      "object_name": "Small Book",
+      "image_path": "data/MatForceFinal/small_book.jpg",
+      "image_sha256": "62f5a0b4483b8c9ab4edf1686f4a58d751271084aa481e0238193415e751625c",
+      "mass_g": 118.4,
+      "roughness_index": 1532.23,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.55,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.55,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "wood and embossed leather",
+              "visible_surface_condition": "dry, planar sides interrupted by decorative embossed textures",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 1.55,
+              "evidence_used": [
+                "Query object mass: 118.4 g",
+                "Query object roughness index: 1532.23",
+                "Retrieved object 1 (Wallet 1): mass 139.66 g, roughness 1596.55, gecko_min_force_n 2.013",
+                "Retrieved object 3 (Toilet Paper): mass 117.92 g, roughness 1068.17, gecko_min_force_n 1.112",
+                "Gecko gripper embodiment: mushroom-cap dry-adhesive pad requiring broad intimate contact with clean, dry, smooth surfaces."
+              ],
+              "calculation_summary": "Interpolated force estimate based on nearest retrieved objects matching mass (118.4 g) and roughness (1532.23). Toilet Paper (mass 117.92 g, force 1.112 N) and Wallet 1 (mass 139.66 g, force 2.013 N) bound the target mass closely, yielding an interpolated baseline estimate around 1.55 N.",
+              "assumptions_and_uncertainty": [
+                "Embossed leather textures introduce localized contact interruptions that reduce effective gecko pad adhesion compared to ideal flat surfaces.",
+                "Mass scaling alone does not fully capture surface micro-geometry differences present in leather and wood."
+              ],
+              "reasoning_trace": "The query object is a small wooden and leather-bound item weighing 118.4 g with a roughness index of 1532.23. The gecko gripper relies on intimate contact with clean, dry surfaces. The embossed texture interrupts the contact area, increasing the required normal force compared to smooth flat objects. Utilizing the retrieved examples (Toilet Paper at 1.112 N for 117.92 g and Wallet 1 at 2.013 N for 139.66 g), a normal force of 1.55 N appropriately scales for the object's mass and surface characteristics while remaining safely within the 0 to 8 N limits."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Small rectangular wooden and leather-bound object with flat lateral sides. The intended contact region is dry, planar, and interrupted by decorative embossed leather textures.",
+        "object_id": "small_book",
+        "surface_id": "small_book",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "wallet_1",
+            "surface_id": "wallet_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/wallet_1/image.jpg",
+            "mass_g": 139.66,
+            "roughness_index": 1596.55,
+            "projected_contact_fraction": null,
+            "semantic_description": "Wallet 1",
+            "gecko_min_force_n": 2.013,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7315523207430947,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6212497561423953,
+              "mass": 0.7898459181886671,
+              "roughness": 0.8792904531375282,
+              "contact": null,
+              "semantic_contribution": 0.29235282641995075,
+              "mass_contribution": 0.23230762299666677,
+              "roughness_contribution": 0.2068918713264772,
+              "contact_contribution": null,
+              "total": 0.7315523207430947
+            }
+          },
+          {
+            "object_id": "wallet_2",
+            "surface_id": "wallet_2",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/wallet_2/image.jpg",
+            "mass_g": 85.62,
+            "roughness_index": 1623.1,
+            "projected_contact_fraction": null,
+            "semantic_description": "Wallet 2",
+            "gecko_min_force_n": 0.75,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6762507029970692,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6267812927905597,
+              "mass": 0.6293478377712113,
+              "roughness": 0.8338181049424109,
+              "contact": null,
+              "semantic_contribution": 0.2949559024896752,
+              "mass_contribution": 0.18510230522682683,
+              "roughness_contribution": 0.1961924952805673,
+              "contact_contribution": null,
+              "total": 0.6762507029970692
+            }
+          },
+          {
+            "object_id": "toilet_paper",
+            "surface_id": "toilet_paper",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/toilet_paper/image.jpg",
+            "mass_g": 117.92,
+            "roughness_index": 1068.17,
+            "projected_contact_fraction": null,
+            "semantic_description": "Toilet Paper",
+            "gecko_min_force_n": 1.112,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.668692574241614,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6019401799119484,
+              "mass": 0.9942135293307152,
+              "roughness": 0.3952961690395688,
+              "contact": null,
+              "semantic_contribution": 0.2832659670173875,
+              "mass_contribution": 0.29241574392079855,
+              "roughness_contribution": 0.09301086330342796,
+              "contact_contribution": null,
+              "total": 0.668692574241614
+            }
+          },
+          {
+            "object_id": "foam_roller",
+            "surface_id": "foam_roller",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/foam_roller/image.jpg",
+            "mass_g": 153.38,
+            "roughness_index": 1353.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Foam Roller",
+            "gecko_min_force_n": 0.723,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6486782761672318,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5971381398564719,
+              "mass": 0.6908825782428142,
+              "roughness": 0.6990031711942739,
+              "contact": null,
+              "semantic_contribution": 0.2810061834618691,
+              "mass_contribution": 0.20320075830671003,
+              "roughness_contribution": 0.1644713343986527,
+              "contact_contribution": null,
+              "total": 0.6486782761672318
+            }
+          },
+          {
+            "object_id": "rubber_tire",
+            "surface_id": "rubber_tire",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
+            "mass_g": 163.84,
+            "roughness_index": 1349.28,
+            "projected_contact_fraction": null,
+            "semantic_description": "Rubber Tire",
+            "gecko_min_force_n": 0.464,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6378686384280132,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6157196944974578,
+              "mass": 0.6287441354933078,
+              "roughness": 0.6935721549575062,
+              "contact": null,
+              "semantic_contribution": 0.2897504444693919,
+              "mass_contribution": 0.1849247457333258,
+              "roughness_contribution": 0.16319344822529558,
+              "contact_contribution": null,
+              "total": 0.6378686384280132
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "wallet_1",
+            "conditions": [
+              {
+                "object_id": "wallet_1",
+                "surface_id": "wallet_1",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/wallet_1/image.jpg",
+                "mass_g": 139.66,
+                "roughness_index": 1596.55,
+                "projected_contact_fraction": null,
+                "semantic_description": "Wallet 1",
+                "gecko_min_force_n": 2.013,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7315523207430947,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6212497561423953,
+                  "mass": 0.7898459181886671,
+                  "roughness": 0.8792904531375282,
+                  "contact": null,
+                  "semantic_contribution": 0.29235282641995075,
+                  "mass_contribution": 0.23230762299666677,
+                  "roughness_contribution": 0.2068918713264772,
+                  "contact_contribution": null,
+                  "total": 0.7315523207430947
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "wallet_2",
+            "conditions": [
+              {
+                "object_id": "wallet_2",
+                "surface_id": "wallet_2",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/wallet_2/image.jpg",
+                "mass_g": 85.62,
+                "roughness_index": 1623.1,
+                "projected_contact_fraction": null,
+                "semantic_description": "Wallet 2",
+                "gecko_min_force_n": 0.75,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6762507029970692,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6267812927905597,
+                  "mass": 0.6293478377712113,
+                  "roughness": 0.8338181049424109,
+                  "contact": null,
+                  "semantic_contribution": 0.2949559024896752,
+                  "mass_contribution": 0.18510230522682683,
+                  "roughness_contribution": 0.1961924952805673,
+                  "contact_contribution": null,
+                  "total": 0.6762507029970692
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "toilet_paper",
+            "conditions": [
+              {
+                "object_id": "toilet_paper",
+                "surface_id": "toilet_paper",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/toilet_paper/image.jpg",
+                "mass_g": 117.92,
+                "roughness_index": 1068.17,
+                "projected_contact_fraction": null,
+                "semantic_description": "Toilet Paper",
+                "gecko_min_force_n": 1.112,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.668692574241614,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6019401799119484,
+                  "mass": 0.9942135293307152,
+                  "roughness": 0.3952961690395688,
+                  "contact": null,
+                  "semantic_contribution": 0.2832659670173875,
+                  "mass_contribution": 0.29241574392079855,
+                  "roughness_contribution": 0.09301086330342796,
+                  "contact_contribution": null,
+                  "total": 0.668692574241614
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "foam_roller",
+            "conditions": [
+              {
+                "object_id": "foam_roller",
+                "surface_id": "foam_roller",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/foam_roller/image.jpg",
+                "mass_g": 153.38,
+                "roughness_index": 1353.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Foam Roller",
+                "gecko_min_force_n": 0.723,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6486782761672318,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5971381398564719,
+                  "mass": 0.6908825782428142,
+                  "roughness": 0.6990031711942739,
+                  "contact": null,
+                  "semantic_contribution": 0.2810061834618691,
+                  "mass_contribution": 0.20320075830671003,
+                  "roughness_contribution": 0.1644713343986527,
+                  "contact_contribution": null,
+                  "total": 0.6486782761672318
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "rubber_tire",
+            "conditions": [
+              {
+                "object_id": "rubber_tire",
+                "surface_id": "rubber_tire",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
+                "mass_g": 163.84,
+                "roughness_index": 1349.28,
+                "projected_contact_fraction": null,
+                "semantic_description": "Rubber Tire",
+                "gecko_min_force_n": 0.464,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6378686384280132,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6157196944974578,
+                  "mass": 0.6287441354933078,
+                  "roughness": 0.6935721549575062,
+                  "contact": null,
+                  "semantic_contribution": 0.2897504444693919,
+                  "mass_contribution": 0.1849247457333258,
+                  "roughness_contribution": 0.16319344822529558,
+                  "contact_contribution": null,
+                  "total": 0.6378686384280132
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 178,
+          "misses": 20,
+          "writes": 20,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 12,
+            "writes": 12,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 178,
+            "misses": 8,
+            "writes": 8,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 12,
+            "embedding": 8
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 1.55,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.03,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.52,
+      "absolute_error_gecko_n": 0.52
+    },
+    {
+      "object_id": "smooth_screw_box",
+      "surface_id": "smooth_screw_box",
+      "condition_id": "baseline",
+      "object_name": "Smooth Screw Box",
+      "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+      "image_sha256": "a5eac8097cdb990fbd90aefcfab2ec62e93cc4c9a1e36fb8c2437a988b2edf82",
+      "mass_g": 819.27,
+      "roughness_index": 791.89,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 7.1,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 7.1,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "rigid plastic compartment box",
+              "visible_surface_condition": "clean, smooth, flat vertical sidewalls",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 7.1,
+              "evidence_used": [
+                "Query object mass: 819.27 g",
+                "Query roughness index: 791.89",
+                "Gecko embodiment: TPU fin-ray finger with mushroom-cap gecko-inspired dry-adhesive pad",
+                "Retrieved object rank 1 (Camera Cardboard Box): mass 871.93 g, roughness 804.32, gecko_min_force_n 7.46 N",
+                "Retrieved object rank 5 (Soldering Iron Box): mass 3500.0 g, roughness 852.5, gecko_min_force_n 6.2 N"
+              ],
+              "calculation_summary": "Interpolated normal force using mass scaling and roughness alignment from the top retrieved hybrid-ranked objects. For query mass 819.27 g and roughness 791.89 compared against rank 1 (mass 871.93 g, force 7.46 N) and rank 5 (mass 3500 g, roughness 852.5, force 6.2 N), the estimated force scales proportionally with payload weight while remaining within the actuator limit (0 to 8 N). Estimated normal force = 7.1 N.",
+              "assumptions_and_uncertainty": [
+                "Assume surface compliance of the rigid plastic compartment box closely mimics the clean, smooth vertical sidewalls of retrieved rigid boxes.",
+                "Uncertainty in exact adhesive pull-off forces due to multi-compartment internal load shifting.",
+                "Assumed consistent friction and normal force translation across the standardized test protocol."
+              ],
+              "reasoning_trace": "The query object is a rigid plastic compartment box containing metal hardware, weighing 819.27 g with a roughness index of 791.89. The gecko gripper relies heavily on clean, smooth, nonporous surfaces for broad intimate contact. The visual inspection confirms smooth flat vertical sidewalls matching the gecko embodiment requirement. The hybrid retrieval results provide similar rigid box examples (e.g., Camera Cardboard Box at 871.93 g requiring 7.46 N and Soldering Iron Box at 3500 g requiring 6.2 N). By scaling the required normal force relative to the 819.27 g mass and comparable surface texture, a normal force of 7.1 N provides secure lifting capability within the 0 to 8 N constraint."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Rigid plastic compartment box containing metal hardware. The intended contact region is clean, smooth, and flat with vertical sidewalls and corners.",
+        "object_id": "smooth_screw_box",
+        "surface_id": "smooth_screw_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "camera_cardboard_box",
+            "surface_id": "camera_cardboard_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/camera_cardboard_box/image.jpg",
+            "mass_g": 871.93,
+            "roughness_index": 804.32,
+            "projected_contact_fraction": null,
+            "semantic_description": "Camera Cardboard Box",
+            "gecko_min_force_n": 7.46,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7954617056257864,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6308506883204804,
+              "mass": 0.9148515258353057,
+              "roughness": 0.9754464649744997,
+              "contact": null,
+              "semantic_contribution": 0.2968709121508143,
+              "mass_contribution": 0.2690739781868546,
+              "roughness_contribution": 0.22951681528811757,
+              "contact_contribution": null,
+              "total": 0.7954617056257864
+            }
+          },
+          {
+            "object_id": "metal_water_bottle",
+            "surface_id": "metal_water_bottle",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
+            "mass_g": 551.01,
+            "roughness_index": 892.99,
+            "projected_contact_fraction": null,
+            "semantic_description": "Metal Water Bottle",
+            "gecko_min_force_n": 3.83,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6481077661524914,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6141266958864565,
+              "mass": 0.567418471262175,
+              "roughness": 0.8169315252974573,
+              "contact": null,
+              "semantic_contribution": 0.2890007980642148,
+              "mass_contribution": 0.16688778566534557,
+              "roughness_contribution": 0.19221918242293112,
+              "contact_contribution": null,
+              "total": 0.6481077661524914
+            }
+          },
+          {
+            "object_id": "book",
+            "surface_id": "book",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/book/image.jpg",
+            "mass_g": 540.59,
+            "roughness_index": 646.42,
+            "projected_contact_fraction": null,
+            "semantic_description": "Book",
+            "gecko_min_force_n": 2.68,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6038167047169042,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5642353449428904,
+              "mass": 0.552151819885388,
+              "roughness": 0.7475605303043272,
+              "contact": null,
+              "semantic_contribution": 0.2655225152672425,
+              "mass_contribution": 0.1623975940839376,
+              "roughness_contribution": 0.17589659536572405,
+              "contact_contribution": null,
+              "total": 0.6038167047169042
+            }
+          },
+          {
+            "object_id": "cetaphil",
+            "surface_id": "cetaphil",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+            "mass_g": 403.68,
+            "roughness_index": 797.68,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cetaphil",
+            "gecko_min_force_n": 1.923,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.5972926978634552,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5476238798564934,
+              "mass": 0.3638075328521903,
+              "roughness": 0.9884867901414597,
+              "contact": null,
+              "semantic_contribution": 0.2577053552265851,
+              "mass_contribution": 0.10700221554476184,
+              "roughness_contribution": 0.23258512709210816,
+              "contact_contribution": null,
+              "total": 0.5972926978634552
+            }
+          },
+          {
+            "object_id": "soldering_iron_box",
+            "surface_id": "soldering_iron_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/soldering_iron_box/image.jpg",
+            "mass_g": 3500.0,
+            "roughness_index": 852.5,
+            "projected_contact_fraction": null,
+            "semantic_description": "Soldering Iron Box",
+            "gecko_min_force_n": 6.2,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.5681953284997991,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6859784347985309,
+              "mass": 0.12562737837189594,
+              "roughness": 0.8858390535622146,
+              "contact": null,
+              "semantic_contribution": 0.32281338108166163,
+              "mass_contribution": 0.03694922893291057,
+              "roughness_contribution": 0.20843271848522696,
+              "contact_contribution": null,
+              "total": 0.5681953284997991
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "camera_cardboard_box",
+            "conditions": [
+              {
+                "object_id": "camera_cardboard_box",
+                "surface_id": "camera_cardboard_box",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/camera_cardboard_box/image.jpg",
+                "mass_g": 871.93,
+                "roughness_index": 804.32,
+                "projected_contact_fraction": null,
+                "semantic_description": "Camera Cardboard Box",
+                "gecko_min_force_n": 7.46,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7954617056257864,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6308506883204804,
+                  "mass": 0.9148515258353057,
+                  "roughness": 0.9754464649744997,
+                  "contact": null,
+                  "semantic_contribution": 0.2968709121508143,
+                  "mass_contribution": 0.2690739781868546,
+                  "roughness_contribution": 0.22951681528811757,
+                  "contact_contribution": null,
+                  "total": 0.7954617056257864
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "metal_water_bottle",
+            "conditions": [
+              {
+                "object_id": "metal_water_bottle",
+                "surface_id": "metal_water_bottle",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
+                "mass_g": 551.01,
+                "roughness_index": 892.99,
+                "projected_contact_fraction": null,
+                "semantic_description": "Metal Water Bottle",
+                "gecko_min_force_n": 3.83,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6481077661524914,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6141266958864565,
+                  "mass": 0.567418471262175,
+                  "roughness": 0.8169315252974573,
+                  "contact": null,
+                  "semantic_contribution": 0.2890007980642148,
+                  "mass_contribution": 0.16688778566534557,
+                  "roughness_contribution": 0.19221918242293112,
+                  "contact_contribution": null,
+                  "total": 0.6481077661524914
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "book",
+            "conditions": [
+              {
+                "object_id": "book",
+                "surface_id": "book",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/book/image.jpg",
+                "mass_g": 540.59,
+                "roughness_index": 646.42,
+                "projected_contact_fraction": null,
+                "semantic_description": "Book",
+                "gecko_min_force_n": 2.68,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6038167047169042,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5642353449428904,
+                  "mass": 0.552151819885388,
+                  "roughness": 0.7475605303043272,
+                  "contact": null,
+                  "semantic_contribution": 0.2655225152672425,
+                  "mass_contribution": 0.1623975940839376,
+                  "roughness_contribution": 0.17589659536572405,
+                  "contact_contribution": null,
+                  "total": 0.6038167047169042
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "cetaphil",
+            "conditions": [
+              {
+                "object_id": "cetaphil",
+                "surface_id": "cetaphil",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+                "mass_g": 403.68,
+                "roughness_index": 797.68,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cetaphil",
+                "gecko_min_force_n": 1.923,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.5972926978634552,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5476238798564934,
+                  "mass": 0.3638075328521903,
+                  "roughness": 0.9884867901414597,
+                  "contact": null,
+                  "semantic_contribution": 0.2577053552265851,
+                  "mass_contribution": 0.10700221554476184,
+                  "roughness_contribution": 0.23258512709210816,
+                  "contact_contribution": null,
+                  "total": 0.5972926978634552
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "soldering_iron_box",
+            "conditions": [
+              {
+                "object_id": "soldering_iron_box",
+                "surface_id": "soldering_iron_box",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/soldering_iron_box/image.jpg",
+                "mass_g": 3500.0,
+                "roughness_index": 852.5,
+                "projected_contact_fraction": null,
+                "semantic_description": "Soldering Iron Box",
+                "gecko_min_force_n": 6.2,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.5681953284997991,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6859784347985309,
+                  "mass": 0.12562737837189594,
+                  "roughness": 0.8858390535622146,
+                  "contact": null,
+                  "semantic_contribution": 0.32281338108166163,
+                  "mass_contribution": 0.03694922893291057,
+                  "roughness_contribution": 0.20843271848522696,
+                  "contact_contribution": null,
+                  "total": 0.5681953284997991
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 208,
+          "misses": 23,
+          "writes": 23,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 14,
+            "writes": 14,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 208,
+            "misses": 9,
+            "writes": 9,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 14,
+            "embedding": 9
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 7.1,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.3,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 5.8,
+      "absolute_error_gecko_n": 5.8
+    },
+    {
+      "object_id": "soap_bottle",
+      "surface_id": "soap_bottle",
+      "condition_id": "baseline",
+      "object_name": "Soap Bottle",
+      "image_path": "data/MatForceFinal/soap_bottle.jpg",
+      "image_sha256": "c14f003defb99d065b60f161664f330c7f613b426d45fccc484ce81a5916de3c",
+      "mass_g": 236.11,
+      "roughness_index": 736.99,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 0.35,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 0.35,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "White plastic",
+              "visible_surface_condition": "Smooth, clean, dry, nonporous flat lateral sidewalls",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 0.35,
+              "evidence_used": [
+                "Query mass = 236.11 g",
+                "Query roughness index = 736.99",
+                "Visual evidence of flat, smooth, clean, dry lateral sidewalls on the white plastic bottle",
+                "Retrieved object 1 (ketchup): mass = 293.77 g, roughness = 705.18, gecko_min_force_n = 0.24 N",
+                "Retrieved object 5 (caprisun): mass = 186.01 g, roughness = 1002.43, gecko_min_force_n = 0.417 N"
+              ],
+              "calculation_summary": "Interpolating between retrieved similar objects (ketchup: 293.77 g, 705.18 roughness -> 0.24 N; caprisun: 186.01 g, 1002.43 roughness -> 0.417 N) scaled to query mass of 236.11 g and roughness of 736.99 yields an estimated normal force around 0.35 N.",
+              "assumptions_and_uncertainty": [
+                "Assumes the flat lateral sidewalls provide uninterrupted, broad, intimate contact for the gecko pad.",
+                "Uncertainty arises from minor variations in surface texture not fully captured by the single roughness index.",
+                "No calibrated friction model was used; reliance is strictly empirical based on retrieved hybrid neighbors."
+              ],
+              "reasoning_trace": "The query object is a white plastic squeeze bottle with smooth, clean, flat lateral sidewalls highly compatible with the gecko-inspired dry-adhesive pad. The query mass (236.11 g) and roughness index (736.99) sit well within the range spanned by the retrieved nearest neighbors (such as ketchup at 293.77 g and caprisun at 186.01 g). Based on the required gecko normal forces reported for these similar items (0.24 N to 0.417 N), scaling for mass and surface characteristics points to a robust, low pre-grasp normal force estimate of 0.35 N to achieve secure lifting under the standardized protocol."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "White plastic squeeze bottle with flat lateral sidewalls and rounded vertical edges. The intended contact region is smooth, clean, dry, and provides opposing flat surfaces for finger placement.",
+        "object_id": "soap_bottle",
+        "surface_id": "soap_bottle",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "ketchup",
+            "surface_id": "ketchup",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/ketchup/image.jpg",
+            "mass_g": 293.77,
+            "roughness_index": 705.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Ketchup",
+            "gecko_min_force_n": 0.24,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.719510466242953,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.602355457194611,
+              "mass": 0.7318776463841895,
+              "roughness": 0.9383615091630912,
+              "contact": null,
+              "semantic_contribution": 0.28346139162099343,
+              "mass_contribution": 0.21525813128946747,
+              "roughness_contribution": 0.22079094333249205,
+              "contact_contribution": null,
+              "total": 0.719510466242953
+            }
+          },
+          {
+            "object_id": "soda_can",
+            "surface_id": "soda_can",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/soda_can/image.jpg",
+            "mass_g": 321.71,
+            "roughness_index": 954.75,
+            "projected_contact_fraction": null,
+            "semantic_description": "Soda Can",
+            "gecko_min_force_n": 1.816,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6398652675713655,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6345039491071519,
+              "mass": 0.6427930496142633,
+              "roughness": 0.6469281769461706,
+              "contact": null,
+              "semantic_contribution": 0.29859009369748324,
+              "mass_contribution": 0.18905677929831272,
+              "roughness_contribution": 0.15221839457556954,
+              "contact_contribution": null,
+              "total": 0.6398652675713655
+            }
+          },
+          {
+            "object_id": "banana",
+            "surface_id": "banana",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/banana/image.jpg",
+            "mass_g": 202.6,
+            "roughness_index": 1072.02,
+            "projected_contact_fraction": null,
+            "semantic_description": "Banana",
+            "gecko_min_force_n": 2.523,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6369669337651629,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5954705704380442,
+              "mass": 0.8035923611463374,
+              "roughness": 0.5116778761929323,
+              "contact": null,
+              "semantic_contribution": 0.2802214449120208,
+              "mass_contribution": 0.23635069445480508,
+              "roughness_contribution": 0.120394794398337,
+              "contact_contribution": null,
+              "total": 0.6369669337651629
+            }
+          },
+          {
+            "object_id": "cetaphil",
+            "surface_id": "cetaphil",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+            "mass_g": 403.68,
+            "roughness_index": 797.68,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cetaphil",
+            "gecko_min_force_n": 1.923,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6287266997751116,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6027043012364579,
+              "mass": 0.46478603273562297,
+              "roughness": 0.88569733065178,
+              "contact": null,
+              "semantic_contribution": 0.28362555352303903,
+              "mass_contribution": 0.13670177433400674,
+              "roughness_contribution": 0.20839937191806587,
+              "contact_contribution": null,
+              "total": 0.6287266997751116
+            }
+          },
+          {
+            "object_id": "caprisun",
+            "surface_id": "caprisun",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/caprisun/image.jpeg",
+            "mass_g": 186.01,
+            "roughness_index": 1002.43,
+            "projected_contact_fraction": null,
+            "semantic_description": "CapriSun",
+            "gecko_min_force_n": 0.417,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6274326853340416,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5947103581741033,
+              "mass": 0.7112647769403411,
+              "roughness": 0.5880872251460443,
+              "contact": null,
+              "semantic_contribution": 0.2798636979642839,
+              "mass_contribution": 0.20919552262951205,
+              "roughness_contribution": 0.1383734647402457,
+              "contact_contribution": null,
+              "total": 0.6274326853340416
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "ketchup",
+            "conditions": [
+              {
+                "object_id": "ketchup",
+                "surface_id": "ketchup",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/ketchup/image.jpg",
+                "mass_g": 293.77,
+                "roughness_index": 705.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Ketchup",
+                "gecko_min_force_n": 0.24,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.719510466242953,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.602355457194611,
+                  "mass": 0.7318776463841895,
+                  "roughness": 0.9383615091630912,
+                  "contact": null,
+                  "semantic_contribution": 0.28346139162099343,
+                  "mass_contribution": 0.21525813128946747,
+                  "roughness_contribution": 0.22079094333249205,
+                  "contact_contribution": null,
+                  "total": 0.719510466242953
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "soda_can",
+            "conditions": [
+              {
+                "object_id": "soda_can",
+                "surface_id": "soda_can",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/soda_can/image.jpg",
+                "mass_g": 321.71,
+                "roughness_index": 954.75,
+                "projected_contact_fraction": null,
+                "semantic_description": "Soda Can",
+                "gecko_min_force_n": 1.816,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6398652675713655,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6345039491071519,
+                  "mass": 0.6427930496142633,
+                  "roughness": 0.6469281769461706,
+                  "contact": null,
+                  "semantic_contribution": 0.29859009369748324,
+                  "mass_contribution": 0.18905677929831272,
+                  "roughness_contribution": 0.15221839457556954,
+                  "contact_contribution": null,
+                  "total": 0.6398652675713655
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "banana",
+            "conditions": [
+              {
+                "object_id": "banana",
+                "surface_id": "banana",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/banana/image.jpg",
+                "mass_g": 202.6,
+                "roughness_index": 1072.02,
+                "projected_contact_fraction": null,
+                "semantic_description": "Banana",
+                "gecko_min_force_n": 2.523,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6369669337651629,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5954705704380442,
+                  "mass": 0.8035923611463374,
+                  "roughness": 0.5116778761929323,
+                  "contact": null,
+                  "semantic_contribution": 0.2802214449120208,
+                  "mass_contribution": 0.23635069445480508,
+                  "roughness_contribution": 0.120394794398337,
+                  "contact_contribution": null,
+                  "total": 0.6369669337651629
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "cetaphil",
+            "conditions": [
+              {
+                "object_id": "cetaphil",
+                "surface_id": "cetaphil",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
+                "mass_g": 403.68,
+                "roughness_index": 797.68,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cetaphil",
+                "gecko_min_force_n": 1.923,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6287266997751116,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6027043012364579,
+                  "mass": 0.46478603273562297,
+                  "roughness": 0.88569733065178,
+                  "contact": null,
+                  "semantic_contribution": 0.28362555352303903,
+                  "mass_contribution": 0.13670177433400674,
+                  "roughness_contribution": 0.20839937191806587,
+                  "contact_contribution": null,
+                  "total": 0.6287266997751116
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "caprisun",
+            "conditions": [
+              {
+                "object_id": "caprisun",
+                "surface_id": "caprisun",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/caprisun/image.jpeg",
+                "mass_g": 186.01,
+                "roughness_index": 1002.43,
+                "projected_contact_fraction": null,
+                "semantic_description": "CapriSun",
+                "gecko_min_force_n": 0.417,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6274326853340416,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5947103581741033,
+                  "mass": 0.7112647769403411,
+                  "roughness": 0.5880872251460443,
+                  "contact": null,
+                  "semantic_contribution": 0.2798636979642839,
+                  "mass_contribution": 0.20919552262951205,
+                  "roughness_contribution": 0.1383734647402457,
+                  "contact_contribution": null,
+                  "total": 0.6274326853340416
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 238,
+          "misses": 26,
+          "writes": 26,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 16,
+            "writes": 16,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 238,
+            "misses": 10,
+            "writes": 10,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 16,
+            "embedding": 10
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 0.35,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.303,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.046999999999999986,
+      "absolute_error_gecko_n": 0.046999999999999986
+    },
+    {
+      "object_id": "very_smooth_tile",
+      "surface_id": "very_smooth_tile",
+      "condition_id": "baseline",
+      "object_name": "Very Smooth Tile",
+      "image_path": "data/MatForceFinal/very_smooth_tile.jpg",
+      "image_sha256": "620a7195ae010d4041096b222cca186ec509443e1c19b155284b64ae070990bf",
+      "mass_g": 178.52,
+      "roughness_index": 730.45,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 0.41,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 8,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 0.41,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "ceramic",
+              "visible_surface_condition": "slightly textured, dry, matte surface with flat top and bottom faces",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 0.41,
+              "evidence_used": [
+                "Query mass = 178.52 g",
+                "Query roughness index = 730.45",
+                "Flat ceramic shard query semantic description indicating a dry, flat surface",
+                "Retrieved object 1 (apple baseline): mass = 159.44 g, roughness index = 562.94, gecko_min_force_n = 0.41 N",
+                "Retrieved object 2 (caprisun baseline): mass = 186.01 g, roughness index = 1002.43, gecko_min_force_n = 0.417 N",
+                "Retrieved object 4 (ketchup baseline): mass = 293.77 g, roughness index = 705.18, gecko_min_force_n = 0.24 N"
+              ],
+              "calculation_summary": "Interpolating between retrieved baseline outcomes of similar mass (~178.5 g) and comparable roughness index (~730), specifically referencing Apple (159.44 g, 562.94 roughness, 0.41 N) and Caprisun (186.01 g, 1002.43 roughness, 0.417 N), yields a required normal force estimate near 0.41 N.",
+              "assumptions_and_uncertainty": [
+                "Assume the ceramic surface remains clean and dry during contact.",
+                "Uncertainty arises from the irregular polygonal shape and sharp edges of the shard which may slightly reduce the effective intimate contact area compared to standard smooth test objects."
+              ],
+              "reasoning_trace": "The query object is a flat ceramic shard with a dry, matte surface, a mass of 178.52 g, and a roughness index of 730.45. Gecko adhesion thrives on clean, dry, flat, nonporous surfaces. The retrieved experiences show robust feasible grasps for similarly weighted and textured items at very low normal forces (e.g., Apple at 0.41 N and Caprisun at 0.417 N). Given the close alignment in mass and moderate roughness, a conservative baseline estimate of 0.41 N ensures sufficient pre-grasp force without overloading the fragile shard."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Flat ceramic shard with a slightly textured, dry, matte surface and irregular polygonal shape. The intended contact region has sharp edges, thin profile, and flat top and bottom faces.",
+        "object_id": "very_smooth_tile",
+        "surface_id": "very_smooth_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "apple",
+            "surface_id": "apple",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/apple/image.jpg",
+            "mass_g": 159.44,
+            "roughness_index": 562.94,
+            "projected_contact_fraction": null,
+            "semantic_description": "Apple",
+            "gecko_min_force_n": 0.41,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6831984215049391,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5623302311109946,
+              "mass": 0.8508872395520819,
+              "roughness": 0.7153237797338996,
+              "contact": null,
+              "semantic_contribution": 0.2646259911110563,
+              "mass_contribution": 0.25026095280943583,
+              "roughness_contribution": 0.16831147758444695,
+              "contact_contribution": null,
+              "total": 0.6831984215049391
+            }
+          },
+          {
+            "object_id": "caprisun",
+            "surface_id": "caprisun",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/caprisun/image.jpeg",
+            "mass_g": 186.01,
+            "roughness_index": 1002.43,
+            "projected_contact_fraction": null,
+            "semantic_description": "CapriSun",
+            "gecko_min_force_n": 0.417,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6758730042494241,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5566473007202148,
+              "mass": 0.9429764273103448,
+              "roughness": 0.5804451324816918,
+              "contact": null,
+              "semantic_contribution": 0.26195167092715993,
+              "mass_contribution": 0.2773460080324543,
+              "roughness_contribution": 0.13657532528980984,
+              "contact_contribution": null,
+              "total": 0.6758730042494241
+            }
+          },
+          {
+            "object_id": "banana",
+            "surface_id": "banana",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/banana/image.jpg",
+            "mass_g": 202.6,
+            "roughness_index": 1072.02,
+            "projected_contact_fraction": null,
+            "semantic_description": "Banana",
+            "gecko_min_force_n": 2.523,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.644875955236563,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5962004798886872,
+              "mass": 0.8346345120480232,
+              "roughness": 0.5050287099179901,
+              "contact": null,
+              "semantic_contribution": 0.2805649317123234,
+              "mass_contribution": 0.24548073883765384,
+              "roughness_contribution": 0.11883028468658591,
+              "contact_contribution": null,
+              "total": 0.644875955236563
+            }
+          },
+          {
+            "object_id": "ketchup",
+            "surface_id": "ketchup",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/ketchup/image.jpg",
+            "mass_g": 293.77,
+            "roughness_index": 705.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Ketchup",
+            "gecko_min_force_n": 0.24,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6377745664075569,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5731163359464397,
+              "mass": 0.49087466885077197,
+              "roughness": 0.9507158992757728,
+              "contact": null,
+              "semantic_contribution": 0.26970180515126574,
+              "mass_contribution": 0.1443749026031682,
+              "roughness_contribution": 0.22369785865312303,
+              "contact_contribution": null,
+              "total": 0.6377745664075569
+            }
+          },
+          {
+            "object_id": "orange",
+            "surface_id": "orange",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/orange/image.jpg",
+            "mass_g": 154.17,
+            "roughness_index": 1068.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Orange",
+            "gecko_min_force_n": 0.38,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6281810329176459,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.5735512375831604,
+              "mass": 0.8109957217752916,
+              "roughness": 0.5089222625145601,
+              "contact": null,
+              "semantic_contribution": 0.26990646474501667,
+              "mass_contribution": 0.238528153463321,
+              "roughness_contribution": 0.11974641470930825,
+              "contact_contribution": null,
+              "total": 0.6281810329176459
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "apple",
+            "conditions": [
+              {
+                "object_id": "apple",
+                "surface_id": "apple",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/apple/image.jpg",
+                "mass_g": 159.44,
+                "roughness_index": 562.94,
+                "projected_contact_fraction": null,
+                "semantic_description": "Apple",
+                "gecko_min_force_n": 0.41,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6831984215049391,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5623302311109946,
+                  "mass": 0.8508872395520819,
+                  "roughness": 0.7153237797338996,
+                  "contact": null,
+                  "semantic_contribution": 0.2646259911110563,
+                  "mass_contribution": 0.25026095280943583,
+                  "roughness_contribution": 0.16831147758444695,
+                  "contact_contribution": null,
+                  "total": 0.6831984215049391
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "caprisun",
+            "conditions": [
+              {
+                "object_id": "caprisun",
+                "surface_id": "caprisun",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/caprisun/image.jpeg",
+                "mass_g": 186.01,
+                "roughness_index": 1002.43,
+                "projected_contact_fraction": null,
+                "semantic_description": "CapriSun",
+                "gecko_min_force_n": 0.417,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6758730042494241,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5566473007202148,
+                  "mass": 0.9429764273103448,
+                  "roughness": 0.5804451324816918,
+                  "contact": null,
+                  "semantic_contribution": 0.26195167092715993,
+                  "mass_contribution": 0.2773460080324543,
+                  "roughness_contribution": 0.13657532528980984,
+                  "contact_contribution": null,
+                  "total": 0.6758730042494241
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "banana",
+            "conditions": [
+              {
+                "object_id": "banana",
+                "surface_id": "banana",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/banana/image.jpg",
+                "mass_g": 202.6,
+                "roughness_index": 1072.02,
+                "projected_contact_fraction": null,
+                "semantic_description": "Banana",
+                "gecko_min_force_n": 2.523,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.644875955236563,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5962004798886872,
+                  "mass": 0.8346345120480232,
+                  "roughness": 0.5050287099179901,
+                  "contact": null,
+                  "semantic_contribution": 0.2805649317123234,
+                  "mass_contribution": 0.24548073883765384,
+                  "roughness_contribution": 0.11883028468658591,
+                  "contact_contribution": null,
+                  "total": 0.644875955236563
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "ketchup",
+            "conditions": [
+              {
+                "object_id": "ketchup",
+                "surface_id": "ketchup",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/ketchup/image.jpg",
+                "mass_g": 293.77,
+                "roughness_index": 705.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Ketchup",
+                "gecko_min_force_n": 0.24,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6377745664075569,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5731163359464397,
+                  "mass": 0.49087466885077197,
+                  "roughness": 0.9507158992757728,
+                  "contact": null,
+                  "semantic_contribution": 0.26970180515126574,
+                  "mass_contribution": 0.1443749026031682,
+                  "roughness_contribution": 0.22369785865312303,
+                  "contact_contribution": null,
+                  "total": 0.6377745664075569
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "orange",
+            "conditions": [
+              {
+                "object_id": "orange",
+                "surface_id": "orange",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/objects/orange/image.jpg",
+                "mass_g": 154.17,
+                "roughness_index": 1068.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Orange",
+                "gecko_min_force_n": 0.38,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6281810329176459,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.5735512375831604,
+                  "mass": 0.8109957217752916,
+                  "roughness": 0.5089222625145601,
+                  "contact": null,
+                  "semantic_contribution": 0.26990646474501667,
+                  "mass_contribution": 0.238528153463321,
+                  "roughness_contribution": 0.11974641470930825,
+                  "contact_contribution": null,
+                  "total": 0.6281810329176459
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 268,
+          "misses": 29,
+          "writes": 29,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 18,
+            "writes": 18,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 268,
+            "misses": 11,
+            "writes": 11,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 18,
+            "embedding": 11
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 0.41,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.996,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.5860000000000001,
+      "absolute_error_gecko_n": 0.5860000000000001
+    }
+  ]
+}

@@ -131,6 +131,9 @@ def test_suite_manifest_snapshots_primary_experiments(tmp_path):
     assert persisted["definition_snapshot"]["backend"] == "gemini_joint_generation"
     assert persisted["active_grippers"] == ["gecko", "silicone"]
     assert persisted["definition_snapshot"]["prompt_bundle_sha256"]
+    assert len(persisted["definition_snapshot"]["split"]["train"]) == 129
+    assert persisted["definition_snapshot"]["split"]["test"] == []
+    assert persisted["definition_snapshot"]["split_sha256"]
     assert set(persisted["prompt_context"]["experiment_instructions"]) == {
         "e1",
         "e2",

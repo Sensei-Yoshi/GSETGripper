@@ -28,7 +28,7 @@ def test_both_gripper_rows_share_fold():
         assert set(fold["train"]).isdisjoint(set(fold["test"]))
 
 
-def test_new_surface_folds_never_leak_siblings_but_interpolation_retains_them():
+def test_new_surface_folds_never_leak_siblings():
     records = fabricate_records(CFG, 12)
     source_id = records[0].object_id
     source_rows = [record for record in records if record.object_id == source_id]
@@ -44,11 +44,7 @@ def test_new_surface_folds_never_leak_siblings_but_interpolation_retains_them():
         for record in source_rows
     )
 
-    grouped = make_folds(records, CFG, protocol="new_surface")
+    grouped = make_folds(records, CFG)
     source_fold = next(fold for fold in grouped if source_id in fold["test"])
     assert sibling_id in source_fold["test"]
     assert sibling_id not in source_fold["train"]
-
-    interpolation = make_folds(records, CFG, protocol="condition_interpolation")
-    exact_fold = next(fold for fold in interpolation if source_id in fold["test"])
-    assert sibling_id in exact_fold["train"]

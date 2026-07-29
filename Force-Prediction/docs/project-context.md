@@ -198,6 +198,7 @@ records, contact-fraction captures, caches, saved runs, benchmark results, and s
 |---|---|
 | `image` | source path, availability, hash, and optional remote URL |
 | `image_2` | optional calibrated second view used by surface/contact estimation |
+| `split` | canonical `train` reference or held-out `test` assignment |
 | `description` | optional structured description plus prompt/model provenance |
 | `embedding` | optional embedding metadata and cache key; vectors stay in the disk cache |
 | `roughness` | optional dataset-scoped Marigold statistics and provenance |
@@ -245,10 +246,11 @@ Per-object checkpoints live at `data/<dataset>/objects/<object_id>/descriptor.js
 stage manifest lives at `data/<dataset>/preparation_manifest.json`. No downstream stage runs merely because an
 upstream stage was selected.
 
-Both gripper rows for an object must remain in the same training or test fold. A known query
-object is excluded from its own E3/E4 retrieval pool. Benchmark generation uses every
-query-ready object and persists predictions without truth; later evaluation joins only the
-current truth-ready subset. Custom counterfactual queries use the full eligible reference pool.
+The source CSV's `split` column assigns each physical surface to `train` or `test`; all sibling
+conditions must remain together. Benchmark generation predicts only query-ready test objects,
+and E3/E4 retrieve only eligible train objects. Predictions are persisted without truth; later
+evaluation joins only the current truth-ready subset. Custom counterfactual queries use the full
+eligible reference pool.
 
 ## 6. Semantic description and embedding
 
@@ -477,10 +479,12 @@ The application provides:
   every dataset-dependent tab and path;
 - **Single Run:** known leave-one-out or custom query with E1–E4 eligibility;
 - **Benchmark:** immutable prediction generation plus later partial-truth evaluation;
-- **Runs Viewer:** versioned benchmark results, resumable E1–E4 suite comparison, single-run inspection,
-  provenance, separate gripper panels, and PNG/SVG/CSV exports;
-- **Data Viewer:** active-dataset images, optional measurements/outcomes, descriptions,
-  embedding status, and an auto-saving nullable editor for measurements and outcomes;
+- **Runs Viewer:** versioned benchmark results with a per-object Single Run-style inspector,
+  resumable E1–E4 suite comparison, saved single-run inspection, provenance, separate gripper
+  panels, and PNG/SVG/CSV exports;
+- **Data Viewer:** active-dataset images, train/test membership, optional measurements/outcomes,
+  descriptions, embedding status, and an auto-saving editor for split and nullable measurements
+  and outcomes;
 - **Prompts & Embodiments:** validate and atomically save prompt text and written gripper
   descriptions;
 - **Contact Fraction:** capture an RGB image and estimate the combined projected
@@ -500,9 +504,10 @@ score it against the unchanged source label; it displays a delta from the origin
 
 ## 13. Evaluation
 
-Each experiment generates predictions for every query-ready object. Evaluation can happen
-later and scores only rows with complete required truth. E3/E4 retrieval references exclude
-the query, and E1–E4 cross-condition reporting uses the common evaluated object intersection.
+Each experiment generates predictions for every query-ready test object. Evaluation can happen
+later and scores only test rows with complete required truth. E3/E4 retrieval references come
+only from train rows, and E1–E4 cross-condition reporting uses the common evaluated object
+intersection.
 
 Metrics include:
 
@@ -527,6 +532,7 @@ version 10. A prediction batch records:
 - source and image hashes;
 - model and embedding versions;
 - retrieval configuration including `k`;
+- exact train/test IDs and split hash;
 - query snapshots, selection, evidence, physics, and cache telemetry, but no truth.
 
 Evaluation artifacts record the prediction batch ID, current truth snapshot hash, coverage,
@@ -535,6 +541,13 @@ reuses its evaluation; corrected truth creates a new version. Suite manifests lo
 experiment definitions, model IDs, retrieval settings, inputs, and active grippers while
 excluding mutable truth. They checkpoint each prediction batch so E1 can finish before E2–E4
 become data-ready.
+
+In Runs Viewer, selecting a benchmark batch exposes an **Object Inspector** dropdown containing
+exactly that batch's query rows. The inspector reuses the normal prediction renderer and shows
+the saved image and inputs beside force, selection, evidence, neighbor, and formula details.
+Its truth and error display come only from the selected evaluation version; unevaluated rows
+remain fully inspectable but are explicitly unscored. Image hashes warn when a saved path is
+missing or now points to changed bytes.
 
 Historical files are never rewritten or deleted. Before definition version 3, E5 meant the
 paired-retrieval VLM method and E4 meant calibrated physics. The inspector infers their old
@@ -597,7 +610,7 @@ Real collection should:
 2. keep paired rows under one object ID;
 3. record image, mass, calibrated roughness, contact proxy, minimum force, feasibility,
    environment, pad ID, and trials;
-4. freeze grouped splits before tuning;
+4. assign and freeze the CSV train/test split before tuning;
 5. fit retrieval weights inside training folds only;
 6. compare E1–E4 on their common eligible object intersection;
 7. report uncertainty, subgroup behavior, feasibility errors, force error, selection, and
@@ -629,7 +642,7 @@ From `GSETGripper/Force-Prediction`:
 
 1. Never mix or double force conventions.
 2. Never round continuous model output to collection steps.
-3. Keep paired object rows in one split and exclude the query from E3/E4 retrieval.
+3. Keep each physical surface in one CSV split and restrict E3/E4 benchmark retrieval to train rows.
 4. Keep source data separate from generated artifacts.
 5. Keep prompts and embodiment context in `prompts.yaml`; keep numerical tunables and
    experiment methods in `config.yaml`.

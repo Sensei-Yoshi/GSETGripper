@@ -33,6 +33,17 @@ SUITE_SCHEMA_VERSION = 10
 
 def _definition_snapshot(cfg: Config) -> dict:
     """Configuration lock that intentionally excludes mutable dataset truth."""
+    from .datasets import get_dataset
+
+    dataset = get_dataset(cfg, cfg.dataset_id)
+    split = {
+        "train": sorted(
+            item.object_id for item in dataset.objects.values() if item.split == "train"
+        ),
+        "test": sorted(
+            item.object_id for item in dataset.objects.values() if item.split == "test"
+        ),
+    }
     definitions = {
         name: cfg.experiment(name).model_dump(mode="json")
         for name in PRIMARY_EXPERIMENTS
@@ -58,6 +69,8 @@ def _definition_snapshot(cfg: Config) -> dict:
         "generation_mode": (
             "single" if len(cfg.prediction.active_grippers) == 1 else "joint"
         ),
+        "split": split,
+        "split_sha256": _snapshot_hash(split),
         "retrieval": cfg.retrieval.model_dump(mode="json"),
         "roughness_measurement": cfg.roughness.model_dump(mode="json"),
         "inputs": cfg.inputs.model_dump(mode="json"),

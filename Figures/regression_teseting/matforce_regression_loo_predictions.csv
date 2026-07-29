@@ -1,30 +1,40 @@
 Object,surface_id,condition_id,Mass_g,roughness_index,ground_truth_force_n,mass_only_rbf_loo_prediction_n,best_two_feature_model,best_two_feature_loo_prediction_n,best_two_feature_residual_n
-500g Weight,500g_weight,baseline,500,1129.82,1.03,2.969413,Two-feature quadratic ridge,3.117665,-2.087665
-Apple,apple,baseline,159.44,562.94,0.41,1.322350,Two-feature quadratic ridge,1.024392,-0.614392
-Banana,banana,baseline,202.6,1072.02,2.523,1.511306,Two-feature quadratic ridge,1.661968,0.861032
-Beaker,beaker,baseline,351.24,1106.84,4.19,2.356548,Two-feature quadratic ridge,2.355990,1.834010
-Big Stone,big_stone,baseline,278.8,2048.83,4.623,1.991599,Two-feature quadratic ridge,3.019764,1.603236
-Camera Cardboard Box,camera_cardboard_box,baseline,871.93,804.32,7.46,3.721424,Two-feature quadratic ridge,3.338096,4.121904
-CapriSun,caprisun,baseline,186.01,1002.43,0.417,1.497134,Two-feature quadratic ridge,1.585468,-1.168468
-Cetaphil,cetaphil,baseline,403.68,797.68,1.923,2.598778,Two-feature quadratic ridge,2.415001,-0.492001
-Foam Roller,foam_roller,baseline,153.38,1353.18,0.723,1.156028,Two-feature quadratic ridge,1.672050,-0.949050
-Headphones Case,headphones_case,baseline,218.15,1610.85,3.01,1.619546,Two-feature quadratic ridge,2.231230,0.778770
-Ketchup,ketchup,baseline,293.77,705.18,0.24,2.095099,Two-feature quadratic ridge,1.986554,-1.746554
-Leather Belt,leather_belt,baseline,99.73,2147.72,1.502,0.592587,Two-feature quadratic ridge,2.154819,-0.652819
-Leather Sunglasses Case,leather_sunglasses_case,baseline,179.9,2014.79,1.906,1.340834,Two-feature quadratic ridge,2.707496,-0.801496
-Lock,lock,baseline,158.66,1185.41,0.55,1.316991,Two-feature quadratic ridge,1.337515,-0.787515
-Lunch Box,lunch_box,baseline,627.68,1737.81,5.863,3.210076,Two-feature quadratic ridge,3.861196,2.001804
-Metal Water Bottle,metal_water_bottle,baseline,551.01,892.99,3.83,3.011252,Two-feature quadratic ridge,2.981797,0.848203
-Microphone,microphone,baseline,258.48,2228.39,2.3,1.874860,Two-feature quadratic ridge,3.716171,-1.416171
-Multimeter,multimeter,baseline,289.32,463.64,2.505,2.049267,Two-feature quadratic ridge,1.539599,0.965401
-Orange,orange,baseline,154.17,1068.18,0.38,1.282750,Two-feature quadratic ridge,1.404148,-1.024148
-People's Hospital,people_s_hospital,baseline,540.59,646.42,2.68,3.108275,Two-feature quadratic ridge,2.818440,-0.138440
-Pretzel Bag,pretzel_bag,baseline,31.97,997.94,0.05,0.000000,Two-feature quadratic ridge,0.000000,0.050000
-Red Bull,red_bull,baseline,332.86,1121.62,1.746,2.373188,Two-feature quadratic ridge,2.402720,-0.656720
-Rubber Tire,rubber_tire,baseline,163.84,1349.28,0.464,1.200974,Two-feature quadratic ridge,1.596424,-1.132424
-Soda Can,soda_can,baseline,321.71,954.75,1.816,2.304350,Two-feature quadratic ridge,2.165258,-0.349258
-Soldering Iron Box,soldering_iron_box,baseline,3500,852.5,6.2,7.373994,Two-feature quadratic ridge,8.000000,-1.800000
-Sponge,sponge,baseline,3.15,2073.07,0.231,1.889249,Two-feature quadratic ridge,0.000000,0.231000
-Wallet 1,wallet_1,baseline,139.66,1596.55,2.013,1.000569,Two-feature quadratic ridge,1.760785,0.252215
-Wallet 2,wallet_2,baseline,85.62,1623.1,0.75,0.438218,Two-feature quadratic ridge,1.246509,-0.496509
-Wooden Block,wooden_block,baseline,403.41,557.48,1.32,2.598004,Two-feature quadratic ridge,2.275661,-0.955661
+500g Weight,500g_weight,baseline,500,1129.82,1.03,3.166590,Two-feature RBF SVR,3.475262,-2.445262
+Apple,apple,baseline,159.44,562.94,0.41,1.303583,Two-feature RBF SVR,0.398729,0.011271
+Banana,banana,baseline,202.6,1072.02,2.523,1.469329,Two-feature RBF SVR,0.951807,1.571193
+Beaker,beaker,baseline,351.24,1106.84,4.19,2.344984,Two-feature RBF SVR,2.227832,1.962168
+Big Stone,big_stone,baseline,278.8,2048.83,4.623,1.986832,Two-feature RBF SVR,3.160930,1.462070
+Book,book,baseline,540.59,646.42,2.68,3.388058,Two-feature RBF SVR,2.037975,0.642025
+Camera Cardboard Box,camera_cardboard_box,baseline,871.93,804.32,7.46,3.617722,Two-feature RBF SVR,3.348229,4.111771
+CapriSun,caprisun,baseline,186.01,1002.43,0.417,1.655080,Two-feature RBF SVR,0.682812,-0.265812
+Cetaphil,cetaphil,baseline,403.68,797.68,1.923,2.819754,Two-feature RBF SVR,2.064472,-0.141472
+Clay Bowl,clay_bowl,baseline,286.71,1847.68,3.63,1.945098,Two-feature RBF SVR,3.677256,-0.047256
+Foam Roller,foam_roller,baseline,153.38,1353.18,0.723,1.418019,Two-feature RBF SVR,1.146015,-0.423015
+Golden Box,golden_box,baseline,231.63,1544.73,4.283,1.746104,Two-feature RBF SVR,2.416865,1.866135
+Headphones Case,headphones_case,baseline,218.15,1610.85,3.01,1.662342,Two-feature RBF SVR,2.423251,0.586749
+Ketchup,ketchup,baseline,293.77,705.18,0.24,2.322129,Two-feature RBF SVR,1.299252,-1.059252
+Large Cardboard Box,large_cardboard_box,baseline,671.94,810.34,6.156,3.198403,Two-feature RBF SVR,3.208727,2.947273
+Leather Belt,leather_belt,baseline,99.73,2147.72,1.502,0.691501,Two-feature RBF SVR,0.872426,0.629574
+Leather Sunglasses Case,leather_sunglasses_case,baseline,179.9,2014.79,1.906,1.406007,Two-feature RBF SVR,2.632711,-0.726711
+Lock,lock,baseline,158.66,1185.41,0.55,1.457985,Two-feature RBF SVR,0.771040,-0.221040
+Lunch Box,lunch_box,baseline,627.68,1737.81,5.863,3.202845,Two-feature RBF SVR,5.224352,0.638648
+Medicine Bottle,medicine_bottle,baseline,517.12,934.84,1.669,3.221751,Two-feature RBF SVR,3.034723,-1.365723
+Metal Water Bottle,metal_water_bottle,baseline,551.01,892.99,3.83,2.865626,Two-feature RBF SVR,2.915083,0.914917
+Microphone,microphone,baseline,258.48,2228.39,2.3,1.810135,Two-feature RBF SVR,3.731358,-1.431358
+Multimeter,multimeter,baseline,289.32,463.64,2.505,1.956699,Two-feature RBF SVR,1.047481,1.457519
+Orange,orange,baseline,154.17,1068.18,0.38,1.423895,Two-feature RBF SVR,0.992158,-0.612158
+Pretzel Bag,pretzel_bag,baseline,31.97,997.94,0.05,0.000000,Two-feature RBF SVR,0.000000,0.050000
+Red Bull,red_bull,baseline,332.86,1121.62,1.746,2.514519,Two-feature RBF SVR,2.290961,-0.544961
+Rough Tile,rough_tile,baseline,178.52,1992.71,2.459,1.395997,Two-feature RBF SVR,2.603093,-0.144093
+Rubber Tire,rubber_tire,baseline,163.84,1349.28,0.464,1.496135,Two-feature RBF SVR,1.491419,-1.027419
+Small Book,small_book,baseline,118.4,1532.23,1.03,0.892908,Two-feature RBF SVR,1.273945,-0.243945
+Smooth Screw Box,smooth_screw_box,baseline,819.27,791.89,1.3,3.697280,Two-feature RBF SVR,3.870555,-2.570555
+Soap Bottle,soap_bottle,baseline,236.11,736.99,0.303,1.816443,Two-feature RBF SVR,1.151624,-0.848624
+Soda Can,soda_can,baseline,321.71,954.75,1.816,2.461285,Two-feature RBF SVR,1.899203,-0.083203
+Soldering Iron Box,soldering_iron_box,baseline,3500,852.5,6.2,4.241924,Two-feature RBF SVR,7.300024,-1.100024
+Sponge,sponge,baseline,3.15,2073.07,0.231,1.207331,Two-feature RBF SVR,2.415395,-2.184395
+Toilet Paper,toilet_paper,baseline,117.92,1068.17,1.112,0.888019,Two-feature RBF SVR,0.124414,0.987586
+Very Smooth Tile,very_smooth_tile,baseline,178.52,730.45,0.996,1.483479,Two-feature RBF SVR,0.418642,0.577358
+Wallet 1,wallet_1,baseline,139.66,1596.55,2.013,1.057074,Two-feature RBF SVR,1.390689,0.622311
+Wallet 2,wallet_2,baseline,85.62,1623.1,0.75,0.546691,Two-feature RBF SVR,0.604952,0.145048
+Wooden Block,wooden_block,baseline,403.41,557.48,1.32,2.819076,Two-feature RBF SVR,1.942037,-0.622037

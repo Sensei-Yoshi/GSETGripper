@@ -55,6 +55,7 @@ def test_catalog_discovers_direct_data_folders_and_excludes_artifacts(tmp_path) 
     assert item.mass_g is None
     assert item.roughness_index is None
     assert item.projected_contact_fraction is None
+    assert item.split == "train"
     assert not item.gripper_outcomes
     assert photos_dataset.default_active_grippers() == (
         Gripper.GECKO,
@@ -80,6 +81,7 @@ def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
     assert first.roughness_index is None
     assert first.legacy_roughness_class is not None
     assert first.projected_contact_fraction is not None
+    assert first.split == "train"
     assert set(outcome.gripper.value for outcome in first.gripper_outcomes.values()) == {
         "gecko",
         "silicone",

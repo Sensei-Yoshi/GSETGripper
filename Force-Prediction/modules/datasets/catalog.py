@@ -122,6 +122,7 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
             object_id=row.object_id,
             surface_id=row.surface_id,
             condition_id=row.condition_id,
+            split=row.split,
             name=row.object_name,
             image=ImageArtifact(
                 path=relative,
@@ -286,6 +287,7 @@ def _attach_manual_measurements(
     if values.object_id != item.object_id:
         return
     item.mass_g = values.mass_g
+    item.split = values.split
     item.roughness_index = values.roughness_index
     item.legacy_roughness_class = values.legacy_roughness_class
     if values.projected_contact_fraction is not None:

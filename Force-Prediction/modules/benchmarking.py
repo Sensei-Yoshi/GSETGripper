@@ -9,7 +9,6 @@ import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -38,9 +37,16 @@ PREDICTION_ARTIFACT_TYPE = "benchmark_prediction_batch"
 EVALUATION_ARTIFACT_TYPE = "benchmark_evaluation"
 
 
-class EvaluationProtocol(StrEnum):
-    NEW_SURFACE = "new_surface"
-    CONDITION_INTERPOLATION = "condition_interpolation"
+@dataclass(frozen=True)
+class BenchmarkScope:
+    """Train/reference and held-out query membership for one experiment."""
+
+    mode: str
+    train_ids: tuple[str, ...]
+    test_ids: tuple[str, ...]
+    query_ids: tuple[str, ...]
+    reference_ids: tuple[str, ...]
+    skipped_queries: dict[str, tuple[str, ...]]
 
 
 @dataclass
@@ -126,24 +132,72 @@ def _batch_config(cfg: Config, batch: BenchmarkPredictionBatch) -> Config:
     return scoped
 
 
+def benchmark_scope(cfg: Config, experiment: str) -> BenchmarkScope:
+    """Resolve the CSV-defined holdout, with legacy leave-one-out fallback."""
+    experiment_id = experiment.lower()
+    dataset = get_dataset(cfg, cfg.dataset_id)
+    eligibility = experiment_eligibility(dataset, cfg, experiment_id)
+    train_ids = tuple(
+        sorted(item.object_id for item in dataset.objects.values() if item.split == "train")
+    )
+    test_ids = tuple(
+        sorted(item.object_id for item in dataset.objects.values() if item.split == "test")
+    )
+    if not test_ids:
+        return BenchmarkScope(
+            mode="leave_one_surface_out",
+            train_ids=train_ids,
+            test_ids=(),
+            query_ids=eligibility.query_ids,
+            reference_ids=eligibility.reference_ids,
+            skipped_queries=eligibility.skipped_queries,
+        )
+
+    query_ready = set(eligibility.query_ids)
+    queries = [object_id for object_id in test_ids if object_id in query_ready]
+    references = tuple(
+        object_id
+        for object_id in eligibility.reference_ids
+        if dataset.objects[object_id].split == "train"
+    )
+    skipped = {
+        object_id: eligibility.skipped_queries[object_id]
+        for object_id in test_ids
+        if object_id in eligibility.skipped_queries
+    }
+    if experiment_id in {"e3", "e4"} and not references:
+        reason = ("no eligible training reference object",)
+        for object_id in queries:
+            skipped[object_id] = reason
+        queries = []
+    return BenchmarkScope(
+        mode="fixed_train_test_holdout",
+        train_ids=train_ids,
+        test_ids=test_ids,
+        query_ids=tuple(queries),
+        reference_ids=references,
+        skipped_queries=skipped,
+    )
+
+
 def generate_benchmark_predictions(
     cfg: Config,
     experiment: str,
     *,
-    protocol: EvaluationProtocol | str = EvaluationProtocol.NEW_SURFACE,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> BenchmarkPredictionBatch:
-    """Generate immutable predictions for every query-ready object."""
+    """Generate immutable predictions for held-out, query-ready objects."""
     experiment_id = experiment.lower()
-    protocol = EvaluationProtocol(protocol)
     dataset = get_dataset(cfg, cfg.dataset_id)
-    eligibility = experiment_eligibility(dataset, cfg, experiment_id)
-    object_ids = list(eligibility.query_ids)
+    scope = benchmark_scope(cfg, experiment_id)
+    object_ids = list(scope.query_ids)
     if not object_ids:
-        raise ValueError(f"no query-ready objects for {experiment_id.upper()}")
+        raise ValueError(f"no held-out query-ready objects for {experiment_id.upper()}")
 
     records = load_experience_pool(cfg)
-    reference_ids = set(eligibility.reference_ids)
+    reference_ids = set(scope.reference_ids)
+    train_ids = set(scope.train_ids)
+    fixed_holdout = scope.mode == "fixed_train_test_holdout"
     active_grippers = cfg.prediction.active_grippers
     joint_mode = len(active_grippers) == 2
     created_at = _utc_now()
@@ -157,9 +211,9 @@ def generate_benchmark_predictions(
             record
             for record in records
             if (
-                record.surface_id != item.surface_id
-                if protocol is EvaluationProtocol.NEW_SURFACE
-                else record.object_id != object_id
+                record.object_id in train_ids
+                if fixed_holdout
+                else record.surface_id != item.surface_id
             )
             and (
                 experiment_id not in {"e3", "e4"}
@@ -248,18 +302,29 @@ def generate_benchmark_predictions(
         "generation_input_sha256": _sha256_payload(
             {
                 "experiment": experiment_id,
-                "evaluation_protocol": protocol.value,
+                "evaluation_protocol": scope.mode,
                 "active_grippers": [gripper.value for gripper in active_grippers],
                 "queries": input_snapshot,
                 "reference_ids": sorted(reference_ids),
+                "train_ids": scope.train_ids,
+                "test_ids": scope.test_ids,
             }
         ),
-        "evaluation_protocol": protocol.value,
-        "prediction_protocol": "query-excluded reference generation",
+        "evaluation_protocol": scope.mode,
+        "prediction_protocol": (
+            "CSV-defined fixed train/test holdout"
+            if fixed_holdout
+            else "query-excluded reference generation"
+        ),
+        "split_sha256": _sha256_payload(
+            {"train": scope.train_ids, "test": scope.test_ids}
+        ),
+        "train_ids": list(scope.train_ids),
+        "test_ids": list(scope.test_ids),
         "query_count": len(rows),
         "eligible_query_ids": object_ids,
         "reference_ids": sorted(reference_ids),
-        "skipped_queries": eligibility.skipped_queries,
+        "skipped_queries": scope.skipped_queries,
         "model": cfg.models.vlm,
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,
@@ -411,7 +476,7 @@ def evaluate_benchmark_predictions(
         "active_grippers": [gripper.value for gripper in active_grippers],
         "generation_mode": batch.metadata["generation_mode"],
         "evaluation_protocol": batch.metadata.get(
-            "evaluation_protocol", EvaluationProtocol.NEW_SURFACE.value
+            "evaluation_protocol", "leave_one_surface_out"
         ),
         "backend": batch.metadata["backend"],
         "prediction_created_at": batch.metadata["created_at"],

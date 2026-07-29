@@ -36,7 +36,6 @@ def test_default_app_structure_matches_research_lab() -> None:
     for label in (
         "Run pipeline",
         "Run selected",
-        "Run both",
         "Run/Resume suite predictions",
         "Evaluate suite & generate comparison",
         "Validate prompt bundle",
@@ -53,7 +52,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Dataset object",
         "Experiment profile",
         "Experiment",
-        "Evaluation protocol",
+        "Dataset split",
         "Saved suite",
     ):
         assert label in selectbox_labels
@@ -91,9 +90,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "predict_gecko_force",
         "predict_silicone_force",
         "benchmark_experiment",
-        "benchmark_protocol",
         "run_benchmark_predictions",
-        "run_both_benchmark_protocols",
         "catalog_page",
         "catalog_page_size",
         "runs_viewer_mode",
@@ -136,6 +133,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "run_preparation_stages",
     }
     assert expected_state <= set(app.session_state.filtered_state)
+    assert any("Benchmark split · Train:" in item.value for item in app.caption)
 
 
 def test_global_gripper_controls_require_at_least_one_target() -> None:

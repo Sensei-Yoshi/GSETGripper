@@ -51,11 +51,14 @@ experience pool. E3 retrieves by semantic cosine similarity only. E4 uses the co
 semantic + physical hybrid score. The global Gecko/silicone checkboxes request either one
 direct per-gripper response or one paired structured response.
 
-Benchmarks use two explicit stages. **Run predictions** saves immutable, truth-free E1–E4
-prediction batches for every query-ready object, so E1 works with images alone. **Evaluate &
-generate plots** later joins a saved batch to the currently available force labels, evaluates
-the labeled subset without model calls, and versions JSON, CSV, PNG, and SVG results. Detailed
-prediction/evaluation histories and suite comparisons live in **Runs Viewer**.
+Benchmarks use two explicit stages and the dataset CSV's `split=train/test` assignment.
+**Run predictions** saves immutable, truth-free E1–E4 prediction batches for query-ready test
+objects; E3/E4 use only train rows as references. **Evaluate & generate plots** later joins a
+saved batch to the currently available force labels, evaluates the labeled subset without model
+calls, and versions JSON, CSV, PNG, and SVG results. Detailed prediction/evaluation histories and
+suite comparisons live in **Runs Viewer**. Its benchmark **Object Inspector** dropdown opens any
+saved batch row in the same rich image/input/prediction layout used for a Single Run, scored only
+against the explicitly selected saved evaluation version.
 
 ```bash
 pip install -e ".[viewer,roughness]"

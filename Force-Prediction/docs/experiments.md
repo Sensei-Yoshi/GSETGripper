@@ -76,9 +76,10 @@ retrieved evidence, target set, and model/prompt provenance under
 `results/predictions/`. Evaluation later joins current completed outcomes for the saved active
 grippers and writes a version under `results/evaluations/<batch_id>/`; unchanged truth reuses
 the existing version. This lets image-only E1 batches be generated before physical trials.
-New-surface generalization (the default) excludes all conditions from the query's physical
-surface. Known-surface interpolation excludes only the exact query condition and keeps
-sibling conditions. These protocols are stored and reported separately.
+The source CSV's `split` column defines the canonical holdout: only `test` rows are predicted
+and scored, while E3/E4 may retrieve only from `train` rows. All sibling conditions of one
+physical surface must share the same split. Legacy datasets without test rows retain the
+leave-one-surface-out fallback.
 
 The saved E1–E4 suite produces separate Gecko and silicone calibration panels, one panel
 per experiment, plus CSV metric and prediction exports. The panels show ground truth on

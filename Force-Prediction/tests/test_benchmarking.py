@@ -7,6 +7,7 @@ import numpy as np
 import pytest
 
 from modules.benchmarking import (
+    benchmark_scope,
     evaluate_benchmark_predictions,
     generate_benchmark_predictions,
     get_or_create_benchmark_evaluation,
@@ -110,6 +111,43 @@ def test_image_only_e1_generates_then_evaluates_partial_truth_without_model_call
     assert corrected.evaluation_id != evaluation.evaluation_id
     assert len(list_batch_evaluations(cfg, batch.batch_id)) == 2
     assert (client.generation_calls, client.embedding_calls) == calls_after_generation
+
+
+def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    object_ids = ("train_a", "train_b", "test_a", "test_b")
+    cfg, dataset = _image_only_config(tmp_path, object_ids)
+    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
+    for index, object_id in enumerate(object_ids, start=1):
+        split = "train" if object_id.startswith("train") else "test"
+        dataset = update_dataset_object(
+            cfg,
+            dataset,
+            object_id,
+            _complete_edit(index).model_copy(update={"split": split}),
+        )
+
+    scope = benchmark_scope(cfg, "e3")
+    batch = generate_benchmark_predictions(cfg, "e3")
+
+    assert scope.mode == "fixed_train_test_holdout"
+    assert scope.train_ids == ("train_a", "train_b")
+    assert scope.test_ids == ("test_a", "test_b")
+    assert {row["object_id"] for row in batch.rows} == {"test_a", "test_b"}
+    assert batch.metadata["train_ids"] == ["train_a", "train_b"]
+    assert batch.metadata["test_ids"] == ["test_a", "test_b"]
+    assert batch.metadata["reference_ids"] == ["train_a", "train_b"]
+    assert batch.metadata["evaluation_protocol"] == "fixed_train_test_holdout"
+    assert all(
+        {
+            retrieved["object_id"]
+            for retrieved in row["pipeline_result"]["retrieved_objects"]
+        }
+        <= {"train_a", "train_b"}
+        for row in batch.rows
+    )
 
 
 def test_suite_generates_e1_early_then_resumes_other_experiments(

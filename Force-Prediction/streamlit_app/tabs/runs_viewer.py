@@ -34,6 +34,7 @@ from modules.suites import (
     suite_evaluation_artifacts,
     suite_prediction_batches,
 )
+from streamlit_app.benchmark_inspector import render_benchmark_object_inspector
 from streamlit_app.context import AppContext
 from streamlit_app.tabs.data_viewer import pipeline_run_inspector
 
@@ -68,6 +69,8 @@ def _render_suite_provenance(manifest: dict) -> None:
         st.json(
             {
                 "experiments": snapshot.get("experiment_definitions", {}),
+                "split": snapshot.get("split", {}),
+                "split_sha256": snapshot.get("split_sha256"),
                 "retrieval": snapshot.get("retrieval", {}),
                 "inputs": snapshot.get("inputs", {}),
             },
@@ -349,8 +352,22 @@ def _render_prediction_batch(
     else:
         selected_evaluation = None
 
-    summary_tab, plots_tab, evaluated_tab, predictions_tab, provenance_tab = st.tabs(
-        ["Summary", "Plots", "Evaluated Rows", "All Predictions", "Provenance"]
+    (
+        summary_tab,
+        inspector_tab,
+        plots_tab,
+        evaluated_tab,
+        predictions_tab,
+        provenance_tab,
+    ) = st.tabs(
+        [
+            "Summary",
+            "Object Inspector",
+            "Plots",
+            "Evaluated Rows",
+            "All Predictions",
+            "Provenance",
+        ]
     )
     with summary_tab:
         st.write(f"**Prediction batch:** `{batch.batch_id}`")
@@ -371,6 +388,13 @@ def _render_prediction_batch(
             if selected_evaluation.metadata.get("skipped_truth"):
                 with st.expander("Unevaluated predictions"):
                     st.json(selected_evaluation.metadata["skipped_truth"], expanded=False)
+
+    with inspector_tab:
+        render_benchmark_object_inspector(
+            context.config,
+            batch,
+            selected_evaluation,
+        )
 
     with plots_tab:
         if selected_evaluation is None:
@@ -402,13 +426,6 @@ def _render_prediction_batch(
 
     with provenance_tab:
         st.json(batch.metadata, expanded=True)
-        selected_object = st.selectbox(
-            "Prediction evidence for object",
-            [row["object_id"] for row in batch.rows],
-            key="benchmark_prediction_evidence",
-        )
-        row = next(row for row in batch.rows if row["object_id"] == selected_object)
-        st.json(row["pipeline_result"], expanded=False)
         if selected_evaluation is not None:
             st.subheader("Evaluation provenance")
             st.json(selected_evaluation.metadata, expanded=True)
