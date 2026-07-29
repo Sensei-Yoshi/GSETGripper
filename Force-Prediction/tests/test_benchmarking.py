@@ -42,7 +42,7 @@ def _image_only_config(tmp_path, object_ids=("one", "two")):
 def _complete_edit(index: int, *, gecko_force: float | None = None) -> DatasetObjectEdit:
     return DatasetObjectEdit(
         mass_g=100 + index,
-        roughness_class=2 + index,
+        roughness_index=2 + index,
         projected_contact_fraction=0.65,
         gecko_feasible=True,
         gecko_force_n=gecko_force or 1.0 + index / 10,
@@ -69,7 +69,7 @@ def test_image_only_e1_generates_then_evaluates_partial_truth_without_model_call
 
     prediction_paths = save_prediction_batch(cfg, batch)
     prediction_artifact = json.loads(prediction_paths[0].read_text(encoding="utf-8"))
-    assert prediction_artifact["schema_version"] == 9
+    assert prediction_artifact["schema_version"] == 10
     assert prediction_artifact["artifact_type"] == "benchmark_prediction_batch"
     calls_after_generation = (client.generation_calls, client.embedding_calls)
     dataset = update_dataset_object(cfg, dataset, "one", _complete_edit(1))
@@ -90,7 +90,7 @@ def test_image_only_e1_generates_then_evaluates_partial_truth_without_model_call
     assert set(paths) == {"json", "csv", "png", "svg"}
     assert all(path.is_file() for path in paths.values())
     evaluation_artifact = json.loads(paths["json"].read_text(encoding="utf-8"))
-    assert evaluation_artifact["schema_version"] == 9
+    assert evaluation_artifact["schema_version"] == 10
     assert evaluation_artifact["artifact_type"] == "benchmark_evaluation"
     assert (client.generation_calls, client.embedding_calls) == calls_after_generation
 

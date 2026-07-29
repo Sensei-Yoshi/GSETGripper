@@ -110,12 +110,19 @@ def render(context: AppContext) -> None:
             disabled=not uses_measurements,
             help="This authoritative value is hidden from E1 and E3.",
         )
-        roughness = st.selectbox(
-            "Roughness class",
-            options=[None, 1, 2, 3, 4, 5],
-            index=(dataset_object.roughness_class or 0),
-            format_func=lambda value: "Not recorded" if value is None else str(value),
+        roughness = st.number_input(
+            "Roughness index",
+            min_value=0.0,
+            value=(
+                float(dataset_object.roughness_index)
+                if dataset_object.roughness_index is not None
+                else None
+            ),
+            step=0.01,
+            format="%.2f",
+            placeholder="Not recorded",
             disabled=not uses_measurements or not base_cfg.inputs.use_roughness,
+            help="Continuous sensor value; larger values indicate rougher surfaces.",
         )
         contact = st.number_input(
             "Projected contact fraction",
@@ -213,7 +220,7 @@ def render(context: AppContext) -> None:
                     mass != dataset_object.mass_g
                     or (
                         base_cfg.inputs.use_roughness
-                        and roughness != dataset_object.roughness_class
+                        and roughness != dataset_object.roughness_index
                     )
                     or (
                         base_cfg.inputs.use_projected_contact
@@ -245,7 +252,7 @@ def render(context: AppContext) -> None:
                 QueryInput(
                     object_id=f"custom_{object_id}" if counterfactual else object_id,
                     mass_g=float(mass) if mass is not None else None,
-                    roughness_class=roughness,
+                    roughness_index=(float(roughness) if roughness is not None else None),
                     projected_contact_fraction=(
                         float(contact) if contact is not None else None
                     ),
@@ -271,7 +278,7 @@ def render(context: AppContext) -> None:
                     QueryInput(
                         object_id=object_id,
                         mass_g=dataset_object.mass_g,
-                        roughness_class=dataset_object.roughness_class,
+                        roughness_index=dataset_object.roughness_index,
                         projected_contact_fraction=dataset_object.projected_contact_fraction,
                         image_bgr=source_image,
                         image_path=dataset_object.image.path,
@@ -287,7 +294,7 @@ def render(context: AppContext) -> None:
                     "source_object_id": object_id,
                     "object_name": selected_name,
                     "mass_g": mass,
-                    "roughness_class": roughness,
+                    "roughness_index": roughness,
                     "projected_contact_fraction": contact,
                     "semantic_description": detailed.semantic_description,
                     "original_image_path": (

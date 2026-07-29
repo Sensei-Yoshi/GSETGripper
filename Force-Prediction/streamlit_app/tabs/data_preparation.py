@@ -39,10 +39,24 @@ def render(context: AppContext) -> None:
     )
     st.caption(f"Source fingerprint: `{summary['source_sha256']}`")
 
+    roughness = summary["roughness_index"]
+    st.caption(
+        "Recorded roughness index: "
+        f"{roughness['count']} values"
+        + (
+            f", range {roughness['min']:g}–{roughness['max']:g}"
+            if roughness["count"]
+            else ""
+        )
+        + ". Higher values indicate rougher surfaces."
+    )
+    if dataset.capabilities.legacy_roughness_class_count:
+        st.warning(
+            f"{dataset.capabilities.legacy_roughness_class_count} objects contain only "
+            "legacy roughness classes. Record numerical indices before using roughness "
+            "in E2 or E4."
+        )
     distributions = [
-        {"dimension": "Roughness", "category": str(category), "count": count}
-        for category, count in summary["roughness_counts"].items()
-    ] + [
         {"dimension": "Favored gripper", "category": category, "count": count}
         for category, count in summary["favored_counts"].items()
     ]

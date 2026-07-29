@@ -28,7 +28,7 @@ from .reporting import (
 )
 
 PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4")
-SUITE_SCHEMA_VERSION = 9
+SUITE_SCHEMA_VERSION = 10
 
 
 def _definition_snapshot(cfg: Config) -> dict:
@@ -59,6 +59,7 @@ def _definition_snapshot(cfg: Config) -> dict:
             "single" if len(cfg.prediction.active_grippers) == 1 else "joint"
         ),
         "retrieval": cfg.retrieval.model_dump(mode="json"),
+        "roughness_measurement": cfg.roughness.model_dump(mode="json"),
         "inputs": cfg.inputs.model_dump(mode="json"),
     }
 
@@ -123,7 +124,8 @@ def list_suites(cfg: Config) -> list[dict]:
 def _validate_resumable(cfg: Config, manifest: dict) -> None:
     if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
         raise ValueError(
-            "Legacy suites are read-only; start a schema-v9 suite for two-stage execution"
+            f"Legacy suites are read-only; start a schema-v{SUITE_SCHEMA_VERSION} "
+            "suite for two-stage execution"
         )
     current = _definition_snapshot(cfg)
     if _snapshot_hash(current) != manifest["definition_snapshot_sha256"]:

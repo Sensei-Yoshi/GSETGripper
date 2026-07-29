@@ -32,7 +32,7 @@ from .expforce import (
 )
 from .pipeline import Pipeline, QueryInput
 
-BENCHMARK_SCHEMA_VERSION = 9
+BENCHMARK_SCHEMA_VERSION = 10
 PREDICTION_ARTIFACT_TYPE = "benchmark_prediction_batch"
 EVALUATION_ARTIFACT_TYPE = "benchmark_evaluation"
 
@@ -168,7 +168,7 @@ def generate_benchmark_predictions(
             "image_path": item.image.path,
             "image_sha256": image_digest,
             "mass_g": item.mass_g,
-            "roughness_class": item.roughness_class,
+            "roughness_index": item.roughness_index,
             "projected_contact_fraction": item.projected_contact_fraction,
             "semantic_description": semantic_description,
         }
@@ -176,7 +176,7 @@ def generate_benchmark_predictions(
             QueryInput(
                 object_id=object_id,
                 mass_g=item.mass_g,
-                roughness_class=item.roughness_class,
+                roughness_index=item.roughness_index,
                 projected_contact_fraction=item.projected_contact_fraction,
                 image_bgr=image,
                 image_path=item.image.path,
@@ -246,6 +246,7 @@ def generate_benchmark_predictions(
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,
         "inputs": cfg.inputs.model_dump(mode="json"),
+        "roughness_measurement": cfg.roughness.model_dump(mode="json"),
         "active_grippers": [gripper.value for gripper in active_grippers],
         "generation_mode": "joint" if joint_mode else "single",
         "retrieval": cfg.retrieval.model_dump(mode="json"),
@@ -461,7 +462,9 @@ def load_prediction_batch(path: str | Path) -> BenchmarkPredictionBatch:
     json_path = Path(path)
     artifact = json.loads(json_path.read_text(encoding="utf-8"))
     if artifact.get("schema_version") != BENCHMARK_SCHEMA_VERSION:
-        raise ValueError("only schema-v9 prediction batches are loadable")
+        raise ValueError(
+            f"only schema-v{BENCHMARK_SCHEMA_VERSION} prediction batches are loadable"
+        )
     if artifact.get("artifact_type") != PREDICTION_ARTIFACT_TYPE:
         raise ValueError("artifact is not a benchmark prediction batch")
     batch = BenchmarkPredictionBatch(
@@ -521,7 +524,9 @@ def load_benchmark_evaluation(path: str | Path) -> BenchmarkEvaluation:
     json_path = Path(path)
     artifact = json.loads(json_path.read_text(encoding="utf-8"))
     if artifact.get("schema_version") != BENCHMARK_SCHEMA_VERSION:
-        raise ValueError("only schema-v9 evaluations are loadable")
+        raise ValueError(
+            f"only schema-v{BENCHMARK_SCHEMA_VERSION} evaluations are loadable"
+        )
     if artifact.get("artifact_type") != EVALUATION_ARTIFACT_TYPE:
         raise ValueError("artifact is not a benchmark evaluation")
     return BenchmarkEvaluation(

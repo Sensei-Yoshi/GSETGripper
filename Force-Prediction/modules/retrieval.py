@@ -67,7 +67,7 @@ def get_embedding_provider(cfg: Config) -> EmbeddingProvider:
 def build_embedding_text(
     description: str,
     mass_g: float | None = None,
-    roughness_class: int | None = None,
+    roughness_index: float | None = None,
     contact: float | None = None,
     cfg: Config | None = None,
 ) -> str:
@@ -77,7 +77,7 @@ def build_embedding_text(
     Measured properties are scored explicitly below; including them in the vector
     as well would make the dashboard's retrieval weights impossible to interpret.
     """
-    del mass_g, roughness_class, contact, cfg
+    del mass_g, roughness_index, contact, cfg
     return description.strip()
 
 
@@ -92,10 +92,9 @@ def s_mass(m_q: float, m_i: float, sigma: float) -> float:
     return math.exp(-abs(math.log(m_q) - math.log(m_i)) / sigma)
 
 
-def s_roughness(r_q: int, r_i: int, cfg: Config) -> float:
-    if cfg.roughness.ordinal:
-        return 1.0 - abs(r_q - r_i) / (cfg.roughness.n_classes - 1)
-    return 1.0 if r_q == r_i else 0.0
+def s_roughness(r_q: float, r_i: float, cfg: Config) -> float:
+    """Continuous similarity for the recorded index; always in ``(0, 1]``."""
+    return math.exp(-abs(r_q - r_i) / cfg.roughness.characteristic_scale)
 
 
 def s_contact(a_q: float, a_i: float, sigma: float) -> float:
@@ -143,7 +142,7 @@ class RetrievedObjectExperience(BaseModel):
     object_id: str
     image_path: str = ""
     mass_g: float | None = None
-    roughness_class: int | None = None
+    roughness_index: float | None = None
     projected_contact_fraction: float | None = None
     semantic_description: str
     gecko_min_force_n: float | None = None
@@ -188,7 +187,7 @@ class RetrievedObjectExperience(BaseModel):
         excluded = {"image_path", "gecko_min_force_n", "gecko_feasible",
                     "silicone_min_force_n", "silicone_feasible"}
         if not include_roughness:
-            excluded.add("roughness_class")
+            excluded.add("roughness_index")
         if not include_contact:
             excluded.add("projected_contact_fraction")
         return {
@@ -217,7 +216,7 @@ class ExperienceIndex:
             if rec is None:
                 continue
             text = build_embedding_text(
-                rec.semantic_description, rec.mass_g, rec.roughness_class,
+                rec.semantic_description, rec.mass_g, rec.roughness_index,
                 rec.projected_contact_fraction, self.cfg,
             )
             if text not in embedded:
@@ -247,10 +246,10 @@ class ExperienceIndex:
         mass = s_mass(query.mass_g, rec.mass_g, self.cfg.retrieval.sigma_mass)
         roughness = None
         if self.cfg.inputs.use_roughness:
-            if query.roughness_class is None or rec.roughness_class is None:
+            if query.roughness_index is None or rec.roughness_index is None:
                 raise ValueError("E4 hybrid retrieval requires enabled roughness values")
             roughness = s_roughness(
-                query.roughness_class, rec.roughness_class, self.cfg
+                query.roughness_index, rec.roughness_index, self.cfg
             )
         contact = None
         if self.cfg.inputs.use_projected_contact:
@@ -288,7 +287,7 @@ class ExperienceIndex:
 
     def embed_query(self, query: Query) -> np.ndarray:
         text = build_embedding_text(
-            query.semantic_description, query.mass_g, query.roughness_class,
+            query.semantic_description, query.mass_g, query.roughness_index,
             query.projected_contact_fraction, self.cfg,
         )
         return self.provider.embed(text, is_query=True)
@@ -318,8 +317,8 @@ class ExperienceIndex:
                     object_id=object_id,
                     image_path=rec.image_path if mode is RetrievalMode.HYBRID else "",
                     mass_g=rec.mass_g if mode is RetrievalMode.HYBRID else None,
-                    roughness_class=(
-                        rec.roughness_class
+                    roughness_index=(
+                        rec.roughness_index
                         if mode is RetrievalMode.HYBRID and self.cfg.inputs.use_roughness
                         else None
                     ),

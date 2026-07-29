@@ -1,0 +1,8 @@
+model,inputs,train_r2,nested_loo_r2,nested_loo_rmse_n,nested_loo_mae_n,full_data_selected_parameters
+Mean baseline,none,0.000000,-0.072704,1.978831,1.529879,{}
+Roughness-only linear,roughness,0.000005,-0.140093,2.040040,1.579115,{}
+Log-mass-only linear,log10(mass),0.470530,0.400865,1.478873,1.138788,{}
+Two-feature linear,log10(mass) + roughness,0.562165,0.471924,1.388407,1.102696,{}
+Two-feature quadratic ridge,log10(mass) + roughness,0.599869,0.503987,1.345597,1.078830,"{""model__alpha"": 5.623413251903491}"
+Log-mass-only RBF SVR,log10(mass),0.526988,0.472548,1.387587,1.100766,"{""model__C"": 10.0, ""model__epsilon"": 0.4, ""model__gamma"": 0.03}"
+Two-feature RBF SVR,log10(mass) + roughness,0.727237,0.248761,1.655990,1.233397,"{""model__C"": 10.0, ""model__epsilon"": 0.1, ""model__gamma"": 0.3}"

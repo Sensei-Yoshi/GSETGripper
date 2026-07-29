@@ -71,8 +71,8 @@ class _FakeGripper:
 
 
 class _FakeRoughness:
-    def read_class(self):
-        return 2
+    def read_index(self):
+        return 347.82
 
 
 class _FakeMass:
@@ -151,6 +151,7 @@ def test_real_collection_integrates_contact_summary_and_provenance(
     assert (object_dir / "contact_fraction/summary.json").is_file()
     row = next(csv.DictReader((tmp_path / "data/physical/dataset.csv").open()))
     assert row["Image"] == "objects/test_bottle/image.png"
+    assert float(row["roughness_index"]) == pytest.approx(347.82)
     assert float(row["projected_contact_fraction"]) == 0.7
     records = load_experiences(tmp_path / "data/cache/physical/experiences.jsonl")
     assert len(records) == 2

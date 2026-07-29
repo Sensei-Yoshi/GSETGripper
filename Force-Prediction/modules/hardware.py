@@ -8,7 +8,7 @@ GSETGripper/camera/depth_serial_trigger.py.
 Interfaces
     GripperController : set_normal_force / open / close_until_contact / attempt_lift
     LoadCell          : read_n
-    RoughnessSource   : read_class          (the trusted LED system)
+    RoughnessSource   : read_index          (the trusted LED system)
     MassSource        : read_g              (the scale)
     CameraSource      : capture_rgb
     SerialGraspSender : send                (arduino/main/main.ino's Z/SELECT/FORCE/GRIP
@@ -57,7 +57,7 @@ class LoadCell(Protocol):
 
 @runtime_checkable
 class RoughnessSource(Protocol):
-    def read_class(self) -> int: ...
+    def read_index(self) -> float: ...
 
 
 @runtime_checkable
@@ -159,7 +159,7 @@ class SerialGripper:
 
 
 class SerialRoughness:
-    """Real LED roughness system: returns an integer class over serial."""
+    """Real LED roughness system: returns its continuous index over serial."""
 
     def __init__(self, port: str | None = None, baud: int = 9600) -> None:
         import serial
@@ -167,10 +167,10 @@ class SerialRoughness:
         self.conn = serial.Serial(find_serial_port(port), baud, timeout=2)
         time.sleep(2.0)
 
-    def read_class(self) -> int:
+    def read_index(self) -> float:
         self.conn.write(b"READ\n")
         self.conn.flush()
-        return int(self.conn.readline().decode("ascii", errors="ignore").strip())
+        return float(self.conn.readline().decode("ascii", errors="ignore").strip())
 
 
 # Command word -> the DONE ack main.ino emits once that axis's move completes.
@@ -332,7 +332,7 @@ class OrbbecCamera:
 class MockObject:
     object_id: str
     mass_g: float
-    roughness_class: int
+    roughness_index: float
     projected_contact_fraction: float
     # Per-object perturbation of the "true" coefficients so the mean-physics
     # prior is imperfect -> retrieval and residual learning have real signal.
@@ -371,7 +371,7 @@ class MockBench:
         model = self._true_model(obj)
         w = weight_n(obj.mass_g, self.cfg.force.gravity)
         held = model.holding_force(
-            gripper, self._commanded_n, obj.roughness_class, obj.projected_contact_fraction
+            gripper, self._commanded_n, obj.roughness_index, obj.projected_contact_fraction
         )
         # Small per-trial threshold noise so 3 repeats can differ slightly.
         noise = 1.0 + 0.03 * self.rng.standard_normal()
@@ -410,9 +410,9 @@ class MockRoughness:
     def __init__(self, bench: MockBench) -> None:
         self.bench = bench
 
-    def read_class(self) -> int:
+    def read_index(self) -> float:
         assert self.bench.current is not None
-        return self.bench.current.roughness_class
+        return self.bench.current.roughness_index
 
 
 class MockMass:
@@ -466,14 +466,14 @@ def fabricate_records(cfg: Config, n: int, seed: int | None = None) -> list[Expe
         bench.set_object(obj)
         for gripper in (Gripper.GECKO, Gripper.SILICONE):
             est = bench._true_model(obj).min_force(
-                gripper, obj.mass_g, obj.roughness_class, obj.projected_contact_fraction
+                gripper, obj.mass_g, obj.roughness_index, obj.projected_contact_fraction
             )
             records.append(
                 ExperienceRecord(
                     object_id=obj.object_id,
                     image_path="",
                     mass_g=obj.mass_g,
-                    roughness_class=obj.roughness_class,
+                    roughness_index=obj.roughness_index,
                     projected_contact_fraction=obj.projected_contact_fraction,
                     gripper=gripper,
                     min_force_n=est.min_force_n if est.feasible else None,
@@ -492,13 +492,13 @@ def synthetic_objects(cfg: Config, n: int, seed: int | None = None) -> list[Mock
     objects = []
     for i in range(n):
         mass = float(np.exp(rng.uniform(np.log(20), np.log(1500))))  # 20 g .. 1.5 kg
-        roughness = int(rng.integers(1, cfg.roughness.n_classes + 1))
+        roughness = float(rng.uniform(0.0, 4.0 * cfg.roughness.characteristic_scale))
         contact = float(rng.uniform(0.3, 1.0))
         objects.append(
             MockObject(
                 object_id=f"object_{i:03d}",
                 mass_g=round(mass, 1),
-                roughness_class=roughness,
+                roughness_index=round(roughness, 2),
                 projected_contact_fraction=round(contact, 3),
                 alpha_scale=float(np.exp(0.15 * rng.standard_normal())),
                 beta_scale=float(np.exp(0.20 * rng.standard_normal())),

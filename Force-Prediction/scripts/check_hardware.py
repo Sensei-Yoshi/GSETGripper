@@ -23,7 +23,7 @@ def main() -> int:
     fine = cfg.collection.fine_step_n
     for obj in synthetic_objects(cfg, 3):
         bench.set_object(obj)
-        print(f"\n{obj.object_id}: mass={obj.mass_g:.0f}g rough={obj.roughness_class} "
+        print(f"\n{obj.object_id}: mass={obj.mass_g:.0f}g rough={obj.roughness_index:.2f} "
               f"a={obj.projected_contact_fraction:.2f}")
         for gripper in (Gripper.GECKO, Gripper.SILICONE):
             bench.mounted_gripper = gripper

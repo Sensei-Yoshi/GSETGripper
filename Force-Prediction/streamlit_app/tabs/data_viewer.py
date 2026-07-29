@@ -60,7 +60,7 @@ def _card_editor(
                     st.session_state[f"{prefix}_{gripper}_force_n"] = None
             edit = DatasetObjectEdit(
                 mass_g=st.session_state[f"{prefix}_mass_g"],
-                roughness_class=st.session_state[f"{prefix}_roughness_class"],
+                roughness_index=st.session_state[f"{prefix}_roughness_index"],
                 projected_contact_fraction=st.session_state[
                     f"{prefix}_projected_contact_fraction"
                 ],
@@ -102,13 +102,20 @@ def _card_editor(
             key=f"{prefix}_mass_g",
             on_change=save_change,
         )
-        measurement_cols[1].selectbox(
-            "Roughness class",
-            [None, 1, 2, 3, 4, 5],
-            index=item.roughness_class or 0,
-            format_func=lambda value: "Not recorded" if value is None else str(value),
-            key=f"{prefix}_roughness_class",
+        measurement_cols[1].number_input(
+            "Roughness index",
+            min_value=0.0,
+            value=(
+                float(item.roughness_index)
+                if item.roughness_index is not None
+                else None
+            ),
+            step=0.01,
+            format="%.2f",
+            placeholder="Not recorded",
+            key=f"{prefix}_roughness_index",
             on_change=save_change,
+            help="Continuous sensor value; larger values indicate rougher surfaces.",
         )
         measurement_cols[2].number_input(
             "Projected contact fraction",
@@ -244,9 +251,18 @@ def _description_catalog(context: AppContext) -> None:
                     "Mass", f"{row.mass_g:g} g" if row.mass_g is not None else "Not available"
                 )
                 sensor_cols[1].metric(
-                    "Roughness class",
-                    row.roughness_class if row.roughness_class is not None else "Not available",
+                    "Roughness index",
+                    (
+                        f"{row.roughness_index:g}"
+                        if row.roughness_index is not None
+                        else "Not available"
+                    ),
                 )
+                if row.roughness_index is None and row.legacy_roughness_class is not None:
+                    st.warning(
+                        f"Legacy roughness class {row.legacy_roughness_class} is preserved "
+                        "for provenance but is not used as a numerical roughness index."
+                    )
                 sensor_cols[2].metric(
                     "Projected contact fraction",
                     (
@@ -352,7 +368,13 @@ def pipeline_run_inspector(context: AppContext) -> None:
             f"{query['mass_g']:.1f} g" if query.get("mass_g") is not None else "Not recorded",
         )
         sensor_cols = st.columns(2)
-        sensor_cols[0].metric("Roughness", query.get("roughness_class") or "Not recorded")
+        if query.get("roughness_index") is not None:
+            roughness_display = f"{query['roughness_index']:g}"
+        elif query.get("roughness_class") is not None:
+            roughness_display = f"Legacy class {query['roughness_class']}"
+        else:
+            roughness_display = "Not recorded"
+        sensor_cols[0].metric("Roughness index", roughness_display)
         sensor_cols[1].metric(
             "Contact",
             f"{query['projected_contact_fraction']:.3f}"

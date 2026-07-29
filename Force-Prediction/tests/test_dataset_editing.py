@@ -35,7 +35,7 @@ def _write_source(root) -> None:
                 "Object",
                 "Image",
                 "Mass_g",
-                "roughness_class",
+                "roughness_index",
                 "projected_contact_fraction",
                 "silicone_force_n",
                 "silicone_feasible",
@@ -50,7 +50,7 @@ def _write_source(root) -> None:
                 "Object": "Test cup",
                 "Image": "test.png",
                 "Mass_g": 100,
-                "roughness_class": 2,
+                "roughness_index": 2,
                 "projected_contact_fraction": 0.5,
                 "silicone_force_n": 1.5,
                 "silicone_feasible": True,
@@ -100,7 +100,7 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
         "test_cup",
         DatasetObjectEdit(
             mass_g=125,
-            roughness_class=4,
+            roughness_index=4,
             projected_contact_fraction=0.75,
             silicone_force_n=0.8,
             silicone_feasible=True,
@@ -158,7 +158,7 @@ def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcom
         "cup",
         DatasetObjectEdit(
             mass_g=None,
-            roughness_class=None,
+            roughness_index=None,
             projected_contact_fraction=None,
             gecko_feasible=True,
             gecko_force_n=1.25,
@@ -169,7 +169,7 @@ def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcom
 
     measurement_path = image.parent / "measurements.json"
     persisted = json.loads(measurement_path.read_text())
-    assert persisted["schema_version"] == 1
+    assert persisted["schema_version"] == 2
     assert persisted["mass_g"] is None
     assert refreshed.source_fingerprint != original_fingerprint
     assert refreshed.objects["cup"].gripper_outcomes[Gripper.GECKO].complete
@@ -195,7 +195,7 @@ def test_csv_edit_accepts_blank_measurements_and_unrecorded_outcomes(tmp_path) -
 
     row = load_rows(cfg)[0]
     assert row.mass_g is None
-    assert row.roughness_class is None
+    assert row.roughness_index is None
     assert row.projected_contact_fraction is None
     assert row.gecko_feasible is None
     assert row.silicone_feasible is None

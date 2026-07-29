@@ -53,7 +53,7 @@ def test_catalog_discovers_direct_data_folders_and_excludes_artifacts(tmp_path) 
     assert item.description is None
     assert item.embedding is None
     assert item.mass_g is None
-    assert item.roughness_class is None
+    assert item.roughness_index is None
     assert item.projected_contact_fraction is None
     assert not item.gripper_outcomes
     assert photos_dataset.default_active_grippers() == (
@@ -77,7 +77,8 @@ def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
 
     assert len(dataset.objects) == 129
     assert first.mass_g is not None
-    assert first.roughness_class is not None
+    assert first.roughness_index is None
+    assert first.legacy_roughness_class is not None
     assert first.projected_contact_fraction is not None
     assert set(outcome.gripper.value for outcome in first.gripper_outcomes.values()) == {
         "gecko",
@@ -88,7 +89,31 @@ def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
     assert dataset.capabilities.complete_gecko_labels == 129
     assert dataset.capabilities.complete_silicone_labels == 129
     assert dataset.capabilities.complete_pair_count == 129
+    assert dataset.capabilities.legacy_roughness_class_count == 129
     assert dataset.default_active_grippers() == (Gripper.GECKO, Gripper.SILICONE)
+
+
+def test_legacy_roughness_class_is_not_converted_to_an_index(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Legacy"
+    root.mkdir(parents=True)
+    (root / "dataset.csv").write_text(
+        "Object,Image,Mass_g,roughness_class,projected_contact_fraction,"
+        "silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible,"
+        "favored_gripper\nCup,cup.png,100,4,0.7,1.4,True,1.1,True,gecko\n",
+        encoding="utf-8",
+    )
+
+    dataset = get_dataset(cfg, "Legacy")
+    item = dataset.objects["cup"]
+
+    assert item.roughness_index is None
+    assert item.legacy_roughness_class == 4
+    run_cfg = dataset.runtime_config(cfg)
+    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == ()
+    assert "roughness index not recorded" in experiment_eligibility(
+        dataset, run_cfg, "e2"
+    ).query_reasons("cup")
 
 
 def test_single_gripper_dataset_capabilities_and_eligibility(tmp_path) -> None:
@@ -110,7 +135,7 @@ def test_single_gripper_dataset_capabilities_and_eligibility(tmp_path) -> None:
             object_id,
             DatasetObjectEdit(
                 mass_g=100 + index,
-                roughness_class=2,
+                roughness_index=2,
                 projected_contact_fraction=0.7,
                 gecko_feasible=True,
                 gecko_force_n=1.0 + index / 10,
@@ -152,7 +177,7 @@ def test_experiment_eligibility_uses_only_enabled_inputs(tmp_path) -> None:
         "complete",
         DatasetObjectEdit(
             mass_g=100,
-            roughness_class=2,
+            roughness_index=2,
             projected_contact_fraction=0.7,
             gecko_feasible=True,
             gecko_force_n=1.0,

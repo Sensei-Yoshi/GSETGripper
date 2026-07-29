@@ -86,7 +86,7 @@ context on the same rerun. Empty folders are valid catalog entries; they show ze
 
 `Dataset` is the aggregate. Its `objects` mapping contains `DatasetObject` values with stable
 attributes for primary `image`, optional second-view `image_2`, `description`, `embedding`, optional `mass_g`, optional
-`roughness_class`, optional `projected_contact_fraction`, and optional paired
+`roughness_index`, optional `projected_contact_fraction`, and optional paired
 `gripper_outcomes`. Description and embedding values are artifact objects with provenance,
 not loose parallel dictionaries. Convenience mappings (`dataset.images`,
 `dataset.second_images`, `dataset.descriptions`, and `dataset.embeddings`) are available for analysis.
@@ -117,11 +117,17 @@ under `objects/<object_id>/contact_fraction/`; despite the UI's familiar wording
 absolute physical area in mm². Checkpoints and the manifest live inside the active dataset
 folder. The equivalent CLI is `scripts/prepare_dataset.py`.
 
-The Data Viewer object editor exposes only mass, roughness class, projected contact fraction,
+The Data Viewer object editor exposes only mass, continuous roughness index, projected contact fraction,
 per-gripper outcome status, and feasible minimum-force values. Every valid change auto-saves;
 `favored_gripper` is derived only after both outcomes are complete. Saved runs and
 results remain historical and are not rewritten; their source fingerprint mismatch is shown
 by inspectors.
+
+`roughness_index` is the nonnegative numerical output recorded from the LED measurement
+system, with larger values indicating rougher surfaces. It is intentionally distinct from
+the image-derived Marigold `roughness` artifact. Schema-v1 measurements and CSV rows that
+contain only `roughness_class` are loaded as legacy provenance; no class-to-index conversion
+is performed, so roughness-enabled E2/E4 remain ineligible until a real index is recorded.
 
 ## Adding a tab
 

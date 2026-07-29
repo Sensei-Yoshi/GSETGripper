@@ -85,7 +85,7 @@ def _build_record(
     object_id: str,
     image_path: str,
     mass_g: float,
-    roughness_class: int,
+    roughness_index: float,
     contact: float,
     gripper: Gripper,
     description: str,
@@ -105,7 +105,7 @@ def _build_record(
         object_id=object_id,
         image_path=image_path,
         mass_g=mass_g,
-        roughness_class=roughness_class,
+        roughness_index=roughness_index,
         projected_contact_fraction=contact,
         gripper=gripper,
         min_force_n=min_force if feasible else None,
@@ -131,7 +131,7 @@ DATASET_HEADER = [
     "Object",
     "Image",
     "Mass_g",
-    "roughness_class",
+    "roughness_index",
     "projected_contact_fraction",
     "silicone_force_n",
     "silicone_feasible",
@@ -176,7 +176,7 @@ def _append_dataset_row(
     object_name: str,
     object_id: str,
     mass_g: float,
-    roughness_class: int,
+    roughness_index: float,
     contact: float,
     outcomes: dict[Gripper, tuple[bool, float | None]],
 ) -> None:
@@ -200,7 +200,7 @@ def _append_dataset_row(
         "Object": object_name,
         "Image": f"objects/{object_id}/image.png",
         "Mass_g": mass_g,
-        "roughness_class": roughness_class,
+        "roughness_index": roughness_index,
         "projected_contact_fraction": round(contact, 4),
         "silicone_force_n": silicone_force if silicone_feasible else "",
         "silicone_feasible": silicone_feasible,
@@ -240,7 +240,7 @@ def collect_mock(cfg: Config, n: int, coarse: float, fine: float) -> None:
         contact = obj.projected_contact_fraction
         description = describe(rgb, cfg).description
         mass_g = devices.mass.read_g()
-        roughness = devices.roughness.read_class()
+        roughness = devices.roughness.read_index()
 
         summary = []
         outcomes: dict[Gripper, tuple[bool, float | None]] = {}
@@ -262,7 +262,7 @@ def collect_mock(cfg: Config, n: int, coarse: float, fine: float) -> None:
             object_name=obj.object_id,
             object_id=obj.object_id,
             mass_g=mass_g,
-            roughness_class=roughness,
+            roughness_index=roughness,
             contact=contact,
             outcomes=outcomes,
         )
@@ -338,7 +338,7 @@ def collect_real(cfg: Config, coarse: float, fine: float, port: str | None) -> N
             )
         )
         mass_g = devices.mass.read_g()
-        roughness = devices.roughness.read_class()
+        roughness = devices.roughness.read_index()
 
         outcomes: dict[Gripper, tuple[bool, float | None]] = {}
         for gripper in GRIPPERS:
@@ -365,7 +365,7 @@ def collect_real(cfg: Config, coarse: float, fine: float, port: str | None) -> N
             object_name=object_name,
             object_id=object_id,
             mass_g=mass_g,
-            roughness_class=roughness,
+            roughness_index=roughness,
             contact=contact,
             outcomes=outcomes,
         )

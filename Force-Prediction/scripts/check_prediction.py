@@ -30,7 +30,7 @@ def main() -> int:
         object_id="probe",
         image_path="",
         mass_g=420.0,
-        roughness_class=2,
+        roughness_index=250.0,
         projected_contact_fraction=0.83,
         semantic_description="smooth rigid plastic bottle",
     )

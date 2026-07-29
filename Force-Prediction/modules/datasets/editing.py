@@ -20,7 +20,7 @@ class DatasetObjectEdit(BaseModel):
     """Nullable measurements and partial outcome labels for one dataset object."""
 
     mass_g: float | None = Field(default=None, gt=0)
-    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     silicone_force_n: float | None = Field(default=None, gt=0)
     silicone_feasible: bool | None = None
@@ -43,7 +43,8 @@ class DatasetObjectEdit(BaseModel):
             image_name=original.image_name,
             image_name_2=original.image_name_2,
             mass_g=self.mass_g,
-            roughness_class=self.roughness_class,
+            roughness_index=self.roughness_index,
+            legacy_roughness_class=original.legacy_roughness_class,
             projected_contact_fraction=self.projected_contact_fraction,
             silicone_force_n=self.silicone_force_n,
             silicone_feasible=self.silicone_feasible,
@@ -56,7 +57,8 @@ class DatasetObjectEdit(BaseModel):
             image_name=original.image_name,
             image_name_2=original.image_name_2,
             mass_g=self.mass_g,
-            roughness_class=self.roughness_class,
+            roughness_index=self.roughness_index,
+            legacy_roughness_class=original.legacy_roughness_class,
             projected_contact_fraction=self.projected_contact_fraction,
             silicone_force_n=self.silicone_force_n,
             silicone_feasible=self.silicone_feasible,

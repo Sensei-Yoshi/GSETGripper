@@ -1,4 +1,49 @@
-# Sandpaper roughness figures
+# Figures
+
+## MatForceFinal regression figures
+
+Run from the GSET workspace root:
+
+```bash
+env/bin/python GSETGripper/Figures/generate_matforce_regression_figures.py
+```
+
+The script compares linear, quadratic-ridge, and RBF-SVR regressions using
+`log10(mass)` and roughness. Reported prediction accuracy uses nested
+leave-one-object-out cross-validation: nonlinear hyperparameters are selected by an inner
+leave-one-out search using only the training objects in each outer fold. This makes the
+reported results independent of row order and random fold assignments. It regenerates:
+
+- `matforce_regression_model_comparison.{png,pdf,svg}`
+- `matforce_regression_held_out_predictions.{png,pdf,svg}`
+- `matforce_two_feature_response_surface.{png,pdf,svg}`
+- `matforce_regression_metrics.csv`
+- `matforce_regression_loo_predictions.csv`
+
+The response surface is a descriptive fit to all currently labeled observations. Use the
+held-out metrics, not the training fit, when estimating performance on new objects.
+Predictions are constrained to the physically valid 0–8 N Gecko-force range.
+
+## MatForceFinal relationship figures
+
+Run from the GSET workspace root:
+
+```bash
+env/bin/python GSETGripper/Figures/generate_matforce_relationship_figures.py
+```
+
+The script reads `GSETGripper/Force-Prediction/data/MatForceFinal/dataset.csv`, excludes
+rows without a Gecko force label, and regenerates:
+
+- `matforce_mass_vs_gecko_force.{png,pdf,svg}`
+- `matforce_roughness_vs_gecko_force.{png,pdf,svg}`
+
+Every plotted object uses the same stable number in both figures. The object key identifies
+each point. The mass plot uses a logarithmic horizontal scale because the collected masses
+span more than three orders of magnitude. Dashed lines are descriptive least-squares fits,
+not calibrated force-prediction models.
+
+## Sandpaper roughness figures
 
 Run from the GSET workspace root:
 

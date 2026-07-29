@@ -175,7 +175,7 @@ def _suite_comparison(context: AppContext) -> None:
     resumable = selected is None or selected.get("schema_version") == SUITE_SCHEMA_VERSION
     if selected is not None and not resumable:
         st.warning(
-            "This schema-v8 suite is read-only. Its saved results remain inspectable below."
+            "This legacy suite is read-only. Its saved results remain inspectable below."
         )
 
     pending_counts: dict[str, int] = {}

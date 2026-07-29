@@ -41,7 +41,7 @@ hold duration, pad cleaning procedure, load-cell calibration.
   backlog item — see `docs/backlog.md`.)
 
 ## Coverage targets
-Spread objects across all five roughness classes, broad/narrow contact,
+Spread objects across the observed numerical roughness-index range, broad/narrow contact,
 light/heavy mass, porous/nonporous, rigid/deformable — and **intentionally
 include borderline objects** where the two grippers should be close in force
 (the crossover region), so the selection task is non-trivial.

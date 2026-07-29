@@ -5,6 +5,7 @@ from __future__ import annotations
 import inspect
 from pathlib import Path
 
+import pytest
 import streamlit
 from streamlit.testing.v1 import AppTest
 
@@ -66,7 +67,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Marigold roughness",
         "Surface/contact fraction from image_2",
         "Experience records",
-        "Consider roughness class",
+        "Consider measured roughness",
         "Consider projected contact fraction",
         "Predict Gecko force",
         "Predict silicone force",
@@ -196,11 +197,17 @@ def test_streamlit_import_resolves_external_framework() -> None:
 def test_global_dataset_selector_switches_every_tab_to_image_only_dataset() -> None:
     app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
 
-    image_only_dataset = next(
-        dataset_id for dataset_id in app.selectbox[0].options if dataset_id != "expforce"
-    )
-    app.selectbox[0].set_value(image_only_dataset)
-    app.run(timeout=30)
+    image_only_dataset = None
+    for dataset_id in app.selectbox[0].options:
+        if dataset_id == "expforce":
+            continue
+        app.selectbox[0].set_value(dataset_id)
+        app.run(timeout=30)
+        if any("objects · image folder" in item.value for item in app.caption):
+            image_only_dataset = dataset_id
+            break
+    if image_only_dataset is None:
+        pytest.skip("workspace does not currently contain an image-folder dataset")
 
     assert list(app.exception) == []
     assert app.session_state["active_dataset_id"] == image_only_dataset

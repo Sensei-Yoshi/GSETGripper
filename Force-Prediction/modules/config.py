@@ -95,15 +95,19 @@ class GeometryConfig(BaseModel):
 
 
 class RoughnessConfig(BaseModel):
-    n_classes: int = Field(ge=2)
-    ordinal: bool
-    labels: dict[int, str]
+    """Definition of the recorded continuous roughness measurement."""
+
+    metric_name: str = Field(min_length=1)
+    units: str = Field(min_length=1)
+    higher_is_rougher: bool = True
+    characteristic_scale: float = Field(gt=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
-    def _labels_cover_classes(self) -> RoughnessConfig:
-        expected = set(range(1, self.n_classes + 1))
-        if set(self.labels) != expected:
-            raise ValueError(f"roughness.labels keys must be exactly {sorted(expected)}")
+    def _validate_direction(self) -> RoughnessConfig:
+        if not self.higher_is_rougher:
+            raise ValueError(
+                "roughness.higher_is_rougher must be true for the recorded index"
+            )
         return self
 
 
@@ -201,7 +205,7 @@ class ExperimentMethod(StrEnum):
 
 
 EXPERIMENT_IDS = ("e1", "e2", "e3", "e4")
-EXPERIMENT_DEFINITION_VERSION = 7
+EXPERIMENT_DEFINITION_VERSION = 8
 
 
 class ExperimentConfig(BaseModel):

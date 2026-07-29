@@ -126,7 +126,7 @@ def dataset_experience_records(
                     object_id=item.object_id,
                     image_path=item.image.path,
                     mass_g=item.mass_g,
-                    roughness_class=item.roughness_class,
+                    roughness_index=item.roughness_index,
                     projected_contact_fraction=item.projected_contact_fraction,
                     gripper=gripper,
                     min_force_n=outcome.min_force_n if outcome.feasible else None,

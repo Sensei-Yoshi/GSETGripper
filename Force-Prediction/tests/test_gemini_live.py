@@ -70,7 +70,7 @@ def test_gemini_structured_image() -> None:
     img = _load_image(DEFAULT_IMAGE)
     query = Query(
         object_id="probe", image_path=DEFAULT_IMAGE, mass_g=420.0,
-        roughness_class=2, projected_contact_fraction=0.83,
+        roughness_index=2, projected_contact_fraction=0.83,
         semantic_description="",
     )
     prediction = vlm_predict_joint(
@@ -113,7 +113,7 @@ def main() -> int:
     print("── vlm_predict_joint() [note: this photo is not a graspable object] ──")
     query = Query(
         object_id="probe", image_path=image_path, mass_g=420.0,
-        roughness_class=2, projected_contact_fraction=0.83,
+        roughness_index=2, projected_contact_fraction=0.83,
         semantic_description=desc.description,
     )
     prediction = vlm_predict_joint(

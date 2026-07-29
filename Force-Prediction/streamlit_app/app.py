@@ -74,11 +74,11 @@ def main() -> None:
         st.session_state["predict_silicone_force"] = Gripper.SILICONE in defaults
     with roughness_col:
         use_roughness = st.checkbox(
-            "Consider roughness class",
+            "Consider measured roughness",
             value=base_cfg.inputs.use_roughness,
             key="consider_roughness",
             on_change=clear_run_state,
-            help="Controls E2 inputs and the E4 hybrid retrieval term.",
+            help="Uses the recorded continuous roughness index in E2 and E4.",
         )
     with contact_col:
         use_projected_contact = st.checkbox(

@@ -243,7 +243,7 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
     e2_payload, e4_payload = payloads
     assert e4_payload["query"] == e2_payload["query"]
     assert e4_payload["force_constraints"] == e2_payload["force_constraints"]
-    assert e4_payload["roughness_scale"] == e2_payload["roughness_scale"]
+    assert e4_payload["roughness_measurement"] == e2_payload["roughness_measurement"]
     assert set(e4_payload) - set(e2_payload) == {
         "query_semantic_description",
         "retrieved_objects",
@@ -291,13 +291,13 @@ def test_e4_optional_input_ablation_removes_roughness_and_contact(monkeypatch):
     Pipeline(cfg, "e4").fit(train).predict_detailed(_query_with_image(test, cfg))
 
     assert "projected_contact_fraction" not in captured["extra"]["query"]
-    assert "roughness_class" not in captured["extra"]["query"]
+    assert "roughness_index" not in captured["extra"]["query"]
     assert all(
         "projected_contact_fraction" not in item
         for item in captured["extra"]["retrieved_objects"]
     )
     assert all(
-        "roughness_class" not in item
+        "roughness_index" not in item
         and "roughness" not in item["similarity"]
         and "contact" not in item["similarity"]
         for item in captured["extra"]["retrieved_objects"]
@@ -316,7 +316,7 @@ def test_sensor_free_experiments_accept_missing_physical_fields(experiment, monk
         record.model_copy(
             update={
                 "mass_g": None,
-                "roughness_class": None,
+                "roughness_index": None,
                 "projected_contact_fraction": None,
             }
         )
@@ -388,7 +388,7 @@ def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
     assert captured["query_semantic_description"] == detailed.semantic_description
     forbidden = {
         "mass_g",
-        "roughness_class",
+        "roughness_index",
         "projected_contact_fraction",
         "mass",
         "roughness",

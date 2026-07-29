@@ -15,7 +15,7 @@ prompts:
 
     do not recommend a gripper, predict force, infer a force label, or restate measured
 
-    mass, roughness class, or projected contact fraction. If the likely contact patch
+    mass, measured roughness index, or projected contact fraction. If the likely contact patch
 
     is hidden or ambiguous, say so rather than inventing material or condition.
 
@@ -67,7 +67,9 @@ prompts:
 
     MEASUREMENTS
 
-    Any supplied mass, roughness class, and projected contact fraction are authoritative.
+    Any supplied mass, numerical roughness index, and projected contact fraction are
+    authoritative. The payload defines the roughness metric, units, direction, and
+    characteristic scale. Treat it as continuous; do not discretize it into classes.
 
     If an experiment intentionally omits them, state uncertainty rather than pretending
 

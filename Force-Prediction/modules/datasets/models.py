@@ -94,10 +94,13 @@ class GripperOutcome(BaseModel):
 class DatasetObjectMeasurements(BaseModel):
     """Nullable, incrementally editable object measurements and outcome labels."""
 
-    schema_version: int = 1
+    schema_version: int = 2
     object_id: str
     mass_g: float | None = Field(default=None, gt=0)
-    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    # Kept only so schema-v1 files remain inspectable. It is never used as an
+    # input and is not converted to the numerical index.
+    legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     gecko_feasible: bool | None = None
     gecko_force_n: float | None = Field(default=None, gt=0)
@@ -125,7 +128,8 @@ class DatasetObject(BaseModel):
     image: ImageArtifact
     image_2: ImageArtifact | None = None
     mass_g: float | None = Field(default=None, gt=0)
-    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     contact_fraction: ContactFractionArtifact | None = None
     description: DescriptionArtifact | None = None
@@ -141,6 +145,7 @@ class DatasetCapabilities(BaseModel):
     has_embeddings: bool = False
     has_roughness: bool = False
     has_measurements: bool = False
+    legacy_roughness_class_count: int = 0
     has_paired_labels: bool = False
     complete_gecko_labels: int = 0
     complete_silicone_labels: int = 0
@@ -228,11 +233,11 @@ class Dataset(BaseModel):
         }
 
     def summary(self) -> dict:
-        roughness = Counter(
-            item.roughness_class
+        roughness_values = [
+            item.roughness_index
             for item in self.objects.values()
-            if item.roughness_class is not None
-        )
+            if item.roughness_index is not None
+        ]
         favored: Counter[str] = Counter()
         for item in self.objects.values():
             candidates = {
@@ -248,7 +253,11 @@ class Dataset(BaseModel):
             "second_images": len(self.second_images),
             "experience_rows": sum(len(item.gripper_outcomes) for item in self.objects.values()),
             "source_sha256": self.source_fingerprint,
-            "roughness_counts": dict(sorted(roughness.items())),
+            "roughness_index": {
+                "count": len(roughness_values),
+                "min": min(roughness_values, default=None),
+                "max": max(roughness_values, default=None),
+            },
             "favored_counts": dict(sorted(favored.items())),
             "default_active_grippers": [
                 gripper.value for gripper in self.default_active_grippers()

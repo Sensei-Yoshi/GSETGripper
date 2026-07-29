@@ -45,7 +45,7 @@ def _query_payload(query: Query, cfg: Config, *, include_measured: bool) -> dict
     if include_measured:
         payload["mass_g"] = query.mass_g
         if cfg.inputs.use_roughness:
-            payload["roughness_class"] = query.roughness_class
+            payload["roughness_index"] = query.roughness_index
         if cfg.inputs.use_projected_contact:
             payload["projected_contact_fraction"] = query.projected_contact_fraction
     return payload
@@ -78,7 +78,12 @@ def _generation_payload(
         "force_constraints": _force_constraints(cfg),
     }
     if include_measured and cfg.inputs.use_roughness:
-        payload["roughness_scale"] = cfg.roughness.labels
+        payload["roughness_measurement"] = {
+            "metric_name": cfg.roughness.metric_name,
+            "units": cfg.roughness.units,
+            "higher_is_rougher": cfg.roughness.higher_is_rougher,
+            "characteristic_scale": cfg.roughness.characteristic_scale,
+        }
     if not include_retrieval:
         return payload
 
@@ -105,6 +110,7 @@ def _generation_payload(
             "k": cfg.retrieval.k,
             "normalized_weights": normalized_weights(cfg),
             "sigma_mass": cfg.retrieval.sigma_mass,
+            "roughness_characteristic_scale": cfg.roughness.characteristic_scale,
             "sigma_contact": cfg.retrieval.sigma_contact,
         }
     return payload

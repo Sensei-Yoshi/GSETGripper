@@ -2,18 +2,18 @@
 
 The model remains available for mock-hardware generation and calibration diagnostics;
 it is not an active experiment strategy.
-Coefficients are smooth and monotone in roughness class so each training fold fits
-seven parameters total instead of free per-class values (which would overfit ~100
-objects with sparse class coverage).
+Coefficients are smooth and monotone in a normalized continuous roughness coordinate,
+so each training fold fits seven parameters total instead of binning measurements.
 
 Model (holding / tangential capacity as a function of applied normal force N):
 
-    silicone:  T_sil(N) = alpha_sil(c) * a * N
-    gecko:     T_geo(N) = alpha_geo(c) * a * N + beta(c) * a * N/(N + N50)
+    silicone:  T_sil(N) = alpha_sil(r) * a * N
+    gecko:     T_geo(N) = alpha_geo(r) * a * N + beta(r) * a * N/(N + N50)
 
 with
-    alpha_*(c) = alpha0 * exp(-decay * (c - 1))     (friction, decays with roughness)
-    beta(c)    = beta0  * clip(1 - beta_decay*(c-1), 0, 1)   (adhesion, decays with roughness)
+    r          = roughness_index / characteristic_scale
+    alpha_*(r) = alpha0 * exp(-decay * r)
+    beta(r)    = beta0  * clip(1 - beta_decay*r, 0, 1)
 
 An object of weight W = (mass_g/1000)*g lifts when T(N) >= W. The minimum feasible
 N is found in closed form (silicone) or by a robust root solve (gecko). Feasibility
@@ -76,24 +76,37 @@ class PhysicsModel:
         self.p = params
         self.cfg = cfg
 
-    # --- coefficient shapes (smooth, monotone in class) --------------------- #
-    def alpha_sil(self, c: int) -> float:
-        return self.p.alpha_sil0 * math.exp(-self.p.alpha_sil_decay * (c - 1))
+    def _roughness_coordinate(self, roughness_index: float) -> float:
+        return roughness_index / self.cfg.roughness.characteristic_scale
 
-    def alpha_geo(self, c: int) -> float:
-        return self.p.alpha_geo0 * math.exp(-self.p.alpha_geo_decay * (c - 1))
+    # --- coefficient shapes (smooth in the continuous index) --------------- #
+    def alpha_sil(self, roughness_index: float) -> float:
+        r = self._roughness_coordinate(roughness_index)
+        return self.p.alpha_sil0 * math.exp(-self.p.alpha_sil_decay * r)
 
-    def beta(self, c: int) -> float:
-        return self.p.beta0 * max(0.0, min(1.0, 1.0 - self.p.beta_decay * (c - 1)))
+    def alpha_geo(self, roughness_index: float) -> float:
+        r = self._roughness_coordinate(roughness_index)
+        return self.p.alpha_geo0 * math.exp(-self.p.alpha_geo_decay * r)
+
+    def beta(self, roughness_index: float) -> float:
+        r = self._roughness_coordinate(roughness_index)
+        return self.p.beta0 * max(0.0, min(1.0, 1.0 - self.p.beta_decay * r))
 
     # --- holding capacity T(N) --------------------------------------------- #
-    def holding_force(self, gripper: Gripper, n: float, c: int, a: float) -> float:
+    def holding_force(
+        self, gripper: Gripper, n: float, roughness_index: float, a: float
+    ) -> float:
         if gripper is Gripper.SILICONE:
-            return self.alpha_sil(c) * a * n
-        return self.alpha_geo(c) * a * n + self.beta(c) * a * n / (n + self.p.n50)
+            return self.alpha_sil(roughness_index) * a * n
+        return (
+            self.alpha_geo(roughness_index) * a * n
+            + self.beta(roughness_index) * a * n / (n + self.p.n50)
+        )
 
     # --- minimum feasible normal force ------------------------------------- #
-    def min_force(self, gripper: Gripper, mass_g: float, c: int, a: float) -> PhysicsEstimate:
+    def min_force(
+        self, gripper: Gripper, mass_g: float, roughness_index: float, a: float
+    ) -> PhysicsEstimate:
         limit = self.cfg.force.limit_n
         w = weight_n(mass_g, self.cfg.force.gravity)
 
@@ -101,13 +114,17 @@ class PhysicsModel:
             return PhysicsEstimate(gripper, feasible=False, min_force_n=None, raw_force_n=None)
 
         if gripper is Gripper.SILICONE:
-            denom = self.alpha_sil(c) * a
+            denom = self.alpha_sil(roughness_index) * a
             raw = w / denom if denom > 0 else math.inf
         else:
-            if self.holding_force(gripper, limit, c, a) < w:
+            if self.holding_force(gripper, limit, roughness_index, a) < w:
                 raw = math.inf
             else:
-                raw = brentq(lambda n: self.holding_force(gripper, n, c, a) - w, 0.0, limit)
+                raw = brentq(
+                    lambda n: self.holding_force(gripper, n, roughness_index, a) - w,
+                    0.0,
+                    limit,
+                )
 
         if not math.isfinite(raw) or raw > limit:
             return PhysicsEstimate(gripper, feasible=False, min_force_n=None, raw_force_n=None)
@@ -121,7 +138,7 @@ class PhysicsModel:
 # --------------------------------------------------------------------------- #
 
 def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
-    """Fit smooth-in-class coefficients so predicted T(N*) matches weight at the
+    """Fit smooth-in-index coefficients so predicted T(N*) matches weight at the
     observed minimum force N*. Silicone (2 params) and gecko (5 params) are fit
     independently. Falls back to config defaults for a gripper with too few points.
     """
@@ -136,7 +153,7 @@ def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
         and r.feasible is True
         and r.min_force_n is not None
         and r.mass_g is not None
-        and r.roughness_class is not None
+        and r.roughness_index is not None
         and r.projected_contact_fraction is not None
     ]
     geo = [
@@ -146,7 +163,7 @@ def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
         and r.feasible is True
         and r.min_force_n is not None
         and r.mass_g is not None
-        and r.roughness_class is not None
+        and r.roughness_index is not None
         and r.projected_contact_fraction is not None
     ]
 
@@ -158,9 +175,10 @@ def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
             for r in sil:
                 assert r.min_force_n is not None
                 assert r.mass_g is not None
-                assert r.roughness_class is not None
+                assert r.roughness_index is not None
                 assert r.projected_contact_fraction is not None
-                alpha = a0 * math.exp(-dec * (r.roughness_class - 1))
+                coordinate = r.roughness_index / cfg.roughness.characteristic_scale
+                alpha = a0 * math.exp(-dec * coordinate)
                 pred = alpha * r.projected_contact_fraction * r.min_force_n
                 out.append(pred - weight_n(r.mass_g, g))
             return out
@@ -180,11 +198,12 @@ def calibrate(records: list[ExperienceRecord], cfg: Config) -> PhysicsParams:
             for r in geo:
                 assert r.min_force_n is not None
                 assert r.mass_g is not None
-                assert r.roughness_class is not None
+                assert r.roughness_index is not None
                 assert r.projected_contact_fraction is not None
-                c, a, n = r.roughness_class, r.projected_contact_fraction, r.min_force_n
-                alpha = a0 * math.exp(-dec * (c - 1))
-                beta = be0 * max(0.0, min(1.0, 1.0 - be_dec * (c - 1)))
+                roughness = r.roughness_index / cfg.roughness.characteristic_scale
+                a, n = r.projected_contact_fraction, r.min_force_n
+                alpha = a0 * math.exp(-dec * roughness)
+                beta = be0 * max(0.0, min(1.0, 1.0 - be_dec * roughness))
                 pred = alpha * a * n + beta * a * n / (n + n50)
                 out.append(pred - weight_n(r.mass_g, g))
             return out

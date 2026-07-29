@@ -83,7 +83,7 @@ The shared query contains:
 
 - object ID and RGB image;
 - optional measured mass in grams;
-- optional ordinal roughness class from 1 to 5;
+- optional nonnegative numerical roughness index, where higher means rougher;
 - optional projected contact fraction from 0 to 1;
 - optional prepared semantic contact-region description.
 
@@ -202,7 +202,7 @@ records, contact-fraction captures, caches, saved runs, benchmark results, and s
 | `embedding` | optional embedding metadata and cache key; vectors stay in the disk cache |
 | `roughness` | optional dataset-scoped Marigold statistics and provenance |
 | `mass_g` | optional measured mass |
-| `roughness_class` | optional ordinal roughness |
+| `roughness_index` | optional continuous LED-system roughness measurement; higher is rougher |
 | `projected_contact_fraction` | optional dimensionless projected two-pad geometry proxy |
 | `gripper_outcomes` | optional Gecko/silicone feasibility and force labels |
 
@@ -227,7 +227,7 @@ It contains 129 objects and converts to 258 experience rows. Every current objec
 strict winning gripper. Preparation never mutates the source CSV; generated descriptors,
 embeddings, experience rows, runs, and benchmarks live in separate paths. Researchers can
 make explicit validated corrections in the Data Viewer. Those saves atomically update the
-mass, roughness class, projected contact, force, and feasibility CSV fields, recalculate the
+mass, roughness index, projected contact, force, and feasibility CSV fields, recalculate the
 favored gripper, and refresh experience rows and provenance. Names, images, descriptors, and
 generated artifact metrics remain read-only there.
 
@@ -515,8 +515,8 @@ It distinguishes a small force penalty from a materially poor selection.
 
 ## 14. Persistence, schema versions, and legacy artifacts
 
-Single-run artifacts use schema version 8. Two-stage benchmark and suite artifacts use schema
-version 9. A prediction batch records:
+Single-run artifacts use schema version 9. Two-stage benchmark and suite artifacts use schema
+version 10. A prediction batch records:
 
 - experiment ID;
 - stable `experiment_method`;
@@ -580,7 +580,7 @@ Network-isolated verification with explicit Gemini test fakes must cover:
 - E1/E3 run without physical measurements while E2/E4 report missing required inputs;
 - continuous force clamps and infeasibility behavior;
 - selector authority and recommendation disagreement metrics;
-- schema-v9 truth-free batches, versioned partial evaluations, resumable suites, and schema-v8 read-only compatibility;
+- schema-v10 truth-free batches, versioned partial evaluations, resumable suites, and legacy read-only compatibility;
 - comparison panels contain no identity line and export PNG, SVG, and CSV;
 - cache reuse, grouped splits, and full benchmark execution through fake Gemini interfaces.
 

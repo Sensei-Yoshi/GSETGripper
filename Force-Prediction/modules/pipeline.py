@@ -52,7 +52,7 @@ def query_input_from_object(records: list[ExperienceRecord], cfg: Config) -> Que
     return QueryInput(
         object_id=record.object_id,
         mass_g=record.mass_g,
-        roughness_class=record.roughness_class,
+        roughness_index=record.roughness_index,
         projected_contact_fraction=record.projected_contact_fraction,
         image_bgr=image,
         image_path=record.image_path,

@@ -48,7 +48,7 @@ class QueryInput:
 
     object_id: str
     mass_g: float | None = None
-    roughness_class: int | None = None
+    roughness_index: float | None = None
     projected_contact_fraction: float | None = None
     image_bgr: np.ndarray | None = None
     image_path: str = ""
@@ -102,7 +102,7 @@ class ExperimentStrategy(ABC):
             object_id=query_input.object_id,
             image_path=query_input.image_path,
             mass_g=query_input.mass_g,
-            roughness_class=query_input.roughness_class,
+            roughness_index=query_input.roughness_index,
             projected_contact_fraction=query_input.projected_contact_fraction,
             semantic_description=description or "",
         )
@@ -111,8 +111,8 @@ class ExperimentStrategy(ABC):
         missing: list[str] = []
         if query_input.mass_g is None:
             missing.append("mass")
-        if self.cfg.inputs.use_roughness and query_input.roughness_class is None:
-            missing.append("roughness class")
+        if self.cfg.inputs.use_roughness and query_input.roughness_index is None:
+            missing.append("roughness index")
         if (
             self.cfg.inputs.use_projected_contact
             and query_input.projected_contact_fraction is None

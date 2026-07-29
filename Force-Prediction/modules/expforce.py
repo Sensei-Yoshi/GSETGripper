@@ -62,7 +62,8 @@ class ExpForceRow(BaseModel):
     image_name: str
     image_name_2: str | None = None
     mass_g: float | None = Field(default=None, gt=0)
-    roughness_class: int | None = Field(default=None, ge=1, le=5)
+    roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
+    legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     silicone_force_n: float | None = Field(default=None, gt=0)
     silicone_feasible: bool | None = None
@@ -158,7 +159,8 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
                 None,
             ),
             mass_g=_parse_optional_float(row.get("Mass_g")),
-            roughness_class=_parse_optional_int(row.get("roughness_class")),
+            roughness_index=_parse_optional_float(row.get("roughness_index")),
+            legacy_roughness_class=_parse_optional_int(row.get("roughness_class")),
             projected_contact_fraction=_parse_optional_float(
                 row.get("projected_contact_fraction")
             ),
@@ -191,7 +193,15 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
         "Image",
         *(["Image_2"] if any(row.image_name_2 for row in rows) else []),
         "Mass_g",
-        "roughness_class",
+        "roughness_index",
+        *(
+            ["roughness_class"]
+            if any(
+                row.roughness_index is None and row.legacy_roughness_class is not None
+                for row in rows
+            )
+            else []
+        ),
         "projected_contact_fraction",
         "silicone_force_n",
         "silicone_feasible",
@@ -214,8 +224,8 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
                 "Object": row.object_name,
                 "Image": row.image_name,
                 "Mass_g": row.mass_g if row.mass_g is not None else "",
-                "roughness_class": (
-                    row.roughness_class if row.roughness_class is not None else ""
+                "roughness_index": (
+                    row.roughness_index if row.roughness_index is not None else ""
                 ),
                 "projected_contact_fraction": (
                     row.projected_contact_fraction
@@ -236,6 +246,8 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
             }
             if "Image_2" in columns:
                 payload["Image_2"] = row.image_name_2 or ""
+            if "roughness_class" in columns:
+                payload["roughness_class"] = row.legacy_roughness_class or ""
             writer.writerow(payload)
         temporary = Path(fh.name)
     temporary.replace(path)
@@ -255,9 +267,20 @@ def validation_summary(cfg: Config, rows: list[ExpForceRow] | None = None) -> di
             for row in rows
         ),
         "source_sha256": source_sha256(cfg),
-        "roughness_counts": dict(sorted(Counter(
-            row.roughness_class for row in rows if row.roughness_class is not None
-        ).items())),
+        "roughness_index": {
+            "count": sum(row.roughness_index is not None for row in rows),
+            "min": min(
+                (row.roughness_index for row in rows if row.roughness_index is not None),
+                default=None,
+            ),
+            "max": max(
+                (row.roughness_index for row in rows if row.roughness_index is not None),
+                default=None,
+            ),
+        },
+        "legacy_roughness_class_count": sum(
+            row.legacy_roughness_class is not None for row in rows
+        ),
         "favored_counts": dict(sorted(Counter(
             row.favored_gripper for row in rows if row.favored_gripper is not None
         ).items())),
@@ -285,7 +308,7 @@ def to_experiences(
                     object_id=row.object_id,
                     image_path=image_path,
                     mass_g=row.mass_g,
-                    roughness_class=row.roughness_class,
+                    roughness_index=row.roughness_index,
                     projected_contact_fraction=row.projected_contact_fraction,
                     gripper=gripper,
                     min_force_n=force if feasible else None,
@@ -517,7 +540,7 @@ def save_pipeline_run(
     prompt_key = definition.prompt
     prompt_context = prompt_provenance(cfg, prompt_key)
     artifact = {
-        "schema_version": 8,
+        "schema_version": 9,
         "dataset_id": cfg.dataset_id,
         "run_id": run_id,
         "created_at": created_at.isoformat(),
@@ -538,6 +561,7 @@ def save_pipeline_run(
             "embedding_dim": cfg.retrieval.embedding.dim,
         },
         "inputs": cfg.inputs.model_dump(mode="json"),
+        "roughness_measurement": cfg.roughness.model_dump(mode="json"),
         "active_grippers": [
             gripper.value for gripper in cfg.prediction.active_grippers
         ],

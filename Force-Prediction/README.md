@@ -101,6 +101,12 @@ one removes it from E2/E4 VLM payloads and sets its E4 retrieval weight to zero 
 remaining weights are renormalized. E1 and E3 are unaffected because physical fields are
 excluded by construction.
 
+The force pipeline uses the recorded continuous `roughness_index` from the LED measurement
+system; larger values mean rougher surfaces. It is separate from the Marigold appearance and
+topography artifacts. Retrieval compares two indices with an exponential distance kernel whose
+`characteristic_scale` is configured in `config.yaml`. Legacy 1–5 classes remain visible for
+provenance but are never converted into or substituted for the numerical index.
+
 Use `scripts/prepare_dataset.py --dataset <folder> --stages <stage...>` to run only
 `descriptions`, `embeddings`, or `experiences`. Prerequisites are automatic, but downstream
 stages are opt-in. For example, the MatForce command above makes only Gemini descriptions;

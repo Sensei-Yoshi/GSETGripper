@@ -172,7 +172,7 @@ def test_new_single_run_artifact_uses_backend_provenance(tmp_path, monkeypatch):
         query={
             "object_id": held,
             "mass_g": query_records[0].mass_g,
-            "roughness_class": query_records[0].roughness_class,
+            "roughness_index": query_records[0].roughness_index,
             "projected_contact_fraction": query_records[0].projected_contact_fraction,
         },
         truth=None,
@@ -180,7 +180,7 @@ def test_new_single_run_artifact_uses_backend_provenance(tmp_path, monkeypatch):
     )
     artifact = json.loads(path.read_text())
 
-    assert artifact["schema_version"] == 8
+    assert artifact["schema_version"] == 9
     assert artifact["backend"] == {
         "force": "gemini_joint_generation",
         "semantic_embedding": None,
@@ -245,7 +245,7 @@ def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
         object_id="zero_shot_query",
         image_path="",
         mass_g=321,
-        roughness_class=4,
+        roughness_index=4,
         projected_contact_fraction=0.63,
     )
 
@@ -299,7 +299,7 @@ def test_e2_joint_payload_contains_measurements_but_no_retrieval_or_physics(monk
         object_id="query",
         image_path="",
         mass_g=100,
-        roughness_class=2,
+        roughness_index=347.82,
         projected_contact_fraction=0.8,
         semantic_description="smooth sidewall",
     )
@@ -316,7 +316,13 @@ def test_e2_joint_payload_contains_measurements_but_no_retrieval_or_physics(monk
 
     assert client.calls == 1
     assert captured["query"]["mass_g"] == 100
-    assert captured["query"]["roughness_class"] == 2
+    assert captured["query"]["roughness_index"] == pytest.approx(347.82)
+    assert captured["roughness_measurement"] == {
+        "metric_name": cfg.roughness.metric_name,
+        "units": cfg.roughness.units,
+        "higher_is_rougher": True,
+        "characteristic_scale": cfg.roughness.characteristic_scale,
+    }
     assert captured["query"]["projected_contact_fraction"] == 0.8
     assert "retrieved_objects" not in captured
     assert "physics_force_estimate_n" not in captured
@@ -354,6 +360,9 @@ def test_full_129_object_leave_one_out_benchmark_uses_gemini_contract(
     source_cfg = load_config().model_copy(deep=True)
     cfg = source_cfg.model_copy(deep=True)
     cfg.root = tmp_path
+    # The checked-in Exp-Force fixture contains legacy classes only. Disabling
+    # this optional input must keep E4 available without inventing indices.
+    cfg.inputs.use_roughness = False
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     monkeypatch.setattr(
         cv2,
@@ -405,7 +414,7 @@ def test_single_silicone_benchmark_omits_inactive_outputs(tmp_path, monkeypatch)
     root = tmp_path / "data/silicone_only"
     root.mkdir(parents=True)
     (root / "dataset.csv").write_text(
-        "Object,Image,Mass_g,roughness_class,projected_contact_fraction,"
+        "Object,Image,Mass_g,roughness_index,projected_contact_fraction,"
         "silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible,favored_gripper\n"
         "Cup,cup.png,100,2,0.7,1.1,True,,,\n"
         "Box,box.png,120,3,0.6,1.4,True,,,\n",

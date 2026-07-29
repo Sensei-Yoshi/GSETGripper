@@ -8,7 +8,7 @@ reported ~0.43 N.
 
     python scripts/expforce_testset.py --limit 20 --k 5 --confirm-gemini-cost
 
-Roughness/contact are unknown here, held constant (class 3, a=1.0), so this is a
+Roughness/contact are unknown here, held constant (index 500, a=1.0), so this is a
 single-embodiment compatibility check of the E4 interface, not a full E4 evaluation.
 Cost is bounded by --limit;
 all calls disk-cached.
@@ -88,7 +88,7 @@ def build_dataset(cfg, limit: int | None) -> Path:
                 object_id=oid,
                 image_path=rel if have_img else "",
                 mass_g=float(r["Mass"]),
-                roughness_class=3,               # unknown in this set -> held constant
+                roughness_index=500.0,           # unknown in this set -> held constant
                 projected_contact_fraction=1.0,  # unknown -> held constant
                 gripper=Gripper.SILICONE,        # single embodiment
                 min_force_n=float(r["Gripping Force"]),
@@ -113,7 +113,7 @@ def run(cfg, records, k: int) -> None:
         for oid in fold["test"]:
             rec = by_id[oid]
             q = Query(object_id=oid, image_path=rec.image_path, mass_g=rec.mass_g,
-                      roughness_class=rec.roughness_class,
+                      roughness_index=rec.roughness_index,
                       projected_contact_fraction=rec.projected_contact_fraction,
                       semantic_description=rec.semantic_description)
             qv = index.embed_query(q)  # asymmetric: query-side template

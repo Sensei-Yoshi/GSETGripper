@@ -130,7 +130,7 @@ def gecko_force(silicone_n: float, c: int, a: float, name: str) -> float:
 def break_tie(
     silicone_n: float,
     gecko_n: float | None,
-    roughness_class: int,
+    synthetic_roughness_band: int,
     cfg,
 ) -> tuple[float, float | None]:
     """Give every synthetic object a strict winner by one collection-resolution step."""
@@ -138,7 +138,7 @@ def break_tie(
         return silicone_n, gecko_n
 
     step = cfg.collection.fine_step_n
-    if roughness_class <= 2:
+    if synthetic_roughness_band <= 2:
         if gecko_n - step >= cfg.force.min_n:
             gecko_n = round(gecko_n - step, 6)
         else:
@@ -168,6 +168,7 @@ def main() -> int:
         mass = float(r["Mass"])
         sil = _clamp(float(r["Gripping Force"]), cfg)
         c = infer_roughness(name)
+        roughness_index = (c - 1) * cfg.roughness.characteristic_scale
         a = round(infer_contact(name), 3)
         raw_gecko = gecko_force(sil, c, a, name)
         gecko_feasible = raw_gecko <= limit
@@ -194,7 +195,7 @@ def main() -> int:
 
         table.append({
             "Object": name, "Image": r["Image"], "Mass_g": mass,
-            "roughness_class": c, "projected_contact_fraction": a,
+            "roughness_index": roughness_index, "projected_contact_fraction": a,
             "silicone_force_n": sil, "silicone_feasible": True,
             "gecko_force_n": gecko if gecko is not None else "",
             "gecko_feasible": gecko_feasible, "favored_gripper": favored,
@@ -207,7 +208,9 @@ def main() -> int:
         ):
             records.append(ExperienceRecord(
                 object_id=oid, image_path=img_rel, mass_g=mass,
-                roughness_class=c, projected_contact_fraction=a, gripper=gripper,
+                roughness_index=roughness_index,
+                projected_contact_fraction=a,
+                gripper=gripper,
                 min_force_n=force if feas else None, feasible=feas,
                 failed_at_limit_n=None if feas else limit,
                 semantic_description=name, meta=Meta(pad_id="synthetic-2gripper"),
@@ -224,13 +227,16 @@ def main() -> int:
     print(f"\ngecko-favored: {n_gecko_fav}   silicone-favored: {n_sil_fav}   "
           f"gecko-infeasible: {n_gecko_infeasible}   crossover(<=0.5N): {n_crossover}")
     print(f"ties adjusted by one collection-resolution step: {n_ties_adjusted}")
-    ro006 = [t for t in table if t["roughness_class"] in (1, 2)]
-    print(f"smooth objects (class 1-2): {len(ro006)}  -> mostly gecko-favored")
+    ro006 = [
+        t for t in table
+        if t["roughness_index"] <= cfg.roughness.characteristic_scale
+    ]
+    print(f"lower-index synthetic objects: {len(ro006)}  -> mostly gecko-favored")
     print("\nsample:")
     print(f"{'object':32} {'rough':>5} {'a':>5} {'sil':>5} {'gecko':>6}  fav")
     for t in table[:14]:
         g = t["gecko_force_n"] if t["gecko_force_n"] != "" else "INF"
-        print(f"{t['Object'][:32]:32} {t['roughness_class']:>5} "
+        print(f"{t['Object'][:32]:32} {t['roughness_index']:>5.0f} "
               f"{t['projected_contact_fraction']:>5} {t['silicone_force_n']:>5} "
               f"{str(g):>6}  {t['favored_gripper']}")
     return 0

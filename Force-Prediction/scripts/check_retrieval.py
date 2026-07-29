@@ -28,7 +28,7 @@ def main() -> int:
         object_id=probe.object_id,
         image_path="",
         mass_g=probe.mass_g,
-        roughness_class=probe.roughness_class,
+        roughness_index=probe.roughness_index,
         projected_contact_fraction=probe.projected_contact_fraction,
         semantic_description=probe.semantic_description,
     )
@@ -39,7 +39,7 @@ def main() -> int:
     )
     print(
         f"Top-{cfg.retrieval.k} paired objects for mass={query.mass_g:.0f}g "
-        f"rough={query.roughness_class} a={query.projected_contact_fraction:.2f}:"
+        f"roughness_index={query.roughness_index} a={query.projected_contact_fraction:.2f}:"
     )
     for result in results:
         print(

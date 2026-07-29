@@ -62,14 +62,12 @@ geometry:
 
 # --- Roughness ---------------------------------------------------------------
 roughness:
-  n_classes: 5
-  ordinal: true         # if false, retrieval uses exact-match instead of |r-r'|/4
-  labels:               # human-readable meanings (also injected into prompts)
-    1: smoothest
-    2: smooth-mild
-    3: moderate
-    4: rough
-    5: roughest
+  metric_name: high_frequency_scattering_index
+  units: unitless_index
+  higher_is_rougher: true
+  # Approximate median pairwise gap in the current MatForceFinal measurements.
+  # Recalibrate as coverage grows. Raw values are never discretized.
+  characteristic_scale: 500.0
 
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
@@ -86,11 +84,12 @@ retrieval:
     dim: 1536                 # Matryoshka truncation (<= 3072)
 
 # --- Physics reduced-order model ---------------------------------------------
-# T_sil = alpha_sil(c) * a * N
-# T_geo = alpha_geo(c) * a * N + beta(c) * a * N/(N+N50)
-# Coefficients are SMOOTH & MONOTONE in roughness class c (few params, not 16).
+# Let r = roughness_index / characteristic_scale.
+# T_sil = alpha_sil(r) * a * N
+# T_geo = alpha_geo(r) * a * N + beta(r) * a * N/(N+N50)
+# Coefficients are smooth and monotone in the continuous roughness coordinate r.
 physics:
-  # alpha(c) = alpha0 * exp(-decay * (c - 1))   (effective friction, decays with roughness)
+  # alpha(r) = alpha0 * exp(-decay * r) (effective friction vs. roughness)
   # Defaults sized so the 20 g - 1.5 kg synthetic range is mostly feasible for at
   # least one gripper, with genuine heavy+rough infeasible cases. Replace with
   # values calibrated from James et al. data once collected.
@@ -98,7 +97,7 @@ physics:
   alpha_sil_decay: -0.12
   alpha_geo0: 2.2
   alpha_geo_decay: 0.05
-  # beta(c) = beta0 * clip(1 - beta_decay * (c - 1), 0, 1)   (adhesive support, decays)
+  # beta(r) = beta0 * clip(1 - beta_decay * r, 0, 1)
   beta0: 3.0
   beta_decay: 0.28
   n50: 0.7              # preload for adhesive seating in N/(N+N50)

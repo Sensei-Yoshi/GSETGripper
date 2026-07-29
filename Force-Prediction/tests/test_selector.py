@@ -114,10 +114,10 @@ def test_evaluation_accepts_either_gripper_for_true_force_tie():
     truth = ObjectRecord(
         object_id="tie",
         gecko=ExperienceRecord(object_id="tie", image_path="", mass_g=100,
-                               roughness_class=2, projected_contact_fraction=0.8,
+                               roughness_index=2, projected_contact_fraction=0.8,
                                gripper=Gripper.GECKO, min_force_n=1.0),
         silicone=ExperienceRecord(object_id="tie", image_path="", mass_g=100,
-                                  roughness_class=2, projected_contact_fraction=0.8,
+                                  roughness_index=2, projected_contact_fraction=0.8,
                                   gripper=Gripper.SILICONE, min_force_n=1.0),
     )
     predictions = {

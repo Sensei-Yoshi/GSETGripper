@@ -14,7 +14,7 @@ choices; each item below is a concrete upgrade path with the file it touches.
 - Gecko seating study: determine whether the minimum-force protocol reaches the
   saturated adhesion regime; if not, `N50` matters and the full nonlinear
   seating term should stay. Consider per-class `N50`.
-- Revisit smooth-vs-per-class coefficients once ≥ ~200 objects give dense class
+- Recalibrate the continuous roughness characteristic scale and physics coefficients once ≥ ~200 objects give dense index
   coverage.
 
 ## Objective & safety  (`prediction.py`, `contracts.py`)

@@ -39,8 +39,8 @@ def _input_reasons(item: DatasetObject, cfg: Config, experiment_id: str) -> list
     if experiment_id in {"e2", "e4"}:
         if item.mass_g is None:
             reasons.append("mass not recorded")
-        if cfg.inputs.use_roughness and item.roughness_class is None:
-            reasons.append("roughness class not recorded")
+        if cfg.inputs.use_roughness and item.roughness_index is None:
+            reasons.append("roughness index not recorded")
         if (
             cfg.inputs.use_projected_contact
             and item.projected_contact_fraction is None
@@ -59,7 +59,7 @@ def _reference_ready(item: DatasetObject, cfg: Config, experiment_id: str) -> bo
     if experiment_id == "e4":
         if item.mass_g is None:
             return False
-        if cfg.inputs.use_roughness and item.roughness_class is None:
+        if cfg.inputs.use_roughness and item.roughness_index is None:
             return False
         if cfg.inputs.use_projected_contact and item.projected_contact_fraction is None:
             return False

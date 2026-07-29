@@ -79,7 +79,7 @@ def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
             if sim.roughness is not None:
                 row.update(
                     roughness=sim.roughness,
-                    roughness_class=item.roughness_class,
+                    roughness_index=item.roughness_index,
                 )
             if sim.contact is not None:
                 row.update(
@@ -98,7 +98,7 @@ def render_formula(cfg: Config) -> None:
         r"w_m e^{-|\ln m_q-\ln m_i|/\sigma_m}",
     ]
     if cfg.inputs.use_roughness:
-        terms.append(r"w_r(1-|r_q-r_i|/4)")
+        terms.append(r"w_r e^{-|r_q-r_i|/s_r}")
     if cfg.inputs.use_projected_contact:
         terms.append(r"w_a e^{-|a_q-a_i|/\sigma_a}")
     st.latex(r"S_i=" + "+".join(terms))

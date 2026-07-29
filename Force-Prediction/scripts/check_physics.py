@@ -24,17 +24,17 @@ def main() -> int:
     fitted = PhysicsModel(calibrate(records, cfg), cfg)
     print("calibrated params:", fitted.p)
 
-    print("\nmin force by class (mass=300g, a=0.8):")
-    print(f"{'class':>5} {'sil_default':>12} {'sil_fit':>10} {'geo_default':>12} {'geo_fit':>10}")
-    for c in range(1, cfg.roughness.n_classes + 1):
-        sd = defaults.min_force(Gripper.SILICONE, 300, c, 0.8)
-        sf = fitted.min_force(Gripper.SILICONE, 300, c, 0.8)
-        gd = defaults.min_force(Gripper.GECKO, 300, c, 0.8)
-        gf = fitted.min_force(Gripper.GECKO, 300, c, 0.8)
-        print(f"{c:>5} {str(sd.min_force_n):>12} {str(sf.min_force_n):>10} "
+    print("\nmin force by roughness index (mass=300g, a=0.8):")
+    print(f"{'index':>7} {'sil_default':>12} {'sil_fit':>10} {'geo_default':>12} {'geo_fit':>10}")
+    for roughness in (0.0, 250.0, 500.0, 750.0, 1000.0):
+        sd = defaults.min_force(Gripper.SILICONE, 300, roughness, 0.8)
+        sf = fitted.min_force(Gripper.SILICONE, 300, roughness, 0.8)
+        gd = defaults.min_force(Gripper.GECKO, 300, roughness, 0.8)
+        gf = fitted.min_force(Gripper.GECKO, 300, roughness, 0.8)
+        print(f"{roughness:>7.1f} {str(sd.min_force_n):>12} {str(sf.min_force_n):>10} "
               f"{str(gd.min_force_n):>12} {str(gf.min_force_n):>10}")
 
-    heavy = fitted.min_force(Gripper.GECKO, 1400, 5, 0.4)
+    heavy = fitted.min_force(Gripper.GECKO, 1400, 1000.0, 0.4)
     print(f"\nheavy+rough gecko feasible={heavy.feasible} (expect infeasible near limit)")
     return 0
 

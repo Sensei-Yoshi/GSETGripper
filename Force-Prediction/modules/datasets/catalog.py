@@ -142,7 +142,8 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
                 else None
             ),
             mass_g=row.mass_g,
-            roughness_class=row.roughness_class,
+            roughness_index=row.roughness_index,
+            legacy_roughness_class=row.legacy_roughness_class,
             projected_contact_fraction=row.projected_contact_fraction,
             gripper_outcomes=_outcomes(
                 row.gecko_feasible,
@@ -273,13 +274,18 @@ def _attach_manual_measurements(
     if not path.is_file():
         return
     try:
-        values = DatasetObjectMeasurements.model_validate_json(path.read_text(encoding="utf-8"))
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        if int(payload.get("schema_version", 1)) < 2:
+            payload["legacy_roughness_class"] = payload.get("roughness_class")
+            payload.pop("roughness_class", None)
+        values = DatasetObjectMeasurements.model_validate(payload)
     except (OSError, ValueError):
         return
     if values.object_id != item.object_id:
         return
     item.mass_g = values.mass_g
-    item.roughness_class = values.roughness_class
+    item.roughness_index = values.roughness_index
+    item.legacy_roughness_class = values.legacy_roughness_class
     if values.projected_contact_fraction is not None:
         item.projected_contact_fraction = values.projected_contact_fraction
     item.gripper_outcomes = _outcomes(
@@ -332,9 +338,12 @@ def _capabilities(
         has_roughness=bool(values) and all(item.roughness is not None for item in values),
         has_measurements=bool(values) and all(
             item.mass_g is not None
-            and item.roughness_class is not None
+            and item.roughness_index is not None
             and item.projected_contact_fraction is not None
             for item in values
+        ),
+        legacy_roughness_class_count=sum(
+            item.legacy_roughness_class is not None for item in values
         ),
         has_paired_labels=bool(values) and len(complete_pairs) == len(values),
         complete_gecko_labels=complete_gecko_labels,

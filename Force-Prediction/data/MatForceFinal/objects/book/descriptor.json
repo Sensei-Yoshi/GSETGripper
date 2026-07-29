@@ -19,11 +19,11 @@
     "contact_patch_visibility": "Clearly visible",
     "uncertainty": "The exact frictional properties of the cover material are not fully determinable from visual inspection alone."
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_descriptor_sha256": "5ed6d45fcb741b9a9a182f7d9d5b31230a73cea0a1fdd6511ad47c96cf988743",
-  "embedding_cache_key": "d27c7f4083904dd4c6e8feebd7c2ace050d288c93044f88199784b999d7ff31b",
-  "embedding_sha256": "f4d07c68f8cfb1be6a4c2ef550e72ae7a49c751b9ea44b7b97e658a1179defc0",
-  "updated_at": "2026-07-28T17:57:47.012269+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-28T21:02:27Z"
 }

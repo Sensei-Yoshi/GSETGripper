@@ -1,0 +1,327 @@
+{
+  "schema_version": 9,
+  "dataset_id": "MatForceFinal",
+  "run_id": "20260728T231846433949Z_e4_lunch_box",
+  "created_at": "2026-07-28T23:18:46.433949+00:00",
+  "source_sha256": "2eaa5bf07e5c3cc013ffa721c6b84751d18acf8583f8f97e1df7b32056e85d26",
+  "evaluation_protocol": "leave-one-object-out",
+  "experiment": "e4",
+  "experiment_method": "hybrid_retrieval_vlm",
+  "experiment_definition_version": 8,
+  "experiment_definition": {
+    "method": "hybrid_retrieval_vlm",
+    "prompt": "e4"
+  },
+  "prediction_prompts": {
+    "system": "You are a robotics grasp-material selection and pre-grasp force estimation model.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved.\n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. The controller accepts\ncontinuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, numerical roughness index, and projected contact fraction are authoritative. The payload defines the roughness metric, units, direction, and characteristic scale. Treat it as continuous; do not discretize it into classes.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+    "instruction_key": "e4",
+    "instruction": "E4 SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmeasurements, and one hybrid-ranked object list to estimate the requested force or forces.\nExplain how close retrieved outcomes and available mass/contact scaling support the\nestimates. No calibrated physics estimate is available; do not invent one.\n",
+    "target_instruction_key": "single",
+    "target_instruction": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n"
+  },
+  "prompt_context": {
+    "bundle_file": "prompts.yaml",
+    "bundle_sha256": "bb6956369be7eed9598ed657f8af5e3d0ddea8acd893c95a52793f026ac2f937",
+    "experiment_instructions": {
+      "e1": "E1 ZERO-SHOT VISION-ONLY CONDITION.\nFrom the object image and requested gripper embodiment context, estimate the minimum\nstationary-finger normal force for each requested candidate. No authoritative mass,\nroughness, projected contact measurement, physics estimate, or retrieved experience\nis available. Reason from visible scale, material, condition, and geometry and state\nuncertainty because those judgments are necessarily rough visual approximations.\nDo not invent physical constants or claim to run calibrated physics.\n",
+      "e2": "E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, and supplied authoritative\nmeasurements: mass, roughness, and projected contact fraction.\nNo retrieved experience or physics estimate is available. Do not infer hidden\nfriction or adhesion constants.\n",
+      "e3": "E3 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.\nUse the object image, fixed gripper embodiment context, and the ranked semantic\nexperience list to predict the requested force or forces. Neighbors were selected only by cosine\nsimilarity between semantic contact-region descriptions and provide outcomes for\nthe requested candidate or candidates. No authoritative query or neighbor mass, roughness, projected\ncontact, hybrid physical score, or physics estimate is available. Do not imply that\nany omitted sensor value was measured or used.",
+      "e4": "E4 SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmeasurements, and one hybrid-ranked object list to estimate the requested force or forces.\nExplain how close retrieved outcomes and available mass/contact scaling support the\nestimates. No calibrated physics estimate is available; do not invent one.\n"
+    },
+    "target_instructions": {
+      "single": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n",
+      "joint": "JOINT-CANDIDATE OUTPUT CONDITION.\nPredict both requested grippers, compare their force and feasibility estimates, and\nreturn an explicit recommendation with the comparison evidence required by the schema.\n"
+    },
+    "prediction": {
+      "system": "You are a robotics grasp-material selection and pre-grasp force estimation model.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved.\n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. The controller accepts\ncontinuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, numerical roughness index, and projected contact fraction are authoritative. The payload defines the roughness metric, units, direction, and characteristic scale. Treat it as continuous; do not discretize it into classes.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+      "instruction_key": "e4",
+      "instruction": "E4 SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmeasurements, and one hybrid-ranked object list to estimate the requested force or forces.\nExplain how close retrieved outcomes and available mass/contact scaling support the\nestimates. No calibrated physics estimate is available; do not invent one.\n",
+      "target_instruction_key": "single",
+      "target_instruction": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n"
+    },
+    "descriptor": {
+      "system": "You create contact-region records for a robotic grasp-experience retrieval system.\nAnalyze only visible evidence in the supplied object image. The robot uses two\nopposing compliant fingers at a fixed, centered grasp band around the object's\nlateral surfaces. Focus on the surface patches those pads are most likely to touch.\n\nThe record will be converted into a text embedding and used to retrieve objects\nwith similar pad-to-object interfaces. Describe discriminating contact evidence;\ndo not recommend a gripper, predict force, infer a force label, or restate measured\nmass, measured roughness index, or projected contact fraction. If the likely contact patch\nis hidden or ambiguous, say so rather than inventing material or condition.\n",
+      "instruction": "Inspect the likely opposing finger-contact patches in the centered grasp band.\nReturn the requested structured JSON with:\n- the likely contact region and whether it is clearly visible;\n- the material actually touching the pads, distinguishing substrate from a\n  label, wrapper, coating, sleeve, or exposed contents;\n- visible condition such as clean, dry, dusty, wet, oily, worn, or unknown;\n- local geometry, including curvature, broad continuous area, seams, ridges,\n  edges, lobes, or other interruptions;\n- an uncertainty statement grounded in what the image does or does not show;\n- a concise retrieval_description containing the most discriminating\n  pad-to-object interface evidence in 1-2 sentences. Roughly follow this template: [Material/object form]. The intended contact region is [surface condition], [geometry], and [other relevant properties].\n\nGood retrieval_description examples:\n1. \"Transparent cylindrical glass object with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has no visible seams, texture, or contamination.\"\n2. \"Small curved snack chip with a porous, visibly textured surface and a thin, brittle structure. Its irregular geometry provides only a small, uneven contact region.\"\n\nDo not\nchoose gecko or silicone and do not estimate force. Return only JSON matching\nthe supplied schema.\n"
+    },
+    "embodiments": {
+      "gecko": {
+        "description": "TPU fin-ray finger with a mushroom-cap Gecko-inspired dry-adhesive pad. The compliant backing is intended to seat the pad against opposing object sidewalls; dry adhesion benefits from broad, intimate contact with clean, dry, smooth, nonporous surfaces and degrades with roughness, porosity, contamination, moisture, loose coatings, or interrupted contact."
+      }
+    }
+  },
+  "backend": {
+    "force": "gemini_single_generation",
+    "semantic_embedding": "gemini-embedding-2-preview"
+  },
+  "models": {
+    "vlm": "gemini-flash-lite-latest",
+    "embedding": "gemini-embedding-2-preview",
+    "embedding_dim": 1536
+  },
+  "inputs": {
+    "use_roughness": true,
+    "use_projected_contact": false
+  },
+  "roughness_measurement": {
+    "metric_name": "high_frequency_scattering_index",
+    "units": "unitless_index",
+    "higher_is_rougher": true,
+    "characteristic_scale": 500.0
+  },
+  "active_grippers": [
+    "gecko"
+  ],
+  "generation_mode": "single",
+  "retrieval_config": {
+    "k": 5,
+    "weights": {
+      "semantic": 0.4,
+      "mass": 0.75,
+      "roughness": 0.75,
+      "contact": 0.0
+    },
+    "sigma_mass": 0.9,
+    "sigma_contact": 0.25,
+    "embedding": {
+      "model": "gemini-embedding-2-preview",
+      "dim": 1536
+    }
+  },
+  "query": {
+    "object_id": "lunch_box",
+    "source_object_id": "lunch_box",
+    "object_name": "Lunch Box",
+    "mass_g": 627.68,
+    "roughness_index": 1737.81,
+    "projected_contact_fraction": null,
+    "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
+    "original_image_path": "data/MatForceFinal/Lunch Box.jpg",
+    "image_artifact_path": "data/MatForceFinal/run_images/f5f314f250c39fbd38698655786172eaeade4c831d9318f03fbd382e8de9be97.png",
+    "image_sha256": "f5f314f250c39fbd38698655786172eaeade4c831d9318f03fbd382e8de9be97"
+  },
+  "counterfactual": false,
+  "truth": {
+    "true_gecko_force_n": 5.863,
+    "true_selection": null,
+    "object_id": "lunch_box",
+    "active_grippers": [
+      "gecko"
+    ],
+    "gecko_feasible": true
+  },
+  "result": {
+    "experiment_id": "e4",
+    "experiment_method": "hybrid_retrieval_vlm",
+    "experiment_definition_version": 8,
+    "selection": {
+      "desired_gripper": "gecko",
+      "predicted_normal_force_n": 3.85,
+      "candidate_predictions": {
+        "gecko": {
+          "candidate_gripper": "gecko",
+          "visible_surface_material": "Flexible textile exterior with soft fabric surface and perimeter zipper seams",
+          "visible_surface_condition": "Clean and dry with soft woven texture and localized interruptions from zipper seams",
+          "compatibility": "low",
+          "feasible": true,
+          "predicted_normal_force_n": 3.85,
+          "evidence_used": [
+            "Query mass: 627.68 g",
+            "Query roughness index: 1737.81",
+            "Retrieved object headphones_case (mass: 218.15 g, roughness: 1610.85, gecko_min_force_n: 3.01)",
+            "Retrieved object wallet_1 (mass: 139.66 g, roughness: 1596.55, gecko_min_force_n: 2.013)",
+            "Retrieved object metal_water_bottle (mass: 551.01 g, roughness: 892.99, gecko_min_force_n: 3.83)",
+            "Gecko embodiment description: dry adhesion benefits from broad, intimate contact with clean, dry, smooth, nonporous surfaces and degrades with roughness, porosity, or interrupted contact"
+          ],
+          "calculation_summary": "Mass scaling and roughness penalty from retrieved flexible/textile items (headphones_case, wallet_1) and high mass objects (metal_water_bottle) indicate that the high roughness index (1737.81) and heavy mass (627.68 g) require near-maximum normal force within the 0 to 8 N range, yielding an estimated force of 3.85 N.",
+          "assumptions_and_uncertainty": [
+            "The textile fabric introduces porosity and interrupted contact that degrades gecko dry adhesion effectiveness.",
+            "Higher mass and high roughness index scale the required normal force upwards compared to lighter or smoother retrieved objects.",
+            "Uncertainty remains regarding exact local micro-asperities of the woven fabric under compression."
+          ],
+          "reasoning_trace": "The target object is a soft fabric zippered pouch with a textile exterior, high mass (627.68 g), and high roughness index (1737.81). Gecko dry adhesives require smooth, nonporous surfaces for broad intimate contact; textile materials and high roughness degrade this performance. Looking at retrieved examples with similar high roughness indices such as headphones_case (roughness 1610.85, force 3.01 N) and wallet_1 (roughness 1596.55, force 2.013 N), combined with high-mass examples like metal_water_bottle (mass 551.01 g, force 3.83 N), the required normal force scales up due to the substantial payload weight and surface texture challenge. Synthesizing these observations for the gecko gripper results in a predicted normal force of 3.85 N while maintaining feasibility within the 0 to 8 N limits."
+        }
+      },
+      "reasoning_trace": "lowest feasible predicted stationary-finger force",
+      "prediction_tie": false,
+      "tie_break_reason": null,
+      "model_recommended_gripper": null,
+      "model_comparison_evidence": [],
+      "model_recommendation_summary": null,
+      "recommendation_agrees_with_selector": null
+    },
+    "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
+    "retrieved_objects": [
+      {
+        "object_id": "headphones_case",
+        "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
+        "mass_g": 218.15,
+        "roughness_index": 1610.85,
+        "projected_contact_fraction": null,
+        "semantic_description": "Headphones Case",
+        "gecko_min_force_n": 3.01,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.5655708801620092,
+        "rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.652467706946594,
+          "mass": 0.30904292616598683,
+          "roughness": 0.7757538598729197,
+          "contact": null,
+          "semantic_contribution": 0.13736162251507242,
+          "mass_contribution": 0.12199062874973164,
+          "roughness_contribution": 0.30621862889720514,
+          "contact_contribution": null,
+          "total": 0.5655708801620092
+        }
+      },
+      {
+        "object_id": "500g_weight",
+        "image_path": "data/MatForceFinal/objects/500g_weight/image.jpg",
+        "mass_g": 500.0,
+        "roughness_index": 1129.82,
+        "projected_contact_fraction": null,
+        "semantic_description": "500g Weight",
+        "gecko_min_force_n": 1.03,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.5496028616781873,
+        "rank": 2,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.5985008229916723,
+          "mass": 0.7767074297421954,
+          "roughness": 0.29641938091365383,
+          "contact": null,
+          "semantic_contribution": 0.1260001732614047,
+          "mass_contribution": 0.30659503805612975,
+          "roughness_contribution": 0.11700765036065283,
+          "contact_contribution": null,
+          "total": 0.5496028616781873
+        }
+      },
+      {
+        "object_id": "metal_water_bottle",
+        "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
+        "mass_g": 551.01,
+        "roughness_index": 892.99,
+        "projected_contact_fraction": null,
+        "semantic_description": "Metal Water Bottle",
+        "gecko_min_force_n": 3.83,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.5370815807537883,
+        "rank": 3,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.582721049404457,
+          "mass": 0.8652361485806264,
+          "roughness": 0.18458596297992688,
+          "contact": null,
+          "semantic_contribution": 0.12267811566409623,
+          "mass_contribution": 0.34154058496603673,
+          "roughness_contribution": 0.07286288012365535,
+          "contact_contribution": null,
+          "total": 0.5370815807537883
+        }
+      },
+      {
+        "object_id": "wallet_1",
+        "image_path": "data/MatForceFinal/objects/wallet_1/image.jpg",
+        "mass_g": 139.66,
+        "roughness_index": 1596.55,
+        "projected_contact_fraction": null,
+        "semantic_description": "Wallet 1",
+        "gecko_min_force_n": 2.013,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.4922842999570758,
+        "rank": 4,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.5717884814108852,
+          "mass": 0.1882848056281931,
+          "roughness": 0.75388156417726,
+          "contact": null,
+          "semantic_contribution": 0.12037652240229163,
+          "mass_contribution": 0.07432294959007622,
+          "roughness_contribution": 0.2975848279647079,
+          "contact_contribution": null,
+          "total": 0.4922842999570758
+        }
+      },
+      {
+        "object_id": "people_s_hospital",
+        "image_path": "data/MatForceFinal/objects/people_s_hospital/image.jpg",
+        "mass_g": 540.59,
+        "roughness_index": 646.42,
+        "projected_contact_fraction": null,
+        "semantic_description": "People's Hospital",
+        "gecko_min_force_n": 2.68,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.49122324784271526,
+        "rank": 5,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.533680184826928,
+          "mass": 0.8470750843646657,
+          "roughness": 0.11272771159585133,
+          "contact": null,
+          "semantic_contribution": 0.11235372312145854,
+          "mass_contribution": 0.33437174382815754,
+          "roughness_contribution": 0.04449778089309921,
+          "contact_contribution": null,
+          "total": 0.49122324784271526
+        }
+      }
+    ],
+    "physics_estimates": {},
+    "cache_stats": {
+      "enabled": true,
+      "hits": 29,
+      "misses": 1,
+      "writes": 1,
+      "read_errors": 0,
+      "legacy_hits": 0,
+      "generation": {
+        "hits": 0,
+        "misses": 1,
+        "writes": 1,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "embeddings": {
+        "hits": 29,
+        "misses": 0,
+        "writes": 0,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "backend_attempts": {
+        "generation": 1,
+        "embedding": 0
+      }
+    },
+    "active_grippers": [
+      "gecko"
+    ],
+    "generation_mode": "single",
+    "retrieval_mode": "hybrid",
+    "effective_inputs": [
+      "object_image",
+      "gripper_context",
+      "semantic_descriptor",
+      "semantic_experiences",
+      "mass",
+      "roughness"
+    ]
+  },
+  "baseline": null
+}
