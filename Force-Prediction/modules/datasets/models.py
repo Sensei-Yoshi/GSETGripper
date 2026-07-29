@@ -96,6 +96,8 @@ class DatasetObjectMeasurements(BaseModel):
 
     schema_version: int = 2
     object_id: str
+    surface_id: str | None = None
+    condition_id: str = "baseline"
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     # Kept only so schema-v1 files remain inspectable. It is never used as an
@@ -124,6 +126,8 @@ class DatasetObject(BaseModel):
 
     dataset_id: str
     object_id: str
+    surface_id: str | None = None
+    condition_id: str = "baseline"
     name: str
     image: ImageArtifact
     image_2: ImageArtifact | None = None
@@ -136,6 +140,18 @@ class DatasetObject(BaseModel):
     embedding: EmbeddingArtifact | None = None
     roughness: RoughnessArtifact | None = None
     gripper_outcomes: dict[Gripper, GripperOutcome] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _derive_lineage(self) -> DatasetObject:
+        if self.surface_id is None:
+            self.surface_id = self.object_id.split("__", 1)[0]
+        if not self.condition_id:
+            self.condition_id = (
+                self.object_id.split("__", 1)[1]
+                if "__" in self.object_id
+                else "baseline"
+            )
+        return self
 
 
 class DatasetCapabilities(BaseModel):
@@ -220,17 +236,19 @@ class Dataset(BaseModel):
 
     @property
     def descriptions(self) -> dict[str, DescriptionArtifact]:
-        return {
-            key: item.description
-            for key, item in self.objects.items()
-            if item.description is not None
-        }
+        output: dict[str, DescriptionArtifact] = {}
+        for item in self.objects.values():
+            if item.description is not None:
+                output.setdefault(item.surface_id or item.object_id, item.description)
+        return output
 
     @property
     def embeddings(self) -> dict[str, EmbeddingArtifact]:
-        return {
-            key: item.embedding for key, item in self.objects.items() if item.embedding is not None
-        }
+        output: dict[str, EmbeddingArtifact] = {}
+        for item in self.objects.values():
+            if item.embedding is not None:
+                output.setdefault(item.surface_id or item.object_id, item.embedding)
+        return output
 
     def summary(self) -> dict:
         roughness_values = [
@@ -247,10 +265,28 @@ class Dataset(BaseModel):
             }
             if candidates:
                 favored[min(candidates, key=lambda key: candidates[key])] += 1
+        photos = {
+            photo.path: photo
+            for item in self.objects.values()
+            for photo in (item.image, item.image_2)
+            if photo is not None
+        }
+        surface_ids = {item.surface_id or item.object_id for item in self.objects.values()}
         return {
             "dataset_id": self.dataset_id,
             "objects": len(self.objects),
-            "second_images": len(self.second_images),
+            "physical_surfaces": len(surface_ids),
+            "measurement_conditions": len(self.objects),
+            "unique_photos": len(photos),
+            "available_unique_photos": sum(
+                photo.available for photo in photos.values()
+            ),
+            "missing_photos": sorted(
+                path for path, photo in photos.items() if not photo.available
+            ),
+            "second_images": len(
+                {item.path for item in self.second_images.values()}
+            ),
             "experience_rows": sum(len(item.gripper_outcomes) for item in self.objects.values()),
             "source_sha256": self.source_fingerprint,
             "roughness_index": {

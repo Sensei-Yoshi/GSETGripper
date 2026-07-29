@@ -61,6 +61,7 @@ class ExpForceRow(BaseModel):
     object_name: str
     image_name: str
     image_name_2: str | None = None
+    condition_id: str = "baseline"
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
@@ -72,11 +73,22 @@ class ExpForceRow(BaseModel):
     favored_gripper: str | None = None
 
     @property
-    def object_id(self) -> str:
+    def surface_id(self) -> str:
         return slug(self.object_name)
+
+    @property
+    def object_id(self) -> str:
+        if self.condition_id == "baseline":
+            return self.surface_id
+        return f"{self.surface_id}__{self.condition_id}"
 
     @model_validator(mode="after")
     def _validate_labels(self) -> ExpForceRow:
+        self.condition_id = (self.condition_id or "baseline").strip().lower()
+        if not re.fullmatch(r"[a-z0-9][a-z0-9_]*", self.condition_id):
+            raise ValueError(
+                "condition_id must contain only lowercase letters, numbers, and underscores"
+            )
         for force, feasible, name in (
             (self.silicone_force_n, self.silicone_feasible, "silicone"),
             (self.gecko_force_n, self.gecko_feasible, "gecko"),
@@ -122,7 +134,7 @@ def _dataset_relative(cfg: Config, name: str) -> Path:
 
 def _object_image_relative(cfg: Config, row: ExpForceRow) -> Path:
     suffix = Path(row.image_name).suffix.lower() or ".png"
-    return _dataset_relative(cfg, f"objects/{row.object_id}/image{suffix}")
+    return _dataset_relative(cfg, f"objects/{row.surface_id}/image{suffix}")
 
 
 def _experience_cache_path(cfg: Config) -> Path:
@@ -158,6 +170,10 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
                 ),
                 None,
             ),
+            condition_id=(
+                (row.get("condition_id") or row.get("Condition_ID") or "").strip()
+                or "baseline"
+            ),
             mass_g=_parse_optional_float(row.get("Mass_g")),
             roughness_index=_parse_optional_float(row.get("roughness_index")),
             legacy_roughness_class=_parse_optional_int(row.get("roughness_class")),
@@ -175,8 +191,9 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
         for row in raw_rows
     ]
     ids = [row.object_id for row in rows]
-    if cfg.dataset_id == "expforce" and len(rows) != 129:
-        raise ValueError(f"expected 129 objects, found {len(rows)}")
+    surface_ids = {row.surface_id for row in rows}
+    if cfg.dataset_id == "expforce" and len(surface_ids) != 129:
+        raise ValueError(f"expected 129 physical surfaces, found {len(surface_ids)}")
     if len(set(ids)) != len(ids):
         raise ValueError("object names do not produce unique IDs")
     return rows
@@ -192,6 +209,7 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
         "Object",
         "Image",
         *(["Image_2"] if any(row.image_name_2 for row in rows) else []),
+        "condition_id",
         "Mass_g",
         "roughness_index",
         *(
@@ -223,6 +241,7 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
             payload = {
                 "Object": row.object_name,
                 "Image": row.image_name,
+                "condition_id": row.condition_id,
                 "Mass_g": row.mass_g if row.mass_g is not None else "",
                 "roughness_index": (
                     row.roughness_index if row.roughness_index is not None else ""
@@ -255,8 +274,17 @@ def save_rows(path: Path, rows: list[ExpForceRow]) -> None:
 
 def validation_summary(cfg: Config, rows: list[ExpForceRow] | None = None) -> dict:
     rows = rows or load_rows(cfg)
+    photos = {
+        image
+        for row in rows
+        for image in (row.image_name, row.image_name_2)
+        if image
+    }
     return {
         "objects": len(rows),
+        "physical_surfaces": len({row.surface_id for row in rows}),
+        "measurement_conditions": len(rows),
+        "unique_photos": len(photos),
         "experience_rows": sum(
             (row.gecko_feasible is False or (
                 row.gecko_feasible is True and row.gecko_force_n is not None
@@ -296,7 +324,9 @@ def to_experiences(
     records: list[ExperienceRecord] = []
     for row in rows:
         image_path = str(_object_image_relative(cfg, row))
-        description = descriptions.get(row.object_id, row.object_name)
+        description = descriptions.get(
+            row.surface_id, descriptions.get(row.object_id, row.object_name)
+        )
         for gripper, force, feasible in (
             (Gripper.SILICONE, row.silicone_force_n, row.silicone_feasible),
             (Gripper.GECKO, row.gecko_force_n, row.gecko_feasible),
@@ -306,6 +336,8 @@ def to_experiences(
             records.append(
                 ExperienceRecord(
                     object_id=row.object_id,
+                    surface_id=row.surface_id,
+                    condition_id=row.condition_id,
                     image_path=image_path,
                     mass_g=row.mass_g,
                     roughness_index=row.roughness_index,
@@ -387,6 +419,29 @@ def _object_retrieval_payload(detailed: PipelineRunResult) -> list[dict]:
     return [item.model_dump(mode="json") for item in detailed.retrieved_objects]
 
 
+def _surface_retrieval_payload(detailed: PipelineRunResult) -> list[dict]:
+    grouped: dict[str, list[dict]] = {}
+    for item in detailed.retrieved_objects:
+        grouped.setdefault(item.surface_id or item.object_id, []).append(
+            item.model_dump(mode="json")
+        )
+    return [
+        {
+            "surface_id": surface_id,
+            "conditions": sorted(
+                conditions,
+                key=lambda item: (item.get("condition_rank", 0), item["object_id"]),
+            ),
+        }
+        for surface_id, conditions in sorted(
+            grouped.items(),
+            key=lambda pair: min(
+                item.get("surface_rank", item.get("rank", 0)) for item in pair[1]
+            ),
+        )
+    ]
+
+
 def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
     return {
         "experiment_id": detailed.experiment_id,
@@ -394,7 +449,12 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
         "experiment_definition_version": detailed.experiment_definition_version,
         "selection": detailed.selection.model_dump(mode="json"),
         "semantic_description": detailed.semantic_description,
+        "object_id": detailed.object_id,
+        "surface_id": detailed.surface_id,
+        "condition_id": detailed.condition_id,
+        "retrieval_payload_version": 2,
         "retrieved_objects": _object_retrieval_payload(detailed),
+        "retrieved_surfaces": _surface_retrieval_payload(detailed),
         "physics_estimates": detailed.physics_estimates,
         "cache_stats": detailed.cache_stats,
         "active_grippers": list(detailed.active_grippers),
@@ -414,6 +474,13 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
         or selection.candidate_predictions.keys()
         or ("gecko", "silicone")
     )
+    raw_retrieval = payload.get("retrieved_objects", [])
+    if not raw_retrieval and payload.get("retrieved_surfaces"):
+        raw_retrieval = [
+            condition
+            for surface in payload["retrieved_surfaces"]
+            for condition in surface.get("conditions", [])
+        ]
     return PipelineRunResult(
         experiment_id=payload.get("experiment_id", "legacy"),
         experiment_method=payload.get("experiment_method", "legacy"),
@@ -422,7 +489,7 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
         semantic_description=payload.get("semantic_description", ""),
         retrieved_objects=[
             RetrievedObjectExperience.model_validate(item)
-            for item in payload.get("retrieved_objects", [])
+            for item in raw_retrieval
         ],
         physics_estimates=payload.get("physics_estimates", {}),
         cache_stats=payload.get("cache_stats", {}),
@@ -432,6 +499,9 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
         ),
         retrieval_mode=payload.get("retrieval_mode"),
         effective_inputs=tuple(payload.get("effective_inputs", ())),
+        object_id=payload.get("object_id", ""),
+        surface_id=payload.get("surface_id"),
+        condition_id=payload.get("condition_id", "baseline"),
     )
 
 
@@ -570,6 +640,11 @@ def save_pipeline_run(
         ),
         "retrieval_config": cfg.retrieval.model_dump(mode="json"),
         "query": {
+            "object_id": detailed.object_id or query.get("object_id", ""),
+            "surface_id": detailed.surface_id or query.get("surface_id"),
+            "condition_id": detailed.condition_id or query.get(
+                "condition_id", "baseline"
+            ),
             **query,
             "image_artifact_path": image_path,
             "image_sha256": image_digest,

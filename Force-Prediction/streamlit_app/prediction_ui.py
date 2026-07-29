@@ -46,6 +46,8 @@ def truth_payload(
     payload = {
         **truth_for_display(obj, active_grippers),
         "object_id": obj.object_id,
+        "surface_id": obj.surface_id,
+        "condition_id": obj.condition_id,
         "active_grippers": list(active_grippers),
     }
     for name in active_grippers:
@@ -59,8 +61,10 @@ def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
     for item in result.retrieved_objects:
         sim = item.similarity
         row: dict = {
-                "rank": item.rank,
-                "object": item.object_id.replace("_", " "),
+                "surface_rank": item.surface_rank or item.rank,
+                "condition_rank": item.condition_rank or 1,
+                "surface": (item.surface_id or item.object_id).replace("_", " "),
+                "condition": item.condition_id.replace("_", " "),
                 "score": item.score,
                 "semantic": sim.semantic,
             }

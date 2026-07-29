@@ -71,7 +71,8 @@ roughness:
 
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
-  k: 5                  # object-level neighbors for E3/E4
+  k: 5                  # distinct physical-surface neighbors for E3/E4
+  conditions_per_surface: 3
   weights:              # hybrid score S = w_s*cos + w_m*Smass + w_r*Srough + w_a*Scontact
     semantic: 0.40
     mass: 0.25

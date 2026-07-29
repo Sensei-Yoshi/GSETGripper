@@ -27,15 +27,34 @@ def render(context: AppContext) -> None:
 
     stats = st.columns(6)
     stats[0].metric("Dataset", dataset.display_name)
-    stats[1].metric("Objects", summary["objects"])
+    stats[1].metric(
+        "Surfaces / conditions",
+        f"{summary['physical_surfaces']} / {summary['measurement_conditions']}",
+    )
     stats[2].metric("Second views", summary["second_images"])
-    stats[3].metric("Descriptions", len(dataset.descriptions))
-    stats[4].metric("Embeddings", sum(
-        item.status == "ready" for item in dataset.embeddings.values()
-    ))
+    stats[3].metric(
+        "Descriptions",
+        len({item.surface_id for item in dataset.objects.values() if item.description}),
+    )
+    stats[4].metric(
+        "Embeddings",
+        len(
+            {
+                item.surface_id
+                for item in dataset.objects.values()
+                if item.embedding and item.embedding.status == "ready"
+            }
+        ),
+    )
     stats[5].metric(
         "Marigold results",
-        sum(item.roughness is not None for item in dataset.objects.values()),
+        len(
+            {
+                item.surface_id
+                for item in dataset.objects.values()
+                if item.roughness is not None
+            }
+        ),
     )
     st.caption(f"Source fingerprint: `{summary['source_sha256']}`")
 

@@ -1,9 +1,7 @@
-"""Compare mass/roughness regressions for MatForceFinal and plot diagnostics.
+"""Compare condition-level regressions for MatForceFinal and plot diagnostics.
 
-The primary accuracy estimate is nested leave-one-object-out cross-validation
-(LOOCV). Hyperparameters for nonlinear models are selected only from the
-training objects in each outer fold, preventing the held-out object from
-influencing model tuning.
+Primary accuracy uses grouped outer and inner validation by physical surface.
+Condition interpolation is reported separately by holding out only one condition.
 """
 
 from __future__ import annotations
@@ -17,19 +15,25 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+import yaml
 from sklearn.base import clone
 from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-from sklearn.model_selection import GridSearchCV, LeaveOneOut, cross_val_predict
+from sklearn.model_selection import (
+    GridSearchCV,
+    GroupKFold,
+    KFold,
+    LeaveOneGroupOut,
+    LeaveOneOut,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import PolynomialFeatures, StandardScaler
 from sklearn.svm import SVR
 
 FIGURES_DIR = Path(__file__).resolve().parent
-DATASET_PATH = (
-    FIGURES_DIR.parent / "Force-Prediction" / "data" / "MatForceFinal" / "dataset.csv"
-)
+PROJECT_ROOT = FIGURES_DIR.parents[1] / "Force-Prediction"
+DATASET_PATH = PROJECT_ROOT / "data" / "MatForceFinal" / "dataset.csv"
 
 # Keep Matplotlib's cache out of the source tree on sandboxed systems.
 os.environ.setdefault(
@@ -61,8 +65,11 @@ SVR_PARAMETERS = {
 class Observation:
     number: int
     name: str
+    surface_id: str
+    condition_id: str
     mass_g: float
     roughness_index: float
+    projected_contact_fraction: float | None
     force_n: float
 
 
@@ -85,6 +92,11 @@ class ModelResult:
     loo_r2: float
     loo_rmse_n: float
     loo_mae_n: float
+    interpolation_predictions: np.ndarray
+    interpolation_r2: float
+    interpolation_rmse_n: float
+    interpolation_mae_n: float
+    sample_count: int
 
 
 def _optional_float(value: str | None) -> float | None:
@@ -103,13 +115,20 @@ def _load_data() -> tuple[list[Observation], list[str]]:
     if missing:
         raise ValueError(f"Dataset is missing columns: {', '.join(sorted(missing))}")
 
-    complete: list[tuple[str, float, float, float]] = []
+    complete: list[tuple[str, str, str, float, float, float | None, float]] = []
     excluded: list[str] = []
     for row in rows:
         name = row["Object"].strip()
+        surface_id = "_".join(
+            part for part in "".join(
+                character.lower() if character.isalnum() else " " for character in name
+            ).split()
+        )
+        condition_id = (row.get("condition_id") or "baseline").strip() or "baseline"
         mass_g = _optional_float(row.get("Mass_g"))
         roughness = _optional_float(row.get("roughness_index"))
         force_n = _optional_float(row.get("gecko_force_n"))
+        contact = _optional_float(row.get("projected_contact_fraction"))
         if mass_g is None or roughness is None or force_n is None:
             excluded.append(name)
             continue
@@ -119,12 +138,19 @@ def _load_data() -> tuple[list[Observation], list[str]]:
             raise ValueError(f"{name}: roughness must be nonnegative, got {roughness}")
         if not 0 <= force_n <= 8:
             raise ValueError(f"{name}: Gecko force must be within 0–8 N, got {force_n}")
-        complete.append((name, mass_g, roughness, force_n))
+        if contact is not None and not 0 <= contact <= 1:
+            raise ValueError(f"{name}: projected contact fraction must be within 0–1")
+        display_name = name if condition_id == "baseline" else f"{name} ({condition_id})"
+        complete.append(
+            (display_name, surface_id, condition_id, mass_g, roughness, contact, force_n)
+        )
 
-    complete.sort(key=lambda item: item[0].casefold())
+    complete.sort(key=lambda item: (item[1], item[2] != "baseline", item[2]))
     observations = [
-        Observation(index, name, mass_g, roughness, force_n)
-        for index, (name, mass_g, roughness, force_n) in enumerate(complete, start=1)
+        Observation(index, name, surface_id, condition_id, mass_g, roughness, contact, force_n)
+        for index, (
+            name, surface_id, condition_id, mass_g, roughness, contact, force_n
+        ) in enumerate(complete, start=1)
     ]
     if len(observations) < 10:
         raise ValueError("At least 10 complete observations are required for comparison")
@@ -165,7 +191,7 @@ def _make_grid_search(estimator: Any, parameters: dict[str, list[Any]]) -> Any:
     )
 
 
-def _model_specs() -> list[ModelSpec]:
+def _model_specs(*, include_contact: bool) -> list[ModelSpec]:
     linear = Pipeline(
         [("scale", StandardScaler()), ("model", LinearRegression())]
     )
@@ -183,7 +209,7 @@ def _model_specs() -> list[ModelSpec]:
         Pipeline([("scale", StandardScaler()), ("model", SVR(kernel="rbf"))]),
         SVR_PARAMETERS,
     )
-    return [
+    specs = [
         ModelSpec(
             "mean_baseline",
             "Mean baseline",
@@ -234,41 +260,164 @@ def _model_specs() -> list[ModelSpec]:
             clone(rbf_svr),
         ),
     ]
+    if include_contact:
+        specs.extend(
+            [
+                ModelSpec(
+                    "three_feature_linear",
+                    "Mass + roughness + contact linear",
+                    "log10(mass) + roughness + contact",
+                    (0, 1, 2),
+                    clone(linear),
+                ),
+                ModelSpec(
+                    "three_feature_quadratic",
+                    "Mass + roughness + contact quadratic ridge",
+                    "log10(mass) + roughness + contact",
+                    (0, 1, 2),
+                    clone(quadratic_ridge),
+                ),
+                ModelSpec(
+                    "three_feature_rbf",
+                    "Mass + roughness + contact RBF SVR",
+                    "log10(mass) + roughness + contact",
+                    (0, 1, 2),
+                    clone(rbf_svr),
+                ),
+            ]
+        )
+    return specs
 
 
 def _evaluate_models(
-    features: np.ndarray, targets: np.ndarray
+    features: np.ndarray,
+    targets: np.ndarray,
+    surface_groups: np.ndarray,
+    *,
+    include_contact: bool,
 ) -> list[ModelResult]:
-    outer_cv = LeaveOneOut()
     results: list[ModelResult] = []
-    for spec in _model_specs():
-        model_features = features[:, spec.columns]
-        loo_predictions = np.clip(
-            cross_val_predict(
-                clone(spec.estimator),
-                model_features,
-                targets,
-                cv=outer_cv,
-                n_jobs=1,
-            ),
-            0,
-            8,
+    for spec in _model_specs(include_contact=include_contact):
+        selected = features[:, spec.columns]
+        mask = np.all(np.isfinite(selected), axis=1)
+        model_features = selected[mask]
+        model_targets = targets[mask]
+        model_groups = surface_groups[mask]
+        if len(model_targets) < 3 or len(set(model_groups)) < 2:
+            empty = np.full(len(targets), np.nan)
+            results.append(
+                ModelResult(
+                    spec=spec,
+                    train_predictions=empty.copy(),
+                    loo_predictions=empty.copy(),
+                    fitted_estimator=None,
+                    train_r2=float("nan"),
+                    loo_r2=float("nan"),
+                    loo_rmse_n=float("nan"),
+                    loo_mae_n=float("nan"),
+                    interpolation_predictions=empty.copy(),
+                    interpolation_r2=float("nan"),
+                    interpolation_rmse_n=float("nan"),
+                    interpolation_mae_n=float("nan"),
+                    sample_count=int(mask.sum()),
+                )
+            )
+            continue
+        grouped_predictions = _nested_predictions(
+            spec.estimator,
+            model_features,
+            model_targets,
+            model_groups,
+            grouped_outer=True,
         )
-        fitted = clone(spec.estimator).fit(model_features, targets)
-        train_predictions = np.clip(fitted.predict(model_features), 0, 8)
+        interpolation_predictions = _nested_predictions(
+            spec.estimator,
+            model_features,
+            model_targets,
+            model_groups,
+            grouped_outer=False,
+        )
+        fitted = _fit_model(
+            clone(spec.estimator), model_features, model_targets, model_groups, grouped=True
+        )
+        fitted_values = np.clip(fitted.predict(model_features), 0, 8)
+        train_predictions = np.full(len(targets), np.nan)
+        loo_predictions = np.full(len(targets), np.nan)
+        interpolation_full = np.full(len(targets), np.nan)
+        train_predictions[mask] = fitted_values
+        loo_predictions[mask] = grouped_predictions
+        interpolation_full[mask] = interpolation_predictions
         results.append(
             ModelResult(
                 spec=spec,
                 train_predictions=train_predictions,
                 loo_predictions=loo_predictions,
                 fitted_estimator=fitted,
-                train_r2=float(r2_score(targets, train_predictions)),
-                loo_r2=float(r2_score(targets, loo_predictions)),
-                loo_rmse_n=float(mean_squared_error(targets, loo_predictions) ** 0.5),
-                loo_mae_n=float(mean_absolute_error(targets, loo_predictions)),
+                train_r2=float(r2_score(model_targets, fitted_values)),
+                loo_r2=float(r2_score(model_targets, grouped_predictions)),
+                loo_rmse_n=float(
+                    mean_squared_error(model_targets, grouped_predictions) ** 0.5
+                ),
+                loo_mae_n=float(mean_absolute_error(model_targets, grouped_predictions)),
+                interpolation_predictions=interpolation_full,
+                interpolation_r2=float(
+                    r2_score(model_targets, interpolation_predictions)
+                ),
+                interpolation_rmse_n=float(
+                    mean_squared_error(model_targets, interpolation_predictions) ** 0.5
+                ),
+                interpolation_mae_n=float(
+                    mean_absolute_error(model_targets, interpolation_predictions)
+                ),
+                sample_count=int(mask.sum()),
             )
         )
     return results
+
+
+def _fit_model(
+    estimator: Any,
+    features: np.ndarray,
+    targets: np.ndarray,
+    groups: np.ndarray,
+    *,
+    grouped: bool,
+) -> Any:
+    if isinstance(estimator, GridSearchCV):
+        if grouped:
+            unique_groups = len(set(groups))
+            if unique_groups >= 2:
+                estimator.cv = GroupKFold(n_splits=min(5, unique_groups))
+                return estimator.fit(features, targets, groups=groups)
+        estimator.cv = KFold(n_splits=min(5, len(targets)), shuffle=False)
+    return estimator.fit(features, targets)
+
+
+def _nested_predictions(
+    estimator: Any,
+    features: np.ndarray,
+    targets: np.ndarray,
+    groups: np.ndarray,
+    *,
+    grouped_outer: bool,
+) -> np.ndarray:
+    splitter = LeaveOneGroupOut() if grouped_outer else LeaveOneOut()
+    split_groups = groups if grouped_outer else None
+    predictions = np.empty(len(targets), dtype=float)
+    for train_indices, test_indices in splitter.split(
+        features, targets, groups=split_groups
+    ):
+        fitted = _fit_model(
+            clone(estimator),
+            features[train_indices],
+            targets[train_indices],
+            groups[train_indices],
+            grouped=grouped_outer,
+        )
+        predictions[test_indices] = np.clip(
+            fitted.predict(features[test_indices]), 0, 8
+        )
+    return predictions
 
 
 def _selected_parameters(estimator: Any) -> dict[str, Any]:
@@ -314,9 +463,13 @@ def _write_results(
                 "model",
                 "inputs",
                 "train_r2",
-                "nested_loo_r2",
-                "nested_loo_rmse_n",
-                "nested_loo_mae_n",
+                "new_surface_grouped_r2",
+                "new_surface_grouped_rmse_n",
+                "new_surface_grouped_mae_n",
+                "condition_interpolation_r2",
+                "condition_interpolation_rmse_n",
+                "condition_interpolation_mae_n",
+                "sample_count",
                 "full_data_selected_parameters",
             ],
         )
@@ -327,9 +480,17 @@ def _write_results(
                     "model": result.spec.label,
                     "inputs": result.spec.inputs,
                     "train_r2": f"{result.train_r2:.6f}",
-                    "nested_loo_r2": f"{result.loo_r2:.6f}",
-                    "nested_loo_rmse_n": f"{result.loo_rmse_n:.6f}",
-                    "nested_loo_mae_n": f"{result.loo_mae_n:.6f}",
+                    "new_surface_grouped_r2": f"{result.loo_r2:.6f}",
+                    "new_surface_grouped_rmse_n": f"{result.loo_rmse_n:.6f}",
+                    "new_surface_grouped_mae_n": f"{result.loo_mae_n:.6f}",
+                    "condition_interpolation_r2": f"{result.interpolation_r2:.6f}",
+                    "condition_interpolation_rmse_n": (
+                        f"{result.interpolation_rmse_n:.6f}"
+                    ),
+                    "condition_interpolation_mae_n": (
+                        f"{result.interpolation_mae_n:.6f}"
+                    ),
+                    "sample_count": result.sample_count,
                     "full_data_selected_parameters": json.dumps(
                         _selected_parameters(result.fitted_estimator), sort_keys=True
                     ),
@@ -342,6 +503,8 @@ def _write_results(
             handle,
             fieldnames=[
                 "Object",
+                "surface_id",
+                "condition_id",
                 "Mass_g",
                 "roughness_index",
                 "ground_truth_force_n",
@@ -364,6 +527,8 @@ def _write_results(
             writer.writerow(
                 {
                     "Object": item.name,
+                    "surface_id": item.surface_id,
+                    "condition_id": item.condition_id,
                     "Mass_g": f"{item.mass_g:.6g}",
                     "roughness_index": f"{item.roughness_index:.6g}",
                     "ground_truth_force_n": f"{item.force_n:.6g}",
@@ -532,7 +697,8 @@ def _make_model_comparison_figure(
     results: list[ModelResult], excluded: list[str]
 ) -> None:
     best_two_feature = _best_two_feature_result(results)
-    ordered = sorted(results, key=lambda result: result.loo_r2)
+    available = [result for result in results if np.isfinite(result.loo_r2)]
+    ordered = sorted(available, key=lambda result: result.loo_r2)
     labels = [result.spec.label for result in ordered]
     y_positions = np.arange(len(ordered))
     train_scores = np.asarray([result.train_r2 for result in ordered])
@@ -564,7 +730,7 @@ def _make_model_comparison_figure(
         color=colors,
         edgecolor="white",
         linewidth=0.8,
-        label="Nested leave-one-out R²",
+        label="Grouped new-surface R²",
         zorder=3,
     )
     for y_position, train_score, loo_score in zip(
@@ -595,14 +761,14 @@ def _make_model_comparison_figure(
     ax.set_xlim(-0.25, 0.82)
     ax.set_yticks(y_positions, labels)
     ax.set_xlabel("R² (higher is better; 1.0 is perfect)")
-    ax.set_title("Regression comparison: performance on unseen objects")
+    ax.set_title("Regression comparison: performance on unseen physical surfaces")
     _finish_axes(ax)
     ax.grid(axis="y", visible=False)
     ax.legend(loc="lower right", frameon=False, fontsize=8.5)
     fig.text(
         0.29,
         0.055,
-        "Nonlinear tuning is nested inside each held-out-object fold. "
+        "Outer and inner validation are grouped by physical surface. "
         "Predictions are constrained to 0–8 N. "
         f"Excluded incomplete labels: {', '.join(excluded) if excluded else 'none'}.",
         ha="left",
@@ -651,7 +817,7 @@ def _make_prediction_figure(
         ax.text(
             0.04,
             0.96,
-            f"LOO R² = {result.loo_r2:.2f}\n"
+            f"Grouped R² = {result.loo_r2:.2f}\n"
             f"RMSE = {result.loo_rmse_n:.2f} N\n"
             f"MAE = {result.loo_mae_n:.2f} N",
             transform=ax.transAxes,
@@ -668,8 +834,8 @@ def _make_prediction_figure(
             zorder=5,
         )
         _finish_axes(ax)
-    axes[0].set_ylabel("Leave-one-object-out prediction (N)")
-    axes[1].set_ylabel("Leave-one-object-out prediction (N)")
+    axes[0].set_ylabel("Held-out-surface prediction (N)")
+    axes[1].set_ylabel("Held-out-surface prediction (N)")
     _add_object_key(key_ax, observations)
     fig.suptitle(
         "Held-out predictions: mass-only versus the best two-feature model",
@@ -679,8 +845,8 @@ def _make_prediction_figure(
     fig.text(
         0.06,
         0.045,
-        "Each point was predicted by a model that was not trained or tuned on that "
-        "object; outputs are constrained to 0–8 N. "
+        "Each point was predicted without any condition from its physical surface in "
+        "training or tuning; outputs are constrained to 0–8 N. "
         f"Excluded: {', '.join(excluded) if excluded else 'none'}.",
         ha="left",
         va="bottom",
@@ -876,12 +1042,18 @@ def _print_summary(
         reverse=True,
     )[:5]
 
-    print(f"Evaluated {len(observations)} labeled objects; excluded: {excluded or 'none'}")
+    surface_count = len({item.surface_id for item in observations})
+    print(
+        f"Evaluated {len(observations)} labeled conditions from {surface_count} surfaces; "
+        f"excluded: {excluded or 'none'}"
+    )
     for result in sorted(results, key=lambda item: item.loo_r2, reverse=True):
         print(
             f"{result.spec.label}: train R2={result.train_r2:.3f}, "
-            f"nested LOO R2={result.loo_r2:.3f}, RMSE={result.loo_rmse_n:.3f} N, "
-            f"MAE={result.loo_mae_n:.3f} N"
+            f"grouped new-surface R2={result.loo_r2:.3f}, "
+            f"RMSE={result.loo_rmse_n:.3f} N, MAE={result.loo_mae_n:.3f} N; "
+            f"condition interpolation R2={result.interpolation_r2:.3f}; "
+            f"n={result.sample_count}"
         )
     print(
         "Two-feature linear equation: force_N = "
@@ -927,10 +1099,24 @@ def main() -> None:
         (
             np.log10([item.mass_g for item in observations]),
             [item.roughness_index for item in observations],
+            [
+                item.projected_contact_fraction
+                if item.projected_contact_fraction is not None
+                else np.nan
+                for item in observations
+            ],
         )
     )
     targets = np.asarray([item.force_n for item in observations])
-    results = _evaluate_models(features, targets)
+    surface_groups = np.asarray([item.surface_id for item in observations])
+    config = yaml.safe_load((PROJECT_ROOT / "config.yaml").read_text(encoding="utf-8"))
+    include_contact = bool(config.get("inputs", {}).get("use_projected_contact", False))
+    results = _evaluate_models(
+        features,
+        targets,
+        surface_groups,
+        include_contact=include_contact,
+    )
     _write_results(observations, results)
     _make_model_comparison_figure(results, excluded)
     _make_prediction_figure(observations, results, excluded)

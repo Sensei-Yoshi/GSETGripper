@@ -117,11 +117,18 @@ under `objects/<object_id>/contact_fraction/`; despite the UI's familiar wording
 absolute physical area in mm². Checkpoints and the manifest live inside the active dataset
 folder. The equivalent CLI is `scripts/prepare_dataset.py`.
 
-The Data Viewer object editor exposes only mass, continuous roughness index, projected contact fraction,
-per-gripper outcome status, and feasible minimum-force values. Every valid change auto-saves;
+The Data Viewer renders one card per physical `surface_id`, with shared images and descriptor
+artifacts plus a table of condition-level rows. **+ Add condition** atomically appends a stable
+`condition_N` CSV row; every condition independently stores mass, continuous LED roughness,
+projected contact fraction, and active-gripper outcomes. Added conditions can be edited or
+explicitly confirmed for deletion; the baseline cannot be deleted. Every valid change auto-saves;
 `favored_gripper` is derived only after both outcomes are complete. Saved runs and
 results remain historical and are not rewritten; their source fingerprint mismatch is shown
 by inspectors.
+
+Benchmarking exposes separate **new-surface generalization** and **known-surface condition
+interpolation** protocols plus **Run both**. The former excludes all siblings from training;
+the latter removes only the exact query condition and retains its siblings.
 
 `roughness_index` is the nonnegative numerical output recorded from the LED measurement
 system, with larger values indicating rougher surfaces. It is intentionally distinct from

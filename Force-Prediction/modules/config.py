@@ -125,6 +125,7 @@ class EmbeddingConfig(BaseModel):
 
 class RetrievalConfig(BaseModel):
     k: int = Field(gt=0)
+    conditions_per_surface: int = Field(default=3, gt=0)
     weights: RetrievalWeights
     sigma_mass: float = Field(gt=0)
     sigma_contact: float = Field(gt=0)

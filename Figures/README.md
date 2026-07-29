@@ -5,14 +5,15 @@
 Run from the GSET workspace root:
 
 ```bash
-env/bin/python GSETGripper/Figures/generate_matforce_regression_figures.py
+env/bin/python GSETGripper/Figures/regression_teseting/generate_matforce_regression_figures.py
 ```
 
-The script compares linear, quadratic-ridge, and RBF-SVR regressions using
-`log10(mass)` and roughness. Reported prediction accuracy uses nested
-leave-one-object-out cross-validation: nonlinear hyperparameters are selected by an inner
-leave-one-out search using only the training objects in each outer fold. This makes the
-reported results independent of row order and random fold assignments. It regenerates:
+The script treats each measurement condition as a row and compares linear,
+quadratic-ridge, and RBF-SVR regressions using `log10(mass)`, recorded LED roughness,
+and (when enabled and available) projected contact fraction. Primary accuracy uses nested
+validation grouped by `surface_id`, so sibling conditions cannot cross either the outer or
+inner new-surface split. Exact-condition interpolation is reported in separate columns.
+Every model reports its sample count so missing contact measurements remain visible. It regenerates:
 
 - `matforce_regression_model_comparison.{png,pdf,svg}`
 - `matforce_regression_held_out_predictions.{png,pdf,svg}`
@@ -29,7 +30,7 @@ Predictions are constrained to the physically valid 0–8 N Gecko-force range.
 Run from the GSET workspace root:
 
 ```bash
-env/bin/python GSETGripper/Figures/generate_matforce_relationship_figures.py
+env/bin/python GSETGripper/Figures/regression_teseting/generate_matforce_relationship_figures.py
 ```
 
 The script reads `GSETGripper/Force-Prediction/data/MatForceFinal/dataset.csv`, excludes

@@ -89,15 +89,12 @@ def _generation_payload(
 
     mode = retrieval_mode or RetrievalMode.HYBRID
     payload["query_semantic_description"] = query.semantic_description
-    payload["retrieved_objects"] = [
-        item.to_payload(
-            mode=mode,
-            active_grippers=active_grippers,
-            include_roughness=cfg.inputs.use_roughness,
-            include_contact=cfg.inputs.use_projected_contact,
-        )
-        for item in retrieved
-    ]
+    payload["retrieved_objects"] = _group_retrieved_surfaces(
+        cfg,
+        retrieved,
+        mode=mode,
+        active_grippers=active_grippers,
+    )
     if mode is RetrievalMode.SEMANTIC_ONLY:
         payload["retrieval_config"] = {
             "mode": mode.value,
@@ -114,6 +111,57 @@ def _generation_payload(
             "sigma_contact": cfg.retrieval.sigma_contact,
         }
     return payload
+
+
+def _group_retrieved_surfaces(
+    cfg: Config,
+    retrieved: list[RetrievedObjectExperience],
+    *,
+    mode: RetrievalMode,
+    active_grippers: tuple[Gripper, ...],
+) -> list[dict]:
+    """Create the version-2 VLM payload: one description, then condition records."""
+    grouped: dict[str, list[RetrievedObjectExperience]] = {}
+    for item in retrieved:
+        grouped.setdefault(item.surface_id or item.object_id, []).append(item)
+    output: list[dict] = []
+    for surface_id, conditions in sorted(
+        grouped.items(), key=lambda pair: pair[1][0].surface_rank
+    ):
+        conditions.sort(key=lambda item: item.condition_rank)
+        best = conditions[0]
+        condition_payloads: list[dict] = []
+        for item in conditions:
+            raw = item.to_payload(
+                mode=mode,
+                active_grippers=active_grippers,
+                include_roughness=cfg.inputs.use_roughness,
+                include_contact=cfg.inputs.use_projected_contact,
+            )
+            if mode is RetrievalMode.HYBRID:
+                raw.pop("semantic_description", None)
+                raw.pop("surface_id", None)
+                raw.pop("rank", None)
+                raw.pop("surface_rank", None)
+                raw.pop("image_path", None)
+            condition_payloads.append(raw)
+        surface = {
+            "schema_version": 2,
+            "rank": best.surface_rank,
+            "surface_id": surface_id,
+            "semantic_description": best.semantic_description,
+            "semantic_similarity": best.similarity.semantic,
+            "score": best.score,
+            "conditions": condition_payloads,
+        }
+        # Compatibility summary for existing result viewers. The nested conditions
+        # remain authoritative and contain all retained sibling observations.
+        best_payload = condition_payloads[0]
+        for key, value in best_payload.items():
+            if key not in {"object_id", "condition_id", "condition_rank"}:
+                surface.setdefault(key, value)
+        output.append(surface)
+    return output
 
 
 def vlm_predict_joint(

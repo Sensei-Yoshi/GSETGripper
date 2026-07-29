@@ -11,6 +11,7 @@ the paired-row retrieval enhancement and the selection oracle.
 
 from __future__ import annotations
 
+import tempfile
 from enum import StrEnum
 from pathlib import Path
 from typing import Literal
@@ -54,6 +55,8 @@ class ExperienceRecord(BaseModel):
     """One measured object-gripper pair in the generated experience cache."""
 
     object_id: str
+    surface_id: str | None = None
+    condition_id: str = "baseline"
     image_path: str
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
@@ -67,6 +70,14 @@ class ExperienceRecord(BaseModel):
 
     @model_validator(mode="after")
     def _feasibility_consistency(self) -> ExperienceRecord:
+        if self.surface_id is None:
+            self.surface_id = self.object_id.split("__", 1)[0]
+        if not self.condition_id:
+            self.condition_id = (
+                self.object_id.split("__", 1)[1]
+                if "__" in self.object_id
+                else "baseline"
+            )
         # Feasible: min_force_n is the real minimum; failed_at_limit_n unused.
         # Infeasible: min_force_n is None and we record the limit we failed at,
         # so "failed at 8 N" is never confused with "minimum is 8 N".
@@ -91,6 +102,8 @@ class ObjectRecord(BaseModel):
     """
 
     object_id: str
+    surface_id: str | None = None
+    condition_id: str = "baseline"
     gecko: ExperienceRecord | None = None
     silicone: ExperienceRecord | None = None
 
@@ -125,11 +138,25 @@ class Query(BaseModel):
     """Measured properties of a query object (no force labels)."""
 
     object_id: str
+    surface_id: str | None = None
+    condition_id: str = "baseline"
     image_path: str
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     semantic_description: str = ""
+
+    @model_validator(mode="after")
+    def _derive_lineage(self) -> Query:
+        if self.surface_id is None:
+            self.surface_id = self.object_id.split("__", 1)[0]
+        if not self.condition_id:
+            self.condition_id = (
+                self.object_id.split("__", 1)[1]
+                if "__" in self.object_id
+                else "baseline"
+            )
+        return self
 
 
 class PerGripperPrediction(BaseModel):
@@ -225,9 +252,13 @@ def load_experiences(path: str | Path) -> list[ExperienceRecord]:
 def save_experiences(path: str | Path, records: list[ExperienceRecord]) -> None:
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)
-    with path.open("w", encoding="utf-8") as fh:
+    with tempfile.NamedTemporaryFile(
+        "w", encoding="utf-8", dir=path.parent, delete=False
+    ) as fh:
         for rec in records:
             fh.write(rec.model_dump_json() + "\n")
+        temporary = Path(fh.name)
+    temporary.replace(path)
 
 
 def append_experience(path: str | Path, record: ExperienceRecord) -> None:
@@ -241,7 +272,14 @@ def group_by_object(records: list[ExperienceRecord]) -> dict[str, ObjectRecord]:
     """Group flat rows into paired ObjectRecords keyed by object_id."""
     objects: dict[str, ObjectRecord] = {}
     for rec in records:
-        obj = objects.setdefault(rec.object_id, ObjectRecord(object_id=rec.object_id))
+        obj = objects.setdefault(
+            rec.object_id,
+            ObjectRecord(
+                object_id=rec.object_id,
+                surface_id=rec.surface_id,
+                condition_id=rec.condition_id,
+            ),
+        )
         if rec.gripper is Gripper.GECKO:
             obj.gecko = rec
         else:

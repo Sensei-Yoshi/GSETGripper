@@ -1,30 +1,30 @@
-Object,Mass_g,roughness_index,ground_truth_force_n,mass_only_rbf_loo_prediction_n,best_two_feature_model,best_two_feature_loo_prediction_n,best_two_feature_residual_n
-500g Weight,500,1129.82,1.03,2.898034,Two-feature quadratic ridge,3.117665,-2.087665
-Apple,159.44,562.94,0.41,1.322350,Two-feature quadratic ridge,1.024392,-0.614392
-Banana,202.6,1072.02,2.523,1.511306,Two-feature quadratic ridge,1.661968,0.861032
-Beaker,351.24,1106.84,4.19,1.971578,Two-feature quadratic ridge,2.401632,1.788368
-Big Stone,278.8,2048.83,4.623,2.010004,Two-feature quadratic ridge,2.989232,1.633768
-Camera Cardboard Box,871.93,804.32,7.46,3.721424,Two-feature quadratic ridge,3.379209,4.080791
-CapriSun,186.01,1002.43,0.417,1.497134,Two-feature quadratic ridge,1.585468,-1.168468
-Cetaphil,403.68,797.68,1.923,2.579700,Two-feature quadratic ridge,2.415001,-0.492001
-Foam Roller,153.38,1353.18,0.723,1.277026,Two-feature quadratic ridge,1.672050,-0.949050
-Headphones Case,218.15,1610.85,3.01,1.619546,Two-feature quadratic ridge,2.326966,0.683034
-Ketchup,293.77,705.18,0.24,2.125564,Two-feature quadratic ridge,1.986554,-1.746554
-Leather Belt,99.73,2147.72,1.502,0.592587,Two-feature quadratic ridge,2.154819,-0.652819
-Leather Sunglasses Case,179.9,2014.79,1.906,1.340834,Two-feature quadratic ridge,2.714282,-0.808282
-Lock,158.66,1185.41,0.55,1.316991,Two-feature quadratic ridge,1.546826,-0.996826
-Lunch Box,627.68,1737.81,5.863,3.210076,Two-feature quadratic ridge,3.714728,2.148272
-Metal Water Bottle,551.01,892.99,3.83,2.815537,Two-feature quadratic ridge,2.863851,0.966149
-Microphone,258.48,2228.39,2.3,1.943747,Two-feature quadratic ridge,3.716171,-1.416171
-Multimeter,289.32,463.64,2.505,2.066804,Two-feature quadratic ridge,1.539599,0.965401
-Orange,154.17,1068.18,0.38,1.282750,Two-feature quadratic ridge,1.404148,-1.024148
-People's Hospital,540.59,646.42,2.68,2.979670,Two-feature quadratic ridge,2.678898,0.001102
-Pretzel Bag,31.97,997.94,0.05,0.000000,Two-feature quadratic ridge,0.000000,0.050000
-Red Bull,332.86,1121.62,1.746,2.300920,Two-feature quadratic ridge,2.446531,-0.700531
-Rubber Tire,163.84,1349.28,0.464,1.354848,Two-feature quadratic ridge,1.766640,-1.302640
-Soda Can,321.71,954.75,1.816,2.252903,Two-feature quadratic ridge,2.229227,-0.413227
-Soldering Iron Box,3500,852.5,6.2,4.656480,Two-feature quadratic ridge,8.000000,-1.800000
-Sponge,3.15,2073.07,0.231,0.421090,Two-feature quadratic ridge,0.000000,0.231000
-Wallet 1,139.66,1596.55,2.013,1.000569,Two-feature quadratic ridge,1.760785,0.252215
-Wallet 2,85.62,1623.1,0.75,0.600169,Two-feature quadratic ridge,1.246509,-0.496509
-Wooden Block,403.41,557.48,1.32,2.578888,Two-feature quadratic ridge,2.275661,-0.955661
+Object,surface_id,condition_id,Mass_g,roughness_index,ground_truth_force_n,mass_only_rbf_loo_prediction_n,best_two_feature_model,best_two_feature_loo_prediction_n,best_two_feature_residual_n
+500g Weight,500g_weight,baseline,500,1129.82,1.03,2.969413,Two-feature quadratic ridge,3.117665,-2.087665
+Apple,apple,baseline,159.44,562.94,0.41,1.322350,Two-feature quadratic ridge,1.024392,-0.614392
+Banana,banana,baseline,202.6,1072.02,2.523,1.511306,Two-feature quadratic ridge,1.661968,0.861032
+Beaker,beaker,baseline,351.24,1106.84,4.19,2.356548,Two-feature quadratic ridge,2.355990,1.834010
+Big Stone,big_stone,baseline,278.8,2048.83,4.623,1.991599,Two-feature quadratic ridge,3.019764,1.603236
+Camera Cardboard Box,camera_cardboard_box,baseline,871.93,804.32,7.46,3.721424,Two-feature quadratic ridge,3.338096,4.121904
+CapriSun,caprisun,baseline,186.01,1002.43,0.417,1.497134,Two-feature quadratic ridge,1.585468,-1.168468
+Cetaphil,cetaphil,baseline,403.68,797.68,1.923,2.598778,Two-feature quadratic ridge,2.415001,-0.492001
+Foam Roller,foam_roller,baseline,153.38,1353.18,0.723,1.156028,Two-feature quadratic ridge,1.672050,-0.949050
+Headphones Case,headphones_case,baseline,218.15,1610.85,3.01,1.619546,Two-feature quadratic ridge,2.231230,0.778770
+Ketchup,ketchup,baseline,293.77,705.18,0.24,2.095099,Two-feature quadratic ridge,1.986554,-1.746554
+Leather Belt,leather_belt,baseline,99.73,2147.72,1.502,0.592587,Two-feature quadratic ridge,2.154819,-0.652819
+Leather Sunglasses Case,leather_sunglasses_case,baseline,179.9,2014.79,1.906,1.340834,Two-feature quadratic ridge,2.707496,-0.801496
+Lock,lock,baseline,158.66,1185.41,0.55,1.316991,Two-feature quadratic ridge,1.337515,-0.787515
+Lunch Box,lunch_box,baseline,627.68,1737.81,5.863,3.210076,Two-feature quadratic ridge,3.861196,2.001804
+Metal Water Bottle,metal_water_bottle,baseline,551.01,892.99,3.83,3.011252,Two-feature quadratic ridge,2.981797,0.848203
+Microphone,microphone,baseline,258.48,2228.39,2.3,1.874860,Two-feature quadratic ridge,3.716171,-1.416171
+Multimeter,multimeter,baseline,289.32,463.64,2.505,2.049267,Two-feature quadratic ridge,1.539599,0.965401
+Orange,orange,baseline,154.17,1068.18,0.38,1.282750,Two-feature quadratic ridge,1.404148,-1.024148
+People's Hospital,people_s_hospital,baseline,540.59,646.42,2.68,3.108275,Two-feature quadratic ridge,2.818440,-0.138440
+Pretzel Bag,pretzel_bag,baseline,31.97,997.94,0.05,0.000000,Two-feature quadratic ridge,0.000000,0.050000
+Red Bull,red_bull,baseline,332.86,1121.62,1.746,2.373188,Two-feature quadratic ridge,2.402720,-0.656720
+Rubber Tire,rubber_tire,baseline,163.84,1349.28,0.464,1.200974,Two-feature quadratic ridge,1.596424,-1.132424
+Soda Can,soda_can,baseline,321.71,954.75,1.816,2.304350,Two-feature quadratic ridge,2.165258,-0.349258
+Soldering Iron Box,soldering_iron_box,baseline,3500,852.5,6.2,7.373994,Two-feature quadratic ridge,8.000000,-1.800000
+Sponge,sponge,baseline,3.15,2073.07,0.231,1.889249,Two-feature quadratic ridge,0.000000,0.231000
+Wallet 1,wallet_1,baseline,139.66,1596.55,2.013,1.000569,Two-feature quadratic ridge,1.760785,0.252215
+Wallet 2,wallet_2,baseline,85.62,1623.1,0.75,0.438218,Two-feature quadratic ridge,1.246509,-0.496509
+Wooden Block,wooden_block,baseline,403.41,557.48,1.32,2.598004,Two-feature quadratic ridge,2.275661,-0.955661

@@ -51,7 +51,9 @@ def load_checkpoints(dataset: Dataset) -> dict[str, PreparedObjectCheckpoint]:
 def attach_checkpoints(dataset: Dataset) -> Dataset:
     checkpoints = load_checkpoints(dataset)
     for object_id, item in dataset.objects.items():
-        checkpoint = checkpoints.get(object_id)
+        checkpoint = checkpoints.get(object_id) or checkpoints.get(
+            item.surface_id or object_id
+        )
         if checkpoint is None:
             continue
         item.description = DescriptionArtifact(
@@ -124,6 +126,8 @@ def dataset_experience_records(
             records.append(
                 ExperienceRecord(
                     object_id=item.object_id,
+                    surface_id=item.surface_id,
+                    condition_id=item.condition_id,
                     image_path=item.image.path,
                     mass_g=item.mass_g,
                     roughness_index=item.roughness_index,

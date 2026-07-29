@@ -30,8 +30,9 @@ contact-region description, embeds that text, and ranks training objects using o
 
 The embedding contains semantic contact-interface text only. E3 does not use query or
 neighbor mass, roughness, or projected contact fraction in ranking or in the VLM payload.
-Each retrieved neighbor exposes only its semantic description, semantic similarity, and
-paired observed Gecko/silicone force and feasibility outcomes. It receives no hybrid
+Retrieval ranks distinct physical surfaces. Each surface exposes its semantic description
+once, followed by up to `retrieval.conditions_per_surface` active-gripper observations with
+no condition names or physical measurements. It receives no hybrid
 score components and no physics estimate. Tests enforce this boundary so later refactors
 cannot quietly leak sensor terms into E3.
 
@@ -48,7 +49,7 @@ expected ordering as a premise.
 
 ## E4: semantic and sensor-fusion retrieval
 
-E4 uses the same object-level experience representation as E3, but ranks candidates with
+E4 uses the same grouped-surface representation as E3, but scores every condition with
 the configured hybrid score:
 
 `S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough + w_a S_contact`.
@@ -56,7 +57,8 @@ the configured hybrid score:
 The query measurements and the corresponding neighbor values are also available to the
 VLM so it can interpret mass, roughness, and contact differences. The retrieval score
 only ranks candidates; it never computes force. Force evidence comes from the paired
-observed outcomes attached to those neighbors. E4 receives no physics prediction.
+observed outcomes attached to those conditions. A surface is ranked by its best condition;
+the top `retrieval.k` distinct surfaces are retained. E4 receives no physics prediction.
 
 Roughness and projected contact are independent explicit ablations. When disabled, E2 and
 E4 omit the field, E4 gives its retrieval term zero weight, and the remaining hybrid
@@ -74,6 +76,9 @@ retrieved evidence, target set, and model/prompt provenance under
 `results/predictions/`. Evaluation later joins current completed outcomes for the saved active
 grippers and writes a version under `results/evaluations/<batch_id>/`; unchanged truth reuses
 the existing version. This lets image-only E1 batches be generated before physical trials.
+New-surface generalization (the default) excludes all conditions from the query's physical
+surface. Known-surface interpolation excludes only the exact query condition and keeps
+sibling conditions. These protocols are stored and reported separately.
 
 The saved E1–E4 suite produces separate Gecko and silicone calibration panels, one panel
 per experiment, plus CSV metric and prediction exports. The panels show ground truth on

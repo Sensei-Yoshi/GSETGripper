@@ -44,8 +44,12 @@ scored separately.
 - Hardware and predictions are continuous from `0` through `8 N`; never snap predictions
   to the collection staircase.
 - `retrieval.k` in `config.yaml` is the default used by E3/E4 and the UI.
-- Stored experiences are grouped by `object_id`; available gripper rows share every split.
-- Query objects must be excluded from their own E3/E4 retrieval pool.
+- `surface_id` identifies a physical contact surface; `condition_id` identifies one
+  independently measured condition; baseline `object_id` values remain unchanged.
+- Gecko/silicone rows are paired by condition-level `object_id`. New-surface evaluation
+  groups every sibling condition by `surface_id`; interpolation excludes only the query condition.
+- E3/E4 rank `retrieval.k` distinct surfaces and retain up to
+  `retrieval.conditions_per_surface` condition observations from each.
 - Embeddings contain the semantic contact-region description only. Mass, roughness, and
   optional projected contact remain explicit E4 hybrid-score terms.
 - E3 ranking and its VLM payload must contain no query/neighbor mass, roughness, contact,
@@ -66,7 +70,7 @@ scored separately.
 | `prediction.py` | Single/joint force requests, continuous clamp, selector |
 | `retrieval.py` | Embedding providers and E3 semantic/E4 hybrid retrieval |
 | `physics.py` | Mock-hardware analytical equations and calibration diagnostics |
-| `evaluation.py` | Object-grouped splits and metrics |
+| `evaluation.py` | Surface-grouped and condition-interpolation splits and metrics |
 | `datasets/` | Dataset discovery, aggregate/object contracts, artifact storage, preparation stages |
 | `models/` | Lazy Gemini, rembg background-removal, and Marigold integrations |
 | `cache.py` | Dataset-scoped API caches and legacy Exp-Force read-through |

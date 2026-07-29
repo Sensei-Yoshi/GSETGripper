@@ -232,7 +232,7 @@ def render(context: AppContext) -> None:
         training = [
             record
             for record in records
-            if (counterfactual or record.object_id != object_id)
+            if record.object_id != object_id
             and (
                 experiment not in {"e3", "e4"}
                 or record.object_id in eligibility.reference_ids
@@ -251,6 +251,8 @@ def render(context: AppContext) -> None:
             detailed = pipe.predict_detailed(
                 QueryInput(
                     object_id=f"custom_{object_id}" if counterfactual else object_id,
+                    surface_id=dataset_object.surface_id,
+                    condition_id=dataset_object.condition_id,
                     mass_g=float(mass) if mass is not None else None,
                     roughness_index=(float(roughness) if roughness is not None else None),
                     projected_contact_fraction=(
@@ -277,6 +279,8 @@ def render(context: AppContext) -> None:
                 baseline = baseline_pipe.predict_detailed(
                     QueryInput(
                         object_id=object_id,
+                        surface_id=dataset_object.surface_id,
+                        condition_id=dataset_object.condition_id,
                         mass_g=dataset_object.mass_g,
                         roughness_index=dataset_object.roughness_index,
                         projected_contact_fraction=dataset_object.projected_contact_fraction,
@@ -292,6 +296,8 @@ def render(context: AppContext) -> None:
                 query={
                     "object_id": f"custom_{object_id}" if counterfactual else object_id,
                     "source_object_id": object_id,
+                    "surface_id": dataset_object.surface_id,
+                    "condition_id": dataset_object.condition_id,
                     "object_name": selected_name,
                     "mass_g": mass,
                     "roughness_index": roughness,

@@ -131,11 +131,18 @@ def main() -> None:
     capability = context.dataset.capabilities
 
     st.caption(
-        f"{len(context.dataset.objects)} objects · {context.dataset.adapter.replace('_', ' ')} · "
+        f"{context.summary['physical_surfaces']} physical surfaces · "
+        f"{context.summary['measurement_conditions']} measurement conditions · "
+        f"{context.summary['unique_photos']} unique photos · "
+        f"{context.dataset.adapter.replace('_', ' ')} · "
         f"descriptions {'ready' if capability.has_descriptions else 'not prepared'} · "
         f"embeddings {'ready' if capability.has_embeddings else 'not prepared'}"
         f" · active grippers {', '.join(g.value for g in context.config.prediction.active_grippers)}"
     )
+    if context.summary["missing_photos"]:
+        st.warning(
+            f"{len(context.summary['missing_photos'])} indexed photo(s) are unavailable."
+        )
     tab_containers = st.tabs([spec.label for spec in TAB_SPECS])
     for container, spec in zip(tab_containers, TAB_SPECS, strict=True):
         with container:

@@ -9,7 +9,13 @@ import numpy as np
 import streamlit as st
 
 from modules.contracts import Gripper, group_by_object
-from modules.datasets import DatasetObject, DatasetObjectEdit, update_dataset_object
+from modules.datasets import (
+    DatasetObject,
+    DatasetObjectEdit,
+    add_dataset_condition,
+    delete_dataset_condition,
+    update_dataset_object,
+)
 from modules.expforce import (
     load_experience_pool,
     load_saved_runs,
@@ -47,35 +53,44 @@ def _card_editor(
 
     def save_change() -> None:
         try:
-            statuses = {
-                gripper: {
-                    "Unrecorded": None,
-                    "Feasible": True,
-                    "Infeasible": False,
-                }[st.session_state[f"{prefix}_{gripper}_status"]]
-                for gripper in ("gecko", "silicone")
-            }
+            statuses: dict[str, bool | None] = {}
+            forces: dict[str, float | None] = {}
+            active = {gripper.value for gripper in context.config.prediction.active_grippers}
+            for gripper in ("gecko", "silicone"):
+                outcome = item.gripper_outcomes.get(Gripper(gripper))
+                if gripper in active:
+                    statuses[gripper] = {
+                        "Unrecorded": None,
+                        "Feasible": True,
+                        "Infeasible": False,
+                    }[st.session_state[f"{prefix}_{gripper}_status"]]
+                    forces[gripper] = (
+                        st.session_state[f"{prefix}_{gripper}_force_n"]
+                        if statuses[gripper] is True
+                        else None
+                    )
+                else:
+                    statuses[gripper] = outcome.feasible if outcome else None
+                    forces[gripper] = outcome.min_force_n if outcome else None
             for gripper, status in statuses.items():
                 if status is not True:
                     st.session_state[f"{prefix}_{gripper}_force_n"] = None
             edit = DatasetObjectEdit(
                 mass_g=st.session_state[f"{prefix}_mass_g"],
-                roughness_index=st.session_state[f"{prefix}_roughness_index"],
-                projected_contact_fraction=st.session_state[
-                    f"{prefix}_projected_contact_fraction"
-                ],
+                roughness_index=(
+                    st.session_state[f"{prefix}_roughness_index"]
+                    if context.config.inputs.use_roughness
+                    else item.roughness_index
+                ),
+                projected_contact_fraction=(
+                    st.session_state[f"{prefix}_projected_contact_fraction"]
+                    if context.config.inputs.use_projected_contact
+                    else item.projected_contact_fraction
+                ),
                 gecko_feasible=statuses["gecko"],
-                gecko_force_n=(
-                    st.session_state[f"{prefix}_gecko_force_n"]
-                    if statuses["gecko"] is True
-                    else None
-                ),
+                gecko_force_n=forces["gecko"],
                 silicone_feasible=statuses["silicone"],
-                silicone_force_n=(
-                    st.session_state[f"{prefix}_silicone_force_n"]
-                    if statuses["silicone"] is True
-                    else None
-                ),
+                silicone_force_n=forces["silicone"],
             )
             update_dataset_object(
                 context.config,
@@ -88,12 +103,15 @@ def _card_editor(
         else:
             st.session_state[f"{prefix}_save_status"] = "saved"
 
-    with st.expander("Edit measurements and outcomes"):
+    with st.expander(f"Edit {item.condition_id.replace('_', ' ')}"):
         st.caption(
             "Each valid change saves atomically and refreshes completed experience records. "
             "Names, images, descriptors, and generated artifacts remain read-only."
         )
-        measurement_cols = st.columns(3)
+        measurement_count = 1 + int(context.config.inputs.use_roughness) + int(
+            context.config.inputs.use_projected_contact
+        )
+        measurement_cols = st.columns(measurement_count)
         measurement_cols[0].number_input(
             "Mass (g)",
             min_value=0.001,
@@ -102,39 +120,46 @@ def _card_editor(
             key=f"{prefix}_mass_g",
             on_change=save_change,
         )
-        measurement_cols[1].number_input(
-            "Roughness index",
-            min_value=0.0,
-            value=(
-                float(item.roughness_index)
-                if item.roughness_index is not None
-                else None
-            ),
-            step=0.01,
-            format="%.2f",
-            placeholder="Not recorded",
-            key=f"{prefix}_roughness_index",
-            on_change=save_change,
-            help="Continuous sensor value; larger values indicate rougher surfaces.",
-        )
-        measurement_cols[2].number_input(
-            "Projected contact fraction",
-            min_value=0.0,
-            max_value=1.0,
-            value=(
-                float(item.projected_contact_fraction)
-                if item.projected_contact_fraction is not None
-                else None
-            ),
-            step=0.001,
-            format="%.3f",
-            placeholder="Not recorded",
-            key=f"{prefix}_projected_contact_fraction",
-            on_change=save_change,
-        )
+        measurement_index = 1
+        if context.config.inputs.use_roughness:
+            measurement_cols[measurement_index].number_input(
+                "Roughness index",
+                min_value=0.0,
+                value=(
+                    float(item.roughness_index)
+                    if item.roughness_index is not None
+                    else None
+                ),
+                step=0.01,
+                format="%.2f",
+                placeholder="Not recorded",
+                key=f"{prefix}_roughness_index",
+                on_change=save_change,
+                help="Continuous LED sensor value; larger values indicate rougher surfaces.",
+            )
+            measurement_index += 1
+        if context.config.inputs.use_projected_contact:
+            measurement_cols[measurement_index].number_input(
+                "Projected contact fraction",
+                min_value=0.0,
+                max_value=1.0,
+                value=(
+                    float(item.projected_contact_fraction)
+                    if item.projected_contact_fraction is not None
+                    else None
+                ),
+                step=0.001,
+                format="%.3f",
+                placeholder="Not recorded",
+                key=f"{prefix}_projected_contact_fraction",
+                on_change=save_change,
+            )
 
-        outcome_cols = st.columns(2)
-        for column, gripper in zip(outcome_cols, ("gecko", "silicone"), strict=True):
+        active_grippers = tuple(
+            gripper.value for gripper in context.config.prediction.active_grippers
+        )
+        outcome_cols = st.columns(len(active_grippers))
+        for column, gripper in zip(outcome_cols, active_grippers, strict=True):
             outcome = item.gripper_outcomes.get(Gripper(gripper))
             status = (
                 "Unrecorded"
@@ -174,17 +199,135 @@ def _card_editor(
         elif isinstance(saved, str) and saved.startswith("error:"):
             st.error("Could not save: " + saved.removeprefix("error:"))
 
+        if item.condition_id != "baseline":
+            st.divider()
+            confirmed = st.checkbox(
+                "I understand this permanently removes this condition row.",
+                key=f"{prefix}_confirm_delete",
+            )
+            if st.button(
+                "Delete condition",
+                disabled=not confirmed,
+                key=f"{prefix}_delete",
+            ):
+                try:
+                    delete_dataset_condition(
+                        context.config, context.dataset, item.object_id
+                    )
+                except (KeyError, OSError, ValueError) as error:
+                    st.error(str(error))
+                else:
+                    st.rerun()
+
+
+@st.dialog("Add measurement condition")
+def _add_condition_dialog(context: AppContext, baseline: DatasetObject) -> None:
+    descriptor = baseline.description.value.description if baseline.description else "Not prepared"
+    embedding = baseline.embedding.status if baseline.embedding else "pending"
+    st.info(
+        f"Inherited read-only artifacts: {Path(baseline.image.path).name}; "
+        f"descriptor: {descriptor}; embedding: {embedding}."
+    )
+    with st.form(f"add_condition_{context.dataset.dataset_id}_{baseline.surface_id}"):
+        mass = st.number_input(
+            "Mass (g) *",
+            min_value=0.001,
+            value=float(baseline.mass_g or 0.001),
+        )
+        roughness = None
+        if context.config.inputs.use_roughness:
+            roughness = st.number_input(
+                "Recorded LED roughness index *",
+                min_value=0.0,
+                value=float(baseline.roughness_index or 0.0),
+            )
+        contact = None
+        if context.config.inputs.use_projected_contact:
+            contact = st.number_input(
+                "Projected contact fraction (0–1) *",
+                min_value=0.0,
+                max_value=1.0,
+                value=float(baseline.projected_contact_fraction or 0.0),
+                step=0.001,
+                format="%.3f",
+            )
+        outcome_values: dict[str, tuple[bool | None, float | None]] = {}
+        columns = st.columns(len(context.config.prediction.active_grippers))
+        for column, gripper in zip(
+            columns, context.config.prediction.active_grippers, strict=True
+        ):
+            with column:
+                status_label = st.selectbox(
+                    f"{gripper.value.title()} outcome",
+                    ["Unrecorded", "Feasible", "Infeasible"],
+                )
+                status = {
+                    "Unrecorded": None,
+                    "Feasible": True,
+                    "Infeasible": False,
+                }[status_label]
+                force = st.number_input(
+                    f"{gripper.value.title()} minimum force (N)",
+                    min_value=0.001,
+                    max_value=float(context.config.force.limit_n),
+                    value=None,
+                    disabled=status is not True,
+                )
+                outcome_values[gripper.value] = (
+                    status,
+                    force if status is True else None,
+                )
+        submitted = st.form_submit_button("Add condition", type="primary")
+    if not submitted:
+        return
+    gecko = outcome_values.get("gecko", (None, None))
+    silicone = outcome_values.get("silicone", (None, None))
+    try:
+        _, object_id = add_dataset_condition(
+            context.config,
+            context.dataset,
+            baseline.surface_id or baseline.object_id,
+            DatasetObjectEdit(
+                mass_g=mass,
+                roughness_index=roughness,
+                projected_contact_fraction=contact,
+                gecko_feasible=gecko[0],
+                gecko_force_n=gecko[1],
+                silicone_feasible=silicone[0],
+                silicone_force_n=silicone[1],
+            ),
+        )
+    except (KeyError, OSError, ValueError) as error:
+        st.error(str(error))
+    else:
+        st.session_state["data_viewer_flash"] = f"Added {object_id}."
+        st.rerun()
+
 
 def _description_catalog(context: AppContext) -> None:
     base_cfg = context.config
     rows = context.rows
+    grouped: dict[str, list[DatasetObject]] = {}
+    for row in rows:
+        grouped.setdefault(row.surface_id or row.object_id, []).append(row)
+    for conditions in grouped.values():
+        conditions.sort(
+            key=lambda item: (item.condition_id != "baseline", item.condition_id)
+        )
+    surfaces = [
+        next(
+            (item for item in conditions if item.condition_id == "baseline"),
+            conditions[0],
+        )
+        for conditions in grouped.values()
+    ]
     search = st.text_input("Search objects", placeholder="Material, object, condition...")
     page_size = st.segmented_control(
         "Objects per page", [8, 12, 24], default=12, key="catalog_page_size"
     )
     needle = search.strip().lower()
     filtered = []
-    for row in rows:
+    for row in surfaces:
         description = row.description.value if row.description else None
         searchable = " ".join(
             (
@@ -205,7 +348,8 @@ def _description_catalog(context: AppContext) -> None:
     start = (int(page) - 1) * size
     st.caption(
         f"Showing {start + 1 if filtered else 0}-{min(start + size, len(filtered))} "
-        f"of {len(filtered)} objects. All {len(rows)} are available through search and paging."
+        f"of {len(filtered)} physical surfaces. "
+        f"{len(rows)} measurement conditions are available."
     )
 
     for row in filtered[start : start + size]:
@@ -244,33 +388,49 @@ def _description_catalog(context: AppContext) -> None:
 
             with detail_col:
                 st.subheader(row.name)
-                st.caption(f"Object ID: {row.object_id}")
+                surface_id = row.surface_id or row.object_id
+                conditions = grouped[surface_id]
+                st.caption(
+                    f"Surface ID: {surface_id} · {len(conditions)} measurement condition(s)"
+                )
 
-                sensor_cols = st.columns(3)
-                sensor_cols[0].metric(
-                    "Mass", f"{row.mass_g:g} g" if row.mass_g is not None else "Not available"
-                )
-                sensor_cols[1].metric(
-                    "Roughness index",
-                    (
-                        f"{row.roughness_index:g}"
-                        if row.roughness_index is not None
-                        else "Not available"
-                    ),
-                )
+                st.markdown("**Measurement conditions**")
+                condition_rows = []
+                for condition in conditions:
+                    condition_row = {
+                        "Condition": condition.condition_id,
+                        "Data-point ID": condition.object_id,
+                        "Mass (g)": condition.mass_g,
+                    }
+                    if base_cfg.inputs.use_roughness:
+                        condition_row["LED roughness"] = condition.roughness_index
+                    if base_cfg.inputs.use_projected_contact:
+                        condition_row["Contact fraction"] = (
+                            condition.projected_contact_fraction
+                        )
+                    for gripper in base_cfg.prediction.active_grippers:
+                        outcome = condition.gripper_outcomes.get(gripper)
+                        condition_row[f"{gripper.value.title()} outcome"] = (
+                            f"{outcome.min_force_n:g} N"
+                            if outcome and outcome.min_force_n is not None
+                            else "Infeasible"
+                            if outcome and outcome.feasible is False
+                            else "Unrecorded"
+                        )
+                    condition_rows.append(condition_row)
+                st.dataframe(condition_rows, hide_index=True, width="stretch")
+                if st.button(
+                    "+ Add condition",
+                    key=f"add_condition_{context.dataset.dataset_id}_{surface_id}",
+                    disabled=context.dataset.adapter != "expforce_paired_csv",
+                ):
+                    _add_condition_dialog(context, row)
+
                 if row.roughness_index is None and row.legacy_roughness_class is not None:
                     st.warning(
                         f"Legacy roughness class {row.legacy_roughness_class} is preserved "
                         "for provenance but is not used as a numerical roughness index."
                     )
-                sensor_cols[2].metric(
-                    "Projected contact fraction",
-                    (
-                        f"{row.projected_contact_fraction:.3f}"
-                        if row.projected_contact_fraction is not None
-                        else "Not available"
-                    ),
-                )
                 if row.roughness is not None:
                     st.caption(
                         f"Marigold roughness: mean {row.roughness.mean:.3f}, "
@@ -279,33 +439,8 @@ def _description_catalog(context: AppContext) -> None:
                     if row.roughness.quality_status == "warning":
                         st.warning("Marigold quality: " + ", ".join(row.roughness.quality_warnings))
 
-                if row.gripper_outcomes:
-                    force_cols = st.columns(2)
-                    for column, gripper in zip(force_cols, ("gecko", "silicone"), strict=True):
-                        outcome = row.gripper_outcomes.get(Gripper(gripper))
-                        column.metric(
-                            f"{gripper.title()} force",
-                            (
-                                f"{outcome.min_force_n:.2f} N"
-                                if outcome and outcome.min_force_n is not None
-                                else "Infeasible"
-                                if outcome and outcome.feasible is False
-                                else "Not available"
-                            ),
-                        )
-                        if outcome:
-                            column.caption(
-                                "Feasible: "
-                                + (
-                                    "Yes"
-                                    if outcome.feasible is True
-                                    else "No"
-                                    if outcome.feasible is False
-                                    else "Not recorded"
-                                )
-                            )
-
-                _card_editor(context, row)
+                for condition in conditions:
+                    _card_editor(context, condition)
 
                 if row.description is None:
                     st.warning("No descriptor checkpoint. Run live Data Preparation.")
@@ -462,4 +597,6 @@ def pipeline_run_inspector(context: AppContext) -> None:
 
 def render(context: AppContext) -> None:
     st.header("Data Viewer")
+    if message := st.session_state.pop("data_viewer_flash", None):
+        st.success(message)
     _description_catalog(context)

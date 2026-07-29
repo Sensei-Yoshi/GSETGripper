@@ -4,11 +4,15 @@ import base64
 import csv
 import json
 
+import pytest
+
 from modules.config import load_config
 from modules.contracts import Gripper, load_experiences
 from modules.datasets import (
     DatasetObjectEdit,
     PreparationStage,
+    add_dataset_condition,
+    delete_dataset_condition,
     get_dataset,
     prepare_dataset_stages,
     update_csv_dataset_object,
@@ -200,3 +204,91 @@ def test_csv_edit_accepts_blank_measurements_and_unrecorded_outcomes(tmp_path) -
     assert row.gecko_feasible is None
     assert row.silicone_feasible is None
     assert row.favored_gripper is None
+
+
+def test_csv_surface_supports_unlimited_shared_artifact_conditions(
+    tmp_path, monkeypatch
+) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Physical"
+    _write_source(root)
+    object_dir = root / "objects/test_cup"
+    object_dir.mkdir(parents=True)
+    (object_dir / "image.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    ))
+    dataset = get_dataset(cfg, "Physical")
+    monkeypatch.setattr(
+        "modules.datasets.preparation.describe",
+        lambda _image, _cfg: Description(retrieval_description="shared cup surface"),
+    )
+    prepare_dataset_stages(cfg, dataset, [PreparationStage.DESCRIPTIONS])
+    dataset = get_dataset(cfg, "Physical")
+
+    created_ids = []
+    for index in range(2, 5):
+        dataset, object_id = add_dataset_condition(
+            cfg,
+            dataset,
+            "test_cup",
+            DatasetObjectEdit(
+                mass_g=100 + index,
+                roughness_index=2 + index,
+                projected_contact_fraction=0.5 + index / 100,
+                gecko_feasible=True,
+                gecko_force_n=1 + index / 10,
+            ),
+        )
+        created_ids.append(object_id)
+
+    assert created_ids == [
+        "test_cup__condition_2",
+        "test_cup__condition_3",
+        "test_cup__condition_4",
+    ]
+    assert dataset.summary()["physical_surfaces"] == 1
+    assert dataset.summary()["measurement_conditions"] == 4
+    assert dataset.summary()["unique_photos"] == 1
+    assert len(dataset.descriptions) == 1
+    assert all(item.description is not None for item in dataset.objects.values())
+    assert len(load_experiences(dataset.paths.experiences)) == 5
+
+    with pytest.raises(ValueError, match="identical"):
+        add_dataset_condition(
+            cfg,
+            dataset,
+            "test_cup",
+            DatasetObjectEdit(
+                mass_g=102,
+                roughness_index=4,
+                projected_contact_fraction=0.52,
+            ),
+        )
+    with pytest.raises(ValueError, match="baseline"):
+        delete_dataset_condition(cfg, dataset, "test_cup")
+    dataset = delete_dataset_condition(cfg, dataset, created_ids[1])
+    assert created_ids[1] not in dataset.objects
+
+
+def test_condition_requirements_follow_enabled_measurement_modes(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Physical"
+    _write_source(root)
+    dataset = get_dataset(cfg, "Physical")
+    with pytest.raises(ValueError, match="contact fraction"):
+        add_dataset_condition(
+            cfg,
+            dataset,
+            "test_cup",
+            DatasetObjectEdit(mass_g=120, roughness_index=3),
+        )
+
+    cfg.inputs.use_projected_contact = False
+    dataset, object_id = add_dataset_condition(
+        cfg,
+        dataset,
+        "test_cup",
+        DatasetObjectEdit(mass_g=120, roughness_index=3),
+    )
+    assert dataset.objects[object_id].projected_contact_fraction is None

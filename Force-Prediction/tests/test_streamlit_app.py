@@ -32,9 +32,11 @@ def test_default_app_structure_matches_research_lab() -> None:
     assert list(app.exception) == []
     assert [item.value for item in app.title] == ["Force Pipeline Lab"]
     assert [item.label for item in app.tabs] == EXPECTED_TABS
-    assert [item.label for item in app.button] == [
+    button_labels = [item.label for item in app.button]
+    for label in (
         "Run pipeline",
-        "Run predictions for 129 objects",
+        "Run selected",
+        "Run both",
         "Run/Resume suite predictions",
         "Evaluate suite & generate comparison",
         "Validate prompt bundle",
@@ -42,13 +44,16 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Capture & Analyze",
         "Run Marigold",
         "Run selected preparation stages",
-    ]
+        "+ Add condition",
+    ):
+        assert label in button_labels
     selectbox_labels = [item.label for item in app.selectbox]
     for label in (
         "Dataset",
         "Dataset object",
         "Experiment profile",
         "Experiment",
+        "Evaluation protocol",
         "Saved suite",
     ):
         assert label in selectbox_labels
@@ -86,7 +91,9 @@ def test_default_app_structure_matches_research_lab() -> None:
         "predict_gecko_force",
         "predict_silicone_force",
         "benchmark_experiment",
+        "benchmark_protocol",
         "run_benchmark_predictions",
+        "run_both_benchmark_protocols",
         "catalog_page",
         "catalog_page_size",
         "runs_viewer_mode",

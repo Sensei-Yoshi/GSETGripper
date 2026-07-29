@@ -51,6 +51,8 @@ def query_input_from_object(records: list[ExperienceRecord], cfg: Config) -> Que
         image = cv2.imread(str(path))
     return QueryInput(
         object_id=record.object_id,
+        surface_id=record.surface_id,
+        condition_id=record.condition_id,
         mass_g=record.mass_g,
         roughness_index=record.roughness_index,
         projected_contact_fraction=record.projected_contact_fraction,

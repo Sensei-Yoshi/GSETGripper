@@ -1,4 +1,4 @@
-"""Object-level retrieval over semantics and optional measured properties.
+"""Grouped physical-surface retrieval over semantics and measurement conditions.
 
 E3 ranks by semantic cosine only; E4 uses the configured hybrid score. Both return
 the available gripper labels for every neighbor; request payloads expose only active ones.
@@ -137,9 +137,11 @@ class SimilarityBreakdown(BaseModel):
 
 
 class RetrievedObjectExperience(BaseModel):
-    """One object-level neighbor with optional Gecko and silicone labels."""
+    """One condition selected from a grouped physical-surface neighbor."""
 
     object_id: str
+    surface_id: str | None = None
+    condition_id: str = "baseline"
     image_path: str = ""
     mass_g: float | None = None
     roughness_index: float | None = None
@@ -151,7 +153,16 @@ class RetrievedObjectExperience(BaseModel):
     silicone_feasible: bool | None = None
     score: float
     rank: int = 0
+    surface_rank: int = 0
+    condition_rank: int = 0
     similarity: SimilarityBreakdown
+
+    def model_post_init(self, __context: object) -> None:
+        del __context
+        if self.surface_id is None:
+            self.surface_id = self.object_id.split("__", 1)[0]
+        if self.condition_id == "baseline" and "__" in self.object_id:
+            self.condition_id = self.object_id.split("__", 1)[1]
 
     def to_payload(
         self,
@@ -177,11 +188,6 @@ class RetrievedObjectExperience(BaseModel):
             )
         if mode is RetrievalMode.SEMANTIC_ONLY:
             return {
-                "rank": self.rank,
-                "object_id": self.object_id,
-                "semantic_description": self.semantic_description,
-                "semantic_similarity": self.similarity.semantic,
-                "score": self.score,
                 **{key: value for key, value in outcomes.items() if value is not None},
             }
         excluded = {"image_path", "gecko_min_force_n", "gecko_feasible",
@@ -206,12 +212,20 @@ class ExperienceIndex:
         self.cfg = cfg
         self.provider = provider or get_embedding_provider(cfg)
         self.objects: dict[str, ObjectRecord] = {}
-        self.object_vectors: dict[str, np.ndarray] = {}
+        self.surface_conditions: dict[str, list[ObjectRecord]] = {}
+        self.surface_vectors: dict[str, np.ndarray] = {}
 
     def fit(self, records: list[ExperienceRecord]) -> ExperienceIndex:
         self.objects = group_by_object(records)
-        embedded: dict[str, np.ndarray] = {}
-        for object_id, obj in self.objects.items():
+        self.surface_conditions = {}
+        self.surface_vectors = {}
+        for obj in self.objects.values():
+            surface_id = obj.surface_id or obj.object_id
+            self.surface_conditions.setdefault(surface_id, []).append(obj)
+        for conditions in self.surface_conditions.values():
+            conditions.sort(key=lambda item: (item.condition_id != "baseline", item.object_id))
+        for surface_id, conditions in self.surface_conditions.items():
+            obj = conditions[0]
             rec = obj.gecko or obj.silicone
             if rec is None:
                 continue
@@ -219,9 +233,7 @@ class ExperienceIndex:
                 rec.semantic_description, rec.mass_g, rec.roughness_index,
                 rec.projected_contact_fraction, self.cfg,
             )
-            if text not in embedded:
-                embedded[text] = self.provider.embed(text)
-            self.object_vectors[object_id] = embedded[text]
+            self.surface_vectors[surface_id] = self.provider.embed(text)
         return self
 
     def _score(
@@ -300,45 +312,66 @@ class ExperienceIndex:
         exclude_object_id: str | None = None,
         mode: RetrievalMode = RetrievalMode.HYBRID,
     ) -> list[RetrievedObjectExperience]:
-        """Rank each object once and retain its available gripper outcomes."""
+        """Rank distinct surfaces by their best condition, retaining top conditions."""
         k = k or self.cfg.retrieval.k
-        scored: list[RetrievedObjectExperience] = []
-        for object_id, obj in self.objects.items():
-            if object_id == exclude_object_id:
+        scored_surfaces: list[tuple[float, str, list[RetrievedObjectExperience]]] = []
+        for surface_id, conditions in self.surface_conditions.items():
+            condition_results: list[RetrievedObjectExperience] = []
+            reference_vec = self.surface_vectors.get(surface_id)
+            if reference_vec is None:
                 continue
-            rec = obj.gecko or obj.silicone
-            if rec is None:
-                continue
-            breakdown = self._score(
-                query, query_vec, rec, self.object_vectors[object_id], mode
-            )
-            scored.append(
-                RetrievedObjectExperience(
-                    object_id=object_id,
-                    image_path=rec.image_path if mode is RetrievalMode.HYBRID else "",
-                    mass_g=rec.mass_g if mode is RetrievalMode.HYBRID else None,
-                    roughness_index=(
-                        rec.roughness_index
-                        if mode is RetrievalMode.HYBRID and self.cfg.inputs.use_roughness
-                        else None
-                    ),
-                    projected_contact_fraction=(
-                        rec.projected_contact_fraction
-                        if mode is RetrievalMode.HYBRID
-                        and self.cfg.inputs.use_projected_contact
-                        else None
-                    ),
-                    semantic_description=rec.semantic_description,
-                    gecko_min_force_n=obj.gecko.min_force_n if obj.gecko else None,
-                    gecko_feasible=obj.gecko.feasible if obj.gecko else None,
-                    silicone_min_force_n=obj.silicone.min_force_n if obj.silicone else None,
-                    silicone_feasible=obj.silicone.feasible if obj.silicone else None,
-                    score=breakdown.total,
-                    similarity=breakdown,
+            for obj in conditions:
+                if obj.object_id == exclude_object_id:
+                    continue
+                rec = obj.gecko or obj.silicone
+                if rec is None:
+                    continue
+                breakdown = self._score(query, query_vec, rec, reference_vec, mode)
+                condition_results.append(
+                    RetrievedObjectExperience(
+                        object_id=obj.object_id,
+                        surface_id=surface_id,
+                        condition_id=obj.condition_id,
+                        image_path=rec.image_path if mode is RetrievalMode.HYBRID else "",
+                        mass_g=rec.mass_g if mode is RetrievalMode.HYBRID else None,
+                        roughness_index=(
+                            rec.roughness_index
+                            if mode is RetrievalMode.HYBRID
+                            and self.cfg.inputs.use_roughness
+                            else None
+                        ),
+                        projected_contact_fraction=(
+                            rec.projected_contact_fraction
+                            if mode is RetrievalMode.HYBRID
+                            and self.cfg.inputs.use_projected_contact
+                            else None
+                        ),
+                        semantic_description=rec.semantic_description,
+                        gecko_min_force_n=obj.gecko.min_force_n if obj.gecko else None,
+                        gecko_feasible=obj.gecko.feasible if obj.gecko else None,
+                        silicone_min_force_n=(
+                            obj.silicone.min_force_n if obj.silicone else None
+                        ),
+                        silicone_feasible=(obj.silicone.feasible if obj.silicone else None),
+                        score=breakdown.total,
+                        similarity=breakdown,
+                    )
                 )
+            if not condition_results:
+                continue
+            condition_results.sort(key=lambda item: (-item.score, item.object_id))
+            condition_results = condition_results[: self.cfg.retrieval.conditions_per_surface]
+            scored_surfaces.append(
+                (condition_results[0].score, surface_id, condition_results)
             )
-        scored.sort(key=lambda item: (-item.score, item.object_id))
-        top = scored[:k]
-        for rank, item in enumerate(top, start=1):
-            item.rank = rank
-        return top
+        scored_surfaces.sort(key=lambda item: (-item[0], item[1]))
+        output: list[RetrievedObjectExperience] = []
+        for surface_rank, (_, _surface_id, conditions) in enumerate(
+            scored_surfaces[:k], start=1
+        ):
+            for condition_rank, item in enumerate(conditions, start=1):
+                item.rank = surface_rank
+                item.surface_rank = surface_rank
+                item.condition_rank = condition_rank
+                output.append(item)
+        return output

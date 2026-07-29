@@ -9,6 +9,7 @@ import tempfile
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
+from enum import StrEnum
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +36,11 @@ from .pipeline import Pipeline, QueryInput
 BENCHMARK_SCHEMA_VERSION = 10
 PREDICTION_ARTIFACT_TYPE = "benchmark_prediction_batch"
 EVALUATION_ARTIFACT_TYPE = "benchmark_evaluation"
+
+
+class EvaluationProtocol(StrEnum):
+    NEW_SURFACE = "new_surface"
+    CONDITION_INTERPOLATION = "condition_interpolation"
 
 
 @dataclass
@@ -124,10 +130,12 @@ def generate_benchmark_predictions(
     cfg: Config,
     experiment: str,
     *,
+    protocol: EvaluationProtocol | str = EvaluationProtocol.NEW_SURFACE,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> BenchmarkPredictionBatch:
     """Generate immutable predictions for every query-ready object."""
     experiment_id = experiment.lower()
+    protocol = EvaluationProtocol(protocol)
     dataset = get_dataset(cfg, cfg.dataset_id)
     eligibility = experiment_eligibility(dataset, cfg, experiment_id)
     object_ids = list(eligibility.query_ids)
@@ -144,16 +152,20 @@ def generate_benchmark_predictions(
     input_snapshot: list[dict[str, Any]] = []
 
     for index, object_id in enumerate(object_ids, start=1):
+        item = dataset.objects[object_id]
         train = [
             record
             for record in records
-            if record.object_id != object_id
+            if (
+                record.surface_id != item.surface_id
+                if protocol is EvaluationProtocol.NEW_SURFACE
+                else record.object_id != object_id
+            )
             and (
                 experiment_id not in {"e3", "e4"}
                 or record.object_id in reference_ids
             )
         ]
-        item = dataset.objects[object_id]
         image_path = cfg.root / item.image.path
         import cv2
 
@@ -164,6 +176,8 @@ def generate_benchmark_predictions(
         )
         query_snapshot = {
             "object_id": object_id,
+            "surface_id": item.surface_id,
+            "condition_id": item.condition_id,
             "object_name": item.name,
             "image_path": item.image.path,
             "image_sha256": image_digest,
@@ -175,6 +189,8 @@ def generate_benchmark_predictions(
         detailed = Pipeline(cfg, experiment_id).fit(train).predict_detailed(
             QueryInput(
                 object_id=object_id,
+                surface_id=item.surface_id,
+                condition_id=item.condition_id,
                 mass_g=item.mass_g,
                 roughness_index=item.roughness_index,
                 projected_contact_fraction=item.projected_contact_fraction,
@@ -232,11 +248,13 @@ def generate_benchmark_predictions(
         "generation_input_sha256": _sha256_payload(
             {
                 "experiment": experiment_id,
+                "evaluation_protocol": protocol.value,
                 "active_grippers": [gripper.value for gripper in active_grippers],
                 "queries": input_snapshot,
                 "reference_ids": sorted(reference_ids),
             }
         ),
+        "evaluation_protocol": protocol.value,
         "prediction_protocol": "query-excluded reference generation",
         "query_count": len(rows),
         "eligible_query_ids": object_ids,
@@ -392,6 +410,9 @@ def evaluate_benchmark_predictions(
         ],
         "active_grippers": [gripper.value for gripper in active_grippers],
         "generation_mode": batch.metadata["generation_mode"],
+        "evaluation_protocol": batch.metadata.get(
+            "evaluation_protocol", EvaluationProtocol.NEW_SURFACE.value
+        ),
         "backend": batch.metadata["backend"],
         "prediction_created_at": batch.metadata["created_at"],
         "generation_source_sha256": batch.metadata["generation_source_sha256"],

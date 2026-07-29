@@ -7,6 +7,7 @@ import streamlit as st
 from modules.benchmarking import (
     BenchmarkEvaluation,
     BenchmarkPredictionBatch,
+    EvaluationProtocol,
     evaluation_readiness,
     generate_benchmark_predictions,
     get_or_create_benchmark_evaluation,
@@ -22,8 +23,11 @@ from streamlit_app.prediction_ui import format_experiment
 
 def _batch_label(batch: BenchmarkPredictionBatch) -> str:
     targets = "+".join(batch.metadata["active_grippers"])
+    protocol = batch.metadata.get(
+        "evaluation_protocol", EvaluationProtocol.NEW_SURFACE.value
+    ).replace("_", " ")
     return (
-        f"{batch.metadata['created_at'][:19]} | {targets} | "
+        f"{batch.metadata['created_at'][:19]} | {protocol} | {targets} | "
         f"{len(batch.rows)} predictions"
     )
 
@@ -83,6 +87,17 @@ def render(context: AppContext) -> None:
             on_change=clear_benchmark_summary,
         )
         generation = experiment_eligibility(context.dataset, cfg, experiment)
+        protocol = st.selectbox(
+            "Evaluation protocol",
+            list(EvaluationProtocol),
+            format_func=lambda value: (
+                "New-surface generalization"
+                if value is EvaluationProtocol.NEW_SURFACE
+                else "Known-surface condition interpolation"
+            ),
+            key="benchmark_protocol",
+            on_change=clear_benchmark_summary,
+        )
         st.caption(
             f"{len(generation.query_ids)} query-ready of "
             f"{len(context.dataset.objects)} objects for {experiment.upper()}."
@@ -91,30 +106,56 @@ def render(context: AppContext) -> None:
             with st.expander("Generation exclusions"):
                 st.json(generation.skipped_queries, expanded=False)
 
-        run_predictions = st.button(
-            f"Run predictions for {len(generation.query_ids)} objects",
+        button_columns = st.columns(2)
+        run_predictions = button_columns[0].button(
+            "Run selected",
             type="primary",
             width="stretch",
             disabled=not generation.query_ids,
             key="run_benchmark_predictions",
         )
+        run_both = button_columns[1].button(
+            "Run both",
+            width="stretch",
+            disabled=not generation.query_ids,
+            key="run_both_benchmark_protocols",
+        )
         st.caption(
             "This calls Gemini and saves immutable predictions. Force labels are not required."
         )
 
-    if run_predictions:
+    if run_predictions or run_both:
         progress_bar = summary_col.progress(0.0)
         status = summary_col.empty()
-
-        def progress(done: int, total: int, object_id: str) -> None:
-            progress_bar.progress(done / total)
-            status.caption(f"{done}/{total}: {object_id.replace('_', ' ')}")
-
         with summary_col, st.spinner("Generating and saving prediction batch…"):
             st.session_state.pop("benchmark_evaluation_result", None)
-            batch = generate_benchmark_predictions(cfg, experiment, progress=progress)
-            paths = save_prediction_batch(cfg, batch)
-            st.session_state["benchmark_prediction_result"] = (batch, paths)
+            protocols = list(EvaluationProtocol) if run_both else [protocol]
+            last_result = None
+            for protocol_index, selected_protocol in enumerate(protocols):
+                def progress(
+                    done: int,
+                    total: int,
+                    object_id: str,
+                    protocol_index: int = protocol_index,
+                    selected_protocol: EvaluationProtocol = selected_protocol,
+                ) -> None:
+                    overall_total = total * len(protocols)
+                    overall_done = protocol_index * total + done
+                    progress_bar.progress(overall_done / overall_total)
+                    status.caption(
+                        f"{selected_protocol.value.replace('_', ' ')} — "
+                        f"{done}/{total}: {object_id.replace('_', ' ')}"
+                    )
+
+                batch = generate_benchmark_predictions(
+                    cfg,
+                    experiment,
+                    protocol=selected_protocol,
+                    progress=progress,
+                )
+                paths = save_prediction_batch(cfg, batch)
+                last_result = (batch, paths)
+            st.session_state["benchmark_prediction_result"] = last_result
         progress_bar.empty()
         status.empty()
 

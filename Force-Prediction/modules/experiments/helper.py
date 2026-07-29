@@ -47,6 +47,8 @@ class QueryInput:
     """Everything an experiment may need about one query object."""
 
     object_id: str
+    surface_id: str | None = None
+    condition_id: str = "baseline"
     mass_g: float | None = None
     roughness_index: float | None = None
     projected_contact_fraction: float | None = None
@@ -71,6 +73,9 @@ class PipelineRunResult:
     generation_mode: Literal["single", "joint"] = "joint"
     retrieval_mode: str | None = None
     effective_inputs: tuple[str, ...] = ()
+    object_id: str = ""
+    surface_id: str | None = None
+    condition_id: str = "baseline"
 
 
 class ExperimentStrategy(ABC):
@@ -100,6 +105,8 @@ class ExperimentStrategy(ABC):
             description = describe(query_input.image_bgr, self.cfg).description
         return Query(
             object_id=query_input.object_id,
+            surface_id=query_input.surface_id,
+            condition_id=query_input.condition_id,
             image_path=query_input.image_path,
             mass_g=query_input.mass_g,
             roughness_index=query_input.roughness_index,
@@ -185,6 +192,7 @@ class ExperimentStrategy(ABC):
         physics_estimates: dict[str, dict[str, Any] | None] | None = None,
         used_client: bool,
         effective_inputs: tuple[str, ...] = (),
+        query: Query | None = None,
     ) -> PipelineRunResult:
         cache_stats: dict[str, Any] = {}
         if used_client:
@@ -208,6 +216,9 @@ class ExperimentStrategy(ABC):
                 self.spec.retrieval_mode.value if self.spec.retrieval_mode else None
             ),
             effective_inputs=effective_inputs,
+            object_id=query.object_id if query is not None else "",
+            surface_id=query.surface_id if query is not None else None,
+            condition_id=query.condition_id if query is not None else "baseline",
         )
 
 
@@ -240,6 +251,7 @@ class JointVLMExperiment(ExperimentStrategy):
         return self._result(
             selection=selection,
             description=query.semantic_description,
+            query=query,
             used_client=True,
             effective_inputs=inputs,
         )
@@ -293,6 +305,7 @@ class RetrievalVLMExperiment(ExperimentStrategy):
         return self._result(
             selection=selection,
             description=query.semantic_description,
+            query=query,
             retrieved_objects=retrieved,
             used_client=True,
             effective_inputs=inputs,

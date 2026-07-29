@@ -109,10 +109,10 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
     paths = dataset_paths(cfg, root.name)
     objects: dict[str, DatasetObject] = {}
     for row in rows:
-        image_path = _resolve_row_image(root, row.object_id, row.image_name)
+        image_path = _resolve_row_image(root, row.surface_id, row.image_name)
         image_2_path = _resolve_row_second_image(
             root,
-            row.object_id,
+            row.surface_id,
             row.image_name,
             row.image_name_2,
         )
@@ -120,6 +120,8 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
         item = DatasetObject(
             dataset_id=root.name,
             object_id=row.object_id,
+            surface_id=row.surface_id,
+            condition_id=row.condition_id,
             name=row.object_name,
             image=ImageArtifact(
                 path=relative,
@@ -153,11 +155,11 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
                 dataset_cfg.force.limit_n,
             ),
         )
-        _attach_contact_summary(cfg, item, paths.object_dir(row.object_id))
+        _attach_contact_summary(cfg, item, paths.object_dir(row.surface_id))
         # For paired CSV datasets the labeled source value remains authoritative. The
         # generated contact artifact is attached for provenance/inspection only.
         item.projected_contact_fraction = row.projected_contact_fraction
-        _attach_roughness_summary(cfg, item, paths.object_dir(row.object_id))
+        _attach_roughness_summary(cfg, item, paths.object_dir(row.surface_id))
         objects[row.object_id] = item
     has_second_images = bool(objects) and all(
         item.image_2 is not None and item.image_2.available for item in objects.values()

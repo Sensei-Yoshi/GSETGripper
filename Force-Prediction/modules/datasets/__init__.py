@@ -1,7 +1,13 @@
 """Public dataset discovery, storage, and preparation interfaces."""
 
 from .catalog import discover_datasets, get_dataset, load_dataset
-from .editing import DatasetObjectEdit, update_csv_dataset_object, update_dataset_object
+from .editing import (
+    DatasetObjectEdit,
+    add_dataset_condition,
+    delete_dataset_condition,
+    update_csv_dataset_object,
+    update_dataset_object,
+)
 from .models import (
     ContactFractionArtifact,
     Dataset,
@@ -34,6 +40,8 @@ __all__ = [
     "PreparationStage",
     "RoughnessArtifact",
     "discover_datasets",
+    "add_dataset_condition",
+    "delete_dataset_condition",
     "get_dataset",
     "load_dataset",
     "load_dataset_experiences",

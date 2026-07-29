@@ -84,6 +84,7 @@ def prepare_dataset_stages(
         PreparationStage.EXPERIENCES,
     ]
     tasks = _task_count(dataset, selected)
+    surface_items = _surface_items(dataset)
     completed = 0
 
     def report(label: str) -> None:
@@ -103,19 +104,19 @@ def prepare_dataset_stages(
             if stage is PreparationStage.INDEX:
                 missing = [
                     item.object_id
-                    for item in dataset.objects.values()
+                    for item in surface_items
                     if not (cfg.root / item.image.path).is_file()
                 ]
                 manifest.missing_images = missing
                 manifest.missing_second_images = [
                     item.object_id
-                    for item in dataset.objects.values()
+                    for item in surface_items
                     if item.image_2 is None or not (cfg.root / item.image_2.path).is_file()
                 ]
-                status.completed = len(dataset.objects) - len(missing)
+                status.completed = len(surface_items) - len(missing)
                 report(f"indexed {dataset.display_name}")
             elif stage is PreparationStage.DESCRIPTIONS:
-                for item in dataset.objects.values():
+                for item in surface_items:
                     active_object = item.object_id
                     available = _ensure_image(cfg, item)
                     checkpoint = _prepare_description(
@@ -132,7 +133,7 @@ def prepare_dataset_stages(
             elif stage is PreparationStage.EMBEDDINGS:
                 provider = get_embedding_provider(run_cfg)
                 embedding_model = run_cfg.retrieval.embedding.model
-                for item in dataset.objects.values():
+                for item in surface_items:
                     active_object = item.object_id
                     embedding_checkpoint = checkpoints.get(item.object_id)
                     if embedding_checkpoint is None:
@@ -178,7 +179,7 @@ def prepare_dataset_stages(
                     processing_resolution=MARIGOLD_PROCESSING_RESOLUTION,
                 )
                 background_remover = BackgroundRemover(model_name=DEFAULT_BACKGROUND_MODEL)
-                for item in dataset.objects.values():
+                for item in surface_items:
                     active_object = item.object_id
                     _prepare_roughness(
                         cfg,
@@ -202,7 +203,7 @@ def prepare_dataset_stages(
                     minimum_contact_fraction=float(cfg.geometry.minimum_contact_fraction),
                 )
                 session = None
-                for item in dataset.objects.values():
+                for item in surface_items:
                     active_object = item.object_id
                     session = _prepare_surface_area(
                         cfg,
@@ -511,17 +512,32 @@ def _embedding_cache_key(cfg: Config, text: str) -> str:
 
 
 def _stage_total(dataset: Dataset, stage: PreparationStage) -> int:
-    del stage
-    return len(dataset.objects)
+    if stage is PreparationStage.EXPERIENCES:
+        return len(dataset.objects)
+    return len(_surface_items(dataset))
 
 
 def _task_count(dataset: Dataset, stages: set[PreparationStage]) -> int:
+    surface_count = len(_surface_items(dataset))
     return sum(
         1
         if stage in {PreparationStage.INDEX, PreparationStage.EXPERIENCES}
-        else len(dataset.objects)
+        else surface_count
         for stage in stages
     )
+
+
+def _surface_items(dataset: Dataset) -> list[DatasetObject]:
+    """Return one canonical (preferably baseline) item per physical surface."""
+    by_surface: dict[str, DatasetObject] = {}
+    for item in dataset.objects.values():
+        surface_id = item.surface_id or item.object_id
+        existing = by_surface.get(surface_id)
+        if existing is None or (
+            item.condition_id == "baseline" and existing.condition_id != "baseline"
+        ):
+            by_surface[surface_id] = item
+    return list(by_surface.values())
 
 
 def _legacy_manifest_view(dataset: Dataset, manifest: PreparationManifest) -> dict:

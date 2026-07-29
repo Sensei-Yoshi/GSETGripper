@@ -12,7 +12,7 @@ import numpy as np
 from scipy.stats import linregress, spearmanr
 
 FIGURES_DIR = Path(__file__).resolve().parent
-PROJECT_ROOT = FIGURES_DIR.parent / "Force-Prediction"
+PROJECT_ROOT = FIGURES_DIR.parents[1] / "Force-Prediction"
 DATASET_PATH = PROJECT_ROOT / "data" / "MatForceFinal" / "dataset.csv"
 
 # Keep Matplotlib's cache out of the source tree on read-only or sandboxed systems.
@@ -37,6 +37,7 @@ FIT = "#6f7782"
 class MatForceObject:
     number: int
     name: str
+    condition_id: str
     mass_g: float
     roughness_index: float
     gecko_force_n: float
@@ -59,10 +60,11 @@ def _load_data() -> tuple[list[MatForceObject], list[str]]:
         names = ", ".join(sorted(missing_columns))
         raise ValueError(f"MatForceFinal dataset is missing required columns: {names}")
 
-    included: list[tuple[str, float, float, float]] = []
+    included: list[tuple[str, str, float, float, float]] = []
     excluded: list[str] = []
     for row in rows:
         name = row["Object"].strip()
+        condition_id = (row.get("condition_id") or "baseline").strip() or "baseline"
         mass_g = _optional_float(row.get("Mass_g"))
         roughness = _optional_float(row.get("roughness_index"))
         force_n = _optional_float(row.get("gecko_force_n"))
@@ -75,18 +77,22 @@ def _load_data() -> tuple[list[MatForceObject], list[str]]:
             raise ValueError(f"{name}: roughness must be nonnegative, got {roughness}")
         if not 0 <= force_n <= 8:
             raise ValueError(f"{name}: Gecko force must be within 0–8 N, got {force_n}")
-        included.append((name, mass_g, roughness, force_n))
+        display_name = name if condition_id == "baseline" else f"{name} ({condition_id})"
+        included.append((display_name, condition_id, mass_g, roughness, force_n))
 
     included.sort(key=lambda item: item[0].casefold())
     objects = [
         MatForceObject(
             number=index,
             name=name,
+            condition_id=condition_id,
             mass_g=mass_g,
             roughness_index=roughness,
             gecko_force_n=force_n,
         )
-        for index, (name, mass_g, roughness, force_n) in enumerate(included, start=1)
+        for index, (name, condition_id, mass_g, roughness, force_n) in enumerate(
+            included, start=1
+        )
     ]
     if not objects:
         raise ValueError("MatForceFinal has no complete Gecko-force observations")

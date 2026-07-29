@@ -212,10 +212,12 @@ folders remain useful for Gemini description generation and Data Viewer analysis
 force pipelines and benchmark controls are disabled. A validated `dataset.csv`
 enables paired-data capabilities.
 
-The persistent force-training contract is one `ExperienceRecord` per object–gripper pair.
-Both rows for an object share `object_id`, image, mass, roughness, contact, and semantic
-description. `ObjectRecord` groups the two rows for paired retrieval and the selection
-oracle.
+The persistent force-training contract is one `ExperienceRecord` per measurement-condition–
+gripper pair. `surface_id` is the shared physical-object identity, `condition_id` identifies
+the independently measured mass/roughness/contact/outcome tuple, and condition-level
+`object_id` preserves existing APIs. Siblings share images, descriptor, embedding, and
+Marigold diagnostics, but never authoritative condition measurements. `ObjectRecord` pairs
+the two active-gripper rows for one condition.
 
 The active synthetic source is:
 
@@ -300,10 +302,10 @@ therefore isolates the value of measured physical inputs.
 
 ### E3: semantic-only experience-conditioned VLM
 
-E3 generates or reuses one contact-region description, embeds that text, and ranks
-training objects only by `cosine(e_q, e_i)`. It retrieves `retrieval.k` neighbors,
-excluding the query object. Each neighbor sent to the VLM contains its semantic
-description, semantic similarity, and force/feasibility outcomes for the active grippers.
+E3 generates or reuses one contact-region description and embedding per surface, then ranks
+training surfaces only by `cosine(e_q, e_i)`. It retrieves `retrieval.k` distinct surfaces.
+Each surface is sent once with semantic similarity and up to three active-gripper outcome
+observations; condition names and measurement fields are omitted.
 
 E3 sends no query or neighbor mass, roughness, projected contact, hybrid score components,
 or physics estimate. This hard boundary models semantic experiential retrieval in the
@@ -312,10 +314,10 @@ value.
 
 ### E4: semantic and sensor-fusion experience-conditioned VLM
 
-E4 shares E3's object-level representation but ranks with semantic cosine similarity plus
-closeness in mass, roughness, and optional projected contact. Its VLM payload also exposes
-the authoritative query measurements and corresponding neighbor measurements. It retrieves
-once and returns predictions for the active candidates in one structured response.
+E4 shares E3's grouped representation, calculates semantic similarity once per surface,
+and separately scores each condition using mass, LED roughness, and optional projected
+contact. Each surface is ranked by its best condition and contributes up to three conditions.
+The VLM payload exposes the authoritative query measurements and retained condition records.
 
 The score only ranks neighbors; it never computes force. Force evidence comes from the
 observed active-gripper outcomes. E4 receives no physics value. Comparing E4 with E2 and E3
