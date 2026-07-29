@@ -14,6 +14,7 @@ from modules.config import Config
 from modules.contracts import ExperienceRecord, Gripper, ObjectRecord
 from modules.expforce import pipeline_result_from_dict
 from modules.pipeline import PipelineRunResult
+from modules.roughness_representation import binary_roughness_category
 from streamlit_app.prediction_ui import render_prediction
 
 
@@ -62,6 +63,10 @@ def benchmark_config(cfg: Config, batch: BenchmarkPredictionBatch) -> Config:
     )
     scoped.retrieval = type(scoped.retrieval).model_validate(metadata["retrieval"])
     scoped.inputs = type(scoped.inputs).model_validate(metadata["inputs"])
+    if metadata.get("roughness_measurement"):
+        scoped.roughness = type(scoped.roughness).model_validate(
+            metadata["roughness_measurement"]
+        )
     return scoped
 
 
@@ -214,6 +219,18 @@ def _render_query_panel(
         if row.get("roughness_index") is not None
         else "Not recorded",
     )
+    roughness_mode = metadata.get("inputs", {}).get(
+        "roughness_representation", "continuous"
+    )
+    if roughness_mode == "binary" and row.get("roughness_index") is not None:
+        st.caption(
+            "Gemini received only the saved binary class: **"
+            + binary_roughness_category(
+                float(row["roughness_index"]),
+                inspection.config.roughness.binary_threshold,
+            )
+            + "**. The index above remained internal."
+        )
     sensors[1].metric(
         "Contact",
         f"{row['projected_contact_fraction']:.3f}"

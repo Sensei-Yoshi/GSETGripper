@@ -54,8 +54,15 @@ def main() -> None:
         st.session_state["predict_gecko_force"] = Gripper.GECKO in defaults
         st.session_state["predict_silicone_force"] = Gripper.SILICONE in defaults
 
-    selector_col, roughness_col, contact_col, gecko_col, silicone_col = st.columns(
-        [0.34, 0.19, 0.23, 0.12, 0.12]
+    (
+        selector_col,
+        roughness_col,
+        roughness_mode_col,
+        contact_col,
+        gecko_col,
+        silicone_col,
+    ) = st.columns(
+        [0.25, 0.16, 0.19, 0.20, 0.10, 0.10]
     )
     with selector_col:
         selected = st.selectbox(
@@ -78,7 +85,30 @@ def main() -> None:
             value=base_cfg.inputs.use_roughness,
             key="consider_roughness",
             on_change=clear_run_state,
-            help="Uses the recorded continuous roughness index in E2 and E4.",
+            help=(
+                "Uses the recorded roughness measurement in E2 and E4. E4 retrieval "
+                "always retains the continuous index."
+            ),
+        )
+    with roughness_mode_col:
+        roughness_representation = st.selectbox(
+            "Roughness sent to VLM",
+            ["continuous", "binary"],
+            index=(
+                1
+                if base_cfg.inputs.roughness_representation == "binary"
+                else 0
+            ),
+            format_func=lambda value: (
+                "Smooth/Rough (test)" if value == "binary" else "Continuous index"
+            ),
+            key="roughness_representation",
+            on_change=clear_run_state,
+            disabled=not use_roughness,
+            help=(
+                "Binary mode withholds all numerical roughness values from Gemini. "
+                "The smooth/rough threshold is 1340; retrieval remains continuous."
+            ),
         )
     with contact_col:
         use_projected_contact = st.checkbox(
@@ -118,6 +148,7 @@ def main() -> None:
             help="Use silicone as an active force-prediction candidate.",
         )
     base_cfg.inputs.use_roughness = use_roughness
+    base_cfg.inputs.roughness_representation = roughness_representation
     base_cfg.inputs.use_projected_contact = use_projected_contact
     base_cfg.prediction.active_grippers = tuple(
         gripper

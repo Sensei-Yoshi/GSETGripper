@@ -93,7 +93,6 @@
     "object_name": "Orange",
     "mass_g": 154.17,
     "roughness_index": 1068.18,
-    "projected_contact_fraction": null,
     "semantic_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
     "original_image_path": "data/MatForceFinal/orange.jpg",
     "image_artifact_path": "data/MatForceFinal/run_images/b4779c831cf7f9b2c5e4a3a585b43c93949e170c983826e19a78ce35c5934708.png",
@@ -102,7 +101,6 @@
   "counterfactual": false,
   "truth": {
     "true_gecko_force_n": 0.38,
-    "true_selection": null,
     "object_id": "orange",
     "active_grippers": [
       "gecko"
@@ -144,11 +142,7 @@
       },
       "reasoning_trace": "lowest feasible predicted stationary-finger force",
       "prediction_tie": false,
-      "tie_break_reason": null,
-      "model_recommended_gripper": null,
-      "model_comparison_evidence": [],
-      "model_recommendation_summary": null,
-      "recommendation_agrees_with_selector": null
+      "model_comparison_evidence": []
     },
     "semantic_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
     "retrieved_objects": [
@@ -157,12 +151,9 @@
         "image_path": "data/MatForceFinal/objects/lock/image.jpg",
         "mass_g": 158.66,
         "roughness_index": 1185.41,
-        "projected_contact_fraction": null,
         "semantic_description": "Lock",
         "gecko_min_force_n": 0.55,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7479491532325606,
         "rank": 1,
         "similarity": {
@@ -170,11 +161,9 @@
           "semantic": 0.5940063707836116,
           "mass": 0.9598186291981154,
           "roughness": 0.7909978731735154,
-          "contact": null,
           "semantic_contribution": 0.27953240978052313,
           "mass_contribution": 0.28229959682297506,
           "roughness_contribution": 0.18611714662906245,
-          "contact_contribution": null,
           "total": 0.7479491532325606
         }
       },
@@ -183,12 +172,9 @@
         "image_path": "data/MatForceFinal/objects/banana/image.jpg",
         "mass_g": 202.6,
         "roughness_index": 1072.02,
-        "projected_contact_fraction": null,
         "semantic_description": "Banana",
         "gecko_min_force_n": 2.523,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7443964839011539,
         "rank": 2,
         "similarity": {
@@ -196,11 +182,9 @@
           "semantic": 0.6626146837932249,
           "mass": 0.6768850185169549,
           "roughness": 0.992349415847261,
-          "contact": null,
           "semantic_contribution": 0.31181867472622343,
           "mass_contribution": 0.19908382897557494,
           "roughness_contribution": 0.23349398019935552,
-          "contact_contribution": null,
           "total": 0.7443964839011539
         }
       },
@@ -209,12 +193,9 @@
         "image_path": "data/MatForceFinal/objects/caprisun/image.jpeg",
         "mass_g": 186.01,
         "roughness_index": 1002.43,
-        "projected_contact_fraction": null,
         "semantic_description": "CapriSun",
         "gecko_min_force_n": 0.417,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7121007748752171,
         "rank": 3,
         "similarity": {
@@ -222,11 +203,9 @@
           "semantic": 0.5968558538636639,
           "mass": 0.7647498482836389,
           "roughness": 0.8767792751377965,
-          "contact": null,
           "semantic_contribution": 0.2808733429946654,
           "mass_contribution": 0.2249264259657761,
           "roughness_contribution": 0.20630100591477565,
-          "contact_contribution": null,
           "total": 0.7121007748752171
         }
       },
@@ -235,12 +214,9 @@
         "image_path": "data/MatForceFinal/objects/foam_roller/image.jpg",
         "mass_g": 153.38,
         "roughness_index": 1353.18,
-        "projected_contact_fraction": null,
         "semantic_description": "Foam Roller",
         "gecko_min_force_n": 0.723,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7066727248677401,
         "rank": 4,
         "similarity": {
@@ -248,11 +224,9 @@
           "semantic": 0.5984869829644469,
           "mass": 0.9926877408475716,
           "roughness": 0.5655254386995371,
-          "contact": null,
           "semantic_contribution": 0.2816409331597397,
           "mass_contribution": 0.2919669826022269,
           "roughness_contribution": 0.13306480910577342,
-          "contact_contribution": null,
           "total": 0.7066727248677401
         }
       },
@@ -261,12 +235,9 @@
         "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
         "mass_g": 163.84,
         "roughness_index": 1349.28,
-        "projected_contact_fraction": null,
         "semantic_description": "Rubber Tire",
         "gecko_min_force_n": 0.464,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7015079334835304,
         "rank": 5,
         "similarity": {
@@ -274,11 +245,9 @@
           "semantic": 0.6327506303787231,
           "mass": 0.9167629370611393,
           "roughness": 0.5699537852211337,
-          "contact": null,
           "semantic_contribution": 0.29776500253116384,
           "mass_contribution": 0.2696361579591586,
           "roughness_contribution": 0.13410677299320792,
-          "contact_contribution": null,
           "total": 0.7015079334835304
         }
       }
@@ -323,6 +292,5 @@
       "mass",
       "roughness"
     ]
-  },
-  "baseline": null
+  }
 }

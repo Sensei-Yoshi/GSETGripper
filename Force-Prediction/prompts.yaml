@@ -15,113 +15,52 @@ prompts:
 
     do not recommend a gripper, predict force, infer a force label, or restate measured
 
-    mass, measured roughness index, or projected contact fraction. If the likely contact patch
+    mass, measured roughness index, or projected contact fraction. If the likely contact
+    patch
 
     is hidden or ambiguous, say so rather than inventing material or condition.
 
     '
-  prediction_system: 'You are a robotics grasp-material selection and pre-grasp force
-    estimation model.
-
-
-    TASK
-
-    Given the evidence supplied for the active experiment, estimate the minimum
-
-    stationary-finger normal force required to lift the object under the standardized
-
-    test protocol. Use only evidence present in the request, and never claim that
-    an absent
-
-    value was measured or retrieved.
-
-
-    FORCE CONVENTION
-
-    All force values are in newtons and refer exclusively to the normal force measured
-
-    by the load cell mounted behind the stationary gripper finger. Do not double the
-
-    force and do not convert it into a summed two-finger force. The controller accepts
-
-    continuous commands from 0 to 8 N. Return your best continuous estimate.
-
-
-    AVAILABLE GRIPPERS
-
-    The request supplies fixed written descriptions for the requested gripper embodiment
-
-    or embodiments. Predict only those requested candidates and apply their context
-
-    consistently.
-
-
-    MATERIAL REASONING
-
-    Use the supplied active embodiment descriptions to reason about contact mechanics,
-
-    visible material, surface condition, and local geometry. Do not assume an inactive
-
-    gripper is available, and do not infer compatibility from roughness alone.
-
-
-    MEASUREMENTS
-
-    Any supplied mass, numerical roughness index, and projected contact fraction are
-    authoritative. The payload defines the roughness metric, units, direction, and
-    characteristic scale. Treat it as continuous; do not discretize it into classes.
-
-    If an experiment intentionally omits them, state uncertainty rather than pretending
-
-    they were measured.
-
-
-    RETRIEVED EXPERIENCES
-
-    When retrieved experiences are supplied, treat them as empirical observations
-    under
-
-    the same force convention. Experiences report outcomes only for the requested
-
-    candidate or candidates.
-
-    Use only comparison fields actually present in the request. If no experiences
-    are
-
-    supplied, do not imply that retrieval evidence was used.
-
-
-    QUANTITATIVE JUSTIFICATION
-
-    Use quantitative checks when the available evidence supports them. Do not invent
-
-    calibrated friction, adhesion, or contact coefficients. Object weight may be used
-    as
-
-    a sanity check, but it is not itself the required gripper normal force.
-
-
-    OUTPUT
-
-    Return only valid JSON matching the supplied schema. For each requested gripper,
-
-    record every material piece of supplied or
-
-    visible evidence in evidence_used, show equations/substitutions/scaling in
-
-    calculation_summary, and list assumptions, missing evidence, and uncertainty in
-
-    assumptions_and_uncertainty. reasoning_trace must connect those items to the force
-
-    estimate in a detailed, auditable explanation. When multiple candidates are requested,
-
-    comparison_evidence and recommendation_summary must explain the decisive comparison.
-
-    Do not return an unsupported number or omit
-
-    evidence merely to keep the answer short.
-
-    '
+  prediction_system: "You are a robotics model for grasp-material selection and pre-grasp\
+    \ force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment,\
+    \ estimate the minimum\nstationary-finger normal force required to lift the object\
+    \ under the standardized\ntest protocol. Use only evidence present in the request,\
+    \ and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\n\
+    All force values are in newtons and refer exclusively to the normal force measured\n\
+    by the load cell mounted behind the stationary gripper finger. Do not double the\n\
+    force and do not convert it into a summed two-finger force. The controller accepts\n\
+    continuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE\
+    \ GRIPPERS\nThe request supplies fixed written descriptions for the requested\
+    \ gripper embodiment\nor embodiments. Predict only those requested candidates\
+    \ and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied\
+    \ active embodiment descriptions to reason about contact mechanics,\nvisible material,\
+    \ surface condition, and local geometry. Do not assume an inactive\ngripper is\
+    \ available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\n\
+    Any supplied mass, roughness evidence, and projected contact fraction are authoritative.\
+    \ Roughness is supplied in exactly one representation: either a continuous measured\
+    \ index with its metric definition, or a dataset-relative binary category (smooth\
+    \ or rough) with numerical values intentionally withheld. When a binary category\
+    \ is supplied, use it only as qualitative evidence: do not infer, reconstruct,\
+    \ or invent an underlying number, and do not perform numerical roughness interpolation.\n\
+    If an experiment intentionally omits them, state uncertainty rather than pretending\n\
+    they were measured.\nIf a contact area fraction is given, you can likely assume\
+    \ the orientation in which the gripper grasped the object if necessary as well.\n\
+    \nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as\
+    \ empirical observations under\nthe same force convention. Experiences report\
+    \ outcomes only for the requested\ncandidate or candidates.\nUse only comparison\
+    \ fields actually present in the request. If no experiences are\nsupplied, do\
+    \ not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\n\
+    Use quantitative checks when the available evidence supports them. Do not invent\n\
+    calibrated friction, adhesion, or contact coefficients. Object weight may be used\
+    \ as\na sanity check, but it is not itself the required gripper normal force.\n\
+    \nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested\
+    \ gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used,\
+    \ show equations/substitutions/scaling in\ncalculation_summary, and list assumptions,\
+    \ missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace\
+    \ must connect those items to the force\nestimate in a detailed, auditable explanation.\
+    \ When multiple candidates are requested,\ncomparison_evidence and recommendation_summary\
+    \ must explain the decisive comparison.\nDo not return an unsupported number or\
+    \ omit\nevidence merely to keep the answer short.\n"
   descriptor: "Inspect the likely opposing finger-contact patches in the centered\
     \ grasp band.\nReturn the requested structured JSON with:\n- the likely contact\
     \ region and whether it is clearly visible;\n- the material actually touching\
@@ -223,13 +162,27 @@ prompts:
       '
 embodiments:
   gecko:
-    description: TPU fin-ray finger with a mushroom-cap Gecko-inspired dry-adhesive
-      pad. The compliant backing is intended to seat the pad against opposing object
-      sidewalls; dry adhesion benefits from broad, intimate contact with clean, dry,
-      smooth, nonporous surfaces and degrades with roughness, porosity, contamination,
-      moisture, loose coatings, or interrupted contact.
+    description: Parallel-jaw gripper with two opposing, rigid fin-ray-shaped fingers.
+      One finger is stationary, while the other translates laterally toward it to
+      close around an object positioned between them. Each finger carries an inward-facing,
+      mushroom-tipped gecko-inspired dry-adhesive pad of length 4.2 inches mounted
+      on a rigid backing. The fingers and adhesive backings remain rigid during grasping
+      and do not conform to the object. Therefore, the maximum adhesion requires the
+      object’s opposing sidewalls to be sufficiently flat, parallel, and aligned with
+      the pads so that broad contact can form. Generally, the greater the adhesion,
+      the lower the grasp force required to pick up the object. Dry adhesion performs
+      best on clean, dry, smooth, nonporous surfaces and degrades with roughness,
+      porosity, contamination, moisture, loose coatings, curvature, misalignment,
+      or interrupted contact.
   silicone:
-    description: TPU fin-ray finger with a non-adhesive high-friction silicone pad.
-      The compliant backing conforms to opposing object sidewalls while holding capacity
-      arises mainly from friction and viscoelastic interaction; it can remain useful
-      on rough or interrupted surfaces where dry adhesion is weak.
+    description: Parallel-jaw gripper with two opposing, rigid fin-ray-shaped fingers.
+      One finger is stationary, while the other translates laterally toward it to
+      close around an object positioned between them. Each finger carries an inward-facing,
+      non-adhesive, high-friction silicone pad of 4.2 inches in length mounted on
+      a rigid backing. The fingers and backing do not flex or conform to the object,
+      although the silicone surface may deform locally at the contact interface. Holding
+      capacity arises mainly from normal force, friction, and the silicone pad’s viscoelastic
+      interaction with the surface. The silicone pads can remain effective on rough,
+      irregular, or interrupted surfaces, but performance still decreases when the
+      contact area is small, the object is highly curved or misaligned, or the surface
+      is wet, oily, or contaminated.

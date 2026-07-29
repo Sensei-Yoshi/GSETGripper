@@ -55,7 +55,10 @@ the configured hybrid score:
 `S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough + w_a S_contact`.
 
 The query measurements and the corresponding neighbor values are also available to the
-VLM so it can interpret mass, roughness, and contact differences. The retrieval score
+VLM so it can interpret mass, roughness, and contact differences. An opt-in binary
+roughness experiment keeps this continuous retrieval unchanged but withholds all numerical
+roughness evidence from the VLM, supplying only dataset-relative `smooth`/`rough` classes
+split at 1340. The retrieval score
 only ranks candidates; it never computes force. Force evidence comes from the paired
 observed outcomes attached to those conditions. A surface is ranked by its best condition;
 the top `retrieval.k` distinct surfaces are retained. E4 receives no physics prediction.
@@ -63,6 +66,9 @@ the top `retrieval.k` distinct surfaces are retained. E4 receives no physics pre
 Roughness and projected contact are independent explicit ablations. When disabled, E2 and
 E4 omit the field, E4 gives its retrieval term zero weight, and the remaining hybrid
 weights are renormalized. E3 is unchanged because it never uses either term.
+The binary representation is not an ablation: measured roughness remains required and still
+contributes continuously to E4 ranking. It changes only the evidence representation seen by
+the force-prediction VLM.
 
 ## Evaluation and reporting
 

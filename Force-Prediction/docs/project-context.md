@@ -181,6 +181,12 @@ selector. Disabled fields are omitted from E2/E4 payloads, receive zero E4 retri
 weight, and are excluded from reference eligibility. E1/E3 are unchanged because their
 evidence is measurement-free.
 
+When roughness is enabled, the global representation control selects either the continuous
+index baseline or the experimental binary VLM mode. Binary mode derives `smooth` below 1340
+and `rough` otherwise. It never sends Gemini the query/neighbor indices, threshold,
+continuous roughness similarities, or their contributions. Retrieval and saved provenance
+retain the continuous measurement, isolating the effect of VLM evidence representation.
+
 Curvature, seams, ridges, porosity, coatings, contamination, and local contact visibility
 currently enter through the semantic descriptor rather than separate numeric columns.
 
@@ -319,7 +325,8 @@ value.
 E4 shares E3's grouped representation, calculates semantic similarity once per surface,
 and separately scores each condition using mass, LED roughness, and optional projected
 contact. Each surface is ranked by its best condition and contributes up to three conditions.
-The VLM payload exposes the authoritative query measurements and retained condition records.
+The VLM payload exposes the authoritative query measurements and retained condition records,
+subject to the selected roughness representation described above.
 
 The score only ranks neighbors; it never computes force. Force evidence comes from the
 observed active-gripper outcomes. E4 receives no physics value. Comparing E4 with E2 and E3

@@ -15,6 +15,7 @@ from modules.expforce import (
 )
 from modules.pipeline import Pipeline, QueryInput
 from modules.retrieval import normalized_weights
+from modules.roughness_representation import binary_roughness_category
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import (
     format_experiment,
@@ -124,6 +125,19 @@ def render(context: AppContext) -> None:
             disabled=not uses_measurements or not base_cfg.inputs.use_roughness,
             help="Continuous sensor value; larger values indicate rougher surfaces.",
         )
+        if (
+            base_cfg.inputs.use_roughness
+            and base_cfg.inputs.roughness_representation == "binary"
+            and roughness is not None
+        ):
+            st.caption(
+                "Gemini receives only: **"
+                + binary_roughness_category(
+                    float(roughness),
+                    base_cfg.roughness.binary_threshold,
+                )
+                + "**. The numerical index remains internal to retrieval."
+            )
         contact = st.number_input(
             "Projected contact fraction",
             min_value=0.0,

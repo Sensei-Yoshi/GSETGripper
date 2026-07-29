@@ -104,10 +104,16 @@ one removes it from E2/E4 VLM payloads and sets its E4 retrieval weight to zero 
 remaining weights are renormalized. E1 and E3 are unaffected because physical fields are
 excluded by construction.
 
+The adjacent **Roughness sent to VLM** control supports an experimental binary mode. It
+derives `smooth` below 1340 and `rough` at or above 1340, then withholds the raw index,
+continuous roughness similarity, and threshold from Gemini. E4 retrieval still uses the
+continuous index, keeping the neighbor set directly comparable with the continuous baseline.
+
 The force pipeline uses the recorded continuous `roughness_index` from the LED measurement
 system; larger values mean rougher surfaces. It is separate from the Marigold appearance and
 topography artifacts. Retrieval compares two indices with an exponential distance kernel whose
-`characteristic_scale` is configured in `config.yaml`. Legacy 1–5 classes remain visible for
+`characteristic_scale` is configured in `config.yaml`. The binary VLM class is derived at
+request time and does not replace the stored measurement. Legacy 1–5 classes remain visible for
 provenance but are never converted into or substituted for the numerical index.
 
 Use `scripts/prepare_dataset.py --dataset <folder> --stages <stage...>` to run only

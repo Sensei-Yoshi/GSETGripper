@@ -59,9 +59,15 @@ def test_image_only_e1_generates_then_evaluates_partial_truth_without_model_call
     cfg, dataset = _image_only_config(tmp_path)
     client = install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
 
-    batch = generate_benchmark_predictions(cfg, "e1")
+    batch = generate_benchmark_predictions(
+        cfg,
+        "e1",
+        display_name="  Image-only baseline  ",
+    )
 
     assert len(batch.rows) == 2
+    assert batch.display_name == "Image-only baseline"
+    assert batch.metadata["display_name"] == "Image-only baseline"
     assert batch.metadata["query_count"] == 2
     assert all(not any(key.startswith("true_") for key in row) for row in batch.rows)
     assert all("pipeline_result" in row for row in batch.rows)
@@ -119,6 +125,7 @@ def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
 ) -> None:
     object_ids = ("train_a", "train_b", "test_a", "test_b")
     cfg, dataset = _image_only_config(tmp_path, object_ids)
+    cfg.inputs.roughness_representation = "binary"
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     for index, object_id in enumerate(object_ids, start=1):
         split = "train" if object_id.startswith("train") else "test"
@@ -129,8 +136,8 @@ def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
             _complete_edit(index).model_copy(update={"split": split}),
         )
 
-    scope = benchmark_scope(cfg, "e3")
-    batch = generate_benchmark_predictions(cfg, "e3")
+    scope = benchmark_scope(cfg, "e4")
+    batch = generate_benchmark_predictions(cfg, "e4")
 
     assert scope.mode == "fixed_train_test_holdout"
     assert scope.train_ids == ("train_a", "train_b")
@@ -140,6 +147,9 @@ def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
     assert batch.metadata["test_ids"] == ["test_a", "test_b"]
     assert batch.metadata["reference_ids"] == ["train_a", "train_b"]
     assert batch.metadata["evaluation_protocol"] == "fixed_train_test_holdout"
+    assert batch.metadata["inputs"]["roughness_representation"] == "binary"
+    assert batch.metadata["roughness_measurement"]["binary_threshold"] == 1340.0
+    assert all(row["roughness_index"] is not None for row in batch.rows)
     assert all(
         {
             retrieved["object_id"]
@@ -148,6 +158,13 @@ def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
         <= {"train_a", "train_b"}
         for row in batch.rows
     )
+
+
+def test_explicit_blank_benchmark_name_is_rejected(tmp_path) -> None:
+    cfg, _ = _image_only_config(tmp_path)
+
+    with pytest.raises(ValueError, match="benchmark name is required"):
+        generate_benchmark_predictions(cfg, "e1", display_name="   ")
 
 
 def test_suite_generates_e1_early_then_resumes_other_experiments(

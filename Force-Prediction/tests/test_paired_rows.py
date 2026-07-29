@@ -252,6 +252,76 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
     assert len(e4_payload["retrieved_objects"]) == cfg.retrieval.k
 
 
+def test_e4_binary_roughness_is_internal_to_retrieval_and_categorical_for_vlm(
+    monkeypatch,
+):
+    cfg = load_config().model_copy(deep=True)
+    cfg.inputs.roughness_representation = "binary"
+    cfg.inputs.use_projected_contact = False
+    records = fabricate_records(cfg, 12)
+    held = records[0].object_id
+    train = [record for record in records if record.object_id != held]
+    test = [record for record in records if record.object_id == held]
+    captured = {}
+
+    class CapturingClient:
+        def generate_json(self, **kwargs):
+            captured.update(kwargs["extra"])
+            return JointGripperPrediction(
+                gecko=PerGripperPrediction(
+                    candidate_gripper=Gripper.GECKO,
+                    predicted_normal_force_n=1.0,
+                ),
+                silicone=PerGripperPrediction(
+                    candidate_gripper=Gripper.SILICONE,
+                    predicted_normal_force_n=1.2,
+                ),
+                recommended_gripper="gecko",
+            ).model_dump(mode="json")
+
+        def cache_stats(self):
+            return {}
+
+    client = CapturingClient()
+    monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
+    monkeypatch.setattr("modules.experiments.helper.get_client", lambda _cfg: client)
+    monkeypatch.setattr(
+        "modules.experiments.helper.get_embedding_provider",
+        lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
+    )
+
+    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+        _query_with_image(test, cfg)
+    )
+
+    assert captured["query"]["roughness_category"] in {"smooth", "rough"}
+    assert "roughness_index" not in captured["query"]
+    assert captured["roughness_measurement"]["numeric_values_withheld"] is True
+    assert captured["retrieval_config"] == {
+        "mode": "hybrid",
+        "k": cfg.retrieval.k,
+        "vlm_roughness_representation": "binary_category",
+        "ranking_note": (
+            "Neighbors were ranked upstream with the configured hybrid retrieval. "
+            "Continuous roughness values are intentionally withheld; do not infer them."
+        ),
+    }
+    for surface in captured["retrieved_objects"]:
+        assert "score" not in surface
+        for condition in surface["conditions"]:
+            assert condition["roughness_category"] in {"smooth", "rough"}
+            assert "roughness_index" not in condition
+            assert "score" not in condition
+            similarity = condition["similarity"]
+            assert "roughness" not in similarity
+            assert "roughness_contribution" not in similarity
+            assert "total" not in similarity
+    assert all(item.roughness_index is not None for item in detailed.retrieved_objects)
+    assert all(
+        item.similarity.roughness is not None for item in detailed.retrieved_objects
+    )
+
+
 def test_e4_optional_input_ablation_removes_roughness_and_contact(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.inputs.use_roughness = False

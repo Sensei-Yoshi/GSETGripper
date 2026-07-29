@@ -138,6 +138,10 @@ system, with larger values indicating rougher surfaces. It is intentionally dist
 the image-derived Marigold `roughness` artifact. Schema-v1 measurements and CSV rows that
 contain only `roughness_class` are loaded as legacy provenance; no class-to-index conversion
 is performed, so roughness-enabled E2/E4 remain ineligible until a real index is recorded.
+The global **Roughness sent to VLM** control can derive an experimental binary class at the
+1340 threshold. This is a request-time representation only: stored data and E4 retrieval stay
+continuous, while Gemini receives no numerical roughness evidence. The chosen mode and
+threshold are persisted with runs, prediction batches, and suite snapshots.
 
 ## Adding a tab
 

@@ -296,9 +296,13 @@ def _suite_comparison(context: AppContext) -> None:
 
 def _batch_label(batch: BenchmarkPredictionBatch) -> str:
     targets = "+".join(batch.metadata["active_grippers"])
+    roughness_mode = batch.metadata.get("inputs", {}).get(
+        "roughness_representation", "continuous"
+    )
     return (
-        f"{batch.metadata['created_at'][:19]} | "
-        f"{batch.metadata['experiment'].upper()} | {targets} | {len(batch.rows)} rows"
+        f"{batch.display_name} | {batch.metadata['experiment'].upper()} | "
+        f"{roughness_mode} roughness | "
+        f"{targets} | {len(batch.rows)} rows"
     )
 
 
@@ -370,6 +374,7 @@ def _render_prediction_batch(
         ]
     )
     with summary_tab:
+        st.write(f"**Benchmark name:** {batch.display_name}")
         st.write(f"**Prediction batch:** `{batch.batch_id}`")
         st.write(
             f"**Experiment/method:** {batch.metadata['experiment'].upper()} / "
@@ -377,6 +382,12 @@ def _render_prediction_batch(
         )
         st.write(f"**Predictions:** {len(batch.rows)}")
         st.write(f"**Active grippers:** {', '.join(batch.metadata['active_grippers'])}")
+        st.write(
+            "**VLM roughness representation:** "
+            + batch.metadata.get("inputs", {}).get(
+                "roughness_representation", "continuous"
+            ).title()
+        )
         if selected_evaluation is None:
             readiness = evaluation_readiness(context.config, batch)
             st.info(

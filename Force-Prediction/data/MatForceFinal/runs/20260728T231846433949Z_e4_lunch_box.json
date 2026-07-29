@@ -93,7 +93,6 @@
     "object_name": "Lunch Box",
     "mass_g": 627.68,
     "roughness_index": 1737.81,
-    "projected_contact_fraction": null,
     "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
     "original_image_path": "data/MatForceFinal/Lunch Box.jpg",
     "image_artifact_path": "data/MatForceFinal/run_images/f5f314f250c39fbd38698655786172eaeade4c831d9318f03fbd382e8de9be97.png",
@@ -102,7 +101,6 @@
   "counterfactual": false,
   "truth": {
     "true_gecko_force_n": 5.863,
-    "true_selection": null,
     "object_id": "lunch_box",
     "active_grippers": [
       "gecko"
@@ -143,11 +141,7 @@
       },
       "reasoning_trace": "lowest feasible predicted stationary-finger force",
       "prediction_tie": false,
-      "tie_break_reason": null,
-      "model_recommended_gripper": null,
-      "model_comparison_evidence": [],
-      "model_recommendation_summary": null,
-      "recommendation_agrees_with_selector": null
+      "model_comparison_evidence": []
     },
     "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
     "retrieved_objects": [
@@ -156,12 +150,9 @@
         "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
         "mass_g": 218.15,
         "roughness_index": 1610.85,
-        "projected_contact_fraction": null,
         "semantic_description": "Headphones Case",
         "gecko_min_force_n": 3.01,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5655708801620092,
         "rank": 1,
         "similarity": {
@@ -169,11 +160,9 @@
           "semantic": 0.652467706946594,
           "mass": 0.30904292616598683,
           "roughness": 0.7757538598729197,
-          "contact": null,
           "semantic_contribution": 0.13736162251507242,
           "mass_contribution": 0.12199062874973164,
           "roughness_contribution": 0.30621862889720514,
-          "contact_contribution": null,
           "total": 0.5655708801620092
         }
       },
@@ -182,12 +171,9 @@
         "image_path": "data/MatForceFinal/objects/500g_weight/image.jpg",
         "mass_g": 500.0,
         "roughness_index": 1129.82,
-        "projected_contact_fraction": null,
         "semantic_description": "500g Weight",
         "gecko_min_force_n": 1.03,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5496028616781873,
         "rank": 2,
         "similarity": {
@@ -195,11 +181,9 @@
           "semantic": 0.5985008229916723,
           "mass": 0.7767074297421954,
           "roughness": 0.29641938091365383,
-          "contact": null,
           "semantic_contribution": 0.1260001732614047,
           "mass_contribution": 0.30659503805612975,
           "roughness_contribution": 0.11700765036065283,
-          "contact_contribution": null,
           "total": 0.5496028616781873
         }
       },
@@ -208,12 +192,9 @@
         "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
         "mass_g": 551.01,
         "roughness_index": 892.99,
-        "projected_contact_fraction": null,
         "semantic_description": "Metal Water Bottle",
         "gecko_min_force_n": 3.83,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5370815807537883,
         "rank": 3,
         "similarity": {
@@ -221,11 +202,9 @@
           "semantic": 0.582721049404457,
           "mass": 0.8652361485806264,
           "roughness": 0.18458596297992688,
-          "contact": null,
           "semantic_contribution": 0.12267811566409623,
           "mass_contribution": 0.34154058496603673,
           "roughness_contribution": 0.07286288012365535,
-          "contact_contribution": null,
           "total": 0.5370815807537883
         }
       },
@@ -234,12 +213,9 @@
         "image_path": "data/MatForceFinal/objects/wallet_1/image.jpg",
         "mass_g": 139.66,
         "roughness_index": 1596.55,
-        "projected_contact_fraction": null,
         "semantic_description": "Wallet 1",
         "gecko_min_force_n": 2.013,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.4922842999570758,
         "rank": 4,
         "similarity": {
@@ -247,11 +223,9 @@
           "semantic": 0.5717884814108852,
           "mass": 0.1882848056281931,
           "roughness": 0.75388156417726,
-          "contact": null,
           "semantic_contribution": 0.12037652240229163,
           "mass_contribution": 0.07432294959007622,
           "roughness_contribution": 0.2975848279647079,
-          "contact_contribution": null,
           "total": 0.4922842999570758
         }
       },
@@ -260,12 +234,9 @@
         "image_path": "data/MatForceFinal/objects/people_s_hospital/image.jpg",
         "mass_g": 540.59,
         "roughness_index": 646.42,
-        "projected_contact_fraction": null,
         "semantic_description": "People's Hospital",
         "gecko_min_force_n": 2.68,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.49122324784271526,
         "rank": 5,
         "similarity": {
@@ -273,11 +244,9 @@
           "semantic": 0.533680184826928,
           "mass": 0.8470750843646657,
           "roughness": 0.11272771159585133,
-          "contact": null,
           "semantic_contribution": 0.11235372312145854,
           "mass_contribution": 0.33437174382815754,
           "roughness_contribution": 0.04449778089309921,
-          "contact_contribution": null,
           "total": 0.49122324784271526
         }
       }
@@ -322,6 +291,5 @@
       "mass",
       "roughness"
     ]
-  },
-  "baseline": null
+  }
 }

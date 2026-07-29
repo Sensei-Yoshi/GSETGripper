@@ -1,6 +1,5 @@
 object_id,surface_id,condition_id,object_name,image_path,image_sha256,mass_g,roughness_index,projected_contact_fraction,semantic_description,active_grippers,generation_mode,predicted_gripper,predicted_normal_force_n,model_recommended_gripper,recommendation_agrees_with_selector,pred_gecko_force_n,pred_gecko_feasible
 clay_bowl,clay_bowl,baseline,Clay Bowl,data/MatForceFinal/clay_bowl.jpg,de1b845b4662fb46b27d674cefb9e02353ea1578cb272aaf90617b6a5e707d13,286.71,1847.68,,,"[""gecko""]",single,gecko,4.5,,,4.5,True
-golden_box,golden_box,baseline,Golden Box,data/MatForceFinal/golden_box.jpg,1a034ec14d20ac0cea21f09a3239ec55cb2f6963090979ad2dad7392dfeeef16,231.63,1544.73,,,"[""gecko""]",single,gecko,3.25,,,3.25,True
 large_cardboard_box,large_cardboard_box,baseline,Large Cardboard Box,data/MatForceFinal/large_cardboard_box.jpg,e119fc42761f31ac4bcff77d75a64741c7a722dec19117b5e6b8235481899a4d,671.94,810.34,,,"[""gecko""]",single,gecko,5.75,,,5.75,True
 medicine_bottle,medicine_bottle,baseline,Medicine Bottle,data/MatForceFinal/medicine_bottle.jpg,80fe4da593f50b540359a51d606c6c2c73ba15879ad75b71abb0ae4004d9d766,517.12,934.84,,,"[""gecko""]",single,gecko,3.65,,,3.65,True
 rough_tile,rough_tile,baseline,Rough Tile,data/MatForceFinal/rough_tile.jpg,75c2b235a9adb7857d13db6611a0f5aaae21da37a6316b27702850c3fbe8c0e0,178.52,1992.71,,,"[""gecko""]",single,gecko,1.95,,,1.95,True

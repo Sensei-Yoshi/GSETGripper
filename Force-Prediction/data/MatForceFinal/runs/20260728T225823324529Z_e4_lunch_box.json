@@ -93,7 +93,6 @@
     "object_name": "Lunch Box",
     "mass_g": 627.68,
     "roughness_index": 1737.81,
-    "projected_contact_fraction": null,
     "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
     "original_image_path": "data/MatForceFinal/Lunch Box.jpg",
     "image_artifact_path": "data/MatForceFinal/run_images/f5f314f250c39fbd38698655786172eaeade4c831d9318f03fbd382e8de9be97.png",
@@ -102,7 +101,6 @@
   "counterfactual": false,
   "truth": {
     "true_gecko_force_n": 5.863,
-    "true_selection": null,
     "object_id": "lunch_box",
     "active_grippers": [
       "gecko"
@@ -115,7 +113,6 @@
     "experiment_definition_version": 8,
     "selection": {
       "desired_gripper": "none",
-      "predicted_normal_force_n": null,
       "candidate_predictions": {
         "gecko": {
           "candidate_gripper": "gecko",
@@ -143,11 +140,7 @@
       },
       "reasoning_trace": "no feasible gripper",
       "prediction_tie": false,
-      "tie_break_reason": null,
-      "model_recommended_gripper": null,
-      "model_comparison_evidence": [],
-      "model_recommendation_summary": null,
-      "recommendation_agrees_with_selector": null
+      "model_comparison_evidence": []
     },
     "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
     "retrieved_objects": [
@@ -156,12 +149,9 @@
         "image_path": "data/MatForceFinal/objects/500g_weight/image.jpg",
         "mass_g": 500.0,
         "roughness_index": 1129.82,
-        "projected_contact_fraction": null,
         "semantic_description": "500g Weight",
         "gecko_min_force_n": 1.03,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5639247921747075,
         "rank": 1,
         "similarity": {
@@ -169,11 +159,9 @@
           "semantic": 0.5985008229916723,
           "mass": 0.7226074718764068,
           "roughness": 0.29641938091365383,
-          "contact": null,
           "semantic_contribution": 0.2816474461137281,
           "mass_contribution": 0.21253160937541374,
           "roughness_contribution": 0.0697457366855656,
-          "contact_contribution": null,
           "total": 0.5639247921747075
         }
       },
@@ -182,12 +170,9 @@
         "image_path": "data/MatForceFinal/objects/metal_water_bottle/image.jpg",
         "mass_g": 551.01,
         "roughness_index": 892.99,
-        "projected_contact_fraction": null,
         "semantic_description": "Metal Water Bottle",
         "gecko_min_force_n": 3.83,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.561824734445871,
         "rank": 2,
         "similarity": {
@@ -195,11 +180,9 @@
           "semantic": 0.582721049404457,
           "mass": 0.8301816476848888,
           "roughness": 0.18458596297992688,
-          "contact": null,
           "semantic_contribution": 0.2742216703079798,
           "mass_contribution": 0.24417107284849665,
           "roughness_contribution": 0.04343199128939456,
-          "contact_contribution": null,
           "total": 0.561824734445871
         }
       },
@@ -208,12 +191,9 @@
         "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
         "mass_g": 218.15,
         "roughness_index": 1610.85,
-        "projected_contact_fraction": null,
         "semantic_description": "Headphones Case",
         "gecko_min_force_n": 3.01,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5545616184901615,
         "rank": 3,
         "similarity": {
@@ -221,11 +201,9 @@
           "semantic": 0.652467706946594,
           "mass": 0.22095808385366325,
           "roughness": 0.7757538598729197,
-          "contact": null,
           "semantic_contribution": 0.30704362679839714,
           "mass_contribution": 0.06498767172166565,
           "roughness_contribution": 0.18253031997009875,
-          "contact_contribution": null,
           "total": 0.5545616184901615
         }
       },
@@ -234,12 +212,9 @@
         "image_path": "data/MatForceFinal/objects/people_s_hospital/image.jpg",
         "mass_g": 540.59,
         "roughness_index": 646.42,
-        "projected_contact_fraction": null,
         "semantic_description": "People's Hospital",
         "gecko_min_force_n": 2.68,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5152693231895836,
         "rank": 4,
         "similarity": {
@@ -247,11 +222,9 @@
           "semantic": 0.533680184826928,
           "mass": 0.8078452338448185,
           "roughness": 0.11272771159585133,
-          "contact": null,
           "semantic_contribution": 0.2511436163891426,
           "mass_contribution": 0.23760153936612308,
           "roughness_contribution": 0.02652416743431796,
-          "contact_contribution": null,
           "total": 0.5152693231895836
         }
       },
@@ -260,12 +233,9 @@
         "image_path": "data/MatForceFinal/objects/camera_cardboard_box/image.jpg",
         "mass_g": 871.93,
         "roughness_index": 804.32,
-        "projected_contact_fraction": null,
         "semantic_description": "Camera Cardboard Box",
         "gecko_min_force_n": 7.46,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.484641050863403,
         "rank": 5,
         "similarity": {
@@ -273,11 +243,9 @@
           "semantic": 0.5617615466599305,
           "mass": 0.625289243226409,
           "roughness": 0.15458981881659054,
-          "contact": null,
           "semantic_contribution": 0.2643583748987908,
           "mass_contribution": 0.1839086009489438,
           "roughness_contribution": 0.03637407501566836,
-          "contact_contribution": null,
           "total": 0.484641050863403
         }
       }
@@ -322,6 +290,5 @@
       "mass",
       "roughness"
     ]
-  },
-  "baseline": null
+  }
 }

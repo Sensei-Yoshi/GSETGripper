@@ -329,6 +329,61 @@ def test_e2_joint_payload_contains_measurements_but_no_retrieval_or_physics(monk
     assert "physics_feasible" not in captured
 
 
+def test_e2_binary_roughness_payload_withholds_numerical_index(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.inputs.roughness_representation = "binary"
+    captured = {}
+
+    class FakeClient:
+        def generate_json(self, **kwargs):
+            captured.update(kwargs["extra"])
+            return JointGripperPrediction(
+                gecko=PerGripperPrediction(
+                    candidate_gripper=Gripper.GECKO,
+                    predicted_normal_force_n=1.0,
+                ),
+                silicone=PerGripperPrediction(
+                    candidate_gripper=Gripper.SILICONE,
+                    predicted_normal_force_n=1.2,
+                ),
+                recommended_gripper="gecko",
+            ).model_dump(mode="json")
+
+    monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: FakeClient())
+    query = Query(
+        object_id="query",
+        image_path="",
+        mass_g=100,
+        roughness_index=1340.0,
+        projected_contact_fraction=0.8,
+        semantic_description="rough sidewall",
+    )
+
+    vlm_predict_joint(
+        cfg,
+        query,
+        np.zeros((8, 8, 3), dtype=np.uint8),
+        [],
+        instruction=cfg.prompts.experiments["e2"],
+        include_retrieval=False,
+        include_measured=True,
+    )
+
+    assert captured["query"] == {
+        "mass_g": 100,
+        "roughness_category": "rough",
+        "projected_contact_fraction": 0.8,
+    }
+    assert captured["roughness_measurement"] == {
+        "representation": "binary_category",
+        "categories": ["smooth", "rough"],
+        "scope": "relative_to_this_dataset",
+        "numeric_values_withheld": True,
+    }
+    assert "roughness_index" not in str(captured)
+    assert "1340" not in str(captured)
+
+
 def test_legacy_e4_e5_artifact_labels_preserve_old_meanings():
     assert saved_run_experiment_label(
         {

@@ -41,6 +41,9 @@ collection:
 inputs:
   # Session-level Streamlit controls override these defaults for experiment runs.
   use_roughness: true
+  # "binary" is an experimental VLM representation. Retrieval still uses the
+  # continuous index, but Gemini receives only smooth/rough categories.
+  roughness_representation: continuous
   use_projected_contact: true
 
 # --- Requested gripper outputs ----------------------------------------------
@@ -66,8 +69,10 @@ roughness:
   units: unitless_index
   higher_is_rougher: true
   # Approximate median pairwise gap in the current MatForceFinal measurements.
-  # Recalibrate as coverage grows. Raw values are never discretized.
+  # Recalibrate as coverage grows. Retrieval always remains continuous.
   characteristic_scale: 500.0
+  # Dataset-relative split used only by the experimental binary VLM payload.
+  binary_threshold: 1340.0
 
 # --- Retrieval ---------------------------------------------------------------
 retrieval:

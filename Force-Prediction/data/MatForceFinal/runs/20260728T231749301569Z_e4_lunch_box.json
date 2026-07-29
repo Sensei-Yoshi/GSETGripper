@@ -93,7 +93,6 @@
     "object_name": "Lunch Box",
     "mass_g": 627.68,
     "roughness_index": 1737.81,
-    "projected_contact_fraction": null,
     "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
     "original_image_path": "data/MatForceFinal/Lunch Box.jpg",
     "image_artifact_path": "data/MatForceFinal/run_images/f5f314f250c39fbd38698655786172eaeade4c831d9318f03fbd382e8de9be97.png",
@@ -102,7 +101,6 @@
   "counterfactual": false,
   "truth": {
     "true_gecko_force_n": 5.863,
-    "true_selection": null,
     "object_id": "lunch_box",
     "active_grippers": [
       "gecko"
@@ -143,11 +141,7 @@
       },
       "reasoning_trace": "lowest feasible predicted stationary-finger force",
       "prediction_tie": false,
-      "tie_break_reason": null,
-      "model_recommended_gripper": null,
-      "model_comparison_evidence": [],
-      "model_recommendation_summary": null,
-      "recommendation_agrees_with_selector": null
+      "model_comparison_evidence": []
     },
     "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
     "retrieved_objects": [
@@ -156,12 +150,9 @@
         "image_path": "data/MatForceFinal/objects/headphones_case/image.jpg",
         "mass_g": 218.15,
         "roughness_index": 1610.85,
-        "projected_contact_fraction": null,
         "semantic_description": "Headphones Case",
         "gecko_min_force_n": 3.01,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.65718800658916,
         "rank": 1,
         "similarity": {
@@ -169,11 +160,9 @@
           "semantic": 0.652467706946594,
           "mass": 0.30904292616598683,
           "roughness": 0.7757538598729197,
-          "contact": null,
           "semantic_contribution": 0.18641934484188402,
           "mass_contribution": 0.05518623681535479,
           "roughness_contribution": 0.4155824249319212,
-          "contact_contribution": null,
           "total": 0.65718800658916
         }
       },
@@ -182,12 +171,9 @@
         "image_path": "data/MatForceFinal/objects/wallet_2/image.jpg",
         "mass_g": 85.62,
         "roughness_index": 1623.1,
-        "projected_contact_fraction": null,
         "semantic_description": "Wallet 2",
         "gecko_min_force_n": 0.75,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6099644727102034,
         "rank": 2,
         "similarity": {
@@ -195,11 +181,9 @@
           "semantic": 0.5759345726849865,
           "mass": 0.1093220339036245,
           "roughness": 0.7949945656591787,
-          "contact": null,
           "semantic_contribution": 0.1645527350528533,
           "mass_contribution": 0.019521791768504375,
           "roughness_contribution": 0.4258899458888457,
-          "contact_contribution": null,
           "total": 0.6099644727102034
         }
       },
@@ -208,12 +192,9 @@
         "image_path": "data/MatForceFinal/objects/wallet_1/image.jpg",
         "mass_g": 139.66,
         "roughness_index": 1596.55,
-        "projected_contact_fraction": null,
         "semantic_description": "Wallet 1",
         "gecko_min_force_n": 2.013,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6008555479316767,
         "rank": 3,
         "similarity": {
@@ -221,11 +202,9 @@
           "semantic": 0.5717884814108852,
           "mass": 0.1882848056281931,
           "roughness": 0.75388156417726,
-          "contact": null,
           "semantic_contribution": 0.16336813754596724,
           "mass_contribution": 0.0336222867193202,
           "roughness_contribution": 0.40386512366638927,
-          "contact_contribution": null,
           "total": 0.6008555479316767
         }
       },
@@ -234,12 +213,9 @@
         "image_path": "data/MatForceFinal/objects/leather_sunglasses_case/image.jpg",
         "mass_g": 179.9,
         "roughness_index": 2014.79,
-        "projected_contact_fraction": null,
         "semantic_description": "Leather Sunglasses Case",
         "gecko_min_force_n": 1.906,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5315346949508146,
         "rank": 4,
         "similarity": {
@@ -247,11 +223,9 @@
           "semantic": 0.626956591969039,
           "mass": 0.24945492383206136,
           "roughness": 0.5746696069140127,
-          "contact": null,
           "semantic_contribution": 0.17913045484829687,
           "mass_contribution": 0.0445455221128681,
           "roughness_contribution": 0.30785871798964964,
-          "contact_contribution": null,
           "total": 0.5315346949508146
         }
       },
@@ -260,12 +234,9 @@
         "image_path": "data/MatForceFinal/objects/big_stone/image.jpg",
         "mass_g": 278.8,
         "roughness_index": 2048.83,
-        "projected_contact_fraction": null,
         "semantic_description": "Big Stone",
         "gecko_min_force_n": 4.623,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.5144348713349491,
         "rank": 5,
         "similarity": {
@@ -273,11 +244,9 @@
           "semantic": 0.5402589810357656,
           "mass": 0.40587646121050847,
           "roughness": 0.5368481495359939,
-          "contact": null,
           "semantic_contribution": 0.15435970886736164,
           "mass_contribution": 0.07247793950187652,
           "roughness_contribution": 0.287597222965711,
-          "contact_contribution": null,
           "total": 0.5144348713349491
         }
       }
@@ -322,6 +291,5 @@
       "mass",
       "roughness"
     ]
-  },
-  "baseline": null
+  }
 }

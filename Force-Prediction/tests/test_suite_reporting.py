@@ -125,7 +125,7 @@ def test_suite_manifest_snapshots_primary_experiments(tmp_path):
     persisted = load_suite(suite_manifest_path(cfg, manifest["suite_id"]))
 
     assert persisted["experiments"] == ["e1", "e2", "e3", "e4"]
-    assert persisted["definition_snapshot"]["experiment_definition_version"] == 8
+    assert persisted["definition_snapshot"]["experiment_definition_version"] == 9
     assert persisted["schema_version"] == 10
     assert persisted["backend"] == "gemini_joint_generation"
     assert persisted["definition_snapshot"]["backend"] == "gemini_joint_generation"

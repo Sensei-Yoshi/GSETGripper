@@ -93,7 +93,6 @@
     "object_name": "Metal Water Bottle",
     "mass_g": 551.01,
     "roughness_index": 892.99,
-    "projected_contact_fraction": null,
     "semantic_description": "Coated metallic cylindrical water bottle with a smooth, dry, matte-finished lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
     "original_image_path": "data/MatForceFinal/metal water bottle.jpg",
     "image_artifact_path": "data/MatForceFinal/run_images/4962e7cefc7f16c49185477bbb42a8f496deb00a13489ff1403ee5740e1ef420.png",
@@ -102,7 +101,6 @@
   "counterfactual": false,
   "truth": {
     "true_gecko_force_n": 3.83,
-    "true_selection": null,
     "object_id": "metal_water_bottle",
     "active_grippers": [
       "gecko"
@@ -142,11 +140,7 @@
       },
       "reasoning_trace": "lowest feasible predicted stationary-finger force",
       "prediction_tie": false,
-      "tie_break_reason": null,
-      "model_recommended_gripper": null,
-      "model_comparison_evidence": [],
-      "model_recommendation_summary": null,
-      "recommendation_agrees_with_selector": null
+      "model_comparison_evidence": []
     },
     "semantic_description": "Coated metallic cylindrical water bottle with a smooth, dry, matte-finished lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
     "retrieved_objects": [
@@ -155,12 +149,9 @@
         "image_path": "data/MatForceFinal/objects/500g_weight/image.jpg",
         "mass_g": 500.0,
         "roughness_index": 1129.82,
-        "projected_contact_fraction": null,
         "semantic_description": "500g Weight",
         "gecko_min_force_n": 1.03,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6857091609023305,
         "rank": 1,
         "similarity": {
@@ -168,11 +159,9 @@
           "semantic": 0.601759422664367,
           "mass": 0.8704209179900906,
           "roughness": 0.6227189410185573,
-          "contact": null,
           "semantic_contribution": 0.28318090478323155,
           "mass_contribution": 0.2560061523500266,
           "roughness_contribution": 0.1465221037690723,
-          "contact_contribution": null,
           "total": 0.6857091609023305
         }
       },
@@ -181,12 +170,9 @@
         "image_path": "data/MatForceFinal/objects/people_s_hospital/image.jpg",
         "mass_g": 540.59,
         "roughness_index": 646.42,
-        "projected_contact_fraction": null,
         "semantic_description": "People's Hospital",
         "gecko_min_force_n": 2.68,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6697625319827673,
         "rank": 2,
         "similarity": {
@@ -194,11 +180,9 @@
           "semantic": 0.5097084068556802,
           "mass": 0.9730945463533682,
           "roughness": 0.61070576427369,
-          "contact": null,
           "semantic_contribution": 0.23986277969679068,
           "mass_contribution": 0.2862042783392259,
           "roughness_contribution": 0.1436954739467506,
-          "contact_contribution": null,
           "total": 0.6697625319827673
         }
       },
@@ -207,12 +191,9 @@
         "image_path": "data/MatForceFinal/objects/cetaphil/image.jpg",
         "mass_g": 403.68,
         "roughness_index": 797.68,
-        "projected_contact_fraction": null,
         "semantic_description": "Cetaphil",
         "gecko_min_force_n": 1.923,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6578303695381815,
         "rank": 3,
         "similarity": {
@@ -220,11 +201,9 @@
           "semantic": 0.5839395875462674,
           "mass": 0.6411626538045735,
           "roughness": 0.82644657818902,
-          "contact": null,
           "semantic_contribution": 0.2747951000217729,
           "mass_contribution": 0.18857725111899218,
           "roughness_contribution": 0.19445801839741647,
-          "contact_contribution": null,
           "total": 0.6578303695381815
         }
       },
@@ -233,12 +212,9 @@
         "image_path": "data/MatForceFinal/objects/soda_can/image.jpg",
         "mass_g": 321.71,
         "roughness_index": 954.75,
-        "projected_contact_fraction": null,
         "semantic_description": "Soda Can",
         "gecko_min_force_n": 1.816,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6482058830363727,
         "rank": 4,
         "similarity": {
@@ -246,11 +222,9 @@
           "semantic": 0.6457810575701067,
           "mass": 0.4636071382210833,
           "roughness": 0.8838039649880167,
-          "contact": null,
           "semantic_contribution": 0.3038969682682855,
           "mass_contribution": 0.13635504065325976,
           "roughness_contribution": 0.20795387411482746,
-          "contact_contribution": null,
           "total": 0.6482058830363727
         }
       },
@@ -259,12 +233,9 @@
         "image_path": "data/MatForceFinal/objects/camera_cardboard_box/image.jpg",
         "mass_g": 871.93,
         "roughness_index": 804.32,
-        "projected_contact_fraction": null,
         "semantic_description": "Camera Cardboard Box",
         "gecko_min_force_n": 7.46,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6167875632959432,
         "rank": 5,
         "similarity": {
@@ -272,11 +243,9 @@
           "semantic": 0.5674862942083233,
           "mass": 0.5191036542213374,
           "roughness": 0.8374949878144401,
-          "contact": null,
           "semantic_contribution": 0.26705237374509333,
           "mass_contribution": 0.15267754535921688,
           "roughness_contribution": 0.19705764419163296,
-          "contact_contribution": null,
           "total": 0.6167875632959432
         }
       }
@@ -321,6 +290,5 @@
       "mass",
       "roughness"
     ]
-  },
-  "baseline": null
+  }
 }

@@ -60,6 +60,10 @@ class BenchmarkPredictionBatch:
     def batch_id(self) -> str:
         return str(self.metadata["batch_id"])
 
+    @property
+    def display_name(self) -> str:
+        return str(self.metadata.get("display_name") or self.batch_id)
+
     def to_artifact(self) -> dict[str, Any]:
         return {
             "schema_version": BENCHMARK_SCHEMA_VERSION,
@@ -184,9 +188,15 @@ def generate_benchmark_predictions(
     cfg: Config,
     experiment: str,
     *,
+    display_name: str | None = None,
     progress: Callable[[int, int, str], None] | None = None,
 ) -> BenchmarkPredictionBatch:
     """Generate immutable predictions for held-out, query-ready objects."""
+    normalized_display_name = None
+    if display_name is not None:
+        normalized_display_name = display_name.strip()
+        if not normalized_display_name:
+            raise ValueError("benchmark name is required")
     experiment_id = experiment.lower()
     dataset = get_dataset(cfg, cfg.dataset_id)
     scope = benchmark_scope(cfg, experiment_id)
@@ -291,6 +301,11 @@ def generate_benchmark_predictions(
     prompt_context = prompt_provenance(cfg, definition.prompt)
     metadata = {
         "batch_id": batch_id,
+        **(
+            {"display_name": normalized_display_name}
+            if normalized_display_name is not None
+            else {}
+        ),
         "dataset_id": cfg.dataset_id,
         "created_at": created_at.isoformat(),
         "experiment": experiment_id,

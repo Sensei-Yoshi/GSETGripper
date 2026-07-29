@@ -13,13 +13,12 @@
       "prompt": "e1"
     },
     "backend": {
-      "force": "gemini_joint_generation",
-      "semantic_embedding": null
+      "force": "gemini_joint_generation"
     },
     "generation_source_sha256": "07b330078b7067400d109a9607333d2590f2a1b68b048655455bf48234d4454b",
     "generation_input_sha256": "07c346a99fcd7e513440354262065a5605d571fe0a9d044d7b777023de2a3787",
     "prediction_protocol": "query-excluded reference generation",
-    "query_count": 32,
+    "query_count": 31,
     "eligible_query_ids": [
       "500g_weight",
       "apple",
@@ -34,7 +33,6 @@
       "foam_roller",
       "headphones_case",
       "ketchup",
-      "leather_belt",
       "leather_sunglasses_case",
       "lock",
       "lunch_box",
@@ -83,7 +81,6 @@
         "dim": 1536
       }
     },
-    "retrieval_mode": null,
     "prediction_prompts": {
       "system": "You are a robotics grasp-material selection and pre-grasp force estimation model.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved.\n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. The controller accepts\ncontinuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, roughness class, and projected contact fraction are authoritative.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
       "instruction_key": "e1",
@@ -131,9 +128,6 @@
       "object_name": "500g weight",
       "image_path": "data/MatForceFinal/500g_weight.jpg",
       "image_sha256": "1639f58fa8e9357efa86f3207028c03baaca8716f1d46e83337fb13d3f3c448d",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Cylindrical black object with a smooth, dry lateral surface and continuous curvature. The intended contact region has no visible seams, texture, or contamination.",
       "active_grippers": [
         "gecko",
@@ -193,7 +187,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object geometry is cylindrical with protruding wire hooks",
@@ -237,7 +230,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -253,9 +245,6 @@
       "object_name": "apple",
       "image_path": "data/MatForceFinal/apple.jpg",
       "image_sha256": "9f61ec9e108ad1b46b7cad32b49714166abbbe83a15615f45d18bcb462f90591",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Green spherical organic fruit object with a smooth, dry, nonporous rind and continuous curved lateral surfaces. The intended contact region is clean and smooth with gentle curvature.",
       "active_grippers": [
         "gecko",
@@ -315,7 +304,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "object curvature and surface texture incompatible with rigid gecko pad requirements",
@@ -358,7 +346,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -374,9 +361,6 @@
       "object_name": "banana",
       "image_path": "data/MatForceFinal/banana.jpg",
       "image_sha256": "1daffe4c99f7e2df1896d5aed3faf4e1686b2edf11db45f70d88decdd3a07cc1",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Curved organic fruit object with a smooth, dry, slightly bruised peel and rounded cylindrical geometry. The intended contact region has gentle longitudinal facets and continuous curvature.",
       "active_grippers": [
         "gecko",
@@ -437,7 +421,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "banana peel surface texture, curvature, and bruising",
@@ -481,7 +464,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -497,9 +479,6 @@
       "object_name": "beaker",
       "image_path": "data/MatForceFinal/beaker.jpg",
       "image_sha256": "269d295738f62559b09b6a9af1c8d9d4747bf977d800a676f054aafbcb579124",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Transparent cylindrical glass beaker with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has printed graduation markings but is otherwise free of major interruptions.",
       "active_grippers": [
         "gecko",
@@ -557,7 +536,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "gecko",
           "model_comparison_evidence": [
             "glass surface is smooth, clean, and nonporous, perfectly matching gecko adhesive requirements",
@@ -600,7 +578,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -616,9 +593,6 @@
       "object_name": "big stone",
       "image_path": "data/MatForceFinal/big_stone.jpg",
       "image_sha256": "ae1e084bd9f61b939eb095f2255277e4ab6b83ca201e93a8a68d73ea1468ff34",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Rough concrete or asphalt fragment with a porous, highly textured surface and irregular planar geometry. The intended contact region is dry, rough, and presents jagged edges.",
       "active_grippers": [
         "gecko",
@@ -676,7 +650,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object surface texture is visibly rough and porous concrete",
@@ -719,7 +692,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -735,9 +707,6 @@
       "object_name": "book",
       "image_path": "data/MatForceFinal/book.jpeg",
       "image_sha256": "1da11e11eec2a6dcd761acda369da93de1c54103cab3a4dc88f18b5d8d944bb1",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Rectangular book with a paper and fabric cover. The intended contact region is dry, planar, and oriented on the opposing lateral faces with sharp vertical edges.",
       "active_grippers": [
         "gecko",
@@ -799,7 +768,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Book cover exhibits visible paper texture which degrades dry-adhesive micro-contact for the gecko gripper.",
@@ -842,7 +810,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -858,9 +825,6 @@
       "object_name": "camera cardboard box",
       "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
       "image_sha256": "699306f082ff2e540757a6e7d44d71262989dcbfc16cfa667de76bffb1676f74",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Cardboard rectangular box object with a smooth, dry, paper label surface and flat orthogonal faces. The intended contact region is clean and dry with flat planar geometry.",
       "active_grippers": [
         "gecko",
@@ -921,7 +885,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Surface material of the object is corrugated cardboard, which is porous and slightly textured",
@@ -965,7 +928,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -981,9 +943,6 @@
       "object_name": "caprisun",
       "image_path": "data/MatForceFinal/caprisun.jpeg",
       "image_sha256": "eb48b0254bd89c9684ce36c3d88daf3e6ad76723ffe9f7a0872e6362fa8ff9bd",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Flexible foil beverage pouch with printed plastic film laminate. The intended contact region is clean and dry, featuring broad compressible flat panels with soft longitudinal creases and sealed edge fins.",
       "active_grippers": [
         "gecko",
@@ -1044,7 +1003,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object flexibility and surface wrinkling visible on the foil pouch",
@@ -1087,7 +1045,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -1103,9 +1060,6 @@
       "object_name": "cetaphil",
       "image_path": "data/MatForceFinal/cetaphil.jpg",
       "image_sha256": "63255770c850e254592b09fe559f34e3bc4eb5fd2d809631e5d96067630eb125",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
       "active_grippers": [
         "gecko",
@@ -1163,7 +1117,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "gecko",
           "model_comparison_evidence": [
             "Smooth, clean, nonporous plastic sidewalls visible on the container",
@@ -1206,7 +1159,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -1222,9 +1174,6 @@
       "object_name": "eraser",
       "image_path": "data/MatForceFinal/eraser.jpg",
       "image_sha256": "1b48ec2a830ca622587056abc006d3826d8c884dbebae58f6f5b8b095aa68093",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Rectangular molded foam block object with a porous, textured sidewall and flat planar geometry. The intended contact region has no visible seams or contamination, presenting a uniform expanded foam surface for opposing pads.",
       "active_grippers": [
         "gecko",
@@ -1286,7 +1235,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Visual identification of the object's porous and beaded expanded polypropylene (EPP) foam surface",
@@ -1329,7 +1277,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -1345,9 +1292,6 @@
       "object_name": "Foam Roller",
       "image_path": "data/MatForceFinal/Foam Roller.jpg",
       "image_sha256": "95fc9b7249b1de6051edce1eb674f218e2a1cefdb1d22c8991c9577efbb94fe4",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Black foamed polymeric cylindrical grip object with a textured, dry, porous lateral sidewall and continuous curvature. The intended contact region is clean with no visible seams or interruptions.",
       "active_grippers": [
         "gecko",
@@ -1407,7 +1351,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "object surface is visibly textured and porous",
@@ -1451,7 +1394,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -1467,9 +1409,6 @@
       "object_name": "Headphones Case",
       "image_path": "data/MatForceFinal/Headphones Case.jpg",
       "image_sha256": "440437a99a4b2d78a18aee34bdd49426d553e873ee64c5176a1402857240f69e",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Fabric-covered semi-rigid case object with a textured, dry, fabric-wrapped lateral surface and rounded geometry. The intended contact region has gently curved, continuous vertical sidewalls interrupted only by a horizontal zipper seam.",
       "active_grippers": [
         "gecko",
@@ -1529,7 +1468,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object exterior is a woven fabric",
@@ -1573,7 +1511,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -1589,9 +1526,6 @@
       "object_name": "ketchup",
       "image_path": "data/MatForceFinal/ketchup.jpg",
       "image_sha256": "2139ba472e0e2209d6ae8ffe9978c62b1da4a1204b94e2172a6f4ad3f0d36689",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
       "active_grippers": [
         "gecko",
@@ -1651,7 +1585,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "gecko",
           "model_comparison_evidence": [
             "Smooth, nonporous plastic surface of the ketchup bottle",
@@ -1694,7 +1627,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -1706,135 +1638,10 @@
       "pred_silicone_feasible": true
     },
     {
-      "object_id": "leather_belt",
-      "object_name": "leather belt",
-      "image_path": "data/MatForceFinal/leather belt.jpg",
-      "image_sha256": "8c0b0881722e354d578457b65120a3bb3b33d8e7d6aef2a2e2afd520cbc386ea",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
-      "semantic_description": "Woven leather monkey fist knot object. The intended contact region is dry, highly irregular with interwoven strands, ridges, and varying curvature, presenting a complex textured surface.",
-      "active_grippers": [
-        "gecko",
-        "silicone"
-      ],
-      "generation_mode": "joint",
-      "predicted_gripper": "silicone",
-      "predicted_normal_force_n": 3.5,
-      "model_recommended_gripper": "silicone",
-      "recommendation_agrees_with_selector": true,
-      "pipeline_result": {
-        "experiment_id": "e1",
-        "experiment_method": "vision_vlm",
-        "experiment_definition_version": 7,
-        "selection": {
-          "desired_gripper": "silicone",
-          "predicted_normal_force_n": 3.5,
-          "candidate_predictions": {
-            "gecko": {
-              "candidate_gripper": "gecko",
-              "visible_surface_material": "Woven leather / braided organic material with gaps and porous texture",
-              "visible_surface_condition": "Textured, porous, interrupted contact points",
-              "compatibility": "low",
-              "feasible": false,
-              "predicted_normal_force_n": 0.0,
-              "evidence_used": [
-                "Visually complex woven leather structure",
-                "Interrupted contact surface with holes and gaps",
-                "Gecko embodiment description requiring smooth, nonporous, continuous surfaces"
-              ],
-              "calculation_summary": "N/A - Gecko adhesive pad is fundamentally incompatible with porous, rough, and highly interrupted surfaces.",
-              "assumptions_and_uncertainty": [
-                "Assumes the braided leather surface lacks the smooth, nonporous planarity needed for gecko pads",
-                "High uncertainty in effective contact area due to interwoven strands"
-              ],
-              "reasoning_trace": "The gecko pad requires broad, intimate contact with clean, dry, smooth, and nonporous surfaces. The object is a woven leather knot featuring severe surface interruptions, gaps, porosity, and texture. Gecko adhesion will fail entirely on such a surface, making the grasp infeasible."
-            },
-            "silicone": {
-              "candidate_gripper": "silicone",
-              "visible_surface_material": "High-friction silicone pad",
-              "visible_surface_condition": "Conformable to irregular and textured objects",
-              "compatibility": "high",
-              "feasible": true,
-              "predicted_normal_force_n": 3.5,
-              "evidence_used": [
-                "Woven leather knot structure requiring frictional holding",
-                "Silicone gripper description noting utility on rough or interrupted surfaces",
-                "Estimated object scale and moderate weight requiring moderate normal force"
-              ],
-              "calculation_summary": "Estimated normal force = Base friction scaling for a moderately weighted textured object: F_n = 3.5 N within the [0, 8] N range.",
-              "assumptions_and_uncertainty": [
-                "Object mass is visually estimated to be around 200-400 grams",
-                "Friction coefficient between silicone and leather is sufficient under moderate normal force"
-              ],
-              "reasoning_trace": "The silicone gripper relies on friction and viscoelastic compliance rather than dry adhesion. It can conform to the irregular geometry and interlocking strands of the woven leather knot. A moderate normal force of 3.5 N provides sufficient frictional engagement to secure and lift the object without exceeding the 8 N limit."
-            }
-          },
-          "reasoning_trace": "lowest feasible predicted stationary-finger force",
-          "prediction_tie": false,
-          "tie_break_reason": null,
-          "model_recommended_gripper": "silicone",
-          "model_comparison_evidence": [
-            "Woven leather texture with gaps and interruptions",
-            "Gecko embodiment requirement for smooth, nonporous surfaces",
-            "Silicone embodiment capability for rough or interrupted surfaces"
-          ],
-          "model_recommendation_summary": "The silicone gripper is recommended because the object's woven leather surface is highly textured, porous, and interrupted with gaps, which completely violates the operating requirements of gecko dry adhesives. The silicone gripper can successfully conform to the irregular surface and lift the object using friction.",
-          "recommendation_agrees_with_selector": true
-        },
-        "semantic_description": "Woven leather monkey fist knot object. The intended contact region is dry, highly irregular with interwoven strands, ridges, and varying curvature, presenting a complex textured surface.",
-        "retrieved_objects": [],
-        "physics_estimates": {},
-        "cache_stats": {
-          "enabled": true,
-          "hits": 0,
-          "misses": 14,
-          "writes": 14,
-          "read_errors": 0,
-          "legacy_hits": 0,
-          "generation": {
-            "hits": 0,
-            "misses": 14,
-            "writes": 14,
-            "read_errors": 0,
-            "legacy_hits": 0
-          },
-          "embeddings": {
-            "hits": 0,
-            "misses": 0,
-            "writes": 0,
-            "read_errors": 0,
-            "legacy_hits": 0
-          },
-          "backend_attempts": {
-            "generation": 14,
-            "embedding": 0
-          }
-        },
-        "active_grippers": [
-          "gecko",
-          "silicone"
-        ],
-        "generation_mode": "joint",
-        "retrieval_mode": null,
-        "effective_inputs": [
-          "object_image",
-          "gripper_context"
-        ]
-      },
-      "pred_gecko_force_n": 0.0,
-      "pred_gecko_feasible": false,
-      "pred_silicone_force_n": 3.5,
-      "pred_silicone_feasible": true
-    },
-    {
       "object_id": "leather_sunglasses_case",
       "object_name": "leather sunglasses case",
       "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
       "image_sha256": "0f7ba0550072047063290db2ebb1ddecd6a7a21cb05ac158813a40368cb77dd3",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Black synthetic leather eyeglass case with a textured, dry surface and smooth curved lateral sidewalls. The intended contact region has no visible seams or interruptions.",
       "active_grippers": [
         "gecko",
@@ -1894,7 +1701,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "surface texture of the object is pebbled and textured rather than smooth and nonporous",
@@ -1937,7 +1743,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -1953,9 +1758,6 @@
       "object_name": "lock",
       "image_path": "data/MatForceFinal/lock.jpg",
       "image_sha256": "dba59204eef67e1a250f5319392962716623eb332020379f007b0bce29766f36",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Metallic cylindrical combination lock body with smooth, dry, nonporous lateral surfaces and curved geometry. The intended contact region has no visible contamination, but features a raised dial on the front face.",
       "active_grippers": [
         "gecko",
@@ -2016,7 +1818,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "padlock geometry features a prominent protruding central dial and curved body",
@@ -2060,7 +1861,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2076,9 +1876,6 @@
       "object_name": "Lunch Box",
       "image_path": "data/MatForceFinal/Lunch Box.jpg",
       "image_sha256": "e9031c9f7fb951a541b207918db9134e0a25d1fc6f641b86188b5813a708a808",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
       "active_grippers": [
         "gecko",
@@ -2141,7 +1938,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "woven fabric surface texture",
@@ -2185,7 +1981,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2201,9 +1996,6 @@
       "object_name": "metal water bottle",
       "image_path": "data/MatForceFinal/metal water bottle.jpg",
       "image_sha256": "1cf02a96c1416fbd38454ada8795ea269fc5501af3da728649a3a46c2de7a3c7",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Coated metallic cylindrical water bottle with a smooth, dry, matte-finished lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
       "active_grippers": [
         "gecko",
@@ -2261,7 +2053,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Cylindrical metal bottle body with a coated finish",
@@ -2304,7 +2095,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2320,9 +2110,6 @@
       "object_name": "microphone",
       "image_path": "data/MatForceFinal/microphone.jpg",
       "image_sha256": "8b9d8d0ad695109324303145e42715dda246a173bae4d26b41dbc9199bc12dec",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Matte plastic cylindrical handheld microphone handle with a smooth, dry surface and continuous curvature. The intended contact region has no visible seams or contamination within the central grasp band.",
       "active_grippers": [
         "gecko",
@@ -2382,7 +2169,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Microphone cylindrical handle geometry and surface interruptions (display panel, text)",
@@ -2425,7 +2211,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2441,9 +2226,6 @@
       "object_name": "multimeter",
       "image_path": "data/MatForceFinal/multimeter.jpeg",
       "image_sha256": "cc2495f588d78fa8bf1620287b12a82b53cd751d6ec12d571969a596222d5c2c",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Yellow rubber-sleeved handheld electronic device with a smooth, slightly worn, dry lateral surface. The intended contact region has flat sides with rounded protective edges and slight surface dust.",
       "active_grippers": [
         "gecko",
@@ -2503,7 +2285,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object surface features a protective rubberized/textured holster unsuitable for dry adhesives.",
@@ -2546,7 +2327,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2562,9 +2342,6 @@
       "object_name": "orange",
       "image_path": "data/MatForceFinal/orange.jpg",
       "image_sha256": "e5ead1aebd4881827ace29423575209f8859c3278ee51421b3d9eff73e22865e",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
       "active_grippers": [
         "gecko",
@@ -2625,7 +2402,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Surface texture of the orange (porous and pebbled vs smooth required by gecko)",
@@ -2669,7 +2445,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2685,9 +2460,6 @@
       "object_name": "people s hospital",
       "image_path": "data/MatForceFinal/people_s hospital.jpg",
       "image_sha256": "5afd6318d378dfebb4cd5444b0917d37b336f45367ab3045912b019d26a74e83",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Paperback book with stiff paper cover. The intended contact region is clean, dry, flat, and parallel on opposing lateral faces.",
       "active_grippers": [
         "gecko",
@@ -2747,7 +2519,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Book cover texture and slight flexibility favor the robust frictional tolerance of the silicone pad over strict dry-adhesion constraints.",
@@ -2790,7 +2561,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2806,9 +2576,6 @@
       "object_name": "pretzel bag",
       "image_path": "data/MatForceFinal/pretzel_bag.jpg",
       "image_sha256": "db5352ce968e9f94cbc6b665c91d7d3e97371327f9bc4c256c0e2ac34dbe60c0",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Flexible plastic snack pouch containing loose contents. The intended contact region is dry, flexible, and features slight wrinkles and soft lateral edges.",
       "active_grippers": [
         "gecko",
@@ -2869,7 +2636,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object surface is a flexible, wrinkled plastic pouch rather than a rigid, smooth, flat panel.",
@@ -2913,7 +2679,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -2929,9 +2694,6 @@
       "object_name": "red bull",
       "image_path": "data/MatForceFinal/red_bull.jpg",
       "image_sha256": "ef4c637a55f99fc2954b047edaac63bab60338fc7a14a30b25198f96b59d32dd",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Metallic cylindrical aluminum beverage can with a smooth, painted, and dry lateral surface. The intended contact region has continuous curvature with no visible seams or interruptions.",
       "active_grippers": [
         "gecko",
@@ -2993,7 +2755,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "gecko",
           "model_comparison_evidence": [
             "Smooth, nonporous, clean painted aluminum surface of the beverage can",
@@ -3037,7 +2798,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3053,9 +2813,6 @@
       "object_name": "rubber tire",
       "image_path": "data/MatForceFinal/rubber tire.jpg",
       "image_sha256": "d93e441a8b7143b34585b84fc5b1aee16e73c7e618835fccff12df73baea333c",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Black rubber toy tire or ring with a smooth, dry exterior sidewall and continuous curvature. The intended contact region has no visible seams or contamination, presenting a compliant toroidal surface.",
       "active_grippers": [
         "gecko",
@@ -3117,7 +2874,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "object geometry: curved toroidal elastomer tire",
@@ -3160,7 +2916,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3176,9 +2931,6 @@
       "object_name": "soda can",
       "image_path": "data/MatForceFinal/soda_can.jpg",
       "image_sha256": "83bd430b80ef61e8ee244823866b557f6d6ffeee834433274f651719db6c7409",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Cylindrical aluminum beverage can with a painted exterior coating. The intended contact region is dry, smooth, with continuous cylindrical curvature and no visible seams.",
       "active_grippers": [
         "gecko",
@@ -3240,7 +2992,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "gecko",
           "model_comparison_evidence": [
             "Cylindrical aluminum can provides smooth, clean, nonporous sidewalls highly favorable to gecko dry adhesion",
@@ -3283,7 +3034,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3299,9 +3049,6 @@
       "object_name": "Soldering Iron Box",
       "image_path": "data/MatForceFinal/Soldering Iron Box.jpg",
       "image_sha256": "2ba3f688e7dd93c78c342b99b155b82f0c3bc23ab61c79f6f3ff1a839d0c5d49",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Matte black box object with a smooth, dry, rigid lateral surface and flat geometry. The intended contact region has no visible seams or interruptions across the opposing lateral sides.",
       "active_grippers": [
         "gecko",
@@ -3362,7 +3109,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Presence of screw heads and surface interruptions on the object sidewalls",
@@ -3405,7 +3151,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3421,9 +3166,6 @@
       "object_name": "sponge",
       "image_path": "data/MatForceFinal/sponge.jpeg",
       "image_sha256": "8667e7f5baad84d32755941552e96ec97a1c56d0b64c86fa9545eb6670021eb4",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Porous yellow cellulose sponge with a flat, compressible rectangular form. The intended contact region is dry, textured with visible pores, and presents opposing flat vertical sides.",
       "active_grippers": [
         "gecko",
@@ -3483,7 +3225,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "object porosity and surface texture visible in the image",
@@ -3526,7 +3267,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3542,9 +3282,6 @@
       "object_name": "Toilet Paper",
       "image_path": "data/MatForceFinal/Toilet Paper.jpg",
       "image_sha256": "ac0721d28669fb55d9f64f5c551cb8f7a078e248a55b164b01164308f55055ef",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Soft cylindrical paper product with a dry, textured fibrous surface and continuous curvature. The intended contact region is compressible, cylindrical, and features a slight edge seam from the loose outer ply.",
       "active_grippers": [
         "gecko",
@@ -3602,7 +3339,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "object surface is made of porous, fibrous paper tissue",
@@ -3645,7 +3381,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3661,9 +3396,6 @@
       "object_name": "Wallet 1",
       "image_path": "data/MatForceFinal/Wallet 1.jpg",
       "image_sha256": "b9e7516ce2391cb4b436a1308b994a5129b86c683bb8ebd8d7d08389b0cc8da5",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Flexible fabric pouch form. The intended contact region is clean, dry, flat with slight soft deformation, and bounded by stitched edges.",
       "active_grippers": [
         "gecko",
@@ -3724,7 +3456,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object surface is a woven fabric textile, which is porous and textured.",
@@ -3768,7 +3499,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3784,9 +3514,6 @@
       "object_name": "wallet 2",
       "image_path": "data/MatForceFinal/wallet 2.jpg",
       "image_sha256": "c00126f352b6e738b67076b7ace95392a13122e814cd5d8f8d4f47c207c99f99",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Black textured leather wallet with a flexible folding structure. The intended contact region is clean and dry, featuring a soft, pliable surface with fine pebble grain texture and slightly rounded edges.",
       "active_grippers": [
         "gecko",
@@ -3844,7 +3571,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Wallet surface texture is pebbled and rough, defeating gecko dry adhesion.",
@@ -3887,7 +3613,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"
@@ -3903,9 +3628,6 @@
       "object_name": "wooden block",
       "image_path": "data/MatForceFinal/wooden block.jpg",
       "image_sha256": "791fa8f4138b26f58c9a265818a69d0cddd35cf246caf834b313324307b5982c",
-      "mass_g": null,
-      "roughness_class": null,
-      "projected_contact_fraction": null,
       "semantic_description": "Rectangular wooden block with a solid, dry, porous surface and flat lateral faces meeting at sharp 90-degree edges. The intended contact region is clean and uniform across the opposing parallel sides.",
       "active_grippers": [
         "gecko",
@@ -3963,7 +3685,6 @@
           },
           "reasoning_trace": "lowest feasible predicted stationary-finger force",
           "prediction_tie": false,
-          "tie_break_reason": null,
           "model_recommended_gripper": "silicone",
           "model_comparison_evidence": [
             "Object material is wood, which is porous and textured",
@@ -4007,7 +3728,6 @@
           "silicone"
         ],
         "generation_mode": "joint",
-        "retrieval_mode": null,
         "effective_inputs": [
           "object_image",
           "gripper_context"

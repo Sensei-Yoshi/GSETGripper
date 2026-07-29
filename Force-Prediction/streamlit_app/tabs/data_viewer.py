@@ -553,6 +553,15 @@ def pipeline_run_inspector(context: AppContext) -> None:
                 retrieval.get("use_projected_contact", True),
             )
             st.write(f"Roughness enabled: {saved_inputs.get('use_roughness', True)}")
+            st.write(
+                "VLM roughness representation: "
+                + saved_inputs.get("roughness_representation", "continuous")
+            )
+            if saved_inputs.get("roughness_representation") == "binary":
+                st.write(
+                    "Saved smooth/rough threshold: "
+                    f"{run.get('roughness_measurement', {}).get('binary_threshold', 1340):g}"
+                )
             st.write(f"Projected contact enabled: {contact_enabled}")
             st.write(f"Saved run top k: {retrieval['k']}")
             if retrieval["k"] != base_cfg.retrieval.k:
@@ -587,6 +596,10 @@ def pipeline_run_inspector(context: AppContext) -> None:
         cfg = base_cfg.model_copy(deep=True)
         cfg.retrieval = type(cfg.retrieval).model_validate(run["retrieval_config"])
         cfg.inputs = type(cfg.inputs).model_validate(run.get("inputs", {}))
+        if run.get("roughness_measurement"):
+            cfg.roughness = type(cfg.roughness).model_validate(
+                run["roughness_measurement"]
+            )
         cfg.prediction.active_grippers = tuple(
             Gripper(name) for name in run.get("active_grippers", ("gecko", "silicone"))
         )

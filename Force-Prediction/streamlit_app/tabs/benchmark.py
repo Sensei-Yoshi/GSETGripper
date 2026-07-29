@@ -22,11 +22,15 @@ from streamlit_app.prediction_ui import format_experiment
 
 def _batch_label(batch: BenchmarkPredictionBatch) -> str:
     targets = "+".join(batch.metadata["active_grippers"])
+    roughness_mode = batch.metadata.get("inputs", {}).get(
+        "roughness_representation", "continuous"
+    )
     protocol = batch.metadata.get(
         "evaluation_protocol", "leave_one_surface_out"
     ).replace("_", " ")
     return (
-        f"{batch.metadata['created_at'][:19]} | {protocol} | {targets} | "
+        f"{batch.display_name} | {protocol} | {roughness_mode} roughness | "
+        f"{targets} | "
         f"{len(batch.rows)} predictions"
     )
 
@@ -86,6 +90,13 @@ def render(context: AppContext) -> None:
             on_change=clear_benchmark_summary,
         )
         scope = benchmark_scope(cfg, experiment)
+        if experiment in {"e2", "e4"} and cfg.inputs.use_roughness:
+            mode_label = (
+                "Smooth/Rough only (experimental)"
+                if cfg.inputs.roughness_representation == "binary"
+                else "Continuous index (baseline)"
+            )
+            st.caption(f"VLM roughness evidence: **{mode_label}**")
         if scope.test_ids:
             st.caption(
                 f"Fixed holdout: {len(scope.train_ids)} train · {len(scope.test_ids)} test · "
@@ -100,13 +111,23 @@ def render(context: AppContext) -> None:
             with st.expander("Generation exclusions"):
                 st.json(scope.skipped_queries, expanded=False)
 
+        benchmark_name = st.text_input(
+            "Benchmark name",
+            placeholder="e.g. Binary roughness trial 2",
+            help="Required. This name identifies the saved benchmark in the viewers.",
+            key="benchmark_display_name",
+        )
+        benchmark_name = benchmark_name.strip()
+
         run_predictions = st.button(
             "Run selected",
             type="primary",
             width="stretch",
-            disabled=not scope.query_ids,
+            disabled=not scope.query_ids or not benchmark_name,
             key="run_benchmark_predictions",
         )
+        if not benchmark_name:
+            st.caption("Enter a benchmark name to enable generation.")
         st.caption(
             "This calls Gemini and saves immutable predictions. Force labels are not required."
         )
@@ -124,6 +145,7 @@ def render(context: AppContext) -> None:
             batch = generate_benchmark_predictions(
                 cfg,
                 experiment,
+                display_name=benchmark_name,
                 progress=progress,
             )
             paths = save_prediction_batch(cfg, batch)

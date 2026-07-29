@@ -93,7 +93,6 @@
     "object_name": "Red Bull",
     "mass_g": 332.86,
     "roughness_index": 1121.62,
-    "projected_contact_fraction": null,
     "semantic_description": "Metallic cylindrical aluminum beverage can with a smooth, painted, and dry lateral surface. The intended contact region has continuous curvature with no visible seams or interruptions.",
     "original_image_path": "data/MatForceFinal/red_bull.jpg",
     "image_artifact_path": "data/MatForceFinal/run_images/4fc530bb1fd56d334dce438b11a325e245c4d1f29b299d89d7f909158ca6b736.png",
@@ -102,7 +101,6 @@
   "counterfactual": false,
   "truth": {
     "true_gecko_force_n": 1.746,
-    "true_selection": null,
     "object_id": "red_bull",
     "active_grippers": [
       "gecko"
@@ -143,11 +141,7 @@
       },
       "reasoning_trace": "lowest feasible predicted stationary-finger force",
       "prediction_tie": false,
-      "tie_break_reason": null,
-      "model_recommended_gripper": null,
-      "model_comparison_evidence": [],
-      "model_recommendation_summary": null,
-      "recommendation_agrees_with_selector": null
+      "model_comparison_evidence": []
     },
     "semantic_description": "Metallic cylindrical aluminum beverage can with a smooth, painted, and dry lateral surface. The intended contact region has continuous curvature with no visible seams or interruptions.",
     "retrieved_objects": [
@@ -156,12 +150,9 @@
         "image_path": "data/MatForceFinal/objects/soda_can/image.jpg",
         "mass_g": 321.71,
         "roughness_index": 954.75,
-        "projected_contact_fraction": null,
         "semantic_description": "Soda Can",
         "gecko_min_force_n": 1.816,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7953491328813351,
         "rank": 1,
         "similarity": {
@@ -169,11 +160,9 @@
           "semantic": 0.7366893855784858,
           "mass": 0.9524920505387199,
           "roughness": 0.7162399804153032,
-          "contact": null,
           "semantic_contribution": 0.34667735791928744,
           "mass_contribution": 0.2801447207466823,
           "roughness_contribution": 0.16852705421536546,
-          "contact_contribution": null,
           "total": 0.7953491328813351
         }
       },
@@ -182,12 +171,9 @@
         "image_path": "data/MatForceFinal/objects/beaker/image.jpg",
         "mass_g": 351.24,
         "roughness_index": 1106.84,
-        "projected_contact_fraction": null,
         "semantic_description": "Beaker",
         "gecko_min_force_n": 4.19,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7907800396903598,
         "rank": 2,
         "similarity": {
@@ -195,11 +181,9 @@
           "semantic": 0.6161642532152828,
           "mass": 0.9260912309738302,
           "roughness": 0.9708726235361764,
-          "contact": null,
           "semantic_contribution": 0.28995964857189777,
           "mass_contribution": 0.27237977381583234,
           "roughness_contribution": 0.22844061730262974,
-          "contact_contribution": null,
           "total": 0.7907800396903598
         }
       },
@@ -208,12 +192,9 @@
         "image_path": "data/MatForceFinal/objects/500g_weight/image.jpg",
         "mass_g": 500.0,
         "roughness_index": 1129.82,
-        "projected_contact_fraction": null,
         "semantic_description": "500g Weight",
         "gecko_min_force_n": 1.03,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6833498772878663,
         "rank": 3,
         "similarity": {
@@ -221,11 +202,9 @@
           "semantic": 0.6107578341709579,
           "mass": 0.5591900498276511,
           "roughness": 0.9837337478469522,
-          "contact": null,
           "semantic_contribution": 0.2874154513745684,
           "mass_contribution": 0.164467661714015,
           "roughness_contribution": 0.23146676419928286,
-          "contact_contribution": null,
           "total": 0.6833498772878663
         }
       },
@@ -234,12 +213,9 @@
         "image_path": "data/MatForceFinal/objects/banana/image.jpg",
         "mass_g": 202.6,
         "roughness_index": 1072.02,
-        "projected_contact_fraction": null,
         "semantic_description": "Banana",
         "gecko_min_force_n": 2.523,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6451829066638202,
         "rank": 4,
         "similarity": {
@@ -247,11 +223,9 @@
           "semantic": 0.610730601636243,
           "mass": 0.4920036579625273,
           "roughness": 0.9055615775955905,
-          "contact": null,
           "semantic_contribution": 0.28740263606411437,
           "mass_contribution": 0.1447069582242727,
           "roughness_contribution": 0.21307331237543306,
-          "contact_contribution": null,
           "total": 0.6451829066638202
         }
       },
@@ -260,12 +234,9 @@
         "image_path": "data/MatForceFinal/objects/ketchup/image.jpg",
         "mass_g": 293.77,
         "roughness_index": 705.18,
-        "projected_contact_fraction": null,
         "semantic_description": "Ketchup",
         "gecko_min_force_n": 0.24,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6283310535062727,
         "rank": 5,
         "similarity": {
@@ -273,11 +244,9 @@
           "semantic": 0.5949595200918961,
           "mass": 0.8365541329537088,
           "roughness": 0.43479527102573085,
-          "contact": null,
           "semantic_contribution": 0.27998095063148054,
           "mass_contribution": 0.24604533322167904,
           "roughness_contribution": 0.10230476965311314,
-          "contact_contribution": null,
           "total": 0.6283310535062727
         }
       }
@@ -322,6 +291,5 @@
       "mass",
       "roughness"
     ]
-  },
-  "baseline": null
+  }
 }

@@ -93,7 +93,6 @@
     "object_name": "CapriSun",
     "mass_g": 186.01,
     "roughness_index": 1002.43,
-    "projected_contact_fraction": null,
     "semantic_description": "Flexible foil beverage pouch with printed plastic film laminate. The intended contact region is clean and dry, featuring broad compressible flat panels with soft longitudinal creases and sealed edge fins.",
     "original_image_path": "data/MatForceFinal/caprisun.jpeg",
     "image_artifact_path": "data/MatForceFinal/run_images/ca65a53b7d8d32a9efc5087a6f23f52992b78623c4f68f0559b1963b1beb83f5.png",
@@ -102,7 +101,6 @@
   "counterfactual": false,
   "truth": {
     "true_gecko_force_n": 0.417,
-    "true_selection": null,
     "object_id": "caprisun",
     "active_grippers": [
       "gecko"
@@ -142,11 +140,7 @@
       },
       "reasoning_trace": "lowest feasible predicted stationary-finger force",
       "prediction_tie": false,
-      "tie_break_reason": null,
-      "model_recommended_gripper": null,
-      "model_comparison_evidence": [],
-      "model_recommendation_summary": null,
-      "recommendation_agrees_with_selector": null
+      "model_comparison_evidence": []
     },
     "semantic_description": "Flexible foil beverage pouch with printed plastic film laminate. The intended contact region is clean and dry, featuring broad compressible flat panels with soft longitudinal creases and sealed edge fins.",
     "retrieved_objects": [
@@ -155,12 +149,9 @@
         "image_path": "data/MatForceFinal/objects/banana/image.jpg",
         "mass_g": 202.6,
         "roughness_index": 1072.02,
-        "projected_contact_fraction": null,
         "semantic_description": "Banana",
         "gecko_min_force_n": 2.523,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.7442774616190075,
         "rank": 1,
         "similarity": {
@@ -168,11 +159,9 @@
           "semantic": 0.5933623778871974,
           "mass": 0.8851064436771282,
           "roughness": 0.8700714015099773,
-          "contact": null,
           "semantic_contribution": 0.27922935429985757,
           "mass_contribution": 0.26032542461092,
           "roughness_contribution": 0.20472268270822996,
-          "contact_contribution": null,
           "total": 0.7442774616190075
         }
       },
@@ -181,12 +170,9 @@
         "image_path": "data/MatForceFinal/objects/orange/image.jpg",
         "mass_g": 154.17,
         "roughness_index": 1068.18,
-        "projected_contact_fraction": null,
         "semantic_description": "Orange",
         "gecko_min_force_n": 0.38,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6999533959630848,
         "rank": 2,
         "similarity": {
@@ -194,11 +180,9 @@
           "semantic": 0.5710426736753828,
           "mass": 0.7647498482836389,
           "roughness": 0.8767792751377965,
-          "contact": null,
           "semantic_contribution": 0.2687259640825331,
           "mass_contribution": 0.2249264259657761,
           "roughness_contribution": 0.20630100591477565,
-          "contact_contribution": null,
           "total": 0.6999533959630848
         }
       },
@@ -207,12 +191,9 @@
         "image_path": "data/MatForceFinal/objects/lock/image.jpg",
         "mass_g": 158.66,
         "roughness_index": 1185.41,
-        "projected_contact_fraction": null,
         "semantic_description": "Lock",
         "gecko_min_force_n": 0.55,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6695213600439389,
         "rank": 3,
         "similarity": {
@@ -220,11 +201,9 @@
           "semantic": 0.5779895213798671,
           "mass": 0.7967649564403145,
           "roughness": 0.6935305418766136,
-          "contact": null,
           "semantic_contribution": 0.27199506888464337,
           "mass_contribution": 0.2343426342471513,
           "roughness_contribution": 0.16318365691214437,
-          "contact_contribution": null,
           "total": 0.6695213600439389
         }
       },
@@ -233,12 +212,9 @@
         "image_path": "data/MatForceFinal/objects/soda_can/image.jpg",
         "mass_g": 321.71,
         "roughness_index": 954.75,
-        "projected_contact_fraction": null,
         "semantic_description": "Soda Can",
         "gecko_min_force_n": 1.816,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6599784393917854,
         "rank": 4,
         "similarity": {
@@ -246,11 +222,9 @@
           "semantic": 0.6621838397335529,
           "mass": 0.4571960550526906,
           "roughness": 0.9090456191321185,
-          "contact": null,
           "semantic_contribution": 0.3116159245804955,
           "mass_contribution": 0.1344694279566737,
           "roughness_contribution": 0.2138930868546161,
-          "contact_contribution": null,
           "total": 0.6599784393917854
         }
       },
@@ -259,12 +233,9 @@
         "image_path": "data/MatForceFinal/objects/rubber_tire/image.jpg",
         "mass_g": 163.84,
         "roughness_index": 1349.28,
-        "projected_contact_fraction": null,
         "semantic_description": "Rubber Tire",
         "gecko_min_force_n": 0.464,
         "gecko_feasible": true,
-        "silicone_min_force_n": null,
-        "silicone_feasible": null,
         "score": 0.6455169052650562,
         "rank": 5,
         "similarity": {
@@ -272,11 +243,9 @@
           "semantic": 0.6004959942388517,
           "mass": 0.8341849537844452,
           "roughness": 0.499723666668229,
-          "contact": null,
           "semantic_contribution": 0.28258635023004786,
           "mass_contribution": 0.24534851581895445,
           "roughness_contribution": 0.11758203921605388,
-          "contact_contribution": null,
           "total": 0.6455169052650562
         }
       }
@@ -321,6 +290,5 @@
       "mass",
       "roughness"
     ]
-  },
-  "baseline": null
+  }
 }

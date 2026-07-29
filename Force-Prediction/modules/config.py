@@ -63,6 +63,7 @@ class CollectionConfig(BaseModel):
 class InputsConfig(BaseModel):
     use_roughness: bool = True
     use_projected_contact: bool = True
+    roughness_representation: Literal["continuous", "binary"] = "continuous"
 
 
 class PredictionConfig(BaseModel):
@@ -101,6 +102,7 @@ class RoughnessConfig(BaseModel):
     units: str = Field(min_length=1)
     higher_is_rougher: bool = True
     characteristic_scale: float = Field(gt=0, allow_inf_nan=False)
+    binary_threshold: float = Field(default=1340.0, ge=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def _validate_direction(self) -> RoughnessConfig:
@@ -206,7 +208,7 @@ class ExperimentMethod(StrEnum):
 
 
 EXPERIMENT_IDS = ("e1", "e2", "e3", "e4")
-EXPERIMENT_DEFINITION_VERSION = 8
+EXPERIMENT_DEFINITION_VERSION = 9
 
 
 class ExperimentConfig(BaseModel):
