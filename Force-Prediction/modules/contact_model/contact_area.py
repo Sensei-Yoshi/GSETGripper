@@ -58,6 +58,8 @@ class ContactEstimate:
     minimum_contact_fraction: float
     pad_band: tuple[float, float]
     feasible: bool
+    mode: str = "compliant"
+    is_planar: bool | None = None
 
     @property
     def k_max_per_mm(self) -> float:
@@ -225,67 +227,176 @@ def _analyze_finger(
     )
 
 
+def _evaluate_window(
+    b: Boundary,
+    pad_lo: float,
+    pad_hi: float,
+    anchor_reachable: np.ndarray,
+    walk_mask_for_anchor,
+    pad_length_mm: float,
+    side_angle_deg: float,
+) -> tuple[GraspPair, FingerResult, FingerResult]:
+    """Select side anchors in one pad window and walk each contiguous patch.
+
+    ``anchor_reachable`` gates anchor selection; ``walk_mask_for_anchor`` yields
+    the per-sample contact mask fed to the walk for a given anchor.  Compliant
+    mode passes the bend-radius reachability array for both; rigid mode passes
+    an all-true anchor mask and a pad-plane coincidence mask for the walk.
+    """
+    band_idx = np.where(
+        (b.pts[:, 1] >= pad_lo - 1e-9) & (b.pts[:, 1] <= pad_hi + 1e-9)
+    )[0]
+    band_center = 0.5 * (pad_lo + pad_hi)
+    left_anchor = anchor_in_band(
+        b, band_idx, "left", band_center, side_angle_deg, anchor_reachable
+    )
+    right_anchor = anchor_in_band(
+        b, band_idx, "right", band_center, side_angle_deg, anchor_reachable
+    )
+    pair = pair_from_anchors(b, left_anchor, right_anchor)
+    if not pair.antipodal:
+        return (
+            pair,
+            _empty_finger("left", pad_length_mm, left_anchor),
+            _empty_finger("right", pad_length_mm, right_anchor),
+        )
+    left = _analyze_finger(
+        b, left_anchor, "left", walk_mask_for_anchor(left_anchor),
+        pad_lo, pad_hi, pad_length_mm, side_angle_deg,
+    )
+    right = _analyze_finger(
+        b, right_anchor, "right", walk_mask_for_anchor(right_anchor),
+        pad_lo, pad_hi, pad_length_mm, side_angle_deg,
+    )
+    return pair, left, right
+
+
+def _rigid_pad_top_candidates(
+    object_top: float,
+    object_bottom: float,
+    pad_length_mm: float,
+    finger_extension_mm: float,
+    ds: float,
+) -> list[float]:
+    """Pad-top placements to search for a rigid, straight finger.
+
+    The 4.2-inch contact pad slides down from the object top by at most
+    ``finger_extension_mm`` (the 2.5-inch non-contact finger below the pad), and
+    never so far that the pad leaves the object bottom.  Objects shorter than
+    ``pad_length_mm + finger_extension_mm`` therefore allow less downward travel,
+    and objects shorter than the pad have no vertical freedom at all.
+    """
+    height = object_top - object_bottom
+    travel = max(min(finger_extension_mm, height - pad_length_mm), 0.0)
+    if travel <= 0.0:
+        return [object_top]
+    step = max(2.0 * ds, 0.5)
+    tops = [object_top - offset for offset in np.arange(0.0, travel, step)]
+    tops.append(object_top - travel)
+    return tops
+
+
 def estimate_contact(
     pts_mm: np.ndarray,
     *,
+    mode: str = "compliant",
     pad_length_mm: float = 106.68,
     minimum_bend_radius_mm: float = 20.0,
     side_angle_deg: float = 30.0,
     minimum_contact_fraction: float = 0.05,
+    rigid_contact_tolerance_mm: float = 0.5,
+    finger_extension_mm: float = 63.5,
+    planar_threshold: float = 0.15,
     ds: float = 0.25,
     smoothing_mm: float = 0.2,
 ) -> ContactEstimate:
-    """Estimate contiguous projected side contact for both gripper pads."""
+    """Estimate contiguous projected side contact for both gripper pads.
+
+    ``mode`` selects the finger model:
+
+    - ``"compliant"`` (default): the Fin-Ray finger drapes around the object
+      side up to ``minimum_bend_radius_mm``, with the pad window aligned to the
+      object top.  Unchanged from earlier behaviour.
+    - ``"rigid"``: the finger stays perfectly straight, so contact only holds on
+      a flat face coincident with the pad plane within
+      ``rigid_contact_tolerance_mm``.  The pad window is slid vertically to
+      maximise combined contact, within the downward travel allowed by the
+      below-pad ``finger_extension_mm``.
+    """
+    if mode not in ("compliant", "rigid"):
+        raise ValueError("mode must be 'compliant' or 'rigid'")
     if pad_length_mm <= 0:
         raise ValueError("pad_length_mm must be positive")
-    if minimum_bend_radius_mm <= 0:
+    if mode == "compliant" and minimum_bend_radius_mm <= 0:
         raise ValueError("minimum_bend_radius_mm must be positive")
     if not 0.0 < side_angle_deg < 90.0:
         raise ValueError("side_angle_deg must be between 0 and 90 degrees")
     if not 0.0 <= minimum_contact_fraction <= 1.0:
         raise ValueError("minimum_contact_fraction must be between 0 and 1")
+    if mode == "rigid" and rigid_contact_tolerance_mm <= 0:
+        raise ValueError("rigid_contact_tolerance_mm must be positive")
 
     b = build_boundary(pts_mm, ds=ds, smoothing_mm=smoothing_mm)
-    reachable = reachability_mask(b, minimum_bend_radius_mm)
-    pad_hi = float(b.pts[:, 1].max())
-    pad_lo = pad_hi - pad_length_mm
-    band_idx = np.where(
-        (b.pts[:, 1] >= pad_lo - 1e-9) & (b.pts[:, 1] <= pad_hi + 1e-9)
-    )[0]
-    band_center = 0.5 * (pad_lo + pad_hi)
+    object_top = float(b.pts[:, 1].max())
+    object_bottom = float(b.pts[:, 1].min())
 
-    left_anchor = anchor_in_band(
-        b, band_idx, "left", band_center, side_angle_deg, reachable
-    )
-    right_anchor = anchor_in_band(
-        b, band_idx, "right", band_center, side_angle_deg, reachable
-    )
-    pair = pair_from_anchors(b, left_anchor, right_anchor)
+    if mode == "compliant":
+        reachable = reachability_mask(b, minimum_bend_radius_mm)
+        pad_top_candidates = [object_top]
 
-    if not pair.antipodal:
-        left = _empty_finger("left", pad_length_mm, left_anchor)
-        right = _empty_finger("right", pad_length_mm, right_anchor)
-        return ContactEstimate(
-            b, reachable, pair, left, right, pad_length_mm,
-            minimum_bend_radius_mm, side_angle_deg, minimum_contact_fraction,
-            (pad_lo, pad_hi), False,
+        def walk_mask_for_anchor(anchor: int) -> np.ndarray:
+            return reachable
+    else:
+        reachable = np.ones(len(b), dtype=bool)
+        pad_top_candidates = _rigid_pad_top_candidates(
+            object_top, object_bottom, pad_length_mm,
+            finger_extension_mm, b.ds,
         )
 
-    left = _analyze_finger(
-        b, left_anchor, "left", reachable, pad_lo, pad_hi,
-        pad_length_mm, side_angle_deg,
+        def walk_mask_for_anchor(anchor: int) -> np.ndarray:
+            return (
+                np.abs(b.pts[:, 0] - b.pts[anchor, 0])
+                <= rigid_contact_tolerance_mm
+            )
+
+    best: tuple | None = None
+    for pad_hi in pad_top_candidates:
+        pad_lo = pad_hi - pad_length_mm
+        pair, left, right = _evaluate_window(
+            b, pad_lo, pad_hi, reachable, walk_mask_for_anchor,
+            pad_length_mm, side_angle_deg,
+        )
+        # Maximise combined contact length; prefer an antipodal placement when
+        # two windows tie at zero (e.g. a cylinder that only meets the floor).
+        score = (
+            left.contact_length + right.contact_length,
+            1.0 if pair.antipodal else 0.0,
+        )
+        if best is None or score > best[0]:
+            best = (score, pad_lo, pad_hi, pair, left, right)
+
+    assert best is not None
+    _, pad_lo, pad_hi, pair, left, right = best
+
+    combined_length = min(
+        left.contact_length + right.contact_length, 2.0 * pad_length_mm
     )
-    right = _analyze_finger(
-        b, right_anchor, "right", reachable, pad_lo, pad_hi,
-        pad_length_mm, side_angle_deg,
+    geometric_fraction = float(
+        np.clip(combined_length / (2.0 * pad_length_mm), 0.0, 1.0)
+    )
+    is_planar = (
+        geometric_fraction > planar_threshold if mode == "rigid" else None
     )
     feasible = bool(
-        left.contact_length > 0.0
-        or right.contact_length > 0.0
-        or minimum_contact_fraction > 0.0
+        pair.antipodal
+        and (
+            left.contact_length > 0.0
+            or right.contact_length > 0.0
+            or minimum_contact_fraction > 0.0
+        )
     )
     return ContactEstimate(
         b, reachable, pair, left, right, pad_length_mm,
         minimum_bend_radius_mm, side_angle_deg, minimum_contact_fraction,
-        (pad_lo, pad_hi), feasible,
+        (pad_lo, pad_hi), feasible, mode=mode, is_planar=is_planar,
     )

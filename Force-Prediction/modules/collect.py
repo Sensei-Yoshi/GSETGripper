@@ -153,10 +153,14 @@ def _contact_params(cfg: Config) -> ContactParams:
     return ContactParams(
         px_per_mm=cfg.geometry.px_per_mm,
         closing_axis="x",
+        mode=cfg.geometry.contact_mode,
         pad_length_mm=cfg.geometry.pad_length_mm,
         minimum_bend_radius_mm=cfg.geometry.minimum_bend_radius_mm,
         side_angle_deg=cfg.geometry.side_angle_deg,
         minimum_contact_fraction=cfg.geometry.minimum_contact_fraction,
+        rigid_contact_tolerance_mm=cfg.geometry.rigid_contact_tolerance_mm,
+        finger_extension_mm=cfg.geometry.finger_extension_mm,
+        planar_threshold=cfg.geometry.planar_threshold,
     )
 
 

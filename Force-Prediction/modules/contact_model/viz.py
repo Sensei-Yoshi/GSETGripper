@@ -19,10 +19,14 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
         2, 1, figsize=(7.5, 9.5), gridspec_kw={"height_ratios": [3.2, 1]}
     )
 
+    rigid = est.mode == "rigid"
+
     closed = np.vstack((b.pts, b.pts[:1]))
     ax.plot(closed[:, 0], closed[:, 1], color="0.55", lw=1.0, zorder=1)
+    # A rigid finger has no bend-radius reachability limit, so the unreachable
+    # scatter is a compliant-only diagnostic.
     bad = ~est.reachable
-    if bad.any():
+    if not rigid and bad.any():
         ax.scatter(
             b.pts[bad, 0], b.pts[bad, 1], s=3, color="crimson", alpha=0.5,
             zorder=2, label="curvature/concavity unreachable",
@@ -60,6 +64,15 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
             fontsize=10, color="darkorange", fontweight="bold",
         )
 
+    if rigid and est.is_planar is not None:
+        planar_label = "PLANAR" if est.is_planar else "NON-PLANAR"
+        ax.text(
+            0.02, 0.98, planar_label,
+            transform=ax.transAxes, ha="left", va="top",
+            fontsize=10, color="teal" if est.is_planar else "crimson",
+            fontweight="bold",
+        )
+
     obj_h = float(b.pts[:, 1].max() - b.pts[:, 1].min())
     obj_w = float(b.pts[:, 0].max() - b.pts[:, 0].min())
     ax.set_aspect("equal")
@@ -76,8 +89,9 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
     ax.legend(loc="upper right", fontsize=7)
 
     axk.plot(b.s, b.kappa, lw=0.9, color="0.3")
-    axk.axhline(est.k_max_per_mm, color="crimson", ls=":", lw=1,
-                label="maximum convex curvature")
+    if not rigid:
+        axk.axhline(est.k_max_per_mm, color="crimson", ls=":", lw=1,
+                    label="maximum convex curvature")
     axk.axhline(0.0, color="0.8", lw=0.8)
     for f in (est.left, est.right):
         if len(f.contact_idx):
@@ -88,9 +102,11 @@ def plot_estimate(est: ContactEstimate, path: Path, title: str) -> None:
     axk.set_xlabel("arc length s (mm)")
     axk.set_ylabel(r"$\kappa$ (1/mm)")
     curvature_extent = float(np.percentile(np.abs(b.kappa), 99))
-    limit = max(1.5 * est.k_max_per_mm, 1.2 * curvature_extent, 0.02)
+    ceiling = 0.0 if rigid else 1.5 * est.k_max_per_mm
+    limit = max(ceiling, 1.2 * curvature_extent, 0.02)
     axk.set_ylim(-limit, limit)
-    axk.legend(loc="upper right", fontsize=7)
+    if not rigid:
+        axk.legend(loc="upper right", fontsize=7)
 
     fig.tight_layout()
     path.parent.mkdir(parents=True, exist_ok=True)

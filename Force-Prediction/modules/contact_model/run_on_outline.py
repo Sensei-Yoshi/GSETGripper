@@ -24,10 +24,14 @@ def main() -> int:
     parser.add_argument("csv", type=Path)
     parser.add_argument("--px-per-mm", type=float, required=True)
     parser.add_argument("--closing-axis", choices=["x", "y"], default="x")
+    parser.add_argument("--mode", choices=["compliant", "rigid"], default="compliant")
     parser.add_argument("--pad-length-mm", type=float, default=106.68)
     parser.add_argument("--minimum-bend-radius-mm", type=float, default=20.0)
     parser.add_argument("--side-angle-deg", type=float, default=30.0)
     parser.add_argument("--minimum-contact-fraction", type=float, default=0.05)
+    parser.add_argument("--rigid-contact-tolerance-mm", type=float, default=0.5)
+    parser.add_argument("--finger-extension-mm", type=float, default=63.5)
+    parser.add_argument("--planar-threshold", type=float, default=0.15)
     parser.add_argument("--ds", type=float, default=0.25)
     parser.add_argument("--smoothing", type=float, default=0.2)
     parser.add_argument("--out", type=Path, default=None)
@@ -40,10 +44,14 @@ def main() -> int:
 
     estimate = estimate_contact(
         points,
+        mode=args.mode,
         pad_length_mm=args.pad_length_mm,
         minimum_bend_radius_mm=args.minimum_bend_radius_mm,
         side_angle_deg=args.side_angle_deg,
         minimum_contact_fraction=args.minimum_contact_fraction,
+        rigid_contact_tolerance_mm=args.rigid_contact_tolerance_mm,
+        finger_extension_mm=args.finger_extension_mm,
+        planar_threshold=args.planar_threshold,
         ds=args.ds,
         smoothing_mm=args.smoothing,
     )
@@ -53,6 +61,10 @@ def main() -> int:
     plot_estimate(estimate, figure, object_name)
 
     print(f"object          : {args.csv.stem}")
+    print(f"mode            : {estimate.mode}")
+    if estimate.mode == "rigid":
+        print(f"planar          : {estimate.is_planar}")
+        print(f"chosen pad top  : {estimate.pad_band[1]:.2f} mm")
     print(f"perimeter       : {estimate.boundary.length:.1f} mm")
     print(f"antipodal       : {estimate.pair.antipodal}")
     print(f"feasible        : {estimate.feasible}")

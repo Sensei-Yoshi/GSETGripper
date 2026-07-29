@@ -30,6 +30,24 @@ RGB image → rembg mask → periodic outline spline → millimetre boundary
 The CLI and Streamlit Contact Fraction tab both call `pipeline_core.analyze_image`,
 so extraction, estimation, summaries, and v2 indexing share one code path.
 
+## Modes
+
+`estimate_contact(..., mode=...)` selects the finger model:
+
+- **`compliant`** (default): the Fin-Ray finger drapes around the object side up
+  to `minimum_bend_radius_mm`, walking a contiguous side patch from a pad window
+  aligned to the object top. This is the behaviour documented below.
+- **`rigid`**: the finger stays perfectly straight, so contact only holds on a
+  flat face coincident with the pad plane within `rigid_contact_tolerance_mm`
+  (there is no bend-radius computation). The 4.2-inch pad window is slid
+  vertically to the placement that **maximises combined contact length**, within
+  the downward travel allowed by the 2.5-inch non-contact finger below the pad
+  (`finger_extension_mm`): `D = min(finger_extension_mm, object_height − pad_length)`,
+  clamped at 0. The result reports `is_planar` — whether the grasp-side faces are
+  straight enough to seat (geometric fraction above `planar_threshold`); curved
+  objects are non-planar and fall to the `minimum_contact_fraction` floor. The
+  bend-radius sweep is skipped in this mode.
+
 ## Physical rules
 
 1. The pad window is `[object_top − 106.68 mm, object_top]`.

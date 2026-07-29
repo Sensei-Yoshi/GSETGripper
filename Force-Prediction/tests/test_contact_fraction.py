@@ -9,15 +9,18 @@ import numpy as np
 import pytest
 
 from modules.contact_model import ContactParams, build_summary, estimate_contact
+from modules.contact_model.contact_area import _rigid_pad_top_candidates
 from modules.contact_model.synthetic_shapes import circle, rounded_rect
 
 ROOT = Path(__file__).resolve().parents[1]
 CONTACT_MODEL = ROOT / "modules" / "contact_model"
 
 PAD_LENGTH_MM = 106.68
+FINGER_EXTENSION_MM = 63.5
 RADIUS_MM = 20.0
 SIDE_ANGLE_DEG = 30.0
 MINIMUM_CONTACT_FRACTION = 0.05
+PLANAR_THRESHOLD = 0.15
 
 
 def _estimate(points: np.ndarray, *, ds: float = 0.1, radius: float = RADIUS_MM):
@@ -27,6 +30,21 @@ def _estimate(points: np.ndarray, *, ds: float = 0.1, radius: float = RADIUS_MM)
         minimum_bend_radius_mm=radius,
         side_angle_deg=SIDE_ANGLE_DEG,
         minimum_contact_fraction=MINIMUM_CONTACT_FRACTION,
+        ds=ds,
+        smoothing_mm=0.0,
+    )
+
+
+def _estimate_rigid(points: np.ndarray, *, ds: float = 0.1, tol: float = 0.5):
+    return estimate_contact(
+        points,
+        mode="rigid",
+        pad_length_mm=PAD_LENGTH_MM,
+        side_angle_deg=SIDE_ANGLE_DEG,
+        minimum_contact_fraction=MINIMUM_CONTACT_FRACTION,
+        rigid_contact_tolerance_mm=tol,
+        finger_extension_mm=FINGER_EXTENSION_MM,
+        planar_threshold=PLANAR_THRESHOLD,
         ds=ds,
         smoothing_mm=0.0,
     )
@@ -214,6 +232,96 @@ def test_v2_summary_excludes_pad_width_and_area():
     assert "w_pad" not in serialized
     assert "pad_width" not in serialized
     assert "area_mm" not in serialized
+
+def test_rigid_tall_planar_box_is_full_contact_and_planar():
+    estimate = _estimate_rigid(_rounded_box(60.0, 220.0))
+    assert estimate.mode == "rigid"
+    assert estimate.is_planar
+    assert estimate.pair.antipodal
+    assert estimate.combined_contact_fraction == pytest.approx(1.0, abs=0.01)
+    assert estimate.left.contact_length <= PAD_LENGTH_MM
+    assert estimate.right.contact_length <= PAD_LENGTH_MM
+    _assert_all_green_points_are_side_facing(estimate)
+
+
+def test_rigid_cylinder_is_non_planar_with_small_contact():
+    estimate = _estimate_rigid(circle(40.0) + np.array([0.0, 40.0]), ds=0.25)
+    assert estimate.mode == "rigid"
+    assert not estimate.is_planar
+    assert estimate.geometric_contact_fraction < PLANAR_THRESHOLD
+    assert estimate.feasible
+    assert estimate.combined_contact_fraction == max(
+        estimate.geometric_contact_fraction, MINIMUM_CONTACT_FRACTION
+    )
+
+
+def test_rigid_tight_cylinder_falls_to_minimum_contact_floor():
+    estimate = _estimate_rigid(circle(6.0) + np.array([0.0, 6.0]))
+    assert not estimate.is_planar
+    assert estimate.geometric_contact_fraction < MINIMUM_CONTACT_FRACTION
+    assert estimate.combined_contact_fraction == MINIMUM_CONTACT_FRACTION
+    assert estimate.contact_floor_applied
+
+
+def test_rigid_placement_slides_down_to_a_lower_straight_face():
+    # A shape with straight vertical faces only in its lower band and a spike
+    # that tapers to a point above; the rigid window should slide down onto the
+    # straight faces instead of staying aligned to the (non-side-facing) top.
+    width, straight_top, apex = 30.0, 120.0, 260.0
+    lower = np.linspace(0.0, straight_top, 300)
+    upper = np.linspace(straight_top, apex, 300)
+
+    def taper(y):
+        return width * (1.0 - (y - straight_top) / (apex - straight_top))
+
+    right = (
+        [(width, y) for y in lower]
+        + [(taper(y), y) for y in upper]
+    )
+    left = (
+        [(-taper(y), y) for y in reversed(upper)]
+        + [(-width, y) for y in reversed(lower)]
+    )
+    points = np.array(right + [(0.0, apex)] + left + [(-width, 0.0), (width, 0.0)])
+    estimate = _estimate_rigid(points, ds=0.25)
+    assert estimate.is_planar
+    # The chosen window top is pushed well below the object top toward the
+    # straight region, and cannot exceed the 63.5 mm downward-travel cap.
+    object_top = float(estimate.boundary.pts[:, 1].max())
+    assert object_top - estimate.pad_band[1] > 10.0
+    assert estimate.pad_band[1] >= object_top - FINGER_EXTENSION_MM - 1e-6
+    assert estimate.left.contact_length > 0.0
+    assert estimate.right.contact_length > 0.0
+
+
+def test_rigid_pad_top_candidates_respect_downward_travel():
+    # Tall object: full 2.5 in travel.
+    tall = _rigid_pad_top_candidates(300.0, 0.0, PAD_LENGTH_MM, FINGER_EXTENSION_MM, 0.25)
+    assert max(tall) == pytest.approx(300.0)
+    assert min(tall) == pytest.approx(300.0 - FINGER_EXTENSION_MM)
+    # Between one and one-and-a-half pad lengths: travel is height - pad length,
+    # so the lowest pad top seats the pad bottom on the object bottom.
+    mid = _rigid_pad_top_candidates(140.0, 0.0, PAD_LENGTH_MM, FINGER_EXTENSION_MM, 0.25)
+    assert min(mid) == pytest.approx(PAD_LENGTH_MM)
+    # Object shorter than the pad: no vertical freedom.
+    short = _rigid_pad_top_candidates(60.0, 0.0, PAD_LENGTH_MM, FINGER_EXTENSION_MM, 0.25)
+    assert short == [60.0]
+
+
+def test_rigid_summary_records_mode_planarity_and_omits_bend_radius():
+    estimate = _estimate_rigid(_rounded_box(60.0, 220.0))
+    params = ContactParams(px_per_mm=2.1852, mode="rigid")
+    summary = build_summary("planar_box", "planar_box.png", estimate, params, {})
+    params_out = summary["params"]
+    assert params_out["mode"] == "rigid"
+    assert params_out["placement"] == "maximized_contact_area"
+    assert "minimum_bend_radius_mm" not in params_out
+    assert "k_max_per_mm" not in params_out
+    assert params_out["finger_extension_mm"] == FINGER_EXTENSION_MM
+    assert summary["results"]["is_planar"] is True
+    assert "chosen_pad_top_mm" in summary["results"]
+    assert summary["bend_radius_sweep_combined_fraction"] == {}
+
 
 @pytest.mark.skipif(
     os.environ.get("RUN_CONTACT_IMAGE_INTEGRATION") != "1",

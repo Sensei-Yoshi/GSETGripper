@@ -109,10 +109,14 @@ def analyze_capture(
     params = ContactParams(
         px_per_mm=args.px_per_mm,
         closing_axis=args.closing_axis,
+        mode=args.mode,
         pad_length_mm=args.pad_length_mm,
         minimum_bend_radius_mm=args.minimum_bend_radius_mm,
         side_angle_deg=args.side_angle_deg,
         minimum_contact_fraction=args.minimum_contact_fraction,
+        rigid_contact_tolerance_mm=args.rigid_contact_tolerance_mm,
+        finger_extension_mm=args.finger_extension_mm,
+        planar_threshold=args.planar_threshold,
         ds=args.ds,
         smoothing=args.smoothing,
         sweep_radii_mm=tuple(
@@ -147,10 +151,14 @@ def main() -> int:
     parser.add_argument("--px-per-mm", type=float, default=None)
     parser.add_argument("--ref-width-mm", type=float, default=None)
     parser.add_argument("--closing-axis", choices=["x", "y"], default="x")
+    parser.add_argument("--mode", choices=["compliant", "rigid"], default="compliant")
     parser.add_argument("--pad-length-mm", type=float, default=106.68)
     parser.add_argument("--minimum-bend-radius-mm", type=float, default=20.0)
     parser.add_argument("--side-angle-deg", type=float, default=30.0)
     parser.add_argument("--minimum-contact-fraction", type=float, default=0.05)
+    parser.add_argument("--rigid-contact-tolerance-mm", type=float, default=0.5)
+    parser.add_argument("--finger-extension-mm", type=float, default=63.5)
+    parser.add_argument("--planar-threshold", type=float, default=0.15)
     parser.add_argument("--ds", type=float, default=0.25)
     parser.add_argument("--smoothing", type=float, default=0.2)
     parser.add_argument("--sweep-radii-mm", default=SWEEP_RADII_DEFAULT)

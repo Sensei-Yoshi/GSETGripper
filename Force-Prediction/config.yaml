@@ -53,12 +53,21 @@ geometry:
   px_per_mm: 1.9173     # camera scale for the contact-fraction model (see
                         # scripts/calibrate_scale.py); valid only while the
                         # object-front-to-camera distance is unchanged
+  contact_mode: compliant # "compliant" (Fin-Ray drapes to the bend limit) or
+                        # "rigid" (straight pad; max-contact placement search)
   pad_length_mm: 106.68 # fin-ray finger contact-pad length (4.2 in) = L in
                         # the contact-fraction model, the pad's vertical extent
   minimum_bend_radius_mm: 20.0 # assembled Fin-Ray longitudinal bend limit
+                        # (compliant mode only)
   side_angle_deg: 30.0  # maximum contact-normal deviation from jaw direction
   minimum_contact_fraction: 0.05 # unavoidable seating-contact floor for a
                                  # valid antipodal grasp; dimensionless
+  rigid_contact_tolerance_mm: 0.5 # rigid mode: max deviation of a face from the
+                                  # flat pad plane that still counts as contact
+  finger_extension_mm: 63.5 # rigid mode: 2.5 in of non-contact finger below the
+                            # pad; sets the pad's downward placement travel
+  planar_threshold: 0.15 # rigid mode: geometric-fraction cutoff labeling an
+                         # object planar (straight faces) vs non-planar (curved)
 
 # --- Roughness ---------------------------------------------------------------
 roughness:

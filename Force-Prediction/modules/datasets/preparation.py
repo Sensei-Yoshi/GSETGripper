@@ -197,10 +197,14 @@ def prepare_dataset_stages(
                 params = ContactParams(
                     px_per_mm=float(cfg.geometry.px_per_mm),
                     closing_axis="x",
+                    mode=cfg.geometry.contact_mode,
                     pad_length_mm=float(cfg.geometry.pad_length_mm),
                     minimum_bend_radius_mm=float(cfg.geometry.minimum_bend_radius_mm),
                     side_angle_deg=float(cfg.geometry.side_angle_deg),
                     minimum_contact_fraction=float(cfg.geometry.minimum_contact_fraction),
+                    rigid_contact_tolerance_mm=float(cfg.geometry.rigid_contact_tolerance_mm),
+                    finger_extension_mm=float(cfg.geometry.finger_extension_mm),
+                    planar_threshold=float(cfg.geometry.planar_threshold),
                 )
                 session = None
                 for item in surface_items:
@@ -455,16 +459,25 @@ def _reusable_surface_summary(
         return None
     expected = {
         "pad_length_mm": params.pad_length_mm,
-        "minimum_bend_radius_mm": params.minimum_bend_radius_mm,
         "side_angle_deg": params.side_angle_deg,
         "minimum_contact_fraction": params.minimum_contact_fraction,
         "closing_axis": params.closing_axis,
     }
+    if params.mode == "rigid":
+        expected["rigid_contact_tolerance_mm"] = params.rigid_contact_tolerance_mm
+        expected["finger_extension_mm"] = params.finger_extension_mm
+        expected["planar_threshold"] = params.planar_threshold
+    else:
+        expected["minimum_bend_radius_mm"] = params.minimum_bend_radius_mm
+    # Summaries written before the rigid mode existed have no "mode" key; they
+    # are compliant by construction, so treat a missing key as such.
+    stored_mode = stored_params.get("mode", "compliant")
     if (
         source.get("view") == "image_2"
         and source.get("path") == image_path
         and source.get("image_sha256") == source_hash
         and float(summary.get("px_per_mm", -1)) == params.px_per_mm
+        and stored_mode == params.mode
         and all(stored_params.get(key) == value for key, value in expected.items())
     ):
         return summary

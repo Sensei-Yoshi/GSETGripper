@@ -88,10 +88,14 @@ class PredictionConfig(BaseModel):
 
 class GeometryConfig(BaseModel):
     px_per_mm: float = Field(gt=0)
+    contact_mode: Literal["compliant", "rigid"] = "compliant"
     pad_length_mm: float = Field(gt=0)
     minimum_bend_radius_mm: float = Field(gt=0)
     side_angle_deg: float = Field(gt=0, lt=90)
     minimum_contact_fraction: float = Field(ge=0, le=1)
+    rigid_contact_tolerance_mm: float = Field(default=0.5, gt=0)
+    finger_extension_mm: float = Field(default=63.5, ge=0)
+    planar_threshold: float = Field(default=0.15, ge=0, le=1)
 
 
 class RoughnessConfig(BaseModel):
