@@ -1,0 +1,30 @@
+{
+  "schema_version": 4,
+  "dataset_id": "MatForceFinal",
+  "object_id": "rough_tile",
+  "object_name": "Rough Tile",
+  "image_name": "rough_tile.jpg",
+  "image_path": "data/MatForceFinal/rough_tile.jpg",
+  "image_sha256": "75c2b235a9adb7857d13db6611a0f5aaae21da37a6316b27702850c3fbe8c0e0",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor": {
+    "retrieval_description": "Thin ceramic tile fragment with a flat, dry, porous surface and printed patterned texture. The intended contact region has straight and fractured edges with a planar geometry.",
+    "contact_region": "Lateral edges of the ceramic fragment",
+    "contact_material": "Ceramic substrate with a glazed decorative pattern on the top surface",
+    "visible_surface_material": "Ceramic and glaze",
+    "visible_surface_condition": "Clean, dry, and matte",
+    "local_geometry": "Flat planar top and bottom surfaces bounded by straight and fractured linear edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact thickness and 3D profile of the fragment edges are partially obscured by the top-down viewing angle."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
+  "embedding_descriptor_sha256": "094898c0b083cc8dd13084c493c9b69baf36a7ef14ceb9316dbc5ed8ef1539cb",
+  "embedding_cache_key": "861f2b36a496516b3e6612a31681d5710378340005cf9349966e8f2751117495",
+  "embedding_sha256": "fa25f79e407f7a1a555f3d37e589f0fad2c22e929e635420a370115a5e82bee4",
+  "updated_at": "2026-07-29T16:49:33.919332+00:00"
+}

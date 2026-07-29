@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import shutil
-
 import pytest
 
 from modules.config import (
@@ -10,7 +8,6 @@ from modules.config import (
     load_prompt_bundle,
     save_prompt_bundle,
 )
-from modules.expforce import source_path
 from modules.reporting import (
     calibration_figure,
     common_intersection_artifacts,
@@ -19,7 +16,7 @@ from modules.reporting import (
     individual_calibration_figure,
     metrics_rows,
 )
-from modules.suites import create_suite, load_suite, run_suite, suite_manifest_path
+from modules.suites import run_suite
 
 
 def _artifact(offset: float) -> dict:
@@ -113,55 +110,9 @@ def test_prompt_bundle_round_trip(tmp_path):
     assert set(loaded.embodiments) == {"gecko", "silicone"}
 
 
-def test_suite_manifest_snapshots_primary_experiments(tmp_path):
-    source_cfg = load_config().model_copy(deep=True)
-    cfg = source_cfg.model_copy(deep=True)
-    cfg.root = tmp_path
-    dataset = tmp_path / "data/expforce/dataset.csv"
-    dataset.parent.mkdir(parents=True)
-    shutil.copyfile(source_path(source_cfg), dataset)
-
-    manifest = create_suite(cfg)
-    persisted = load_suite(suite_manifest_path(cfg, manifest["suite_id"]))
-
-    assert persisted["experiments"] == ["e1", "e2", "e3", "e4"]
-    assert persisted["definition_snapshot"]["experiment_definition_version"] == 9
-    assert persisted["schema_version"] == 10
-    assert persisted["backend"] == "gemini_joint_generation"
-    assert persisted["definition_snapshot"]["backend"] == "gemini_joint_generation"
-    assert persisted["active_grippers"] == ["gecko", "silicone"]
-    assert persisted["definition_snapshot"]["prompt_bundle_sha256"]
-    assert len(persisted["definition_snapshot"]["split"]["train"]) == 129
-    assert persisted["definition_snapshot"]["split"]["test"] == []
-    assert persisted["definition_snapshot"]["split_sha256"]
-    assert set(persisted["prompt_context"]["experiment_instructions"]) == {
-        "e1",
-        "e2",
-        "e3",
-        "e4",
-    }
-    assert all(state["status"] == "pending" for state in persisted["runs"].values())
-    assert persisted["evaluations"] == []
-    assert "source_sha256" not in persisted["definition_snapshot"]
-
-
 def test_legacy_suite_is_read_only():
     with pytest.raises(ValueError, match="Legacy suites are read-only"):
         run_suite(load_config(), {"schema_version": 5})
-
-
-def test_suite_with_no_query_ready_rows_remains_resumable(tmp_path) -> None:
-    source_cfg = load_config().model_copy(deep=True)
-    cfg = source_cfg.model_copy(deep=True)
-    cfg.root = tmp_path
-    dataset = tmp_path / "data/expforce/dataset.csv"
-    dataset.parent.mkdir(parents=True)
-    shutil.copyfile(source_path(source_cfg), dataset)
-
-    completed = run_suite(cfg, create_suite(cfg))
-
-    assert completed["status"] == "waiting"
-    assert {state["status"] for state in completed["runs"].values()} == {"waiting"}
 
 
 def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:

@@ -1,0 +1,30 @@
+{
+  "schema_version": 4,
+  "dataset_id": "MatForceFinal",
+  "object_id": "mold_release_spray_box",
+  "object_name": "Mold Release Spray Box",
+  "image_name": "mold release spray box.jpeg",
+  "image_path": "data/MatForceFinal/mold release spray box.jpeg",
+  "image_sha256": "10cd9349430ae72aac6bcf9805e3fa6cb6608ebd98650ed5522f9f6b31cf9a4f",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor": {
+    "retrieval_description": "Cardboard packaging box with a rectangular prism shape and smooth, dry paper surfaces. The intended contact region is clean, flat, and features vertical corner edges.",
+    "contact_region": "Opposing lateral flat sides of the rectangular box",
+    "contact_material": "Paperboard",
+    "visible_surface_material": "Paperboard with printed finish",
+    "visible_surface_condition": "Clean, dry, and intact",
+    "local_geometry": "Flat faces meeting at vertical 90-degree corner edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
+  "embedding_descriptor_sha256": "00b146022ff5a05d201b83b02d79132117205bf82a453ec77e44430ff2eedb31",
+  "embedding_cache_key": "f12c232ac744ade91f761a37699691b527e7f575446c72961dd71e0f35273493",
+  "embedding_sha256": "7c3c8a817a77c463d654b969653095154732cefd3fd7800c69c754c5e2d9bc57",
+  "updated_at": "2026-07-29T16:49:34.811768+00:00"
+}

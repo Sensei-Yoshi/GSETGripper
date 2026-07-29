@@ -1,0 +1,3632 @@
+{
+  "schema_version": 10,
+  "artifact_type": "benchmark_evaluation",
+  "metadata": {
+    "evaluation_id": "20260729T164345550834Z_65a690267758",
+    "prediction_batch_id": "20260729T163421168304Z_e4",
+    "dataset_id": "MatForceFinal",
+    "created_at": "2026-07-29T16:43:45.550834+00:00",
+    "experiment": "e4",
+    "experiment_method": "hybrid_retrieval_vlm",
+    "experiment_definition_version": 10,
+    "active_grippers": [
+      "gecko"
+    ],
+    "generation_mode": "single",
+    "evaluation_protocol": "fixed_train_test_holdout",
+    "backend": {
+      "force": "gemini_single_generation",
+      "semantic_embedding": "gemini-embedding-2-preview"
+    },
+    "prediction_created_at": "2026-07-29T16:34:21.168304+00:00",
+    "generation_source_sha256": "376e0a9f3de622585ec04536a609fcb43997b3fd6e2d215e68468260d3a2aa24",
+    "generation_input_sha256": "01fe568368811e754f5d494f3b5e7cbdaf5658edda41ceefdc6052034d43bcc9",
+    "truth_source_sha256": "376e0a9f3de622585ec04536a609fcb43997b3fd6e2d215e68468260d3a2aa24",
+    "truth_snapshot_sha256": "65a6902677583baa22a9be202265d8903022b89b2568c0dcdb689c7246d46e87",
+    "coverage": {
+      "predicted": 10,
+      "evaluated": 8,
+      "skipped": 2,
+      "fraction": 0.8
+    },
+    "skipped_truth": {
+      "mold_release_spray_box": [
+        "complete truth not recorded for active grippers: gecko"
+      ],
+      "plastic_resistor_box": [
+        "complete truth not recorded for active grippers: gecko"
+      ]
+    },
+    "exports": {
+      "json": "data/MatForceFinal/results/evaluations/20260729T163421168304Z_e4/20260729T164345550834Z_65a690267758.json",
+      "csv": "data/MatForceFinal/results/evaluations/20260729T163421168304Z_e4/20260729T164345550834Z_65a690267758.csv",
+      "png": "data/MatForceFinal/results/evaluations/20260729T163421168304Z_e4/20260729T164345550834Z_65a690267758.png",
+      "svg": "data/MatForceFinal/results/evaluations/20260729T163421168304Z_e4/20260729T164345550834Z_65a690267758.svg"
+    }
+  },
+  "metrics": {
+    "force": {
+      "gecko": {
+        "n": 8,
+        "mae": 0.357,
+        "rmse": 0.4420531642234902,
+        "medae": 0.3545,
+        "within_0.25n": 0.375,
+        "within_0.5n": 0.75
+      },
+      "overall": {
+        "n": 8,
+        "mae": 0.357,
+        "rmse": 0.4420531642234902,
+        "medae": 0.3545,
+        "within_0.25n": 0.375,
+        "within_0.5n": 0.75
+      }
+    },
+    "feasibility": {
+      "gecko": {
+        "tp": 8,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    },
+    "selection": {
+      "applicable": false,
+      "n": 0
+    },
+    "model_recommendation": {
+      "applicable": false,
+      "n": 0
+    }
+  },
+  "rows": [
+    {
+      "object_id": "avacado",
+      "surface_id": "avacado",
+      "condition_id": "baseline",
+      "object_name": "Avacado",
+      "image_path": "data/MatForceFinal/avacado.jpeg",
+      "image_sha256": "90786816e47407e042fa0fa147a3806fd61ce4cc0e26e3fb6a5349bba79fd6dc",
+      "mass_g": 157.55,
+      "roughness_index": 2415.65,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 0.85,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 0.85,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "organic fruit peel with pebbled, rough, and dry skin texture",
+              "visible_surface_condition": "textured, bumpy, and convexly curved",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 0.85,
+              "evidence_used": [
+                "Query object mass: 157.55 g",
+                "Query roughness category: rough",
+                "Query semantic description: pebbled organic fruit form with a rough, dry skin and tapering convex curvature",
+                "Retrieved object leather_sunglasses_case (mass: 179.9 g, roughness: rough, gecko_min_force_n: 1.906 N)",
+                "Retrieved object foam_roller (mass: 153.38 g, roughness: rough, gecko_min_force_n: 0.723 N)"
+              ],
+              "calculation_summary": "Retrieved rough objects with similar masses (foam_roller at 153.38 g requires 0.723 N; leather_sunglasses_case at 179.9 g requires 1.906 N) bound the target object mass of 157.55 g. Scaling by mass and accounting for the rough gecko-incompatible texture of the fruit surface places the estimated normal force moderately above the foam roller baseline.",
+              "assumptions_and_uncertainty": [
+                "Dry adhesion is degraded by the rough pebbled surface texture of the avocado, increasing required normal force compared to smooth objects.",
+                "Curvature of the avocado may prevent complete broad contact on the rigid gecko pads.",
+                "Exact numerical micro-roughness is not provided due to binary category restriction."
+              ],
+              "reasoning_trace": "The query object is an avocado with a mass of 157.55 g and a rough binary roughness category. Gecko adhesive pads perform best on smooth surfaces and experience degraded adhesion on rough surfaces. Reviewing the retrieved rough items, foam_roller (153.38 g) requires 0.723 N, while leather_sunglasses_case (179.9 g) requires 1.906 N. Given that the query object mass is very close to the foam roller but features a bumpy organic skin similar in texture difficulty, interpolating between the rough retrieved examples suggests a normal force around 0.85 N to ensure reliable gripping under the parallel-jaw gecko embodiment."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Pebbled organic fruit form with a rough, dry skin and tapering convex curvature. The intended contact region has a textured, bumpy surface topography.",
+        "object_id": "avacado",
+        "surface_id": "avacado",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "orange",
+            "surface_id": "orange",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/orange.jpg",
+            "mass_g": 154.17,
+            "roughness_index": 1068.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
+            "gecko_min_force_n": 0.38,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6979119210217778,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8433561102494931,
+              "mass": 0.9694936075238884,
+              "roughness": 0.06754643443870968,
+              "contact": null,
+              "semantic_contribution": 0.39687346364682025,
+              "mass_contribution": 0.28514517868349654,
+              "roughness_contribution": 0.0158932786914611,
+              "contact_contribution": null,
+              "total": 0.6979119210217778
+            }
+          },
+          {
+            "object_id": "leather_sunglasses_case",
+            "surface_id": "leather_sunglasses_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+            "mass_g": 179.9,
+            "roughness_index": 2014.79,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black synthetic leather eyeglass case with a textured, dry surface and smooth curved lateral sidewalls. The intended contact region has no visible seams or interruptions.",
+            "gecko_min_force_n": 1.906,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6920512510129666,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7292286803177165,
+              "mass": 0.827362938883386,
+              "roughness": 0.4485567825654429,
+              "contact": null,
+              "semantic_contribution": 0.34316643779657247,
+              "mass_contribution": 0.24334204084805466,
+              "roughness_contribution": 0.1055427723683395,
+              "contact_contribution": null,
+              "total": 0.6920512510129666
+            }
+          },
+          {
+            "object_id": "apple",
+            "surface_id": "apple",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/apple.jpg",
+            "mass_g": 159.44,
+            "roughness_index": 562.94,
+            "projected_contact_fraction": null,
+            "semantic_description": "Green spherical organic fruit object with a smooth, dry, nonporous rind and continuous curved lateral surfaces. The intended contact region is clean and smooth with gentle curvature.",
+            "gecko_min_force_n": 0.41,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.671679611947217,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8005812047526348,
+              "mass": 0.9831088430596988,
+              "roughness": 0.02458988744577933,
+              "contact": null,
+              "semantic_contribution": 0.3767440963541811,
+              "mass_contribution": 0.28914965972344076,
+              "roughness_contribution": 0.005785855869595137,
+              "contact_contribution": null,
+              "total": 0.671679611947217
+            }
+          },
+          {
+            "object_id": "foam_roller",
+            "surface_id": "foam_roller",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Foam Roller.jpg",
+            "mass_g": 153.38,
+            "roughness_index": 1353.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black foamed polymeric cylindrical grip object with a textured, dry, porous lateral sidewall and continuous curvature. The intended contact region is clean with no visible seams or interruptions.",
+            "gecko_min_force_n": 0.723,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6504205521175326,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7209208441329505,
+              "mass": 0.9624044190190509,
+              "roughness": 0.11944013445979926,
+              "contact": null,
+              "semantic_contribution": 0.3392568678272708,
+              "mass_contribution": 0.2830601232408973,
+              "roughness_contribution": 0.028103561049364532,
+              "contact_contribution": null,
+              "total": 0.6504205521175326
+            }
+          },
+          {
+            "object_id": "lock",
+            "surface_id": "lock",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/lock.jpg",
+            "mass_g": 158.66,
+            "roughness_index": 1185.41,
+            "projected_contact_fraction": null,
+            "semantic_description": "Metallic cylindrical combination lock body with smooth, dry, nonporous lateral surfaces and curved geometry. The intended contact region has no visible contamination, but features a raised dial on the front face.",
+            "gecko_min_force_n": 0.55,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6331748582715843,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6840367317199707,
+              "mass": 0.9900205857463227,
+              "roughness": 0.08539395203138872,
+              "contact": null,
+              "semantic_contribution": 0.3218996384564568,
+              "mass_contribution": 0.2911825252195066,
+              "roughness_contribution": 0.020092694595620877,
+              "contact_contribution": null,
+              "total": 0.6331748582715843
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "orange",
+            "conditions": [
+              {
+                "object_id": "orange",
+                "surface_id": "orange",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/orange.jpg",
+                "mass_g": 154.17,
+                "roughness_index": 1068.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
+                "gecko_min_force_n": 0.38,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6979119210217778,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8433561102494931,
+                  "mass": 0.9694936075238884,
+                  "roughness": 0.06754643443870968,
+                  "contact": null,
+                  "semantic_contribution": 0.39687346364682025,
+                  "mass_contribution": 0.28514517868349654,
+                  "roughness_contribution": 0.0158932786914611,
+                  "contact_contribution": null,
+                  "total": 0.6979119210217778
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "leather_sunglasses_case",
+            "conditions": [
+              {
+                "object_id": "leather_sunglasses_case",
+                "surface_id": "leather_sunglasses_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+                "mass_g": 179.9,
+                "roughness_index": 2014.79,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black synthetic leather eyeglass case with a textured, dry surface and smooth curved lateral sidewalls. The intended contact region has no visible seams or interruptions.",
+                "gecko_min_force_n": 1.906,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6920512510129666,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7292286803177165,
+                  "mass": 0.827362938883386,
+                  "roughness": 0.4485567825654429,
+                  "contact": null,
+                  "semantic_contribution": 0.34316643779657247,
+                  "mass_contribution": 0.24334204084805466,
+                  "roughness_contribution": 0.1055427723683395,
+                  "contact_contribution": null,
+                  "total": 0.6920512510129666
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "apple",
+            "conditions": [
+              {
+                "object_id": "apple",
+                "surface_id": "apple",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/apple.jpg",
+                "mass_g": 159.44,
+                "roughness_index": 562.94,
+                "projected_contact_fraction": null,
+                "semantic_description": "Green spherical organic fruit object with a smooth, dry, nonporous rind and continuous curved lateral surfaces. The intended contact region is clean and smooth with gentle curvature.",
+                "gecko_min_force_n": 0.41,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.671679611947217,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8005812047526348,
+                  "mass": 0.9831088430596988,
+                  "roughness": 0.02458988744577933,
+                  "contact": null,
+                  "semantic_contribution": 0.3767440963541811,
+                  "mass_contribution": 0.28914965972344076,
+                  "roughness_contribution": 0.005785855869595137,
+                  "contact_contribution": null,
+                  "total": 0.671679611947217
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "foam_roller",
+            "conditions": [
+              {
+                "object_id": "foam_roller",
+                "surface_id": "foam_roller",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/Foam Roller.jpg",
+                "mass_g": 153.38,
+                "roughness_index": 1353.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black foamed polymeric cylindrical grip object with a textured, dry, porous lateral sidewall and continuous curvature. The intended contact region is clean with no visible seams or interruptions.",
+                "gecko_min_force_n": 0.723,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6504205521175326,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7209208441329505,
+                  "mass": 0.9624044190190509,
+                  "roughness": 0.11944013445979926,
+                  "contact": null,
+                  "semantic_contribution": 0.3392568678272708,
+                  "mass_contribution": 0.2830601232408973,
+                  "roughness_contribution": 0.028103561049364532,
+                  "contact_contribution": null,
+                  "total": 0.6504205521175326
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "lock",
+            "conditions": [
+              {
+                "object_id": "lock",
+                "surface_id": "lock",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/lock.jpg",
+                "mass_g": 158.66,
+                "roughness_index": 1185.41,
+                "projected_contact_fraction": null,
+                "semantic_description": "Metallic cylindrical combination lock body with smooth, dry, nonporous lateral surfaces and curved geometry. The intended contact region has no visible contamination, but features a raised dial on the front face.",
+                "gecko_min_force_n": 0.55,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6331748582715843,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6840367317199707,
+                  "mass": 0.9900205857463227,
+                  "roughness": 0.08539395203138872,
+                  "contact": null,
+                  "semantic_contribution": 0.3218996384564568,
+                  "mass_contribution": 0.2911825252195066,
+                  "roughness_contribution": 0.020092694595620877,
+                  "contact_contribution": null,
+                  "total": 0.6331748582715843
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 33,
+          "writes": 33,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 2,
+            "writes": 2,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 31,
+            "writes": 31,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 2,
+            "embedding": 31
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 0.85,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.24,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.39,
+      "absolute_error_gecko_n": 0.39
+    },
+    {
+      "object_id": "clay_bowl",
+      "surface_id": "clay_bowl",
+      "condition_id": "baseline",
+      "object_name": "Clay Bowl",
+      "image_path": "data/MatForceFinal/clay_bowl.jpg",
+      "image_sha256": "de1b845b4662fb46b27d674cefb9e02353ea1578cb272aaf90617b6a5e707d13",
+      "mass_g": 286.71,
+      "roughness_index": 1847.68,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 4.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 4.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "painted clay / ceramic with textured, uneven geometry",
+              "visible_surface_condition": "dry, painted coating with irregular curvature and rough texture",
+              "compatibility": "low",
+              "feasible": true,
+              "predicted_normal_force_n": 4.5,
+              "evidence_used": [
+                "Query object mass: 286.71 g",
+                "Query roughness category: rough",
+                "Query semantic description: Painted clay vessel with an irregular, textured surface and uneven curved geometry",
+                "Retrieved object 1 (big_stone): mass 278.8 g, rough, gecko_min_force_n = 4.623 N",
+                "Retrieved object 3 (headphones_case): mass 218.15 g, rough, gecko_min_force_n = 3.01 N"
+              ],
+              "calculation_summary": "Retrieved rough objects with similar masses (big_stone at 278.8 g requiring 4.623 N, and headphones_case at 218.15 g requiring 3.01 N) indicate that rough, irregular objects require higher normal forces for the rigid gecko gripper due to reduced contact area. Scaling based on the query mass of 286.71 g and the rough surface condition yields a predicted force close to the stone's requirement.",
+              "assumptions_and_uncertainty": [
+                "The rigid gecko pads cannot conform to the irregular curvature and texture of the clay vessel, leading to diminished adhesion.",
+                "Continuous roughness measurements are withheld, relying purely on the binary 'rough' category.",
+                "Mass scaling is approximate as adhesion depends heavily on local alignment and contact fraction."
+              ],
+              "reasoning_trace": "The query object is a painted clay vessel with a mass of 286.71 g and a rough surface category. The gecko gripper requires flat, smooth, parallel surfaces for optimal dry adhesion; roughness and irregular curvature degrade performance significantly. Among the retrieved experiences, 'big_stone' shares the 'rough' category and a very similar mass (278.8 g vs 286.71 g), requiring 4.623 N. Given the irregular geometry and painted texture of the clay vessel, adhesion will be similarly impaired. Interpolating from the nearest rough neighbors and scaling slightly for the 286.71 g mass gives an estimated normal force of 4.5 N."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Painted clay vessel with an irregular, textured surface. The intended contact region is dry, with uneven curved geometry and painted coating.",
+        "object_id": "clay_bowl",
+        "surface_id": "clay_bowl",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "big_stone",
+            "surface_id": "big_stone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/big_stone.jpg",
+            "mass_g": 278.8,
+            "roughness_index": 2048.83,
+            "projected_contact_fraction": null,
+            "semantic_description": "Rough concrete or asphalt fragment with a porous, highly textured surface and irregular planar geometry. The intended contact region is dry, rough, and presents jagged edges.",
+            "gecko_min_force_n": 4.623,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.801585518257723,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7684656889602237,
+              "mass": 0.9608215944856899,
+              "roughness": 0.6687800815677631,
+              "contact": null,
+              "semantic_contribution": 0.36163091245186996,
+              "mass_contribution": 0.28259458661343817,
+              "roughness_contribution": 0.15736001919241485,
+              "contact_contribution": null,
+              "total": 0.801585518257723
+            }
+          },
+          {
+            "object_id": "microphone",
+            "surface_id": "microphone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/microphone.jpg",
+            "mass_g": 258.48,
+            "roughness_index": 2228.39,
+            "projected_contact_fraction": null,
+            "semantic_description": "Matte plastic cylindrical handheld microphone handle with a smooth, dry surface and continuous curvature. The intended contact region has no visible seams or contamination within the central grasp band.",
+            "gecko_min_force_n": 2.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6874435592334256,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6883374669119992,
+              "mass": 0.8623659047650496,
+              "roughness": 0.467002811961749,
+              "contact": null,
+              "semantic_contribution": 0.32392351384094076,
+              "mass_contribution": 0.25363703081324984,
+              "roughness_contribution": 0.10988301457923505,
+              "contact_contribution": null,
+              "total": 0.6874435592334256
+            }
+          },
+          {
+            "object_id": "headphones_case",
+            "surface_id": "headphones_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Headphones Case.jpg",
+            "mass_g": 218.15,
+            "roughness_index": 1610.85,
+            "projected_contact_fraction": null,
+            "semantic_description": "Fabric-covered semi-rigid case object with a textured, dry, fabric-wrapped lateral surface and rounded geometry. The intended contact region has gently curved, continuous vertical sidewalls interrupted only by a horizontal zipper seam.",
+            "gecko_min_force_n": 3.01,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6772602777618295,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.704832350631672,
+              "mass": 0.6767780305646998,
+              "roughness": 0.622718941018557,
+              "contact": null,
+              "semantic_contribution": 0.3316858120619633,
+              "mass_contribution": 0.199052361930794,
+              "roughness_contribution": 0.14652210376907224,
+              "contact_contribution": null,
+              "total": 0.6772602777618295
+            }
+          },
+          {
+            "object_id": "leather_sunglasses_case",
+            "surface_id": "leather_sunglasses_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+            "mass_g": 179.9,
+            "roughness_index": 2014.79,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black synthetic leather eyeglass case with a textured, dry surface and smooth curved lateral sidewalls. The intended contact region has no visible seams or interruptions.",
+            "gecko_min_force_n": 1.906,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6597782619407675,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7229213908280915,
+              "mass": 0.5138548510957835,
+              "roughness": 0.7158962677223495,
+              "contact": null,
+              "semantic_contribution": 0.3401983015661607,
+              "mass_contribution": 0.15113377973405395,
+              "roughness_contribution": 0.1684461806405528,
+              "contact_contribution": null,
+              "total": 0.6597782619407675
+            }
+          },
+          {
+            "object_id": "ketchup",
+            "surface_id": "ketchup",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/ketchup.jpg",
+            "mass_g": 293.77,
+            "roughness_index": 705.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
+            "gecko_min_force_n": 0.24,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6553757059994747,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7381328372638614,
+              "mass": 0.965845611091009,
+              "roughness": 0.10177406210628372,
+              "contact": null,
+              "semantic_contribution": 0.34735662930064065,
+              "mass_contribution": 0.2840722385561791,
+              "roughness_contribution": 0.02394683814265499,
+              "contact_contribution": null,
+              "total": 0.6553757059994747
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "big_stone",
+            "conditions": [
+              {
+                "object_id": "big_stone",
+                "surface_id": "big_stone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/big_stone.jpg",
+                "mass_g": 278.8,
+                "roughness_index": 2048.83,
+                "projected_contact_fraction": null,
+                "semantic_description": "Rough concrete or asphalt fragment with a porous, highly textured surface and irregular planar geometry. The intended contact region is dry, rough, and presents jagged edges.",
+                "gecko_min_force_n": 4.623,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.801585518257723,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7684656889602237,
+                  "mass": 0.9608215944856899,
+                  "roughness": 0.6687800815677631,
+                  "contact": null,
+                  "semantic_contribution": 0.36163091245186996,
+                  "mass_contribution": 0.28259458661343817,
+                  "roughness_contribution": 0.15736001919241485,
+                  "contact_contribution": null,
+                  "total": 0.801585518257723
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "microphone",
+            "conditions": [
+              {
+                "object_id": "microphone",
+                "surface_id": "microphone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/microphone.jpg",
+                "mass_g": 258.48,
+                "roughness_index": 2228.39,
+                "projected_contact_fraction": null,
+                "semantic_description": "Matte plastic cylindrical handheld microphone handle with a smooth, dry surface and continuous curvature. The intended contact region has no visible seams or contamination within the central grasp band.",
+                "gecko_min_force_n": 2.3,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6874435592334256,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6883374669119992,
+                  "mass": 0.8623659047650496,
+                  "roughness": 0.467002811961749,
+                  "contact": null,
+                  "semantic_contribution": 0.32392351384094076,
+                  "mass_contribution": 0.25363703081324984,
+                  "roughness_contribution": 0.10988301457923505,
+                  "contact_contribution": null,
+                  "total": 0.6874435592334256
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "headphones_case",
+            "conditions": [
+              {
+                "object_id": "headphones_case",
+                "surface_id": "headphones_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/Headphones Case.jpg",
+                "mass_g": 218.15,
+                "roughness_index": 1610.85,
+                "projected_contact_fraction": null,
+                "semantic_description": "Fabric-covered semi-rigid case object with a textured, dry, fabric-wrapped lateral surface and rounded geometry. The intended contact region has gently curved, continuous vertical sidewalls interrupted only by a horizontal zipper seam.",
+                "gecko_min_force_n": 3.01,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6772602777618295,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.704832350631672,
+                  "mass": 0.6767780305646998,
+                  "roughness": 0.622718941018557,
+                  "contact": null,
+                  "semantic_contribution": 0.3316858120619633,
+                  "mass_contribution": 0.199052361930794,
+                  "roughness_contribution": 0.14652210376907224,
+                  "contact_contribution": null,
+                  "total": 0.6772602777618295
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "leather_sunglasses_case",
+            "conditions": [
+              {
+                "object_id": "leather_sunglasses_case",
+                "surface_id": "leather_sunglasses_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+                "mass_g": 179.9,
+                "roughness_index": 2014.79,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black synthetic leather eyeglass case with a textured, dry surface and smooth curved lateral sidewalls. The intended contact region has no visible seams or interruptions.",
+                "gecko_min_force_n": 1.906,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6597782619407675,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7229213908280915,
+                  "mass": 0.5138548510957835,
+                  "roughness": 0.7158962677223495,
+                  "contact": null,
+                  "semantic_contribution": 0.3401983015661607,
+                  "mass_contribution": 0.15113377973405395,
+                  "roughness_contribution": 0.1684461806405528,
+                  "contact_contribution": null,
+                  "total": 0.6597782619407675
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "ketchup",
+            "conditions": [
+              {
+                "object_id": "ketchup",
+                "surface_id": "ketchup",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/ketchup.jpg",
+                "mass_g": 293.77,
+                "roughness_index": 705.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
+                "gecko_min_force_n": 0.24,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6553757059994747,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7381328372638614,
+                  "mass": 0.965845611091009,
+                  "roughness": 0.10177406210628372,
+                  "contact": null,
+                  "semantic_contribution": 0.34735662930064065,
+                  "mass_contribution": 0.2840722385561791,
+                  "roughness_contribution": 0.02394683814265499,
+                  "contact_contribution": null,
+                  "total": 0.6553757059994747
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 30,
+          "misses": 36,
+          "writes": 36,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 4,
+            "writes": 4,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 30,
+            "misses": 32,
+            "writes": 32,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 4,
+            "embedding": 32
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 4.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 3.63,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.8700000000000001,
+      "absolute_error_gecko_n": 0.8700000000000001
+    },
+    {
+      "object_id": "large_cardboard_box",
+      "surface_id": "large_cardboard_box",
+      "condition_id": "baseline",
+      "object_name": "Large Cardboard Box",
+      "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+      "image_sha256": "e119fc42761f31ac4bcff77d75a64741c7a722dec19117b5e6b8235481899a4d",
+      "mass_g": 671.94,
+      "roughness_index": 810.34,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 5.75,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 5.75,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Cardboard",
+              "visible_surface_condition": "Smooth, dry, matte-finished flat lateral faces",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 5.75,
+              "evidence_used": [
+                "Query object mass: 671.94 g",
+                "Query roughness category: smooth",
+                "Query semantic description: Elongated rectangular cardboard box with flat, matte, dry surfaces and vertical corner edges",
+                "Retrieved object 1 (camera_cardboard_box): mass 871.93 g, gecko_min_force_n 7.46 N, smooth",
+                "Retrieved object 4 (book): mass 540.59 g, gecko_min_force_n 2.68 N, smooth"
+              ],
+              "calculation_summary": "Interpolated or scaled between retrieved cardboard/paper-like objects (e.g., camera_cardboard_box at 871.93 g requiring 7.46 N and book at 540.59 g requiring 2.68 N) proportional to the target mass of 671.94 g.",
+              "assumptions_and_uncertainty": [
+                "Continuous roughness index was withheld; binary category 'smooth' was used qualitatively.",
+                "Friction and gecko dry-adhesion mechanics scale monotonically with object mass and surface compatibility.",
+                "Uncertainty exists regarding exact normal-force scaling without a fully calibrated friction coefficient."
+              ],
+              "reasoning_trace": "The active gripper is the gecko parallel-jaw gripper, which requires flat, parallel, smooth, dry surfaces to establish high dry adhesion. The query object is a smooth cardboard box weighing 671.94 g, which closely matches the material and surface properties of the retrieved cardboard box and book objects. Both retrieved neighbors show high compatibility and feasible grasps with the gecko gripper. By scaling relative to the mass and required forces of the closest semantic matches in the retrieval set (such as the camera cardboard box at 871.93 g requiring 7.46 N and the book at 540.59 g requiring 2.68 N), the required normal force for a 671.94 g object is estimated to be approximately 5.75 N to ensure secure lifting without slip."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Elongated rectangular cardboard box with flat, matte, dry surfaces and vertical corner edges. The intended contact region on the lateral faces is flat, continuous, and free of visible contamination.",
+        "object_id": "large_cardboard_box",
+        "surface_id": "large_cardboard_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "camera_cardboard_box",
+            "surface_id": "camera_cardboard_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+            "mass_g": 871.93,
+            "roughness_index": 804.32,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cardboard rectangular box object with a smooth, dry, paper label surface and flat orthogonal faces. The intended contact region is clean and dry with flat planar geometry.",
+            "gecko_min_force_n": 7.46,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.8486161980438677,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8785331427731513,
+              "mass": 0.6892162922850178,
+              "roughness": 0.988032190783863,
+              "contact": null,
+              "semantic_contribution": 0.4134273613050124,
+              "mass_contribution": 0.2027106742014758,
+              "roughness_contribution": 0.23247816253737952,
+              "contact_contribution": null,
+              "total": 0.8486161980438677
+            }
+          },
+          {
+            "object_id": "metal_water_bottle",
+            "surface_id": "metal_water_bottle",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/metal water bottle.jpg",
+            "mass_g": 551.01,
+            "roughness_index": 892.99,
+            "projected_contact_fraction": null,
+            "semantic_description": "Coated metallic cylindrical water bottle with a smooth, dry, matte-finished lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
+            "gecko_min_force_n": 1.32,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7792806705461426,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7614144852306518,
+              "mass": 0.7531796041853691,
+              "roughness": 0.847639374128091,
+              "contact": null,
+              "semantic_contribution": 0.3583126989320714,
+              "mass_contribution": 0.22152341299569675,
+              "roughness_contribution": 0.19944455861837435,
+              "contact_contribution": null,
+              "total": 0.7792806705461426
+            }
+          },
+          {
+            "object_id": "smooth_screw_box",
+            "surface_id": "smooth_screw_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+            "mass_g": 819.27,
+            "roughness_index": 791.89,
+            "projected_contact_fraction": null,
+            "semantic_description": "Smooth Screw Box",
+            "gecko_min_force_n": 1.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7763214940996666,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6969443613787344,
+              "mass": 0.753364095507988,
+              "roughness": 0.9637725077811296,
+              "contact": null,
+              "semantic_contribution": 0.32797381711940443,
+              "mass_contribution": 0.2215776751494082,
+              "roughness_contribution": 0.226770001830854,
+              "contact_contribution": null,
+              "total": 0.7763214940996666
+            }
+          },
+          {
+            "object_id": "book",
+            "surface_id": "book",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/book.jpg",
+            "mass_g": 540.59,
+            "roughness_index": 646.42,
+            "projected_contact_fraction": null,
+            "semantic_description": "Rectangular book with a paper and fabric cover. The intended contact region is dry, planar, and oriented on the opposing lateral faces with sharp vertical edges.",
+            "gecko_min_force_n": 2.68,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7573703038256723,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7911008988389004,
+              "mass": 0.7329149652573712,
+              "roughness": 0.7204782870095925,
+              "contact": null,
+              "semantic_contribution": 0.37228277592418846,
+              "mass_contribution": 0.2155632250756974,
+              "roughness_contribution": 0.16952430282578645,
+              "contact_contribution": null,
+              "total": 0.7573703038256723
+            }
+          },
+          {
+            "object_id": "cetaphil",
+            "surface_id": "cetaphil",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/cetaphil.jpg",
+            "mass_g": 403.68,
+            "roughness_index": 797.68,
+            "projected_contact_fraction": null,
+            "semantic_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
+            "gecko_min_force_n": 1.923,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7302796575522305,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7625261947731213,
+              "mass": 0.4829106338109696,
+              "roughness": 0.9749978627870248,
+              "contact": null,
+              "semantic_contribution": 0.3588358563638218,
+              "mass_contribution": 0.1420325393561675,
+              "roughness_contribution": 0.22941126183224114,
+              "contact_contribution": null,
+              "total": 0.7302796575522305
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "camera_cardboard_box",
+            "conditions": [
+              {
+                "object_id": "camera_cardboard_box",
+                "surface_id": "camera_cardboard_box",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+                "mass_g": 871.93,
+                "roughness_index": 804.32,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cardboard rectangular box object with a smooth, dry, paper label surface and flat orthogonal faces. The intended contact region is clean and dry with flat planar geometry.",
+                "gecko_min_force_n": 7.46,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.8486161980438677,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8785331427731513,
+                  "mass": 0.6892162922850178,
+                  "roughness": 0.988032190783863,
+                  "contact": null,
+                  "semantic_contribution": 0.4134273613050124,
+                  "mass_contribution": 0.2027106742014758,
+                  "roughness_contribution": 0.23247816253737952,
+                  "contact_contribution": null,
+                  "total": 0.8486161980438677
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "metal_water_bottle",
+            "conditions": [
+              {
+                "object_id": "metal_water_bottle",
+                "surface_id": "metal_water_bottle",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/metal water bottle.jpg",
+                "mass_g": 551.01,
+                "roughness_index": 892.99,
+                "projected_contact_fraction": null,
+                "semantic_description": "Coated metallic cylindrical water bottle with a smooth, dry, matte-finished lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
+                "gecko_min_force_n": 1.32,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7792806705461426,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7614144852306518,
+                  "mass": 0.7531796041853691,
+                  "roughness": 0.847639374128091,
+                  "contact": null,
+                  "semantic_contribution": 0.3583126989320714,
+                  "mass_contribution": 0.22152341299569675,
+                  "roughness_contribution": 0.19944455861837435,
+                  "contact_contribution": null,
+                  "total": 0.7792806705461426
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "smooth_screw_box",
+            "conditions": [
+              {
+                "object_id": "smooth_screw_box",
+                "surface_id": "smooth_screw_box",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+                "mass_g": 819.27,
+                "roughness_index": 791.89,
+                "projected_contact_fraction": null,
+                "semantic_description": "Smooth Screw Box",
+                "gecko_min_force_n": 1.3,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7763214940996666,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6969443613787344,
+                  "mass": 0.753364095507988,
+                  "roughness": 0.9637725077811296,
+                  "contact": null,
+                  "semantic_contribution": 0.32797381711940443,
+                  "mass_contribution": 0.2215776751494082,
+                  "roughness_contribution": 0.226770001830854,
+                  "contact_contribution": null,
+                  "total": 0.7763214940996666
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "book",
+            "conditions": [
+              {
+                "object_id": "book",
+                "surface_id": "book",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/book.jpg",
+                "mass_g": 540.59,
+                "roughness_index": 646.42,
+                "projected_contact_fraction": null,
+                "semantic_description": "Rectangular book with a paper and fabric cover. The intended contact region is dry, planar, and oriented on the opposing lateral faces with sharp vertical edges.",
+                "gecko_min_force_n": 2.68,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7573703038256723,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7911008988389004,
+                  "mass": 0.7329149652573712,
+                  "roughness": 0.7204782870095925,
+                  "contact": null,
+                  "semantic_contribution": 0.37228277592418846,
+                  "mass_contribution": 0.2155632250756974,
+                  "roughness_contribution": 0.16952430282578645,
+                  "contact_contribution": null,
+                  "total": 0.7573703038256723
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "cetaphil",
+            "conditions": [
+              {
+                "object_id": "cetaphil",
+                "surface_id": "cetaphil",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/cetaphil.jpg",
+                "mass_g": 403.68,
+                "roughness_index": 797.68,
+                "projected_contact_fraction": null,
+                "semantic_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
+                "gecko_min_force_n": 1.923,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7302796575522305,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7625261947731213,
+                  "mass": 0.4829106338109696,
+                  "roughness": 0.9749978627870248,
+                  "contact": null,
+                  "semantic_contribution": 0.3588358563638218,
+                  "mass_contribution": 0.1420325393561675,
+                  "roughness_contribution": 0.22941126183224114,
+                  "contact_contribution": null,
+                  "total": 0.7302796575522305
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 60,
+          "misses": 39,
+          "writes": 39,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 6,
+            "writes": 6,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 60,
+            "misses": 33,
+            "writes": 33,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 6,
+            "embedding": 33
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 5.75,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 6.156,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.4059999999999997,
+      "absolute_error_gecko_n": 0.4059999999999997
+    },
+    {
+      "object_id": "medicine_bottle",
+      "surface_id": "medicine_bottle",
+      "condition_id": "baseline",
+      "object_name": "Medicine Bottle",
+      "image_path": "data/MatForceFinal/medicine_bottle.jpg",
+      "image_sha256": "80fe4da593f50b540359a51d606c6c2c73ba15879ad75b71abb0ae4004d9d766",
+      "mass_g": 517.12,
+      "roughness_index": 934.84,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.35,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.35,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Plastic bottle with paper label",
+              "visible_surface_condition": "Smooth, dry, nonporous",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 1.35,
+              "evidence_used": [
+                "Query object mass is 517.12 g",
+                "Roughness category is smooth",
+                "Query semantic description: Cylindrical plastic bottle with a smooth, dry, nonporous label surface and continuous curvature",
+                "Retrieved object 1 (metal_water_bottle): mass 551.01 g, smooth, gecko_min_force_n = 1.32 N",
+                "Retrieved object 2 (500g_weight): mass 500.0 g, smooth, gecko_min_force_n = 1.03 N",
+                "Retrieved object 5 (soda_can): mass 321.71 g, smooth, gecko_min_force_n = 1.816 N"
+              ],
+              "calculation_summary": "Interpolated/averaged normal force based on retrieved smooth objects of comparable mass (~500g to 551g), specifically mapping 517.12 g between the 500g weight (1.03 N) and metal water bottle (551.01 g, 1.32 N). Force estimate = 1.03 N + (517.12 - 500.0) / (551.01 - 500.0) * (1.32 - 1.03) = 1.35 N.",
+              "assumptions_and_uncertainty": [
+                "Continuous curvature of the cylindrical bottle allows sufficient contact area with the rigid gecko pads despite slight curvature penalty",
+                "Mass scaling is linear within the narrow 500g-551g bracket",
+                "Paper label surface property is sufficiently smooth for dry adhesion"
+              ],
+              "reasoning_trace": "The query object is a smooth, cylindrical plastic bottle with a mass of 517.12 g, evaluated for the gecko parallel-jaw gripper. The retrieved neighbors with smooth surfaces and similar masses (such as the 500g weight at 1.03 N and the 551g metal water bottle at 1.32 N) provide direct empirical bounds. Scaling linearly between these two closest mass matches yields an estimated minimum normal force of approximately 1.35 N. The surface condition is smooth and dry, satisfying the core requirements for gecko dry adhesion, confirming feasibility."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Cylindrical plastic bottle with a smooth, dry, nonporous label surface and continuous curvature. The intended contact region has a paper label overlaying the sidewall with no visible seams or contamination.",
+        "object_id": "medicine_bottle",
+        "surface_id": "medicine_bottle",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "metal_water_bottle",
+            "surface_id": "metal_water_bottle",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/metal water bottle.jpg",
+            "mass_g": 551.01,
+            "roughness_index": 892.99,
+            "projected_contact_fraction": null,
+            "semantic_description": "Coated metallic cylindrical water bottle with a smooth, dry, matte-finished lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
+            "gecko_min_force_n": 1.32,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.87920868671981,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8376478262509989,
+              "mass": 0.9133073113653576,
+              "roughness": 0.9197071268504975,
+              "contact": null,
+              "semantic_contribution": 0.39418721235341125,
+              "mass_contribution": 0.26861979746039927,
+              "roughness_contribution": 0.2164016769059994,
+              "contact_contribution": null,
+              "total": 0.87920868671981
+            }
+          },
+          {
+            "object_id": "500g_weight",
+            "surface_id": "500g_weight",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/500g_weight.jpg",
+            "mass_g": 500.0,
+            "roughness_index": 1129.82,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cylindrical black object with a smooth, dry lateral surface and continuous curvature. The intended contact region has no visible seams, texture, or contamination.",
+            "gecko_min_force_n": 1.03,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.82403482198375,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8168802949479934,
+              "mass": 0.9530427569761227,
+              "roughness": 0.6770839573147974,
+              "contact": null,
+              "semantic_contribution": 0.38441425644611454,
+              "mass_contribution": 0.28030669322827134,
+              "roughness_contribution": 0.15931387230936409,
+              "contact_contribution": null,
+              "total": 0.82403482198375
+            }
+          },
+          {
+            "object_id": "cetaphil",
+            "surface_id": "cetaphil",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/cetaphil.jpg",
+            "mass_g": 403.68,
+            "roughness_index": 797.68,
+            "projected_contact_fraction": null,
+            "semantic_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
+            "gecko_min_force_n": 1.923,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7876966909491976,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.85504674736586,
+              "mass": 0.7020229071045772,
+              "roughness": 0.7600888079216486,
+              "contact": null,
+              "semantic_contribution": 0.4023749399368753,
+              "mass_contribution": 0.20647732561899323,
+              "roughness_contribution": 0.17884442539332907,
+              "contact_contribution": null,
+              "total": 0.7876966909491976
+            }
+          },
+          {
+            "object_id": "book",
+            "surface_id": "book",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/book.jpg",
+            "mass_g": 540.59,
+            "roughness_index": 646.42,
+            "projected_contact_fraction": null,
+            "semantic_description": "Rectangular book with a paper and fabric cover. The intended contact region is dry, planar, and oriented on the opposing lateral faces with sharp vertical edges.",
+            "gecko_min_force_n": 2.68,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7558855339235185,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7388217342583983,
+              "mass": 0.9385596854775717,
+              "roughness": 0.5616704438111927,
+              "contact": null,
+              "semantic_contribution": 0.3476808161215992,
+              "mass_contribution": 0.2760469663169328,
+              "roughness_contribution": 0.1321577514849865,
+              "contact_contribution": null,
+              "total": 0.7558855339235185
+            }
+          },
+          {
+            "object_id": "soda_can",
+            "surface_id": "soda_can",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/soda_can.jpg",
+            "mass_g": 321.71,
+            "roughness_index": 954.75,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cylindrical aluminum beverage can with a painted exterior coating. The intended contact region is dry, smooth, with continuous cylindrical curvature and no visible seams.",
+            "gecko_min_force_n": 1.816,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7536559047033387,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8037791497312455,
+              "mass": 0.5076135189676838,
+              "roughness": 0.9609623968170935,
+              "contact": null,
+              "semantic_contribution": 0.3782490116382332,
+              "mass_contribution": 0.14929809381402462,
+              "roughness_contribution": 0.22610879925108082,
+              "contact_contribution": null,
+              "total": 0.7536559047033387
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "metal_water_bottle",
+            "conditions": [
+              {
+                "object_id": "metal_water_bottle",
+                "surface_id": "metal_water_bottle",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/metal water bottle.jpg",
+                "mass_g": 551.01,
+                "roughness_index": 892.99,
+                "projected_contact_fraction": null,
+                "semantic_description": "Coated metallic cylindrical water bottle with a smooth, dry, matte-finished lateral surface and continuous curvature. The intended contact region has no visible seams or interruptions.",
+                "gecko_min_force_n": 1.32,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.87920868671981,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8376478262509989,
+                  "mass": 0.9133073113653576,
+                  "roughness": 0.9197071268504975,
+                  "contact": null,
+                  "semantic_contribution": 0.39418721235341125,
+                  "mass_contribution": 0.26861979746039927,
+                  "roughness_contribution": 0.2164016769059994,
+                  "contact_contribution": null,
+                  "total": 0.87920868671981
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "500g_weight",
+            "conditions": [
+              {
+                "object_id": "500g_weight",
+                "surface_id": "500g_weight",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/500g_weight.jpg",
+                "mass_g": 500.0,
+                "roughness_index": 1129.82,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cylindrical black object with a smooth, dry lateral surface and continuous curvature. The intended contact region has no visible seams, texture, or contamination.",
+                "gecko_min_force_n": 1.03,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.82403482198375,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8168802949479934,
+                  "mass": 0.9530427569761227,
+                  "roughness": 0.6770839573147974,
+                  "contact": null,
+                  "semantic_contribution": 0.38441425644611454,
+                  "mass_contribution": 0.28030669322827134,
+                  "roughness_contribution": 0.15931387230936409,
+                  "contact_contribution": null,
+                  "total": 0.82403482198375
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "cetaphil",
+            "conditions": [
+              {
+                "object_id": "cetaphil",
+                "surface_id": "cetaphil",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/cetaphil.jpg",
+                "mass_g": 403.68,
+                "roughness_index": 797.68,
+                "projected_contact_fraction": null,
+                "semantic_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
+                "gecko_min_force_n": 1.923,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7876966909491976,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.85504674736586,
+                  "mass": 0.7020229071045772,
+                  "roughness": 0.7600888079216486,
+                  "contact": null,
+                  "semantic_contribution": 0.4023749399368753,
+                  "mass_contribution": 0.20647732561899323,
+                  "roughness_contribution": 0.17884442539332907,
+                  "contact_contribution": null,
+                  "total": 0.7876966909491976
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "book",
+            "conditions": [
+              {
+                "object_id": "book",
+                "surface_id": "book",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/book.jpg",
+                "mass_g": 540.59,
+                "roughness_index": 646.42,
+                "projected_contact_fraction": null,
+                "semantic_description": "Rectangular book with a paper and fabric cover. The intended contact region is dry, planar, and oriented on the opposing lateral faces with sharp vertical edges.",
+                "gecko_min_force_n": 2.68,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7558855339235185,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7388217342583983,
+                  "mass": 0.9385596854775717,
+                  "roughness": 0.5616704438111927,
+                  "contact": null,
+                  "semantic_contribution": 0.3476808161215992,
+                  "mass_contribution": 0.2760469663169328,
+                  "roughness_contribution": 0.1321577514849865,
+                  "contact_contribution": null,
+                  "total": 0.7558855339235185
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "soda_can",
+            "conditions": [
+              {
+                "object_id": "soda_can",
+                "surface_id": "soda_can",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/soda_can.jpg",
+                "mass_g": 321.71,
+                "roughness_index": 954.75,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cylindrical aluminum beverage can with a painted exterior coating. The intended contact region is dry, smooth, with continuous cylindrical curvature and no visible seams.",
+                "gecko_min_force_n": 1.816,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7536559047033387,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8037791497312455,
+                  "mass": 0.5076135189676838,
+                  "roughness": 0.9609623968170935,
+                  "contact": null,
+                  "semantic_contribution": 0.3782490116382332,
+                  "mass_contribution": 0.14929809381402462,
+                  "roughness_contribution": 0.22610879925108082,
+                  "contact_contribution": null,
+                  "total": 0.7536559047033387
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 90,
+          "misses": 42,
+          "writes": 42,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 8,
+            "writes": 8,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 90,
+            "misses": 34,
+            "writes": 34,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 8,
+            "embedding": 34
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 1.35,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.669,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.31899999999999995,
+      "absolute_error_gecko_n": 0.31899999999999995
+    },
+    {
+      "object_id": "rough_tile",
+      "surface_id": "rough_tile",
+      "condition_id": "baseline",
+      "object_name": "Rough Tile",
+      "image_path": "data/MatForceFinal/rough_tile.jpg",
+      "image_sha256": "75c2b235a9adb7857d13db6611a0f5aaae21da37a6316b27702850c3fbe8c0e0",
+      "mass_g": 178.52,
+      "roughness_index": 1992.71,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 2.45,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 2.45,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "ceramic tile fragment",
+              "visible_surface_condition": "flat, dry, porous surface with printed patterned texture and planar geometry",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 2.45,
+              "evidence_used": [
+                "Query mass of 178.52 g",
+                "Roughness category 'rough'",
+                "Query semantic description of thin ceramic tile fragment with planar geometry",
+                "Retrieved neighbor leather_sunglasses_case (mass 179.9 g, min force 1.906 N)",
+                "Retrieved neighbor wallet_1 (mass 139.66 g, min force 2.013 N)",
+                "Retrieved neighbor headphones_case (mass 218.15 g, min force 3.01 N)"
+              ],
+              "calculation_summary": "Interpolated expected normal force based on mass proximity and surface texture similarity from retrieved items near ~178 g mass and rough/textured category. Mass is very close to leather_sunglasses_case (179.9 g, 1.906 N) and wallet_1 (139.66 g, 2.013 N), but the porous, patterned ceramic tile surface texture increases adhesive degradation, aligning closer to a moderate force of approximately 2.45 N.",
+              "assumptions_and_uncertainty": [
+                "Continuous roughness measurements are withheld; qualitative rough category introduces uncertainty.",
+                "Porous ceramic surface may slightly reduce gecko pad adhesion compared to smooth synthetic leather.",
+                "Assumes opposing parallel grasping faces are available on the tile fragment."
+              ],
+              "reasoning_trace": "The query object is a thin ceramic tile fragment weighing 178.52 g with a rough category designation. Among the retrieved hybrid matches, leather_sunglasses_case provides a very close mass comparison (179.9 g) requiring 1.906 N, while wallet_1 requires 2.013 N at 139.66 g, and headphones_case requires 3.01 N at 218.15 g. The ceramic tile has a planar geometry and a porous, patterned surface texture that presents moderate adhesion challenges for the rigid gecko pads compared to smooth leather or rubber. Scaling the force expectation between the mass-matched neighbors while accounting for the textured/porous surface condition yields a predicted normal force of 2.45 N, which satisfies the lift requirement feasibly within the 0 to 8 N limits."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Thin ceramic tile fragment with a flat, dry, porous surface and printed patterned texture. The intended contact region has straight and fractured edges with a planar geometry.",
+        "object_id": "rough_tile",
+        "surface_id": "rough_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "leather_sunglasses_case",
+            "surface_id": "leather_sunglasses_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+            "mass_g": 179.9,
+            "roughness_index": 2014.79,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black synthetic leather eyeglass case with a textured, dry surface and smooth curved lateral sidewalls. The intended contact region has no visible seams or interruptions.",
+            "gecko_min_force_n": 1.906,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.8225896864629472,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6514404235553236,
+              "mass": 0.9890595706149363,
+              "roughness": 0.9568008570882085,
+              "contact": null,
+              "semantic_contribution": 0.30656019932015227,
+              "mass_contribution": 0.29089987371027537,
+              "roughness_contribution": 0.22512961343251964,
+              "contact_contribution": null,
+              "total": 0.8225896864629472
+            }
+          },
+          {
+            "object_id": "big_stone",
+            "surface_id": "big_stone",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/big_stone.jpg",
+            "mass_g": 278.8,
+            "roughness_index": 2048.83,
+            "projected_contact_fraction": null,
+            "semantic_description": "Rough concrete or asphalt fragment with a porous, highly textured surface and irregular planar geometry. The intended contact region is dry, rough, and presents jagged edges.",
+            "gecko_min_force_n": 4.623,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7449152922718248,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8054321772375318,
+              "mass": 0.5289567400441759,
+              "roughness": 0.8938297126249722,
+              "contact": null,
+              "semantic_contribution": 0.37902690693530905,
+              "mass_contribution": 0.15557551177769877,
+              "roughness_contribution": 0.210312873558817,
+              "contact_contribution": null,
+              "total": 0.7449152922718248
+            }
+          },
+          {
+            "object_id": "headphones_case",
+            "surface_id": "headphones_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Headphones Case.jpg",
+            "mass_g": 218.15,
+            "roughness_index": 1610.85,
+            "projected_contact_fraction": null,
+            "semantic_description": "Fabric-covered semi-rigid case object with a textured, dry, fabric-wrapped lateral surface and rounded geometry. The intended contact region has gently curved, continuous vertical sidewalls interrupted only by a horizontal zipper seam.",
+            "gecko_min_force_n": 3.01,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6461261016715931,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6707031544996549,
+              "mass": 0.7509597466677972,
+              "roughness": 0.4659299397702147,
+              "contact": null,
+              "semantic_contribution": 0.31562501388219055,
+              "mass_contribution": 0.22087051372582267,
+              "roughness_contribution": 0.10963057406357993,
+              "contact_contribution": null,
+              "total": 0.6461261016715931
+            }
+          },
+          {
+            "object_id": "wallet_1",
+            "surface_id": "wallet_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Wallet 1.jpg",
+            "mass_g": 139.66,
+            "roughness_index": 1596.55,
+            "projected_contact_fraction": null,
+            "semantic_description": "Flexible fabric pouch form. The intended contact region is clean, dry, flat with slight soft deformation, and bounded by stitched edges.",
+            "gecko_min_force_n": 2.013,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6443082754385482,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7026365124909691,
+              "mass": 0.704195239865176,
+              "roughness": 0.452793095800422,
+              "contact": null,
+              "semantic_contribution": 0.33065247646633844,
+              "mass_contribution": 0.20711624701916936,
+              "roughness_contribution": 0.10653955195304046,
+              "contact_contribution": null,
+              "total": 0.6443082754385482
+            }
+          },
+          {
+            "object_id": "rubber_tire",
+            "surface_id": "rubber_tire",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/rubber tire.jpg",
+            "mass_g": 163.84,
+            "roughness_index": 1349.28,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black rubber toy tire or ring with a smooth, dry exterior sidewall and continuous curvature. The intended contact region has no visible seams or contamination, presenting a compliant toroidal surface.",
+            "gecko_min_force_n": 0.464,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6365053655090356,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6616120934486389,
+              "mass": 0.8846296997728715,
+              "roughness": 0.27613649180003424,
+              "contact": null,
+              "semantic_contribution": 0.3113468675052418,
+              "mass_contribution": 0.26018520581555044,
+              "roughness_contribution": 0.06497329218824335,
+              "contact_contribution": null,
+              "total": 0.6365053655090356
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "leather_sunglasses_case",
+            "conditions": [
+              {
+                "object_id": "leather_sunglasses_case",
+                "surface_id": "leather_sunglasses_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+                "mass_g": 179.9,
+                "roughness_index": 2014.79,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black synthetic leather eyeglass case with a textured, dry surface and smooth curved lateral sidewalls. The intended contact region has no visible seams or interruptions.",
+                "gecko_min_force_n": 1.906,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.8225896864629472,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6514404235553236,
+                  "mass": 0.9890595706149363,
+                  "roughness": 0.9568008570882085,
+                  "contact": null,
+                  "semantic_contribution": 0.30656019932015227,
+                  "mass_contribution": 0.29089987371027537,
+                  "roughness_contribution": 0.22512961343251964,
+                  "contact_contribution": null,
+                  "total": 0.8225896864629472
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "big_stone",
+            "conditions": [
+              {
+                "object_id": "big_stone",
+                "surface_id": "big_stone",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/big_stone.jpg",
+                "mass_g": 278.8,
+                "roughness_index": 2048.83,
+                "projected_contact_fraction": null,
+                "semantic_description": "Rough concrete or asphalt fragment with a porous, highly textured surface and irregular planar geometry. The intended contact region is dry, rough, and presents jagged edges.",
+                "gecko_min_force_n": 4.623,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7449152922718248,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8054321772375318,
+                  "mass": 0.5289567400441759,
+                  "roughness": 0.8938297126249722,
+                  "contact": null,
+                  "semantic_contribution": 0.37902690693530905,
+                  "mass_contribution": 0.15557551177769877,
+                  "roughness_contribution": 0.210312873558817,
+                  "contact_contribution": null,
+                  "total": 0.7449152922718248
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "headphones_case",
+            "conditions": [
+              {
+                "object_id": "headphones_case",
+                "surface_id": "headphones_case",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/Headphones Case.jpg",
+                "mass_g": 218.15,
+                "roughness_index": 1610.85,
+                "projected_contact_fraction": null,
+                "semantic_description": "Fabric-covered semi-rigid case object with a textured, dry, fabric-wrapped lateral surface and rounded geometry. The intended contact region has gently curved, continuous vertical sidewalls interrupted only by a horizontal zipper seam.",
+                "gecko_min_force_n": 3.01,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6461261016715931,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6707031544996549,
+                  "mass": 0.7509597466677972,
+                  "roughness": 0.4659299397702147,
+                  "contact": null,
+                  "semantic_contribution": 0.31562501388219055,
+                  "mass_contribution": 0.22087051372582267,
+                  "roughness_contribution": 0.10963057406357993,
+                  "contact_contribution": null,
+                  "total": 0.6461261016715931
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "wallet_1",
+            "conditions": [
+              {
+                "object_id": "wallet_1",
+                "surface_id": "wallet_1",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/Wallet 1.jpg",
+                "mass_g": 139.66,
+                "roughness_index": 1596.55,
+                "projected_contact_fraction": null,
+                "semantic_description": "Flexible fabric pouch form. The intended contact region is clean, dry, flat with slight soft deformation, and bounded by stitched edges.",
+                "gecko_min_force_n": 2.013,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6443082754385482,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7026365124909691,
+                  "mass": 0.704195239865176,
+                  "roughness": 0.452793095800422,
+                  "contact": null,
+                  "semantic_contribution": 0.33065247646633844,
+                  "mass_contribution": 0.20711624701916936,
+                  "roughness_contribution": 0.10653955195304046,
+                  "contact_contribution": null,
+                  "total": 0.6443082754385482
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "rubber_tire",
+            "conditions": [
+              {
+                "object_id": "rubber_tire",
+                "surface_id": "rubber_tire",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/rubber tire.jpg",
+                "mass_g": 163.84,
+                "roughness_index": 1349.28,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black rubber toy tire or ring with a smooth, dry exterior sidewall and continuous curvature. The intended contact region has no visible seams or contamination, presenting a compliant toroidal surface.",
+                "gecko_min_force_n": 0.464,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6365053655090356,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6616120934486389,
+                  "mass": 0.8846296997728715,
+                  "roughness": 0.27613649180003424,
+                  "contact": null,
+                  "semantic_contribution": 0.3113468675052418,
+                  "mass_contribution": 0.26018520581555044,
+                  "roughness_contribution": 0.06497329218824335,
+                  "contact_contribution": null,
+                  "total": 0.6365053655090356
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 180,
+          "misses": 51,
+          "writes": 51,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 14,
+            "writes": 14,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 180,
+            "misses": 37,
+            "writes": 37,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 14,
+            "embedding": 37
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 2.45,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 2.459,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.008999999999999897,
+      "absolute_error_gecko_n": 0.008999999999999897
+    },
+    {
+      "object_id": "small_book",
+      "surface_id": "small_book",
+      "condition_id": "baseline",
+      "object_name": "Small Book",
+      "image_path": "data/MatForceFinal/small_book.jpg",
+      "image_sha256": "62f5a0b4483b8c9ab4edf1686f4a58d751271084aa481e0238193415e751625c",
+      "mass_g": 118.4,
+      "roughness_index": 1532.23,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.25,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.25,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "wood and leather",
+              "visible_surface_condition": "dry, textured surface with flat lateral sides",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 1.25,
+              "evidence_used": [
+                "Object mass: 118.4 g",
+                "Roughness category: rough",
+                "Query semantic description: Small rectangular wooden and leather-bound object with a dry, textured surface and flat lateral sides",
+                "Retrieved object 1 (wallet_1): mass 139.66 g, roughness rough, gecko_min_force_n 2.013 N",
+                "Retrieved object 2 (wallet_2): mass 85.62 g, roughness rough, gecko_min_force_n 0.75 N",
+                "Retrieved object 3 (toilet_paper): mass 117.92 g, roughness smooth, gecko_min_force_n 1.112 N"
+              ],
+              "calculation_summary": "Interpolated/bounded by retrieved similar rough and mass-matched objects. Wallet 1 (139.66 g, rough) requires 2.013 N, Wallet 2 (85.62 g, rough) requires 0.75 N. Scaling linearly by object mass (118.4 g) relative to these bounds yields a baseline estimate near 1.25 N.",
+              "assumptions_and_uncertainty": [
+                "Assumption that the flat lateral sides provide sufficient contact area for the rigid gecko pads despite the rough categorization.",
+                "Uncertainty regarding exact local friction and adhesion coefficients due to withholding of continuous roughness metrics.",
+                "Minor variation from leather/wood texture texturization affecting maximum adhesive potential."
+              ],
+              "reasoning_trace": "The query object is a small rectangular wooden and leather-bound object with a mass of 118.4 g and a rough surface category. The gecko gripper requires flat, clean, and relatively smooth surfaces for maximum adhesion, but can achieve successful grasps on textured objects with moderate normal force application. Examining the retrieved nearest neighbors, wallet_2 (85.62 g, rough) requires 0.75 N and wallet_1 (139.66 g, rough) requires 2.013 N. Given that our object's mass (118.4 g) sits between these two retrieved examples, and accounting for the textured leather/wood sidewalls, a normal force estimate of approximately 1.25 N provides sufficient margin to lift the object securely without exceeding grip limits or slipping."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Small rectangular wooden and leather-bound object with a dry, textured surface and flat lateral sides. The intended contact region has vertical planar geometry with slight edge bevels and no major obstructions.",
+        "object_id": "small_book",
+        "surface_id": "small_book",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "wallet_1",
+            "surface_id": "wallet_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Wallet 1.jpg",
+            "mass_g": 139.66,
+            "roughness_index": 1596.55,
+            "projected_contact_fraction": null,
+            "semantic_description": "Flexible fabric pouch form. The intended contact region is clean, dry, flat with slight soft deformation, and bounded by stitched edges.",
+            "gecko_min_force_n": 2.013,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7891239378571251,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7435894425097097,
+              "mass": 0.7898459181886671,
+              "roughness": 0.8792904531375282,
+              "contact": null,
+              "semantic_contribution": 0.34992444353398106,
+              "mass_contribution": 0.23230762299666677,
+              "roughness_contribution": 0.2068918713264772,
+              "contact_contribution": null,
+              "total": 0.7891239378571251
+            }
+          },
+          {
+            "object_id": "wallet_2",
+            "surface_id": "wallet_2",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/wallet 2.jpg",
+            "mass_g": 85.62,
+            "roughness_index": 1623.1,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black textured leather wallet with a flexible folding structure. The intended contact region is clean and dry, featuring a soft, pliable surface with fine pebble grain texture and slightly rounded edges.",
+            "gecko_min_force_n": 0.75,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7507564572282813,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7851060205318854,
+              "mass": 0.6293478377712113,
+              "roughness": 0.8338181049424109,
+              "contact": null,
+              "semantic_contribution": 0.3694616567208872,
+              "mass_contribution": 0.18510230522682683,
+              "roughness_contribution": 0.1961924952805673,
+              "contact_contribution": null,
+              "total": 0.7507564572282813
+            }
+          },
+          {
+            "object_id": "toilet_paper",
+            "surface_id": "toilet_paper",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Toilet Paper.jpg",
+            "mass_g": 117.92,
+            "roughness_index": 1068.17,
+            "projected_contact_fraction": null,
+            "semantic_description": "Soft cylindrical paper product with a dry, textured fibrous surface and continuous curvature. The intended contact region is compressible, cylindrical, and features a slight edge seam from the loose outer ply.",
+            "gecko_min_force_n": 1.112,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7263872993097534,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7245414706817445,
+              "mass": 0.9942135293307152,
+              "roughness": 0.3952961690395688,
+              "contact": null,
+              "semantic_contribution": 0.3409606920855268,
+              "mass_contribution": 0.29241574392079855,
+              "roughness_contribution": 0.09301086330342796,
+              "contact_contribution": null,
+              "total": 0.7263872993097534
+            }
+          },
+          {
+            "object_id": "foam_roller",
+            "surface_id": "foam_roller",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Foam Roller.jpg",
+            "mass_g": 153.38,
+            "roughness_index": 1353.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black foamed polymeric cylindrical grip object with a textured, dry, porous lateral sidewall and continuous curvature. The intended contact region is clean with no visible seams or interruptions.",
+            "gecko_min_force_n": 0.723,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.714937939970947,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7379399254393666,
+              "mass": 0.6908825782428142,
+              "roughness": 0.6990031711942739,
+              "contact": null,
+              "semantic_contribution": 0.3472658472655843,
+              "mass_contribution": 0.20320075830671003,
+              "roughness_contribution": 0.1644713343986527,
+              "contact_contribution": null,
+              "total": 0.714937939970947
+            }
+          },
+          {
+            "object_id": "rubber_tire",
+            "surface_id": "rubber_tire",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/rubber tire.jpg",
+            "mass_g": 163.84,
+            "roughness_index": 1349.28,
+            "projected_contact_fraction": null,
+            "semantic_description": "Black rubber toy tire or ring with a smooth, dry exterior sidewall and continuous curvature. The intended contact region has no visible seams or contamination, presenting a compliant toroidal surface.",
+            "gecko_min_force_n": 0.464,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6858721544456786,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7177271660349968,
+              "mass": 0.6287441354933078,
+              "roughness": 0.6935721549575062,
+              "contact": null,
+              "semantic_contribution": 0.3377539604870573,
+              "mass_contribution": 0.1849247457333258,
+              "roughness_contribution": 0.16319344822529558,
+              "contact_contribution": null,
+              "total": 0.6858721544456786
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "wallet_1",
+            "conditions": [
+              {
+                "object_id": "wallet_1",
+                "surface_id": "wallet_1",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/Wallet 1.jpg",
+                "mass_g": 139.66,
+                "roughness_index": 1596.55,
+                "projected_contact_fraction": null,
+                "semantic_description": "Flexible fabric pouch form. The intended contact region is clean, dry, flat with slight soft deformation, and bounded by stitched edges.",
+                "gecko_min_force_n": 2.013,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7891239378571251,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7435894425097097,
+                  "mass": 0.7898459181886671,
+                  "roughness": 0.8792904531375282,
+                  "contact": null,
+                  "semantic_contribution": 0.34992444353398106,
+                  "mass_contribution": 0.23230762299666677,
+                  "roughness_contribution": 0.2068918713264772,
+                  "contact_contribution": null,
+                  "total": 0.7891239378571251
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "wallet_2",
+            "conditions": [
+              {
+                "object_id": "wallet_2",
+                "surface_id": "wallet_2",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/wallet 2.jpg",
+                "mass_g": 85.62,
+                "roughness_index": 1623.1,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black textured leather wallet with a flexible folding structure. The intended contact region is clean and dry, featuring a soft, pliable surface with fine pebble grain texture and slightly rounded edges.",
+                "gecko_min_force_n": 0.75,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7507564572282813,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7851060205318854,
+                  "mass": 0.6293478377712113,
+                  "roughness": 0.8338181049424109,
+                  "contact": null,
+                  "semantic_contribution": 0.3694616567208872,
+                  "mass_contribution": 0.18510230522682683,
+                  "roughness_contribution": 0.1961924952805673,
+                  "contact_contribution": null,
+                  "total": 0.7507564572282813
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "toilet_paper",
+            "conditions": [
+              {
+                "object_id": "toilet_paper",
+                "surface_id": "toilet_paper",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/Toilet Paper.jpg",
+                "mass_g": 117.92,
+                "roughness_index": 1068.17,
+                "projected_contact_fraction": null,
+                "semantic_description": "Soft cylindrical paper product with a dry, textured fibrous surface and continuous curvature. The intended contact region is compressible, cylindrical, and features a slight edge seam from the loose outer ply.",
+                "gecko_min_force_n": 1.112,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7263872993097534,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7245414706817445,
+                  "mass": 0.9942135293307152,
+                  "roughness": 0.3952961690395688,
+                  "contact": null,
+                  "semantic_contribution": 0.3409606920855268,
+                  "mass_contribution": 0.29241574392079855,
+                  "roughness_contribution": 0.09301086330342796,
+                  "contact_contribution": null,
+                  "total": 0.7263872993097534
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "foam_roller",
+            "conditions": [
+              {
+                "object_id": "foam_roller",
+                "surface_id": "foam_roller",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/Foam Roller.jpg",
+                "mass_g": 153.38,
+                "roughness_index": 1353.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black foamed polymeric cylindrical grip object with a textured, dry, porous lateral sidewall and continuous curvature. The intended contact region is clean with no visible seams or interruptions.",
+                "gecko_min_force_n": 0.723,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.714937939970947,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7379399254393666,
+                  "mass": 0.6908825782428142,
+                  "roughness": 0.6990031711942739,
+                  "contact": null,
+                  "semantic_contribution": 0.3472658472655843,
+                  "mass_contribution": 0.20320075830671003,
+                  "roughness_contribution": 0.1644713343986527,
+                  "contact_contribution": null,
+                  "total": 0.714937939970947
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "rubber_tire",
+            "conditions": [
+              {
+                "object_id": "rubber_tire",
+                "surface_id": "rubber_tire",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/rubber tire.jpg",
+                "mass_g": 163.84,
+                "roughness_index": 1349.28,
+                "projected_contact_fraction": null,
+                "semantic_description": "Black rubber toy tire or ring with a smooth, dry exterior sidewall and continuous curvature. The intended contact region has no visible seams or contamination, presenting a compliant toroidal surface.",
+                "gecko_min_force_n": 0.464,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.6858721544456786,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7177271660349968,
+                  "mass": 0.6287441354933078,
+                  "roughness": 0.6935721549575062,
+                  "contact": null,
+                  "semantic_contribution": 0.3377539604870573,
+                  "mass_contribution": 0.1849247457333258,
+                  "roughness_contribution": 0.16319344822529558,
+                  "contact_contribution": null,
+                  "total": 0.6858721544456786
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 210,
+          "misses": 54,
+          "writes": 54,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 16,
+            "writes": 16,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 210,
+            "misses": 38,
+            "writes": 38,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 16,
+            "embedding": 38
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 1.25,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.03,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.21999999999999997,
+      "absolute_error_gecko_n": 0.21999999999999997
+    },
+    {
+      "object_id": "soap_bottle",
+      "surface_id": "soap_bottle",
+      "condition_id": "baseline",
+      "object_name": "Soap Bottle",
+      "image_path": "data/MatForceFinal/soap_bottle.jpg",
+      "image_sha256": "c14f003defb99d065b60f161664f330c7f613b426d45fccc484ce81a5916de3c",
+      "mass_g": 236.11,
+      "roughness_index": 736.99,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 0.24,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 0.24,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "opaque plastic",
+              "visible_surface_condition": "smooth, dry lateral surfaces with subtle vertical flattened panels and continuous curvature",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 0.24,
+              "evidence_used": [
+                "Query mass of 236.11 g",
+                "Query roughness category: smooth",
+                "Query semantic description: opaque plastic bottle with smooth, dry lateral surfaces and subtle vertical flattened panels",
+                "Retrieved object 1 (ketchup) with mass 293.77 g, smooth roughness category, and gecko_min_force_n of 0.24 N"
+              ],
+              "calculation_summary": "Retrieved nearest neighbor (ketchup) shares identical surface properties (smooth plastic) and similar geometry, requiring 0.24 N normal force for 293.77 g. Scaling directly or assigning the exact empirical outcome of the closest matching smooth plastic squeeze bottle gives 0.24 N.",
+              "assumptions_and_uncertainty": [
+                "Assumes the surface friction and adhesive contact mechanics of the query bottle closely match the retrieved ketchup bottle baseline.",
+                "Uncertainty arises from slight differences in mass (236.11 g vs 293.77 g) and minor variations in panel flatness."
+              ],
+              "reasoning_trace": "The query object is an opaque plastic bottle with smooth, dry lateral surfaces and subtle flattened panels, categorized as smooth. The parallel-jaw gecko gripper thrives on clean, dry, smooth, flat, or gently paneled surfaces. Among the retrieved experiences, the top match (ketchup) is a plastic squeeze bottle with a smooth, dry sidewall and convex flat-sided curvature, requiring a minimum normal force of 0.24 N for a mass of 293.77 g. Given the high semantic similarity, identical roughness category (smooth), and comparable plastic material, the required normal force for the query object (mass 236.11 g) aligns closely with the nearest neighbor's empirically observed value of 0.24 N."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Opaque plastic bottle with smooth, dry lateral surfaces. The intended contact region has continuous curvature with subtle vertical flattened panels and no visible contamination.",
+        "object_id": "soap_bottle",
+        "surface_id": "soap_bottle",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "ketchup",
+            "surface_id": "ketchup",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/ketchup.jpg",
+            "mass_g": 293.77,
+            "roughness_index": 705.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
+            "gecko_min_force_n": 0.24,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.8534615890844182,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8870015932327246,
+              "mass": 0.7318776463841895,
+              "roughness": 0.9383615091630912,
+              "contact": null,
+              "semantic_contribution": 0.41741251446245864,
+              "mass_contribution": 0.21525813128946747,
+              "roughness_contribution": 0.22079094333249205,
+              "contact_contribution": null,
+              "total": 0.8534615890844182
+            }
+          },
+          {
+            "object_id": "cetaphil",
+            "surface_id": "cetaphil",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/cetaphil.jpg",
+            "mass_g": 403.68,
+            "roughness_index": 797.68,
+            "projected_contact_fraction": null,
+            "semantic_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
+            "gecko_min_force_n": 1.923,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.747659865327807,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8554372780359355,
+              "mass": 0.46478603273562297,
+              "roughness": 0.88569733065178,
+              "contact": null,
+              "semantic_contribution": 0.4025587190757344,
+              "mass_contribution": 0.13670177433400674,
+              "roughness_contribution": 0.20839937191806587,
+              "contact_contribution": null,
+              "total": 0.747659865327807
+            }
+          },
+          {
+            "object_id": "soda_can",
+            "surface_id": "soda_can",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/soda_can.jpg",
+            "mass_g": 321.71,
+            "roughness_index": 954.75,
+            "projected_contact_fraction": null,
+            "semantic_description": "Cylindrical aluminum beverage can with a painted exterior coating. The intended contact region is dry, smooth, with continuous cylindrical curvature and no visible seams.",
+            "gecko_min_force_n": 1.816,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7134814364693048,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7909383080152731,
+              "mass": 0.6427930496142633,
+              "roughness": 0.6469281769461706,
+              "contact": null,
+              "semantic_contribution": 0.3722062625954226,
+              "mass_contribution": 0.18905677929831272,
+              "roughness_contribution": 0.15221839457556954,
+              "contact_contribution": null,
+              "total": 0.7134814364693048
+            }
+          },
+          {
+            "object_id": "multimeter",
+            "surface_id": "multimeter",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/multimeter.jpeg",
+            "mass_g": 289.32,
+            "roughness_index": 463.64,
+            "projected_contact_fraction": null,
+            "semantic_description": "Yellow rubber-sleeved handheld electronic device with a smooth, slightly worn, dry lateral surface. The intended contact region has flat sides with rounded protective edges and slight surface dust.",
+            "gecko_min_force_n": 2.505,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7110578593719694,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7540621151776039,
+              "mass": 0.748011825816567,
+              "roughness": 0.5788568897049534,
+              "contact": null,
+              "semantic_contribution": 0.3548527600835783,
+              "mass_contribution": 0.2200034781813432,
+              "roughness_contribution": 0.13620162110704787,
+              "contact_contribution": null,
+              "total": 0.7110578593719694
+            }
+          },
+          {
+            "object_id": "banana",
+            "surface_id": "banana",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/banana.jpg",
+            "mass_g": 202.6,
+            "roughness_index": 1072.02,
+            "projected_contact_fraction": null,
+            "semantic_description": "Curved organic fruit object with a smooth, dry, slightly bruised peel and rounded cylindrical geometry. The intended contact region has gentle longitudinal facets and continuous curvature.",
+            "gecko_min_force_n": 2.523,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7102892684619992,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7512805316688215,
+              "mass": 0.8035923611463374,
+              "roughness": 0.5116778761929323,
+              "contact": null,
+              "semantic_contribution": 0.35354377960885713,
+              "mass_contribution": 0.23635069445480508,
+              "roughness_contribution": 0.120394794398337,
+              "contact_contribution": null,
+              "total": 0.7102892684619992
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "ketchup",
+            "conditions": [
+              {
+                "object_id": "ketchup",
+                "surface_id": "ketchup",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/ketchup.jpg",
+                "mass_g": 293.77,
+                "roughness_index": 705.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
+                "gecko_min_force_n": 0.24,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.8534615890844182,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8870015932327246,
+                  "mass": 0.7318776463841895,
+                  "roughness": 0.9383615091630912,
+                  "contact": null,
+                  "semantic_contribution": 0.41741251446245864,
+                  "mass_contribution": 0.21525813128946747,
+                  "roughness_contribution": 0.22079094333249205,
+                  "contact_contribution": null,
+                  "total": 0.8534615890844182
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "cetaphil",
+            "conditions": [
+              {
+                "object_id": "cetaphil",
+                "surface_id": "cetaphil",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/cetaphil.jpg",
+                "mass_g": 403.68,
+                "roughness_index": 797.68,
+                "projected_contact_fraction": null,
+                "semantic_description": "Opaque white plastic cylindrical jar. The intended contact region is clean, dry, with continuous curvature and a smooth sidewall.",
+                "gecko_min_force_n": 1.923,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.747659865327807,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.8554372780359355,
+                  "mass": 0.46478603273562297,
+                  "roughness": 0.88569733065178,
+                  "contact": null,
+                  "semantic_contribution": 0.4025587190757344,
+                  "mass_contribution": 0.13670177433400674,
+                  "roughness_contribution": 0.20839937191806587,
+                  "contact_contribution": null,
+                  "total": 0.747659865327807
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "soda_can",
+            "conditions": [
+              {
+                "object_id": "soda_can",
+                "surface_id": "soda_can",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/soda_can.jpg",
+                "mass_g": 321.71,
+                "roughness_index": 954.75,
+                "projected_contact_fraction": null,
+                "semantic_description": "Cylindrical aluminum beverage can with a painted exterior coating. The intended contact region is dry, smooth, with continuous cylindrical curvature and no visible seams.",
+                "gecko_min_force_n": 1.816,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7134814364693048,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7909383080152731,
+                  "mass": 0.6427930496142633,
+                  "roughness": 0.6469281769461706,
+                  "contact": null,
+                  "semantic_contribution": 0.3722062625954226,
+                  "mass_contribution": 0.18905677929831272,
+                  "roughness_contribution": 0.15221839457556954,
+                  "contact_contribution": null,
+                  "total": 0.7134814364693048
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "multimeter",
+            "conditions": [
+              {
+                "object_id": "multimeter",
+                "surface_id": "multimeter",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/multimeter.jpeg",
+                "mass_g": 289.32,
+                "roughness_index": 463.64,
+                "projected_contact_fraction": null,
+                "semantic_description": "Yellow rubber-sleeved handheld electronic device with a smooth, slightly worn, dry lateral surface. The intended contact region has flat sides with rounded protective edges and slight surface dust.",
+                "gecko_min_force_n": 2.505,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7110578593719694,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7540621151776039,
+                  "mass": 0.748011825816567,
+                  "roughness": 0.5788568897049534,
+                  "contact": null,
+                  "semantic_contribution": 0.3548527600835783,
+                  "mass_contribution": 0.2200034781813432,
+                  "roughness_contribution": 0.13620162110704787,
+                  "contact_contribution": null,
+                  "total": 0.7110578593719694
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "banana",
+            "conditions": [
+              {
+                "object_id": "banana",
+                "surface_id": "banana",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/banana.jpg",
+                "mass_g": 202.6,
+                "roughness_index": 1072.02,
+                "projected_contact_fraction": null,
+                "semantic_description": "Curved organic fruit object with a smooth, dry, slightly bruised peel and rounded cylindrical geometry. The intended contact region has gentle longitudinal facets and continuous curvature.",
+                "gecko_min_force_n": 2.523,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7102892684619992,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7512805316688215,
+                  "mass": 0.8035923611463374,
+                  "roughness": 0.5116778761929323,
+                  "contact": null,
+                  "semantic_contribution": 0.35354377960885713,
+                  "mass_contribution": 0.23635069445480508,
+                  "roughness_contribution": 0.120394794398337,
+                  "contact_contribution": null,
+                  "total": 0.7102892684619992
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 240,
+          "misses": 57,
+          "writes": 57,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 18,
+            "writes": 18,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 240,
+            "misses": 39,
+            "writes": 39,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 18,
+            "embedding": 39
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 0.24,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.303,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.063,
+      "absolute_error_gecko_n": 0.063
+    },
+    {
+      "object_id": "very_smooth_tile",
+      "surface_id": "very_smooth_tile",
+      "condition_id": "baseline",
+      "object_name": "Very Smooth Tile",
+      "image_path": "data/MatForceFinal/very_smooth_tile.jpg",
+      "image_sha256": "620a7195ae010d4041096b222cca186ec509443e1c19b155284b64ae070990bf",
+      "mass_g": 178.52,
+      "roughness_index": 730.45,
+      "projected_contact_fraction": null,
+      "semantic_description": null,
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 0.417,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e4",
+        "experiment_method": "hybrid_retrieval_vlm",
+        "experiment_definition_version": 10,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 0.417,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "ceramic sherd",
+              "visible_surface_condition": "porous textured surface with thin profile and irregular fractured edges",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 0.417,
+              "evidence_used": [
+                "Query object mass: 178.52 g",
+                "Query object roughness category: smooth",
+                "Query semantic description: Flat ceramic sherd with a porous textured surface and thin profile",
+                "Retrieved object caprisun mass: 186.01 g, gecko_min_force_n: 0.417 N",
+                "Retrieved object apple mass: 159.44 g, gecko_min_force_n: 0.410 N"
+              ],
+              "calculation_summary": "Compared query object mass (178.52 g) against retrieved objects with similar mass and smooth category classification (e.g., caprisun at 186.01 g requiring 0.417 N and apple at 159.44 g requiring 0.410 N). Selected a normal force estimate closely bounded by these empirical observations, scaling near 0.417 N.",
+              "assumptions_and_uncertainty": [
+                "Assumption that the parallel-jaw rigid gecko gripper can establish sufficient contact with the flat ceramic face despite irregular fractured edges.",
+                "Uncertainty regarding local porosity and microscopic texture effects on dry adhesion performance.",
+                "Binary roughness category is qualitative; no numerical roughness metrics were interpolated."
+              ],
+              "reasoning_trace": "The active gripper embodiment is a parallel-jaw gripper with mushroom-tipped gecko-inspired dry-adhesive pads requiring flat, parallel sidewalls. The query object is a flat ceramic sherd with a mass of 178.52 g and a smooth binary roughness category. Among the retrieved hybrid experiences, the caprisun object has a very comparable mass of 186.01 g and requires 0.417 N under baseline conditions, while the apple has a mass of 159.44 g and requires 0.410 N. Given the similar mass range and smooth classification of the query object, the required pre-grasp normal force is estimated directly from these empirical reference points at 0.417 N, ensuring feasibility within the hardware limits."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Flat ceramic sherd with a porous textured surface and thin profile. The intended contact region is dry, flat, and bounded by irregular fractured edges.",
+        "object_id": "very_smooth_tile",
+        "surface_id": "very_smooth_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 2,
+        "retrieved_objects": [
+          {
+            "object_id": "apple",
+            "surface_id": "apple",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/apple.jpg",
+            "mass_g": 159.44,
+            "roughness_index": 562.94,
+            "projected_contact_fraction": null,
+            "semantic_description": "Green spherical organic fruit object with a smooth, dry, nonporous rind and continuous curved lateral surfaces. The intended contact region is clean and smooth with gentle curvature.",
+            "gecko_min_force_n": 0.41,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7560997933020053,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7172456461797604,
+              "mass": 0.8508872395520819,
+              "roughness": 0.7153237797338996,
+              "contact": null,
+              "semantic_contribution": 0.3375273629081225,
+              "mass_contribution": 0.25026095280943583,
+              "roughness_contribution": 0.16831147758444695,
+              "contact_contribution": null,
+              "total": 0.7560997933020053
+            }
+          },
+          {
+            "object_id": "caprisun",
+            "surface_id": "caprisun",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/caprisun.jpeg",
+            "mass_g": 186.01,
+            "roughness_index": 1002.43,
+            "projected_contact_fraction": null,
+            "semantic_description": "Flexible foil beverage pouch with printed plastic film laminate. The intended contact region is clean and dry, featuring broad compressible flat panels with soft longitudinal creases and sealed edge fins.",
+            "gecko_min_force_n": 0.417,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7356636478663182,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.6837024184061149,
+              "mass": 0.9429764273103448,
+              "roughness": 0.5804451324816918,
+              "contact": null,
+              "semantic_contribution": 0.32174231454405405,
+              "mass_contribution": 0.2773460080324543,
+              "roughness_contribution": 0.13657532528980984,
+              "contact_contribution": null,
+              "total": 0.7356636478663182
+            }
+          },
+          {
+            "object_id": "orange",
+            "surface_id": "orange",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/orange.jpg",
+            "mass_g": 154.17,
+            "roughness_index": 1068.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
+            "gecko_min_force_n": 0.38,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7055662073890262,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7379947333348433,
+              "mass": 0.8109957217752916,
+              "roughness": 0.5089222625145601,
+              "contact": null,
+              "semantic_contribution": 0.3472916392163969,
+              "mass_contribution": 0.238528153463321,
+              "roughness_contribution": 0.11974641470930825,
+              "contact_contribution": null,
+              "total": 0.7055662073890262
+            }
+          },
+          {
+            "object_id": "ketchup",
+            "surface_id": "ketchup",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/ketchup.jpg",
+            "mass_g": 293.77,
+            "roughness_index": 705.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
+            "gecko_min_force_n": 0.24,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7050881618800309,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7161577263254467,
+              "mass": 0.49087466885077197,
+              "roughness": 0.9507158992757728,
+              "contact": null,
+              "semantic_contribution": 0.33701540062373964,
+              "mass_contribution": 0.1443749026031682,
+              "roughness_contribution": 0.22369785865312303,
+              "contact_contribution": null,
+              "total": 0.7050881618800309
+            }
+          },
+          {
+            "object_id": "banana",
+            "surface_id": "banana",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/banana.jpg",
+            "mass_g": 202.6,
+            "roughness_index": 1072.02,
+            "projected_contact_fraction": null,
+            "semantic_description": "Curved organic fruit object with a smooth, dry, slightly bruised peel and rounded cylindrical geometry. The intended contact region has gentle longitudinal facets and continuous curvature.",
+            "gecko_min_force_n": 2.523,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7003306276496828,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7140416587665663,
+              "mass": 0.8346345120480232,
+              "roughness": 0.5050287099179901,
+              "contact": null,
+              "semantic_contribution": 0.33601960412544296,
+              "mass_contribution": 0.24548073883765384,
+              "roughness_contribution": 0.11883028468658591,
+              "contact_contribution": null,
+              "total": 0.7003306276496828
+            }
+          }
+        ],
+        "retrieved_surfaces": [
+          {
+            "surface_id": "apple",
+            "conditions": [
+              {
+                "object_id": "apple",
+                "surface_id": "apple",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/apple.jpg",
+                "mass_g": 159.44,
+                "roughness_index": 562.94,
+                "projected_contact_fraction": null,
+                "semantic_description": "Green spherical organic fruit object with a smooth, dry, nonporous rind and continuous curved lateral surfaces. The intended contact region is clean and smooth with gentle curvature.",
+                "gecko_min_force_n": 0.41,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7560997933020053,
+                "rank": 1,
+                "surface_rank": 1,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7172456461797604,
+                  "mass": 0.8508872395520819,
+                  "roughness": 0.7153237797338996,
+                  "contact": null,
+                  "semantic_contribution": 0.3375273629081225,
+                  "mass_contribution": 0.25026095280943583,
+                  "roughness_contribution": 0.16831147758444695,
+                  "contact_contribution": null,
+                  "total": 0.7560997933020053
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "caprisun",
+            "conditions": [
+              {
+                "object_id": "caprisun",
+                "surface_id": "caprisun",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/caprisun.jpeg",
+                "mass_g": 186.01,
+                "roughness_index": 1002.43,
+                "projected_contact_fraction": null,
+                "semantic_description": "Flexible foil beverage pouch with printed plastic film laminate. The intended contact region is clean and dry, featuring broad compressible flat panels with soft longitudinal creases and sealed edge fins.",
+                "gecko_min_force_n": 0.417,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7356636478663182,
+                "rank": 2,
+                "surface_rank": 2,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.6837024184061149,
+                  "mass": 0.9429764273103448,
+                  "roughness": 0.5804451324816918,
+                  "contact": null,
+                  "semantic_contribution": 0.32174231454405405,
+                  "mass_contribution": 0.2773460080324543,
+                  "roughness_contribution": 0.13657532528980984,
+                  "contact_contribution": null,
+                  "total": 0.7356636478663182
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "orange",
+            "conditions": [
+              {
+                "object_id": "orange",
+                "surface_id": "orange",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/orange.jpg",
+                "mass_g": 154.17,
+                "roughness_index": 1068.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Spherical citrus fruit with a textured, porous peel and convex curvature. The intended contact region is dry, finely pitted, and continuous without prominent seams.",
+                "gecko_min_force_n": 0.38,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7055662073890262,
+                "rank": 3,
+                "surface_rank": 3,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7379947333348433,
+                  "mass": 0.8109957217752916,
+                  "roughness": 0.5089222625145601,
+                  "contact": null,
+                  "semantic_contribution": 0.3472916392163969,
+                  "mass_contribution": 0.238528153463321,
+                  "roughness_contribution": 0.11974641470930825,
+                  "contact_contribution": null,
+                  "total": 0.7055662073890262
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "ketchup",
+            "conditions": [
+              {
+                "object_id": "ketchup",
+                "surface_id": "ketchup",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/ketchup.jpg",
+                "mass_g": 293.77,
+                "roughness_index": 705.18,
+                "projected_contact_fraction": null,
+                "semantic_description": "Plastic squeeze bottle object with a smooth, dry, nonporous sidewall and convex flat-sided curvature. The intended contact region has a paper label on the front and molded plastic on the sides, with smooth continuous surfaces.",
+                "gecko_min_force_n": 0.24,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7050881618800309,
+                "rank": 4,
+                "surface_rank": 4,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7161577263254467,
+                  "mass": 0.49087466885077197,
+                  "roughness": 0.9507158992757728,
+                  "contact": null,
+                  "semantic_contribution": 0.33701540062373964,
+                  "mass_contribution": 0.1443749026031682,
+                  "roughness_contribution": 0.22369785865312303,
+                  "contact_contribution": null,
+                  "total": 0.7050881618800309
+                }
+              }
+            ]
+          },
+          {
+            "surface_id": "banana",
+            "conditions": [
+              {
+                "object_id": "banana",
+                "surface_id": "banana",
+                "condition_id": "baseline",
+                "image_path": "data/MatForceFinal/banana.jpg",
+                "mass_g": 202.6,
+                "roughness_index": 1072.02,
+                "projected_contact_fraction": null,
+                "semantic_description": "Curved organic fruit object with a smooth, dry, slightly bruised peel and rounded cylindrical geometry. The intended contact region has gentle longitudinal facets and continuous curvature.",
+                "gecko_min_force_n": 2.523,
+                "gecko_feasible": true,
+                "silicone_min_force_n": null,
+                "silicone_feasible": null,
+                "score": 0.7003306276496828,
+                "rank": 5,
+                "surface_rank": 5,
+                "condition_rank": 1,
+                "similarity": {
+                  "mode": "hybrid",
+                  "semantic": 0.7140416587665663,
+                  "mass": 0.8346345120480232,
+                  "roughness": 0.5050287099179901,
+                  "contact": null,
+                  "semantic_contribution": 0.33601960412544296,
+                  "mass_contribution": 0.24548073883765384,
+                  "roughness_contribution": 0.11883028468658591,
+                  "contact_contribution": null,
+                  "total": 0.7003306276496828
+                }
+              }
+            ]
+          }
+        ],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 270,
+          "misses": 60,
+          "writes": 60,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 20,
+            "writes": 20,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 270,
+            "misses": 40,
+            "writes": 40,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 20,
+            "embedding": 40
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": "hybrid",
+        "effective_inputs": [
+          "object_image",
+          "gripper_context",
+          "semantic_descriptor",
+          "semantic_experiences",
+          "mass",
+          "roughness"
+        ]
+      },
+      "pred_gecko_force_n": 0.417,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.996,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.579,
+      "absolute_error_gecko_n": 0.579
+    }
+  ]
+}

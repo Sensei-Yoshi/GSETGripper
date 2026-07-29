@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "caprisun",
   "object_name": "caprisun",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "88eab6fd8502d8dc5ba5bd1d5cfdb569a467768a9c2f93d4f49dc96b9fc0dec8",
-  "embedding_cache_key": "96a1a9731211c897b5ccf326e7d7114ada4c2093bfe890a7c9cc5f541049f8c8",
-  "embedding_sha256": "028b5f53be0c7bf5b4c2631d0b8c58d3d496ffa56bd4c962cd490efc01eb50a3",
-  "updated_at": "2026-07-28T17:57:47.219135+00:00"
+  "embedding_cache_key": "1a22fdbef2ba9e2a0953dbb2985739dba02e56c57dccdee9c3b6ada4f06c964d",
+  "embedding_sha256": "ff93c0f57e1caa2d37060c4426e908883dc267fa75ce7d11660dceb10dac32eb",
+  "updated_at": "2026-07-29T16:49:31.639733+00:00"
 }

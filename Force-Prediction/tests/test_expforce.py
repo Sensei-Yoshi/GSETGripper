@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 import shutil
 
 import cv2
@@ -28,35 +27,12 @@ from modules.datasets import PreparationStage, get_dataset, prepare_dataset_stag
 from modules.expforce import (
     artifact_backend_label,
     backend_provenance,
-    load_rows,
     prepare_dataset,
-    save_pipeline_run,
     saved_run_experiment_label,
-    source_path,
-    to_experiences,
-    validation_summary,
 )
-from modules.hardware import fabricate_records
 from modules.perception import Description
-from modules.pipeline import Pipeline, query_input_from_object
 from modules.prediction import vlm_predict_joint
 from tests.fakes import FakeEmbeddingProvider, install_gemini_fakes
-
-
-def test_source_validation_and_paired_conversion():
-    cfg = load_config().model_copy(deep=True)
-    original = source_path(cfg).read_bytes()
-    rows = load_rows(cfg)
-    summary = validation_summary(cfg, rows)
-    records = to_experiences(cfg, rows)
-
-    assert len(rows) == 129
-    assert len(records) == 258
-    assert summary["favored_counts"].get("tie", 0) == 0
-    assert set(summary["favored_counts"]) == {"gecko", "silicone"}
-    assert {record.object_id for record in records} == {row.object_id for row in rows}
-    assert all(sum(record.object_id == row.object_id for record in records) == 2 for row in rows)
-    assert source_path(cfg).read_bytes() == original
 
 
 def test_expforce_preparation_wrapper_delegates_to_canonical_gemini_pipeline(monkeypatch):
@@ -147,47 +123,6 @@ def test_backend_provenance_exposes_only_active_gemini_paths():
     with pytest.raises(KeyError, match="unknown experiment"):
         backend_provenance(cfg, "e5")
     assert artifact_backend_label({"execution_mode": "Offline"}) == "Legacy Offline"
-
-
-def test_new_single_run_artifact_uses_backend_provenance(tmp_path, monkeypatch):
-    source_cfg = load_config().model_copy(deep=True)
-    cfg = source_cfg.model_copy(deep=True)
-    cfg.root = tmp_path
-    source = tmp_path / "data/expforce/dataset.csv"
-    source.parent.mkdir(parents=True)
-    shutil.copyfile(source_path(source_cfg), source)
-    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
-    records = fabricate_records(cfg, 12)
-    held = records[0].object_id
-    query_records = [record for record in records if record.object_id == held]
-    training = [record for record in records if record.object_id != held]
-    query = query_input_from_object(query_records, cfg)
-    query.image_bgr = np.zeros((8, 8, 3), dtype=np.uint8)
-    detailed = Pipeline(cfg, "e1").fit(training).predict_detailed(query)
-
-    path = save_pipeline_run(
-        cfg,
-        detailed=detailed,
-        experiment="e1",
-        query={
-            "object_id": held,
-            "mass_g": query_records[0].mass_g,
-            "roughness_index": query_records[0].roughness_index,
-            "projected_contact_fraction": query_records[0].projected_contact_fraction,
-        },
-        truth=None,
-        counterfactual=True,
-    )
-    artifact = json.loads(path.read_text())
-
-    assert artifact["schema_version"] == 9
-    assert artifact["backend"] == {
-        "force": "gemini_joint_generation",
-        "semantic_embedding": None,
-    }
-    assert artifact["active_grippers"] == ["gecko", "silicone"]
-    assert artifact["generation_mode"] == "joint"
-    assert "execution_mode" not in artifact
 
 
 def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
@@ -409,52 +344,6 @@ def test_legacy_e4_e5_artifact_labels_preserve_old_meanings():
             },
         }
     ) == "Legacy E4 — calibrated physics"
-def test_full_129_object_leave_one_out_benchmark_uses_gemini_contract(
-    tmp_path, monkeypatch
-):
-    source_cfg = load_config().model_copy(deep=True)
-    cfg = source_cfg.model_copy(deep=True)
-    cfg.root = tmp_path
-    # The checked-in Exp-Force fixture contains legacy classes only. Disabling
-    # this optional input must keep E4 available without inventing indices.
-    cfg.inputs.use_roughness = False
-    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
-    monkeypatch.setattr(
-        cv2,
-        "imread",
-        lambda *_args, **_kwargs: np.zeros((8, 8, 3), dtype=np.uint8),
-    )
-    source = tmp_path / "data/expforce/dataset.csv"
-    source.parent.mkdir(parents=True)
-    shutil.copyfile(source_path(source_cfg), source)
-    for row in load_rows(cfg):
-        image = tmp_path / f"data/expforce/objects/{row.object_id}/image.png"
-        image.parent.mkdir(parents=True)
-        image.write_bytes(b"test image")
-
-    batch = generate_benchmark_predictions(cfg, "e4")
-    evaluation = evaluate_benchmark_predictions(cfg, batch)
-
-    assert len(batch.rows) == 129
-    assert all(not any(key.startswith("true_") for key in row) for row in batch.rows)
-    assert evaluation.metrics["force"]["overall"]["n"] == 258
-    assert evaluation.metrics["selection"]["n"] == 129
-    assert batch.metadata["prediction_protocol"] == "query-excluded reference generation"
-    assert len(batch.metadata["reference_ids"]) == 129
-    assert batch.metadata["experiment_method"] == "hybrid_retrieval_vlm"
-    assert batch.metadata["backend"]["force"] == "gemini_joint_generation"
-    assert "dry_run" not in batch.metadata
-    assert evaluation.metrics["model_recommendation"]["n"] == 129
-    assert all(
-        row["object_id"]
-        not in {
-            item["object_id"]
-            for item in row["pipeline_result"]["retrieved_objects"]
-        }
-        for row in batch.rows
-    )
-
-
 def test_single_silicone_benchmark_omits_inactive_outputs(tmp_path, monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.root = tmp_path

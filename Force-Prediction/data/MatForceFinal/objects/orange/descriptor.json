@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "orange",
   "object_name": "orange",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "5b5f93ba274e2388e6d849c59b20cc98abf9dc7b06e90a3f32b4243993880a9f",
-  "embedding_cache_key": "65cb433ba3d2c2d7180a03685984c7bf0664fd66a9b9ddb74f66707e932079d5",
-  "embedding_sha256": "e7f3433d488baab2a50c3bd26e0c24f9feeaeff1975979811d4382ab5b2daa9e",
-  "updated_at": "2026-07-28T17:57:49.256395+00:00"
+  "embedding_cache_key": "b8212c5ba226916c161141c2f9fcf73570c63ca14dfd09c6493f27bea36a7d57",
+  "embedding_sha256": "6b79d1dd1d351b07790137258ec4893be9566f0c31a6408a182deb1114061bec",
+  "updated_at": "2026-07-29T16:49:30.073704+00:00"
 }

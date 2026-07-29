@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "book",
   "object_name": "book",
@@ -19,11 +19,12 @@
     "contact_patch_visibility": "Clearly visible",
     "uncertainty": "The exact frictional properties of the cover material are not fully determinable from visual inspection alone."
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-28T21:02:27Z"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
+  "embedding_descriptor_sha256": "5ed6d45fcb741b9a9a182f7d9d5b31230a73cea0a1fdd6511ad47c96cf988743",
+  "embedding_cache_key": "1562c9357d19d6afdc8e9e0120ccbd7d6503081abbe64d71aeee7c661231170a",
+  "embedding_sha256": "b21093f21f08e94e931090c149426b45067577d8d74bd53e53e0e233741d56a6",
+  "updated_at": "2026-07-29T16:49:32.237732+00:00"
 }

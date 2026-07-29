@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "red_bull",
   "object_name": "red bull",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "4c151571b89eba7022a91e4433f1129fb784fb44c821973a57840981742bbb85",
-  "embedding_cache_key": "c05898ef8dbdee1f946aa099976b86f4fbdea83fb81273e81fb8ce8e53c4792d",
-  "embedding_sha256": "db8870ff71d87cb1fdf0de45a44e7e37f76e65e88756e30efbdefabe37f79991",
-  "updated_at": "2026-07-28T17:57:49.669579+00:00"
+  "embedding_cache_key": "eea5ac8648b3e8d520ff4ef7bb93b94c594b23f3531ab2b5d2af4ea74c4587b8",
+  "embedding_sha256": "8ed7ba6d1a58dd3e59f362e84877c02b445c4ff06416aa7e85ef6c665e7f45f3",
+  "updated_at": "2026-07-29T16:49:31.821077+00:00"
 }

@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "leather_sunglasses_case",
   "object_name": "leather sunglasses case",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "c6003d26156dc0bb813f7227b641a866e014890fad26b80ba9b52dfb1d47ef31",
-  "embedding_cache_key": "a8bc64787883566f3906d7b4e275b4bb22307648d7bdb019c10b41fe37bdaeae",
-  "embedding_sha256": "1e9788503d4c18ff901603be9fdfae9bc3cf2341b7f3f7825f88c2ff706e0db0",
-  "updated_at": "2026-07-28T17:57:48.408609+00:00"
+  "embedding_cache_key": "0248c0c1e65dc33348ce1a043016bb46dfc2e007c82e181e165e08c81fad67be",
+  "embedding_sha256": "906d01241e613f5e0f575a4726410d94db922262855da29b0bbbe6155f2b3ae9",
+  "updated_at": "2026-07-29T16:49:28.493416+00:00"
 }

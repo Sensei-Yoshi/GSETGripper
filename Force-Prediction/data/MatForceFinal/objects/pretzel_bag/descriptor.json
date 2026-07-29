@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "pretzel_bag",
   "object_name": "pretzel bag",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "d782187c96540646f7e9ff3b82ed5af107bb6e16c51efaf0f8ddfc35b472130e",
-  "embedding_cache_key": "b7ce3f6d926a41af40c7e13bcda7756b557b8739c3b7594e836d050f52d5fa38",
-  "embedding_sha256": "4b9877380dde5af44cb982d34cb22ec13f30bff200aa61c4b0124546394c6512",
-  "updated_at": "2026-07-28T17:57:49.667138+00:00"
+  "embedding_cache_key": "07268db975702ee43d775f9bc269ff4ab66277f8b7e3ab8243b11314db84add6",
+  "embedding_sha256": "5b1dafe2276949d57d4e8e9218bd79f7f359a1e085e6e780809e773e381dc86d",
+  "updated_at": "2026-07-29T16:49:29.857108+00:00"
 }

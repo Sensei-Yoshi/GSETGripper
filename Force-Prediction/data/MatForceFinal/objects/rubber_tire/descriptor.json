@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "rubber_tire",
   "object_name": "rubber tire",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "bbfbff058c1e75a7f14827652e37579b3ec631bd6a50464885ceeb7f140ac2e9",
-  "embedding_cache_key": "441c1ea4af7e5115c213fb7ba7893921026d2e5fd77e4f51aa4fd3631d6f5398",
-  "embedding_sha256": "bb0f9835f450df44c4d600969ce708e975f29a0a43a05701bfede6429a735e49",
-  "updated_at": "2026-07-28T17:57:49.877437+00:00"
+  "embedding_cache_key": "8a50096df5a3c1d761782cad61f9920734c08bbfc08ea62c7a80d43e20c41499",
+  "embedding_sha256": "32f212bded50afa49707362540fb156969cbee807e936adb6eb77d24d6611df0",
+  "updated_at": "2026-07-29T16:49:28.078938+00:00"
 }

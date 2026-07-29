@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "wallet_2",
   "object_name": "wallet 2",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "0aea66196503475298b2f9b82357ff176dbe0119af3f125ba7fb6ce7c2d99ef7",
-  "embedding_cache_key": "9326a111cc1c095ac7b611cdcd09f154ac5953d9de35743426e589523d7b8332",
-  "embedding_sha256": "64c876ae51ba4327f4797ac2e9f2b0b3a3ff0b432e660e9c102ee5a39c0243ab",
-  "updated_at": "2026-07-28T17:57:50.327448+00:00"
+  "embedding_cache_key": "98d598ad4f550afeefe6074fbaa0099cf014fa2cf2748579bbe56876f606721e",
+  "embedding_sha256": "48e44b2328a1f3b0196961db3af838a7e7e6e3dc9e26d02b42aae75ce8d525a1",
+  "updated_at": "2026-07-29T16:49:31.246580+00:00"
 }

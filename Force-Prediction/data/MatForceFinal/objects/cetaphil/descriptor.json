@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "cetaphil",
   "object_name": "cetaphil",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "039a61b0f2ab95c2004b04dbf75c91b0dc2c3406d35e0a84d6480d721eeb859f",
-  "embedding_cache_key": "dc318a569823c74cc3163d91a750f094390c0d602875f5d7e0c03777db672bfc",
-  "embedding_sha256": "bb24f67930192e571b492b0130e55d885c77ad847bf74663244b2f5fa1ff8be2",
-  "updated_at": "2026-07-28T17:57:47.509009+00:00"
+  "embedding_cache_key": "b991bdb317ae59beb4aab3ca7142763cef9e461fbe0b876e47a3b3395ddea2b7",
+  "embedding_sha256": "726baf19a7a7d672f047377d7f8bcccac24b44d554a280353de7708611c56273",
+  "updated_at": "2026-07-29T16:49:31.060420+00:00"
 }

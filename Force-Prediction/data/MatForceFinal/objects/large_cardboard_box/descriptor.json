@@ -1,0 +1,30 @@
+{
+  "schema_version": 4,
+  "dataset_id": "MatForceFinal",
+  "object_id": "large_cardboard_box",
+  "object_name": "Large Cardboard Box",
+  "image_name": "large_cardboard_box.jpg",
+  "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+  "image_sha256": "e119fc42761f31ac4bcff77d75a64741c7a722dec19117b5e6b8235481899a4d",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor": {
+    "retrieval_description": "Elongated rectangular cardboard box with flat, matte, dry surfaces and vertical corner edges. The intended contact region on the lateral faces is flat, continuous, and free of visible contamination.",
+    "contact_region": "Opposing lateral faces of the rectangular box centered vertically",
+    "contact_material": "Cardboard",
+    "visible_surface_material": "Cardboard",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat planar surfaces meeting at distinct vertical 90-degree corner edges",
+    "contact_patch_visibility": "Clearly visible on the front and side lateral faces shown in the image",
+    "uncertainty": "The rear face of the box is occluded from direct view, but its material and condition are reasonably inferred from the visible sides."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
+  "embedding_descriptor_sha256": "63d3562696db2be12c59acd64e7c2436c3f1f760be2616e0323e3774c93e97d9",
+  "embedding_cache_key": "4e56ac99287a96fadb3e867eb1e88ba0b32b7c90392f4fb14b9453194cee6609",
+  "embedding_sha256": "57992abe566cd164d6008f0578f6e1cc3bf6f208e9efe7fb970190c1438af32c",
+  "updated_at": "2026-07-29T16:49:33.453156+00:00"
+}

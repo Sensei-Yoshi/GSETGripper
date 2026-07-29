@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "ketchup",
   "object_name": "ketchup",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "f029854f076a5aae805b2d293f94bfb7beb149846b4ecd344b1f44aa66ffb2dd",
-  "embedding_cache_key": "46d6e68ed5efa28b4796842c16d306755f93f6e7e80a9a4f3c3b61389ba4ec09",
-  "embedding_sha256": "688afd48ea3e665561ebfc1a7a85a306bc3e8ebba81a3d2f1d18e069c476a25f",
-  "updated_at": "2026-07-28T17:57:47.982647+00:00"
+  "embedding_cache_key": "f340e12c6718e5491493f65141d086b41192962fa5201c1936f063eb58ab92a7",
+  "embedding_sha256": "d3faf7c0b59e65da3d798801fdc988ec79d8603589fb93600ce88bd44ebf8f60",
+  "updated_at": "2026-07-29T16:49:29.460826+00:00"
 }

@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "big_stone",
   "object_name": "big stone",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "1da42d62f72e059eb90edc657c0426b8943e5c6aadcf818775782a5e7b3053cf",
-  "embedding_cache_key": "ff16944f04943ec53ef7c5ae38297974c928df691d14f0b5ded8773c79f09e98",
-  "embedding_sha256": "a9cf2c09ef919d37dfb477b59d2b5beb64501c876fea1774cbb4529e4919e1d6",
-  "updated_at": "2026-07-28T17:57:46.814993+00:00"
+  "embedding_cache_key": "366ccc964788577f85bb95898e8c5c0de1ec66839d666eaafe5b8829d0a655cd",
+  "embedding_sha256": "1089d5fb77a0ddf5fbe8721161c8888a6b5d4034c6d6fcde914f25fa321a39ce",
+  "updated_at": "2026-07-29T16:49:29.265839+00:00"
 }

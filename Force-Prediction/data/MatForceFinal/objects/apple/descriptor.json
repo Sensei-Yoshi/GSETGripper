@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "apple",
   "object_name": "apple",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "49a10f5dc8c6082cbe06f82c28025e768efdbe9d8a70bdeb5acf23f40cdd6578",
-  "embedding_cache_key": "91602b89e5946f4d961bf0ffd2072b19a9c716bc83344d5a808775c4fa6f6c8b",
-  "embedding_sha256": "2274cc285212433fd71cc80b3498377781184e4e6e862d2b0eaf48ed2683c2ac",
-  "updated_at": "2026-07-28T17:57:46.389368+00:00"
+  "embedding_cache_key": "15d7bd7a45887db1979e0d6d46bc8c477ebeada0798fd5c8e4c474451bd7c342",
+  "embedding_sha256": "6e8a3019350bfc4dbab4229880d8187550223e08b19c96c2f33289a2e9d2df74",
+  "updated_at": "2026-07-29T16:49:27.627134+00:00"
 }

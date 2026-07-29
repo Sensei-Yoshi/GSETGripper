@@ -1,0 +1,30 @@
+{
+  "schema_version": 4,
+  "dataset_id": "MatForceFinal",
+  "object_id": "avacado",
+  "object_name": "Avacado",
+  "image_name": "avacado.jpeg",
+  "image_path": "data/MatForceFinal/avacado.jpeg",
+  "image_sha256": "90786816e47407e042fa0fa147a3806fd61ce4cc0e26e3fb6a5349bba79fd6dc",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor": {
+    "retrieval_description": "Pebbled organic fruit form with a rough, dry skin and tapering convex curvature. The intended contact region has a textured, bumpy surface topography.",
+    "contact_region": "Lateral opposing flanks of the fruit",
+    "contact_material": "Avocado skin",
+    "visible_surface_material": "Avocado skin",
+    "visible_surface_condition": "Dry and pebbled",
+    "local_geometry": "Convex, tapered curvature with a pebbled, bumpy texture",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Lighting and viewing angle are clear, showing the surface texture and geometry directly."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
+  "embedding_descriptor_sha256": "c354722f1a31a81e469c567fb4cd53869085c51742b3dde18f3fff73d9bb0c6e",
+  "embedding_cache_key": "867ec0e2be5d2cdd59075f1cdcb3732a517197014e609e6dad4976d6d69c6391",
+  "embedding_sha256": "62af26ec997223fba4931ed7ac2ea7aefda48bb86057f27c179b381e9a7437e7",
+  "updated_at": "2026-07-29T16:49:33.234334+00:00"
+}

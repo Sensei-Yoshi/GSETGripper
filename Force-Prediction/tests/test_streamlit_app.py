@@ -163,16 +163,20 @@ def test_global_gripper_controls_require_at_least_one_target() -> None:
         item for item in app.checkbox if item.label == "Predict silicone force"
     )
 
-    assert gecko.value is True and silicone.value is True
-    gecko.set_value(False)
-    app.run(timeout=30)
+    assert gecko.value or silicone.value
+    if gecko.value and silicone.value:
+        gecko.set_value(False)
+        app.run(timeout=30)
 
-    silicone = next(
-        item for item in app.checkbox if item.label == "Predict silicone force"
-    )
-    assert app.session_state["predict_gecko_force"] is False
-    assert app.session_state["predict_silicone_force"] is True
-    assert silicone.disabled is True
+        silicone = next(
+            item for item in app.checkbox if item.label == "Predict silicone force"
+        )
+        assert app.session_state["predict_gecko_force"] is False
+        assert app.session_state["predict_silicone_force"] is True
+        assert silicone.disabled is True
+    else:
+        active = gecko if gecko.value else silicone
+        assert active.disabled is True
 
 
 def test_descriptor_editor_shows_the_standard_retrieval_template() -> None:

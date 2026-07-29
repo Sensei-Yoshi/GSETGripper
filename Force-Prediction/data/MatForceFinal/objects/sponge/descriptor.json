@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "sponge",
   "object_name": "sponge",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "44650064f79f7c9cc43241dd7970b2c89c1d177ab0e9315f42b6290dd52157b8",
-  "embedding_cache_key": "86324d69e5374351cc62eb0e71dc8b8ea8b8e2082d52be9e9dbd868dc6183cdb",
-  "embedding_sha256": "095b5e1c038f3a394f14eb6496adb29ecd61193aea8cddc1c79b32bf00d131d2",
-  "updated_at": "2026-07-28T17:57:50.076675+00:00"
+  "embedding_cache_key": "1d498e5d8c2e9656c26d5a1bb101be173f5d9bc1a83dbcea5e40ec2e0e9f08ff",
+  "embedding_sha256": "199f0ba474a9bfcfb66e637c297a8e1fd4cca948f03a543f03f66c1edf4ad813",
+  "updated_at": "2026-07-29T16:49:32.409469+00:00"
 }

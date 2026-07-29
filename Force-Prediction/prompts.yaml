@@ -172,8 +172,8 @@ embodiments:
       the pads so that broad contact can form. Generally, the greater the adhesion,
       the lower the grasp force required to pick up the object. Dry adhesion performs
       best on clean, dry, smooth, nonporous surfaces and degrades with roughness,
-      porosity, contamination, moisture, loose coatings, curvature, misalignment,
-      or interrupted contact.
+      porosity, contamination, moisture, and loose coatings. Additionally, gecko should
+      be fully avoided for greasy, dusty, and sharp objects.
   silicone:
     description: Parallel-jaw gripper with two opposing, rigid fin-ray-shaped fingers.
       One finger is stationary, while the other translates laterally toward it to

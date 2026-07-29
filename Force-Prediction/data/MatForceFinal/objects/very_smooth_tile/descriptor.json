@@ -1,0 +1,30 @@
+{
+  "schema_version": 4,
+  "dataset_id": "MatForceFinal",
+  "object_id": "very_smooth_tile",
+  "object_name": "Very Smooth Tile",
+  "image_name": "very_smooth_tile.jpg",
+  "image_path": "data/MatForceFinal/very_smooth_tile.jpg",
+  "image_sha256": "620a7195ae010d4041096b222cca186ec509443e1c19b155284b64ae070990bf",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor": {
+    "retrieval_description": "Flat ceramic sherd with a porous textured surface and thin profile. The intended contact region is dry, flat, and bounded by irregular fractured edges.",
+    "contact_region": "Opposing lateral edges of the ceramic sherd",
+    "contact_material": "Ceramic substrate",
+    "visible_surface_material": "Ceramic",
+    "visible_surface_condition": "Dry, clean, with textured matte finish",
+    "local_geometry": "Thin flat plate with straight and irregular fractured perimeter edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact thickness profile and reverse side are not visible from this camera angle."
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
+  "embedding_descriptor_sha256": "52ad3284aa65f36821f9a4638254cf7c75b5ac902a17002cb5c2950933d7e88a",
+  "embedding_cache_key": "ded7d1c9e2823e660e45362b6f883b281537a9e2d3e873aac212c13b82445217",
+  "embedding_sha256": "9a19dde8c92767780f64de84783af8d0f9e9416c597e95f38ca49346418d0ef7",
+  "updated_at": "2026-07-29T16:49:33.640824+00:00"
+}

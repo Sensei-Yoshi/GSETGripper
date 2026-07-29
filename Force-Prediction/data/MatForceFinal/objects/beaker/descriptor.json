@@ -1,8 +1,8 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "beaker",
-  "object_name": "beaker",
+  "object_name": "Beaker",
   "image_name": "beaker.jpg",
   "image_path": "data/MatForceFinal/beaker.jpg",
   "image_sha256": "269d295738f62559b09b6a9af1c8d9d4747bf977d800a676f054aafbcb579124",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "31e137048a9494a466aad7eb06618b6b77d778d31b07eeff18b8f354e1f3a59b",
-  "embedding_cache_key": "cc30779cebe9294e14b45a500e7a0bb69e16fb6cabfba1f219a0fab76ddb547b",
-  "embedding_sha256": "1c1d038e9713a5a75583be4de18cdb9c42f9c64e6b03f437eb5a4b11e9423f37",
-  "updated_at": "2026-07-28T17:57:46.601569+00:00"
+  "embedding_cache_key": "e7d94f6c8953778b03a5a2010ff475f26a1bede92da47ba9142d558b7acbf3f2",
+  "embedding_sha256": "921410e4a2db115692491dbef512ba8c175c6325e662aa02824c5951bd430150",
+  "updated_at": "2026-07-29T16:49:27.012369+00:00"
 }

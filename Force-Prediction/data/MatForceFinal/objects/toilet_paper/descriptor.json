@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "toilet_paper",
   "object_name": "Toilet Paper",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "1e935d27267818c3b73f7a35a1f876987a2f82ea1d8595b133f87b7f4c18a5c9",
-  "embedding_cache_key": "8f66ad1e7de6e8993557076c4f50af561fa7f341122bacd4805ed7e64d4cd1d4",
-  "embedding_sha256": "2c112a26e9a0cccf7701736b8e3d2e8fa85b212988af2d94de8f6f1b402ee2a4",
-  "updated_at": "2026-07-28T17:57:45.792812+00:00"
+  "embedding_cache_key": "1ba77c0f0e6137d60d4c06a4c685f39c0fb084d8787d55a9521a05334829de05",
+  "embedding_sha256": "c9bc4717b1da6a187aa24de27ace6aaacc7167d85f02f0f19f2a32fc6881935b",
+  "updated_at": "2026-07-29T16:49:32.588401+00:00"
 }

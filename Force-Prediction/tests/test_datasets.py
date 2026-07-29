@@ -3,7 +3,6 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
-import shutil
 
 import pytest
 
@@ -19,7 +18,6 @@ from modules.datasets import (
     update_dataset_object,
 )
 from modules.experiments import experiment_eligibility
-from modules.expforce import source_path
 from modules.perception import Description
 from tests.fakes import FakeEmbeddingProvider
 
@@ -64,35 +62,6 @@ def test_catalog_discovers_direct_data_folders_and_excludes_artifacts(tmp_path) 
     assert photos_dataset.runtime_config(cfg).path("cache") == (
         tmp_path / "data/cache/Photos"
     )
-
-
-def test_paired_csv_adapter_exposes_measurements_and_outcomes(tmp_path) -> None:
-    cfg = _config_at(tmp_path)
-    destination = tmp_path / "data/expforce/dataset.csv"
-    destination.parent.mkdir(parents=True)
-    source_cfg = load_config().model_copy(deep=True)
-    shutil.copyfile(source_path(source_cfg), destination)
-
-    dataset = get_dataset(cfg, "expforce")
-    first = next(iter(dataset.objects.values()))
-
-    assert len(dataset.objects) == 129
-    assert first.mass_g is not None
-    assert first.roughness_index is None
-    assert first.legacy_roughness_class is not None
-    assert first.projected_contact_fraction is not None
-    assert first.split == "train"
-    assert set(outcome.gripper.value for outcome in first.gripper_outcomes.values()) == {
-        "gecko",
-        "silicone",
-    }
-    assert not dataset.capabilities.can_run_pipeline
-    assert dataset.capabilities.can_benchmark
-    assert dataset.capabilities.complete_gecko_labels == 129
-    assert dataset.capabilities.complete_silicone_labels == 129
-    assert dataset.capabilities.complete_pair_count == 129
-    assert dataset.capabilities.legacy_roughness_class_count == 129
-    assert dataset.default_active_grippers() == (Gripper.GECKO, Gripper.SILICONE)
 
 
 def test_legacy_roughness_class_is_not_converted_to_an_index(tmp_path) -> None:

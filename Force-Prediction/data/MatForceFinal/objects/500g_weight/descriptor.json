@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "500g_weight",
   "object_name": "500g weight",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "a724a035ddfa57c2302709631863eafa7db13164c4a520a060a5ac887a88ef1b",
-  "embedding_cache_key": "dcd45ad96cc292d9f94e676924acc1892585c1002eab55069940de574c2347eb",
-  "embedding_sha256": "8f5978cdbb247ec78c293ebd527b5f8a27ad5b85536c8d894e36a4eb9e81e234",
-  "updated_at": "2026-07-28T17:57:44.602168+00:00"
+  "embedding_cache_key": "ddcb5ea44f79f87a322e2f3b248b7618fb79293e1a060fc708ce75d0186bb70e",
+  "embedding_sha256": "71a2e214dfb5663ca28298af194fc9096ce9b8e59adee4d357d22e472b0d253f",
+  "updated_at": "2026-07-29T16:49:27.421698+00:00"
 }

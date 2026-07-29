@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "soldering_iron_box",
   "object_name": "Soldering Iron Box",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "ea4b53eabfd672416f624bd9e0ab508158e5640ff514da56a126b176dd56f41b",
-  "embedding_cache_key": "2bf96c4387c62a98b80f3667d955cd8ff87024da33ff6843dc784c2b5d72063c",
-  "embedding_sha256": "1c42bf6a3d48c2debd45d2817c8fddfef8b5eea5c9f8c552ed724d38a94c52a3",
-  "updated_at": "2026-07-28T17:57:45.573820+00:00"
+  "embedding_cache_key": "0bb4f2358e738776b0a35a59cd77e2cbe916013eccbe76cdc7b5119247243417",
+  "embedding_sha256": "9ecdc89b3bd28a113ca9edadfb6e5a5d38c97a01eb49b84d25e7283f543b4601",
+  "updated_at": "2026-07-29T16:49:28.676259+00:00"
 }

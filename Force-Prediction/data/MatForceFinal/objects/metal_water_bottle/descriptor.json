@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "metal_water_bottle",
   "object_name": "metal water bottle",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "ccde34ec45d1eda6b1c7f551dfe8b6c4cf978688b2f4a0e11b4ac5d6a0356ecd",
-  "embedding_cache_key": "233485c421d67d487d216cb9cbb749c37479f2a56d65f5407ac010087a10613f",
-  "embedding_sha256": "e5366fb48367f9685e7295f2a106b4ddc00c3def6023594fdb352dd731c0c86e",
-  "updated_at": "2026-07-28T17:57:48.863309+00:00"
+  "embedding_cache_key": "530a2aa5de909774acd028b45169ae31b58891b20a82f0227adca5b6e3f04690",
+  "embedding_sha256": "abc5bc2126bc0233415b2a337d1c551c87bf80f90b1ba7b8c9a664f546be692e",
+  "updated_at": "2026-07-29T16:49:28.281339+00:00"
 }

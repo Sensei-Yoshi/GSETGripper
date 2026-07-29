@@ -1,8 +1,8 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "lock",
-  "object_name": "lock",
+  "object_name": "Lock",
   "image_name": "lock.jpg",
   "image_path": "data/MatForceFinal/lock.jpg",
   "image_sha256": "dba59204eef67e1a250f5319392962716623eb332020379f007b0bce29766f36",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "0e595ac5aa1f0433d5d203e7667ef66a4f5b514c7b45c11990431d5880f9d20b",
-  "embedding_cache_key": "7e87eb4c1e5bc65e2634b3c277ec5a2131248e34f81e4747450e7fd853a803c5",
-  "embedding_sha256": "2bb6999e61452b56dfc3b97888e6fc2562428b563fe8b2b848cc0b2e157bfb38",
-  "updated_at": "2026-07-28T17:57:48.630881+00:00"
+  "embedding_cache_key": "3048b3c5478e4721f297f54c9ad4134b52ced88b719ea1565ff961a4af0bd14f",
+  "embedding_sha256": "51f62933150b0d60e626df2d6c35ae9a3230b56d37ef64e379b993d6b3491e59",
+  "updated_at": "2026-07-29T16:49:27.221942+00:00"
 }

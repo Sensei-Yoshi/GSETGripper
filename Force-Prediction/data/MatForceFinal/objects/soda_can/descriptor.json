@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "soda_can",
   "object_name": "soda can",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "0bb527f14428af29a9da3cd374586a131330ecce5c6fb98f217e40bf7ef20906",
-  "embedding_cache_key": "56fcf49c75d2a03fa9f540016ef0f9b13131c8924a0729c2c947d9b6e6ff7571",
-  "embedding_sha256": "0b88e4610f2a7c305783340bbf0359951a52692585713959a2effd6e27983bff",
-  "updated_at": "2026-07-28T17:57:49.878981+00:00"
+  "embedding_cache_key": "1f09e81fd24493fe1e759a5fe0d05ad094fa67d111625df463cdb4f9ccf327e7",
+  "embedding_sha256": "4e450888f9da2a31cc0e8037ab4719d2f39e69ee2b13426a2b83881b9d9a09a2",
+  "updated_at": "2026-07-29T16:49:32.008332+00:00"
 }

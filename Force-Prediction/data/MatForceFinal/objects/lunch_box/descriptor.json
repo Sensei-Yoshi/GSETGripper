@@ -1,5 +1,5 @@
 {
-  "schema_version": 3,
+  "schema_version": 4,
   "dataset_id": "MatForceFinal",
   "object_id": "lunch_box",
   "object_name": "Lunch Box",
@@ -22,8 +22,9 @@
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
+  "embedding_task_format": "symmetric_similarity",
   "embedding_descriptor_sha256": "a494dde5f3a22605950b566cf161b2811c54b88520da2127602ec540e701f250",
-  "embedding_cache_key": "eaae65181cb561325ecfd6489a1681b629ffce301d32251d28869d55b657b68b",
-  "embedding_sha256": "43947c85706fa44fbf90b8330d3d1a54f5d0b8311f7e115819a75a0030a6e4e9",
-  "updated_at": "2026-07-28T17:57:45.344315+00:00"
+  "embedding_cache_key": "95bb3126443724a94b8ade7df1b02d5b91cdd54d424d8e9adea3ee2fc240e1c4",
+  "embedding_sha256": "5c1c40a6aa8f0ea5d45fa70aa8b048fac55e843782d8949b49c1f164faf14ca7",
+  "updated_at": "2026-07-29T16:49:28.852759+00:00"
 }
