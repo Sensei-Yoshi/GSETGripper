@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import copy
 import csv
+import math
 from pathlib import Path
 
 from .config import Config
@@ -243,36 +244,131 @@ def calibration_figure(artifacts: dict[str, dict]):  # noqa: ANN201
     return figure
 
 
-def individual_calibration_figure(artifact: dict):  # noqa: ANN201
-    """Return one calibration panel per active gripper for one evaluation."""
+def _benchmark_force_points(artifact: dict, gripper: str) -> list[dict]:
+    """Return evaluable rows ordered by oracle minimum force, then object ID."""
+    points = [
+        row
+        for row in artifact.get("rows", [])
+        if row.get(f"true_{gripper}_force_n") is not None
+        and row.get(f"pred_{gripper}_force_n") is not None
+    ]
+    return sorted(
+        points,
+        key=lambda row: (
+            float(row[f"true_{gripper}_force_n"]),
+            str(row.get("object_id", "")),
+        ),
+    )
+
+
+def _add_object_thumbnail(axis, x: int, row: dict, image_root: Path | None) -> None:  # noqa: ANN001
+    """Place a saved object image below its x position, with a text fallback."""
+    image_path = row.get("image_path")
+    if image_root is not None and image_path:
+        path = Path(image_path)
+        if not path.is_absolute():
+            path = image_root / path
+        try:
+            from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+            from PIL import Image, ImageOps
+
+            with Image.open(path) as source:
+                source = ImageOps.exif_transpose(source).convert("RGB")
+                source.thumbnail((72, 72))
+                thumbnail = Image.new("RGB", (72, 72), "white")
+                offset = (
+                    (thumbnail.width - source.width) // 2,
+                    (thumbnail.height - source.height) // 2,
+                )
+                thumbnail.paste(source, offset)
+            artist = AnnotationBbox(
+                OffsetImage(thumbnail, zoom=0.48),
+                (x, -0.14),
+                xycoords=("data", "axes fraction"),
+                frameon=True,
+                bboxprops={"edgecolor": "#d1d5db", "linewidth": 0.6},
+                pad=0.05,
+                box_alignment=(0.5, 1.0),
+                annotation_clip=False,
+            )
+            axis.add_artist(artist)
+            return
+        except (OSError, ValueError):
+            pass
+
+    label = str(row.get("object_name") or row.get("object_id") or x)
+    axis.text(
+        x,
+        -0.11,
+        label.replace("_", " "),
+        transform=axis.get_xaxis_transform(),
+        ha="right",
+        va="top",
+        rotation=55,
+        fontsize=7,
+        color="#4b5563",
+        clip_on=False,
+    )
+
+
+def individual_calibration_figure(
+    artifact: dict,
+    image_root: str | Path | None = None,
+):  # noqa: ANN201
+    """Plot predicted and oracle forces by force-ordered benchmark object."""
     plt = _pyplot()
     grippers = artifact_grippers(artifact)
     experiment = artifact.get("metadata", {}).get("experiment", "benchmark")
+    resolved_image_root = Path(image_root) if image_root is not None else None
+    point_sets = {
+        gripper: _benchmark_force_points(artifact, gripper) for gripper in grippers
+    }
+    largest_count = max((len(points) for points in point_sets.values()), default=1)
     figure, axes = plt.subplots(
         1,
         len(grippers),
-        figsize=(5.25 * len(grippers), 4.5),
-        sharex=True,
+        figsize=(max(7.5, largest_count * 0.72) * len(grippers), 5.8),
         sharey=True,
         squeeze=False,
     )
-    colors = {"gecko": "#147a4a", "silicone": "#b45f19"}
+    all_forces = [
+        float(row[field])
+        for gripper, points in point_sets.items()
+        for row in points
+        for field in (f"true_{gripper}_force_n", f"pred_{gripper}_force_n")
+    ]
+    y_max = max(1.0, math.ceil(max(all_forces, default=1.0) * 1.15 * 2) / 2)
     for index, gripper in enumerate(grippers):
         axis = axes[0][index]
-        points = [
-            row
-            for row in artifact.get("rows", [])
-            if row.get(f"true_{gripper}_force_n") is not None
-            and row.get(f"pred_{gripper}_force_n") is not None
-        ]
-        axis.scatter(
-            [row[f"true_{gripper}_force_n"] for row in points],
-            [row[f"pred_{gripper}_force_n"] for row in points],
-            s=24,
-            alpha=0.75,
-            color=colors[gripper],
-            edgecolors="none",
+        points = point_sets[gripper]
+        positions = list(range(len(points)))
+        truths = [float(row[f"true_{gripper}_force_n"]) for row in points]
+        predictions = [float(row[f"pred_{gripper}_force_n"]) for row in points]
+        axis.plot(
+            positions,
+            truths,
+            color="#475569",
+            linewidth=1.0,
+            marker="o",
+            markersize=5,
+            markerfacecolor="#ffffff",
+            markeredgewidth=1.4,
+            label="Oracle minimum force",
+            zorder=2,
         )
+        axis.scatter(
+            positions,
+            predictions,
+            s=38,
+            color="#e76f51",
+            marker="D",
+            edgecolors="#ffffff",
+            linewidths=0.7,
+            label="Predicted force",
+            zorder=3,
+        )
+        for x, row in zip(positions, points, strict=True):
+            _add_object_thumbnail(axis, x, row, resolved_image_root)
         metrics = artifact.get("metrics", {}).get("force", {}).get(gripper, {})
         axis.set_title(
             f"{experiment.upper()} — {gripper.title()}\n"
@@ -281,14 +377,21 @@ def individual_calibration_figure(artifact: dict):  # noqa: ANN201
             f"n={metrics.get('n', 0)}",
             fontsize=10,
         )
-        axis.set_xlabel("Ground-truth force (N)")
+        axis.set_xlabel(
+            "Objects ordered by ground-truth minimum force",
+            labelpad=62,
+        )
         if index == 0:
-            axis.set_ylabel("Predicted force (N)")
-        axis.set_xlim(0, 8)
-        axis.set_ylim(0, 8)
-        axis.grid(alpha=0.18)
-    figure.suptitle("Force calibration", fontsize=13)
-    figure.tight_layout()
+            axis.set_ylabel("Force (N)")
+        axis.set_xlim(-0.55, max(len(points) - 0.45, 0.55))
+        axis.set_ylim(0, y_max)
+        axis.set_xticks(positions, labels=[])
+        axis.tick_params(axis="x", length=0)
+        axis.grid(axis="y", alpha=0.2)
+        axis.spines[["top", "right"]].set_visible(False)
+        axis.legend(loc="upper left", frameon=False, fontsize=9)
+    figure.suptitle("Benchmark force by object", fontsize=13)
+    figure.tight_layout(rect=(0, 0.08, 1, 0.95))
     return figure
 
 
@@ -296,10 +399,12 @@ def export_individual_evaluation(
     artifact: dict,
     destination: Path,
     stem: str,
+    *,
+    image_root: str | Path | None = None,
 ) -> dict[str, Path]:
     """Persist deterministic PNG/SVG plots for one benchmark evaluation."""
     destination.mkdir(parents=True, exist_ok=True)
-    figure = individual_calibration_figure(artifact)
+    figure = individual_calibration_figure(artifact, image_root=image_root)
     png = destination / f"{stem}.png"
     svg = destination / f"{stem}.svg"
     figure.savefig(png, dpi=300, bbox_inches="tight")

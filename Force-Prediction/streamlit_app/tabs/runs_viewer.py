@@ -416,7 +416,10 @@ def _render_prediction_batch(
             if png_path is not None and png_path.is_file():
                 st.image(str(png_path), width="stretch")
             else:
-                figure = individual_calibration_figure(selected_evaluation.to_artifact())
+                figure = individual_calibration_figure(
+                    selected_evaluation.to_artifact(),
+                    image_root=context.config.root,
+                )
                 st.pyplot(figure, width="stretch")
                 import matplotlib.pyplot as plt
 

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from PIL import Image
 
 from modules.config import (
     PromptBundle,
@@ -172,3 +173,23 @@ def test_individual_calibration_uses_one_panel_per_active_gripper():
 
     assert len(individual_calibration_figure(paired).axes) == 2
     assert len(individual_calibration_figure(single).axes) == 1
+
+
+def test_individual_benchmark_plot_orders_objects_and_adds_images(tmp_path):
+    artifact = _single_artifact(0.25)
+    artifact["metadata"]["experiment"] = "e3"
+    artifact["rows"].reverse()
+    for index, row in enumerate(artifact["rows"]):
+        image_path = tmp_path / f"object_{index}.png"
+        Image.new("RGB", (12, 8), color=(40 + index, 80, 120)).save(image_path)
+        row["image_path"] = image_path.name
+
+    figure = individual_calibration_figure(artifact, image_root=tmp_path)
+    axis = figure.axes[0]
+
+    assert list(axis.lines[0].get_ydata()) == [1.5, 2.5]
+    assert list(axis.collections[0].get_offsets()[:, 1]) == [1.75, 2.75]
+    assert axis.lines[0].get_label() == "Oracle minimum force"
+    assert axis.collections[0].get_label() == "Predicted force"
+    assert len(axis.artists) == 2
+    assert axis.get_ylabel() == "Force (N)"

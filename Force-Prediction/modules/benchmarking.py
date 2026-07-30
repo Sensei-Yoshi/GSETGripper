@@ -610,7 +610,12 @@ def save_benchmark_evaluation(
 
     from .reporting import export_individual_evaluation
 
-    exports = export_individual_evaluation(evaluation.to_artifact(), destination, stem)
+    exports = export_individual_evaluation(
+        evaluation.to_artifact(),
+        destination,
+        stem,
+        image_root=cfg.root,
+    )
     paths = {"json": json_path, "csv": csv_path, **exports}
     evaluation.metadata["exports"] = {
         name: str(path.relative_to(cfg.root)) for name, path in paths.items()
