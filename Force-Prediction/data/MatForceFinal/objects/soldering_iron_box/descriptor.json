@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "soldering_iron_box",
   "object_name": "Soldering Iron Box",
@@ -8,23 +8,22 @@
   "image_sha256": "2ba3f688e7dd93c78c342b99b155b82f0c3bc23ab61c79f6f3ff1a839d0c5d49",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
   "descriptor": {
-    "retrieval_description": "Matte black box object with a smooth, dry, rigid lateral surface and flat geometry. The intended contact region has no visible seams or interruptions across the opposing lateral sides.",
-    "contact_region": "Opposing lateral vertical sidewalls of the box object",
-    "contact_material": "Painted metal or hard plastic substrate",
-    "visible_surface_material": "Painted metal or hard plastic",
+    "retrieval_description": "Black rectangular metallic enclosure with a smooth, dry, coated surface and planar sides. The intended contact region is clean and flat with no interruptions.",
+    "contact_region": "Opposing lateral flat sides of the enclosure",
+    "contact_material": "Painted metal enclosure substrate",
+    "visible_surface_material": "Coated metal",
     "visible_surface_condition": "Clean, dry, and matte",
-    "local_geometry": "Flat, vertical planar surfaces with sharp 90-degree corner edges bounding the sides",
-    "contact_patch_visibility": "Clearly visible on the front-facing lateral side, while the exact opposing rear side is partially occluded",
-    "uncertainty": "The rear lateral contact patch is occluded by perspective, though the overall rectangular prismatic geometry implies symmetry."
+    "local_geometry": "Flat planar surfaces meeting at distinct vertical corner edges",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The exact texture and friction coefficient of the coating cannot be fully determined from visual inspection alone."
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "ea4b53eabfd672416f624bd9e0ab508158e5640ff514da56a126b176dd56f41b",
-  "embedding_cache_key": "0bb4f2358e738776b0a35a59cd77e2cbe916013eccbe76cdc7b5119247243417",
-  "embedding_sha256": "9ecdc89b3bd28a113ca9edadfb6e5a5d38c97a01eb49b84d25e7283f543b4601",
-  "updated_at": "2026-07-29T16:49:28.676259+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-29T23:05:59.128710+00:00"
 }

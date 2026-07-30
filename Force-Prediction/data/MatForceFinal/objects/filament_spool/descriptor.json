@@ -1,0 +1,29 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "filament_spool",
+  "object_name": "Filament spool",
+  "image_name": "filament_spool.jpeg",
+  "image_path": "data/MatForceFinal/filament_spool.jpeg",
+  "image_sha256": "a1aac0d01d949d129504c754435417550f05f1db4a43caa2f5cfc53abd66b761",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor": {
+    "retrieval_description": "Wound plastic filament spool with a cylindrical bundle of smooth, dry polymer strands forming the outer lateral surface. The intended contact region is clean, ridged by individual filament turns, and presents a continuous curved band.",
+    "contact_region": "The outer cylindrical surface of the wound plastic filament between the two cardboard flanges.",
+    "contact_material": "Plastic filament substrate",
+    "visible_surface_material": "Plastic polymer filament",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Cylindrical curvature with fine parallel ridges formed by adjacent wound filament turns",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None; the outer winding surface is fully visible and unobstructed in the grasp band."
+  },
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-29T23:09:00.800488+00:00"
+}

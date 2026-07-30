@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "foam_roller",
   "object_name": "Foam Roller",
@@ -8,23 +8,22 @@
   "image_sha256": "95fc9b7249b1de6051edce1eb674f218e2a1cefdb1d22c8991c9577efbb94fe4",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
   "descriptor": {
-    "retrieval_description": "Black foamed polymeric cylindrical grip object with a textured, dry, porous lateral sidewall and continuous curvature. The intended contact region is clean with no visible seams or interruptions.",
+    "retrieval_description": "Black foamed polymer tubular object with a textured, dry, porous lateral surface and a concave cylindrical contour. The intended contact region is smooth yet textured with continuous curvature and no visible seams.",
     "contact_region": "Lateral sidewall surfaces in the centered grasp band",
-    "contact_material": "Foam polymer",
+    "contact_material": "Foam polymer substrate",
     "visible_surface_material": "Foam polymer",
-    "visible_surface_condition": "Clean, dry, and textured",
-    "local_geometry": "Concavely curved cylindrical sidewall with continuous surface texture and no visible seams or ridges",
+    "visible_surface_condition": "Clean, dry, textured",
+    "local_geometry": "Concave cylindrical curvature forming an hourglass-like profile with a central axial through-hole",
     "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "None regarding the visible surface material and geometry from the current perspective."
+    "uncertainty": "The internal composition of the foam core is not visible, only the outer textured surface layer."
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "4ca8bebc9f0fb3b9ab94757417e56ce767fa4ddfbf579d936cc9442b5e923b13",
-  "embedding_cache_key": "c9f0ae69ba18ab74ce43e4e95157651076a95b931e96551f313b68688e8e152f",
-  "embedding_sha256": "eea018ade864fad13b1c45e9426a0f0b6c4aa78893f67091709ddf0c337ed0cd",
-  "updated_at": "2026-07-29T16:49:29.630247+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-29T23:06:34.696056+00:00"
 }

@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "beaker",
   "object_name": "Beaker",
@@ -8,23 +8,22 @@
   "image_sha256": "269d295738f62559b09b6a9af1c8d9d4747bf977d800a676f054aafbcb579124",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
   "descriptor": {
-    "retrieval_description": "Transparent cylindrical glass beaker with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has printed graduation markings but is otherwise free of major interruptions.",
-    "contact_region": "Lateral sidewall surfaces in the centered grasp band",
-    "contact_material": "Glass substrate with printed ceramic markings",
+    "retrieval_description": "Transparent cylindrical glass beaker with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has no visible contamination, featuring smooth glass surfaces with printed measurement markings.",
+    "contact_region": "Lateral sidewalls of the glass beaker within the centered grasp band",
+    "contact_material": "Glass substrate with printed white measurement markings",
     "visible_surface_material": "Glass",
-    "visible_surface_condition": "Clean, dry, and smooth with minor printed markings",
-    "local_geometry": "Cylindrical with continuous smooth curvature and a small pouring spout at the rim",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "local_geometry": "Cylindrical with continuous outward curvature and smooth continuous area",
     "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "None regarding the visible surface material and geometry; minor uncertainty regarding exact placement relative to graduation markings."
+    "uncertainty": "None regarding the visible surface material and geometry; minor uncertainty regarding whether the grasp pads will intersect the printed graduation markings."
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "31e137048a9494a466aad7eb06618b6b77d778d31b07eeff18b8f354e1f3a59b",
-  "embedding_cache_key": "e7d94f6c8953778b03a5a2010ff475f26a1bede92da47ba9142d558b7acbf3f2",
-  "embedding_sha256": "921410e4a2db115692491dbef512ba8c175c6325e662aa02824c5951bd430150",
-  "updated_at": "2026-07-29T16:49:27.012369+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-29T23:04:56.617993+00:00"
 }

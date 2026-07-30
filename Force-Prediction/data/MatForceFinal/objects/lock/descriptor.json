@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "lock",
   "object_name": "Lock",
@@ -8,23 +8,22 @@
   "image_sha256": "dba59204eef67e1a250f5319392962716623eb332020379f007b0bce29766f36",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
   "descriptor": {
-    "retrieval_description": "Metallic cylindrical combination lock body with smooth, dry, nonporous lateral surfaces and curved geometry. The intended contact region has no visible contamination, but features a raised dial on the front face.",
-    "contact_region": "Left and right lateral curved cylindrical surfaces of the lock body.",
-    "contact_material": "Metal substrate.",
-    "visible_surface_material": "Metal and plastic dial.",
-    "visible_surface_condition": "Clean, dry, and smooth.",
-    "local_geometry": "Curved cylindrical surface with continuous curvature on the sides.",
-    "contact_patch_visibility": "Clearly visible on the lateral sides.",
-    "uncertainty": "The rear side of the lock body is not visible in the image."
+    "retrieval_description": "Metallic combination padlock with a smooth, dry, curved metallic housing body. The intended contact region is clean with continuous curvature across the lateral faces.",
+    "contact_region": "Lateral opposing sides of the lock body housing",
+    "contact_material": "Metal substrate",
+    "visible_surface_material": "Metal substrate",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Smooth, rounded cylindrical curvature with a flat face and a dial interruption on the front",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "The rear surface of the lock body is not visible, but the lateral sides are clearly presented."
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "0e595ac5aa1f0433d5d203e7667ef66a4f5b514c7b45c11990431d5880f9d20b",
-  "embedding_cache_key": "3048b3c5478e4721f297f54c9ad4134b52ced88b719ea1565ff961a4af0bd14f",
-  "embedding_sha256": "51f62933150b0d60e626df2d6c35ae9a3230b56d37ef64e379b993d6b3491e59",
-  "updated_at": "2026-07-29T16:49:27.221942+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-29T23:04:57.101690+00:00"
 }

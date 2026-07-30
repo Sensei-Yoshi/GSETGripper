@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "headphones_case",
   "object_name": "Headphones Case",
@@ -8,23 +8,22 @@
   "image_sha256": "440437a99a4b2d78a18aee34bdd49426d553e873ee64c5176a1402857240f69e",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
   "descriptor": {
-    "retrieval_description": "Fabric-covered semi-rigid case object with a textured, dry, fabric-wrapped lateral surface and rounded geometry. The intended contact region has gently curved, continuous vertical sidewalls interrupted only by a horizontal zipper seam.",
-    "contact_region": "Left and right lateral side walls of the case along the centered grasp band",
-    "contact_material": "Fabric exterior covering",
-    "visible_surface_material": "Fabric exterior covering",
-    "visible_surface_condition": "Clean, dry, and textured",
-    "local_geometry": "Gently curved, broad continuous area featuring a horizontal zipper seam running around the perimeter",
-    "contact_patch_visibility": "Clearly visible on the lateral sides",
-    "uncertainty": "The exact compliance and internal rigidity of the case are not fully observable from visual inspection alone."
+    "retrieval_description": "Fabric-covered semi-ellipsoidal object. The intended contact region is clean, dry, with gently curved lateral surfaces and a central zipper seam running along the perimeter.",
+    "contact_region": "Left and right lateral side walls of the fabric-covered case.",
+    "contact_material": "Woven fabric exterior coating",
+    "visible_surface_material": "Woven fabric",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Gently curved, broad continuous area interrupted by a zipper seam along the lower edge",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "None, the lateral surfaces and fabric texture are clearly visible."
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "bda4decee656b3c6569261f4f373a19f1b476ce55113a7d520daefe22e6f76c7",
-  "embedding_cache_key": "ef68021e13cca472bc89e2679bb2ef9513c2ece950db94de7f280a35c6ef8307",
-  "embedding_sha256": "5664b0d52483eecce2b1f13192943b5c7eecfb70328d9b09fbf9f4541930e166",
-  "updated_at": "2026-07-29T16:49:30.273768+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-29T23:07:01.203415+00:00"
 }

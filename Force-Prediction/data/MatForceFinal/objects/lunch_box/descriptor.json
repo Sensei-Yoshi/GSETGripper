@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "lunch_box",
   "object_name": "Lunch Box",
@@ -8,23 +8,22 @@
   "image_sha256": "e9031c9f7fb951a541b207918db9134e0a25d1fc6f641b86188b5813a708a808",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "94ed770ec15923f59e771823a41918805e176be3441109d6ba11b22bc2dce05d",
+  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
   "descriptor": {
-    "retrieval_description": "Soft fabric zippered pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring soft fabric surfaces with rounded corners and perimeter zipper seams.",
-    "contact_region": "Lateral vertical sidewalls of the fabric pouch",
-    "contact_material": "Textile fabric",
-    "visible_surface_material": "Textile fabric",
-    "visible_surface_condition": "Clean, dry, and soft",
-    "local_geometry": "Flat rectangular vertical sides with rounded corners and a continuous perimeter zipper seam",
-    "contact_patch_visibility": "Clearly visible on the lateral sides",
-    "uncertainty": "The exact internal stiffness and contents are hidden, but the exterior contact surfaces are fully visible."
+    "retrieval_description": "Soft fabric storage pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring broad continuous sidewalls with rounded corners and a central perimeter zipper seam.",
+    "contact_region": "Opposing lateral sidewalls of the fabric pouch",
+    "contact_material": "Woven textile fabric",
+    "visible_surface_material": "Woven textile fabric",
+    "visible_surface_condition": "Clean and dry",
+    "local_geometry": "Flat to slightly convex flexible panels with rounded vertical corners and a horizontal zipper running along the middle perimeter",
+    "contact_patch_visibility": "Clearly visible",
+    "uncertainty": "Internal contents and firmness of the pouch are not visible, but the exterior contact surfaces are clearly observable."
   },
-  "embedding_status": "ready",
-  "embedding_model": "gemini-embedding-2-preview",
-  "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "a494dde5f3a22605950b566cf161b2811c54b88520da2127602ec540e701f250",
-  "embedding_cache_key": "95bb3126443724a94b8ade7df1b02d5b91cdd54d424d8e9adea3ee2fc240e1c4",
-  "embedding_sha256": "5c1c40a6aa8f0ea5d45fa70aa8b048fac55e843782d8949b49c1f164faf14ca7",
-  "updated_at": "2026-07-29T16:49:28.852759+00:00"
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-29T23:06:10.435284+00:00"
 }

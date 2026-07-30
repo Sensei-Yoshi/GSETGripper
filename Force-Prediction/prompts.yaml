@@ -45,22 +45,24 @@ prompts:
     If an experiment intentionally omits them, state uncertainty rather than pretending\n\
     they were measured.\nIf a contact area fraction is given, you can likely assume\
     \ the orientation in which the gripper grasped the object if necessary as well.\n\
-    \nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as\
-    \ empirical observations under\nthe same force convention. Experiences report\
-    \ outcomes only for the requested\ncandidate or candidates.\nUse only comparison\
-    \ fields actually present in the request. If no experiences are\nsupplied, do\
-    \ not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\n\
-    Use quantitative checks when the available evidence supports them. Do not invent\n\
-    calibrated friction, adhesion, or contact coefficients. Object weight may be used\
-    \ as\na sanity check, but it is not itself the required gripper normal force.\n\
-    \nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested\
-    \ gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used,\
-    \ show equations/substitutions/scaling in\ncalculation_summary, and list assumptions,\
-    \ missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace\
-    \ must connect those items to the force\nestimate in a detailed, auditable explanation.\
-    \ When multiple candidates are requested,\ncomparison_evidence and recommendation_summary\
-    \ must explain the decisive comparison.\nDo not return an unsupported number or\
-    \ omit\nevidence merely to keep the answer short.\n"
+    Assume all objects are grasped in the most optimal direction to maximize surface\
+    \ area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen\
+    \ retrieved experiences are supplied, treat them as empirical observations under\n\
+    the same force convention. Experiences report outcomes only for the requested\n\
+    candidate or candidates.\nUse only comparison fields actually present in the request.\
+    \ If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\
+    \nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence\
+    \ supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients.\
+    \ Object weight may be used as\na sanity check, but it is not itself the required\
+    \ gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied\
+    \ schema. For each requested gripper,\nrecord every material piece of supplied\
+    \ or\nvisible evidence in evidence_used, show equations/substitutions/scaling\
+    \ in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty\
+    \ in\nassumptions_and_uncertainty. reasoning_trace must connect those items to\
+    \ the force\nestimate in a detailed, auditable explanation. When multiple candidates\
+    \ are requested,\ncomparison_evidence and recommendation_summary must explain\
+    \ the decisive comparison.\nDo not return an unsupported number or omit\nevidence\
+    \ merely to keep the answer short.\n"
   descriptor: "Inspect the likely opposing finger-contact patches in the centered\
     \ grasp band.\nReturn the requested structured JSON with:\n- the likely contact\
     \ region and whether it is clearly visible;\n- the material actually touching\

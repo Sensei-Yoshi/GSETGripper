@@ -1,33 +1,33 @@
 {
   "schema_version": 4,
   "dataset_id": "MatForceFinal",
-  "source_fingerprint": "7fb3d1512c1f149e996f5059375119d7d212bab1502e60deb270d33e025c6586",
-  "created_at": "2026-07-29T16:43:59.087581+00:00",
-  "updated_at": "2026-07-29T17:27:19.509495+00:00",
+  "source_fingerprint": "861f5b37effe19b44e4864ccb3b30f96a4ce903ccc5019027dc9c07fbcf92fb5",
+  "created_at": "2026-07-29T23:04:56.112990+00:00",
+  "updated_at": "2026-07-29T23:09:01.292045+00:00",
   "stages": {
     "index": {
       "status": "complete",
-      "completed": 40,
-      "total": 40,
+      "completed": 41,
+      "total": 41,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-29T16:43:59.089313+00:00"
+      "updated_at": "2026-07-29T23:04:56.116356+00:00"
     },
     "descriptions": {
-      "status": "running",
-      "completed": 2,
-      "total": 40,
+      "status": "complete",
+      "completed": 41,
+      "total": 41,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-29T16:43:59.089568+00:00"
+      "updated_at": "2026-07-29T23:09:01.289516+00:00"
     },
     "experiences": {
       "status": "complete",
-      "completed": 40,
-      "total": 40,
+      "completed": 41,
+      "total": 41,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-29T17:27:19.509485+00:00"
+      "updated_at": "2026-07-29T23:09:01.292042+00:00"
     }
   },
   "missing_images": [],
@@ -42,7 +42,6 @@
     "leather_sunglasses_case",
     "soldering_iron_box",
     "lunch_box",
-    "microphone",
     "big_stone",
     "ketchup",
     "foam_roller",
@@ -71,6 +70,8 @@
     "smooth_screw_box",
     "medicine_bottle",
     "mold_release_spray_box",
-    "plastic_resistor_box"
+    "plastic_resistor_box",
+    "filament_spool",
+    "large_hand_sanitizer_sa_1"
   ]
 }
