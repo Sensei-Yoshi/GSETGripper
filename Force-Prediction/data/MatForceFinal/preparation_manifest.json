@@ -1,33 +1,25 @@
 {
   "schema_version": 4,
   "dataset_id": "MatForceFinal",
-  "source_fingerprint": "1daa212309aea8e902c0ad7e20f8c0d403bcd63386ab99b7db19f57f8026bf61",
-  "created_at": "2026-07-30T02:19:22.009182+00:00",
-  "updated_at": "2026-07-30T02:54:36.467941+00:00",
+  "source_fingerprint": "b88bbf472af6cdea949cda8555f295e29ee17c463f1fc8009ae64ffc226bb748",
+  "created_at": "2026-07-30T04:24:02.890977+00:00",
+  "updated_at": "2026-07-30T04:26:28.545161+00:00",
   "stages": {
     "index": {
       "status": "complete",
-      "completed": 42,
-      "total": 42,
+      "completed": 40,
+      "total": 40,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-30T02:19:22.012144+00:00"
+      "updated_at": "2026-07-30T04:26:28.452212+00:00"
     },
     "descriptions": {
       "status": "complete",
-      "completed": 42,
-      "total": 42,
+      "completed": 40,
+      "total": 40,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-30T02:19:41.322345+00:00"
-    },
-    "embeddings": {
-      "status": "complete",
-      "completed": 42,
-      "total": 42,
-      "failed_object": null,
-      "error": null,
-      "updated_at": "2026-07-30T02:19:41.361576+00:00"
+      "updated_at": "2026-07-30T04:26:28.543272+00:00"
     },
     "experiences": {
       "status": "complete",
@@ -35,7 +27,7 @@
       "total": 42,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-30T02:54:36.467918+00:00"
+      "updated_at": "2026-07-30T04:26:28.545159+00:00"
     }
   },
   "missing_images": [],
@@ -45,7 +37,6 @@
     "500g_weight",
     "apple",
     "banana",
-    "rubber_tire",
     "metal_water_bottle",
     "leather_sunglasses_case",
     "soldering_iron_box",
@@ -56,6 +47,7 @@
     "pretzel_bag",
     "orange",
     "headphones_case",
+    "camera_cardboard_box",
     "wallet_1",
     "wooden_block",
     "cetaphil",
@@ -75,11 +67,9 @@
     "rough_tile",
     "soap_bottle",
     "smooth_screw_box",
-    "medicine_bottle",
     "mold_release_spray_box",
     "plastic_resistor_box",
-    "filament_spool",
-    "large_hand_sanitizer_sa_1",
+    "large_hand_sanitizer",
     "poker_box",
     "creatine"
   ]

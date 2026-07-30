@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "large_hand_sanitizer",
+  "object_name": "Large hand sanitizer",
+  "image_name": "large_hand_sanitizer_sa_1.jpeg",
+  "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+  "image_sha256": "1cc772e5cf5b3f015189c37c0030f044352a8625cb0acc79a733b04b146b99ac",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
+  "descriptor": {
+    "retrieval_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+    "contact_material": "rigid plastic",
+    "visible_surface_material": "rigid plastic",
+    "visible_surface_condition": "clean, dry, smooth, nonporous",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
+  },
+  "embedding_status": "pending",
+  "embedding_model": null,
+  "embedding_dim": null,
+  "embedding_descriptor_sha256": null,
+  "embedding_cache_key": null,
+  "embedding_sha256": null,
+  "updated_at": "2026-07-30T04:24:03.496463+00:00"
+}
