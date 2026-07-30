@@ -351,7 +351,18 @@ def generate_benchmark_predictions(
         "roughness_measurement": cfg.roughness.model_dump(mode="json"),
         "active_grippers": [gripper.value for gripper in active_grippers],
         "generation_mode": "joint" if joint_mode else "single",
-        "retrieval": cfg.retrieval.model_dump(mode="json"),
+        "retrieval": {
+            **cfg.retrieval.model_dump(mode="json"),
+            "ranking_features": list(experiment_spec.ranking_features),
+            "visible_condition_fields": list(
+                experiment_spec.visible_condition_fields
+            ),
+            "condition_policy": (
+                "baseline_plus_visible_controlled_variants"
+                if experiment_spec.visible_condition_fields
+                else None
+            ),
+        },
         "retrieval_mode": retrieval_mode.value if retrieval_mode is not None else None,
         "prediction_prompts": prompt_context["prediction"],
         "prompt_context": prompt_context,

@@ -20,7 +20,14 @@ from .contracts import (
     SelectionResult,
 )
 from .models.gemini import get_client
-from .retrieval import RetrievalMode, RetrievedObjectExperience, normalized_weights
+from .retrieval import (
+    MeasurementField,
+    RankingFeature,
+    RetrievalMode,
+    RetrievedObjectExperience,
+    default_ranking_features,
+    normalized_weights,
+)
 from .roughness_representation import binary_roughness_category
 
 GRIPPERS = (Gripper.GECKO, Gripper.SILICONE)
@@ -79,6 +86,8 @@ def _generation_payload(
     include_measured: bool,
     include_retrieval: bool,
     retrieval_mode: RetrievalMode | None,
+    ranking_features: tuple[RankingFeature, ...] = (),
+    visible_condition_fields: tuple[MeasurementField, ...] = (),
 ) -> dict:
     payload: dict = {
         "query": _query_payload(query, cfg, include_measured=include_measured),
@@ -129,14 +138,29 @@ def _generation_payload(
             ),
         }
     else:
+        active_ranking_features = (
+            ranking_features or default_ranking_features(cfg)
+        )
         payload["retrieval_config"] = {
             "mode": mode.value,
             "k": cfg.retrieval.k,
-            "normalized_weights": normalized_weights(cfg),
+            "ranking_features": list(active_ranking_features),
+            "visible_condition_fields": list(visible_condition_fields),
+            "condition_policy": "baseline_plus_visible_controlled_variants",
+            "conditions_per_surface": cfg.retrieval.conditions_per_surface,
+            "projected_contact_used_for_surface_ranking": (
+                "contact" in active_ranking_features
+            ),
+            "normalized_weights": normalized_weights(
+                cfg, active_ranking_features
+            ),
             "sigma_mass": cfg.retrieval.sigma_mass,
             "roughness_characteristic_scale": cfg.roughness.characteristic_scale,
-            "sigma_contact": cfg.retrieval.sigma_contact,
         }
+        if "contact" in active_ranking_features:
+            payload["retrieval_config"]["sigma_contact"] = (
+                cfg.retrieval.sigma_contact
+            )
     return payload
 
 
@@ -147,7 +171,7 @@ def _group_retrieved_surfaces(
     mode: RetrievalMode,
     active_grippers: tuple[Gripper, ...],
 ) -> list[dict]:
-    """Create the version-2 VLM payload: one description, then condition records."""
+    """Create the version-3 VLM payload: one surface plus controlled conditions."""
     grouped: dict[str, list[RetrievedObjectExperience]] = {}
     for item in retrieved:
         grouped.setdefault(item.surface_id or item.object_id, []).append(item)
@@ -156,7 +180,11 @@ def _group_retrieved_surfaces(
         grouped.items(), key=lambda pair: pair[1][0].surface_rank
     ):
         conditions.sort(key=lambda item: item.condition_rank)
-        best = conditions[0]
+        best = max(conditions, key=lambda item: item.score)
+        surface_score = max(
+            item.surface_score if item.surface_score is not None else item.score
+            for item in conditions
+        )
         condition_payloads: list[dict] = []
         for item in conditions:
             raw = item.to_payload(
@@ -170,7 +198,16 @@ def _group_retrieved_surfaces(
                 raw.pop("surface_id", None)
                 raw.pop("rank", None)
                 raw.pop("surface_rank", None)
+                raw.pop("surface_score", None)
                 raw.pop("image_path", None)
+                # Projected contact is a within-surface control, not a cross-object
+                # feature: a neighbor baseline's absolute contact fraction is the
+                # confounded cross-object signal E6 deliberately excludes. Expose it
+                # only on the query and as within-surface variant deltas
+                # (comparison_to_baseline + force_deltas), never as a neighbor
+                # baseline's absolute value the model can spuriously match against.
+                if item.condition_role == "baseline":
+                    raw.pop("projected_contact_fraction", None)
                 if (
                     cfg.inputs.use_roughness
                     and cfg.inputs.roughness_representation == "binary"
@@ -192,7 +229,7 @@ def _group_retrieved_surfaces(
                         similarity.pop("total", None)
             condition_payloads.append(raw)
         surface = {
-            "schema_version": 2,
+            "schema_version": 3,
             "rank": best.surface_rank,
             "surface_id": surface_id,
             "semantic_description": best.semantic_description,
@@ -203,12 +240,18 @@ def _group_retrieved_surfaces(
             cfg.inputs.use_roughness
             and cfg.inputs.roughness_representation == "binary"
         ):
-            surface["score"] = best.score
+            surface["score"] = surface_score
         # Compatibility summary for existing result viewers. The nested conditions
         # remain authoritative and contain all retained sibling observations.
         best_payload = condition_payloads[0]
         for key, value in best_payload.items():
-            if key not in {"object_id", "condition_id", "condition_rank"}:
+            if key not in {
+                "object_id",
+                "condition_id",
+                "condition_rank",
+                "condition_role",
+                "comparison_to_baseline",
+            }:
                 surface.setdefault(key, value)
         output.append(surface)
     return output
@@ -224,6 +267,8 @@ def vlm_predict_joint(
     include_measured: bool,
     include_retrieval: bool,
     retrieval_mode: RetrievalMode | None = None,
+    ranking_features: tuple[RankingFeature, ...] = (),
+    visible_condition_fields: tuple[MeasurementField, ...] = (),
 ) -> JointGripperPrediction:
     """Estimate both grippers and recommend one with exactly one force-generation call."""
     if image_bgr is None:
@@ -236,6 +281,8 @@ def vlm_predict_joint(
         include_measured=include_measured,
         include_retrieval=include_retrieval,
         retrieval_mode=retrieval_mode,
+        ranking_features=ranking_features,
+        visible_condition_fields=visible_condition_fields,
     )
 
     raw = get_client(cfg).generate_json(
@@ -268,6 +315,8 @@ def vlm_predict_single(
     include_measured: bool,
     include_retrieval: bool,
     retrieval_mode: RetrievalMode | None = None,
+    ranking_features: tuple[RankingFeature, ...] = (),
+    visible_condition_fields: tuple[MeasurementField, ...] = (),
 ) -> PerGripperPrediction:
     """Estimate one requested gripper with the per-gripper response schema."""
     if image_bgr is None:
@@ -280,6 +329,8 @@ def vlm_predict_single(
         include_measured=include_measured,
         include_retrieval=include_retrieval,
         retrieval_mode=retrieval_mode,
+        ranking_features=ranking_features,
+        visible_condition_fields=visible_condition_fields,
     )
     raw = get_client(cfg).generate_json(
         system=cfg.prompts.prediction_system,

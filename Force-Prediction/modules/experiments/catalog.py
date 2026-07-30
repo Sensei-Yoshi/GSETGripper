@@ -46,6 +46,8 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         1,
         uses_measurements=True,
         retrieval_mode=RetrievalMode.HYBRID,
+        ranking_features=("semantic", "mass"),
+        visible_condition_fields=("mass_g",),
     ),
     "e5": ExperimentSpec(
         "e5",
@@ -57,18 +59,26 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         uses_roughness=True,
         roughness_representation="continuous",
         retrieval_mode=RetrievalMode.HYBRID,
+        ranking_features=("semantic", "mass", "roughness"),
+        visible_condition_fields=("mass_g", "roughness_index"),
     ),
     "e6": ExperimentSpec(
         "e6",
         ExperimentMethod.HYBRID_RETRIEVAL_VLM,
-        "Full sensor-fusion retrieval",
-        "E5 plus authoritative projected contact fraction in ranking and VLM evidence.",
+        "Contact-conditioned experience reasoning",
+        "E5-ranked surfaces plus authoritative projected-contact condition evidence.",
         1,
         uses_measurements=True,
         uses_roughness=True,
         uses_projected_contact=True,
         roughness_representation="continuous",
         retrieval_mode=RetrievalMode.HYBRID,
+        ranking_features=("semantic", "mass", "roughness"),
+        visible_condition_fields=(
+            "mass_g",
+            "roughness_index",
+            "projected_contact_fraction",
+        ),
     ),
 }
 

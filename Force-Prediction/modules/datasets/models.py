@@ -99,7 +99,7 @@ class DatasetObjectMeasurements(BaseModel):
     object_id: str
     surface_id: str | None = None
     condition_id: str = "baseline"
-    split: Literal["train", "test"] = "train"
+    split: Literal["train", "test", "surface_validation"] = "train"
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     # Kept only so schema-v1 files remain inspectable. It is never used as an
@@ -130,7 +130,7 @@ class DatasetObject(BaseModel):
     object_id: str
     surface_id: str | None = None
     condition_id: str = "baseline"
-    split: Literal["train", "test"] = "train"
+    split: Literal["train", "test", "surface_validation"] = "train"
     name: str
     image: ImageArtifact
     image_2: ImageArtifact | None = None

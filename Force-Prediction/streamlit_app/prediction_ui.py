@@ -11,7 +11,7 @@ from modules.config import Config
 from modules.contracts import Gripper
 from modules.experiments import EXPERIMENT_CATALOG, experiment_display_name
 from modules.pipeline import PipelineRunResult
-from modules.retrieval import normalized_weights
+from modules.retrieval import RankingFeature, default_ranking_features, normalized_weights
 
 
 def format_force(value: float, *, signed: bool = False) -> str:
@@ -67,6 +67,13 @@ def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
                 "condition_rank": item.condition_rank or 1,
                 "surface": (item.surface_id or item.object_id).replace("_", " "),
                 "condition": item.condition_id.replace("_", " "),
+                "condition_role": item.condition_role.replace("_", " "),
+                "changed_fields": (
+                    ", ".join(item.comparison_to_baseline.changed_fields)
+                    if item.comparison_to_baseline is not None
+                    else ""
+                ),
+                "surface_score": item.surface_score,
                 "score": item.score,
                 "semantic": sim.semantic,
             }
@@ -96,22 +103,33 @@ def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def render_formula(cfg: Config) -> None:
-    weights = normalized_weights(cfg)
+def render_formula(
+    cfg: Config,
+    ranking_features: tuple[RankingFeature, ...] | None = None,
+) -> None:
+    active_features = ranking_features or default_ranking_features(cfg)
+    active = set(active_features)
+    weights = normalized_weights(cfg, active_features)
     st.markdown('<div class="formula"><b>Hybrid similarity</b></div>', unsafe_allow_html=True)
-    terms = [
-        r"w_s\cos(e_q,e_i)",
-        r"w_m e^{-|\ln m_q-\ln m_i|/\sigma_m}",
-    ]
-    if cfg.inputs.use_roughness:
+    terms = []
+    if "semantic" in active:
+        terms.append(r"w_s\cos(e_q,e_i)")
+    if "mass" in active:
+        terms.append(r"w_m e^{-|\ln m_q-\ln m_i|/\sigma_m}")
+    if "roughness" in active:
         terms.append(r"w_r e^{-|r_q-r_i|/s_r}")
-    if cfg.inputs.use_projected_contact:
+    if "contact" in active:
         terms.append(r"w_a e^{-|a_q-a_i|/\sigma_a}")
     st.latex(r"S_i=" + "+".join(terms))
     st.caption(
         "Normalized weights: "
         + " | ".join(f"{name} {value:.2f}" for name, value in weights.items())
     )
+    if cfg.inputs.use_projected_contact and "contact" not in active:
+        st.caption(
+            "Projected contact is available as VLM evidence but is excluded from "
+            "cross-object surface ranking."
+        )
 
 
 def render_semantic_formula() -> None:
@@ -299,4 +317,8 @@ def render_prediction(
     if detailed.retrieval_mode == "semantic_only":
         render_semantic_formula()
     elif detailed.retrieval_mode == "hybrid":
-        render_formula(EXPERIMENT_CATALOG[detailed.experiment_id].scoped_config(cfg))
+        experiment_spec = EXPERIMENT_CATALOG[detailed.experiment_id]
+        render_formula(
+            experiment_spec.scoped_config(cfg),
+            experiment_spec.ranking_features or None,
+        )

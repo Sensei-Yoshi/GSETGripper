@@ -58,13 +58,17 @@ def _parse_optional_int(value: str | None) -> int | None:
     return int(value) if value and value.strip() else None
 
 
-def _parse_split(value: str | None) -> Literal["train", "test"]:
+def _parse_split(value: str | None) -> Literal["train", "test", "surface_validation"]:
     normalized = (value or "train").strip().lower()
     if normalized == "train":
         return "train"
     if normalized == "test":
         return "test"
-    raise ValueError(f"expected train/test split, got {value!r}")
+    if normalized == "surface_validation":
+        return "surface_validation"
+    raise ValueError(
+        f"expected train/test/surface_validation split, got {value!r}"
+    )
 
 
 class ExpForceRow(BaseModel):
@@ -72,7 +76,7 @@ class ExpForceRow(BaseModel):
     image_name: str
     image_name_2: str | None = None
     condition_id: str = "baseline"
-    split: Literal["train", "test"] = "train"
+    split: Literal["train", "test", "surface_validation"] = "train"
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
@@ -208,13 +212,20 @@ def load_rows(cfg: Config) -> list[ExpForceRow]:
         raise ValueError(f"expected 129 physical surfaces, found {len(surface_ids)}")
     if len(set(ids)) != len(ids):
         raise ValueError("object names do not produce unique IDs")
+    # A physical surface must not straddle the train/test boundary, or an object's
+    # own outcome could leak between fitting and evaluation. surface_validation
+    # conditions are exempt: they are excluded from both the reference pool and the
+    # held-out test set, so they can coexist with a train or test baseline sibling
+    # (they remain loadable for single runs only).
     split_by_surface: dict[str, set[str]] = {}
     for row in rows:
+        if row.split == "surface_validation":
+            continue
         split_by_surface.setdefault(row.surface_id, set()).add(row.split)
     mixed = sorted(surface for surface, splits in split_by_surface.items() if len(splits) > 1)
     if mixed:
         raise ValueError(
-            "all conditions of a physical surface must share one train/test split: "
+            "all train/test conditions of a physical surface must share one split: "
             + ", ".join(mixed)
         )
     return rows
@@ -475,7 +486,7 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
         "object_id": detailed.object_id,
         "surface_id": detailed.surface_id,
         "condition_id": detailed.condition_id,
-        "retrieval_payload_version": 2,
+        "retrieval_payload_version": 3,
         "retrieved_objects": _object_retrieval_payload(detailed),
         "retrieved_surfaces": _surface_retrieval_payload(detailed),
         "physics_estimates": detailed.physics_estimates,
@@ -483,6 +494,9 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
         "active_grippers": list(detailed.active_grippers),
         "generation_mode": detailed.generation_mode,
         "retrieval_mode": detailed.retrieval_mode,
+        "ranking_features": list(detailed.ranking_features),
+        "visible_condition_fields": list(detailed.visible_condition_fields),
+        "condition_policy": detailed.condition_policy,
         "effective_inputs": list(detailed.effective_inputs),
     }
 
@@ -521,6 +535,11 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
             "generation_mode", "single" if len(active_grippers) == 1 else "joint"
         ),
         retrieval_mode=payload.get("retrieval_mode"),
+        ranking_features=tuple(payload.get("ranking_features", ())),
+        visible_condition_fields=tuple(
+            payload.get("visible_condition_fields", ())
+        ),
+        condition_policy=payload.get("condition_policy"),
         effective_inputs=tuple(payload.get("effective_inputs", ())),
         object_id=payload.get("object_id", ""),
         surface_id=payload.get("surface_id"),

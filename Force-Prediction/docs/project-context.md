@@ -282,7 +282,7 @@ The active IDs are E1 through E6 and form the VLM ablation suite.
 | E3 | `semantic_retrieval_vlm` | 1 | Semantic-cosine experiential retrieval, without sensor inputs |
 | E4 | `hybrid_retrieval_vlm` | 1 | Semantic + mass retrieval |
 | E5 | `hybrid_retrieval_vlm` | 1 | E4 + continuous roughness |
-| E6 | `hybrid_retrieval_vlm` | 1 | E5 + projected contact |
+| E6 | `hybrid_retrieval_vlm` | 1 | E5-ranked surfaces + projected-contact condition evidence |
 
 “Force-generation call” means a VLM call that returns force predictions. E3–E6
 may need descriptor or embedding calls when semantic data is not already cached. Those
@@ -319,10 +319,11 @@ value.
 ### E4–E6: nested semantic and sensor-fusion experience-conditioned VLM
 
 E4–E6 share E3's grouped representation and calculate semantic similarity once per surface.
-E4 ranks conditions using semantic and mass terms, E5 adds continuous LED roughness, and E6
-adds projected contact. Each surface is ranked by its best condition and contributes up to
-three conditions. The VLM payload exposes exactly the authoritative query measurements and
-retained condition values enabled by that condition.
+E4 ranks surfaces using semantic and mass terms; E5 and E6 use semantic, mass, and continuous
+LED roughness. E6 excludes projected contact from cross-object ranking and exposes it instead
+as query and controlled same-surface condition evidence. Each surface is ranked by its best
+eligible condition and contributes its baseline plus at most two variants whose recorded
+changes are fully visible in that experiment.
 
 The score only ranks neighbors; it never computes force. Force evidence comes from the
 observed active-gripper outcomes. E4–E6 receive no physics value. The adjacent E4→E5→E6
@@ -600,8 +601,8 @@ Network-isolated verification with explicit Gemini test fakes must cover:
 - E3 ranks by semantic cosine only and exposes no query/neighbor sensor or physical-score
   terms;
 - E4–E6 use configured `k`, exclude the query, retrieve once, and call jointly once;
-- E4 uses only mass, E5 adds continuous roughness, and E6 adds projected contact in both
-  ranking and VLM payloads;
+- E4 uses only mass, E5 adds continuous roughness, and E6 retains E5 surface ranking while
+  adding projected contact to query and controlled-condition VLM evidence;
 - E1/E3 run without physical measurements while measured conditions report missing inputs;
 - continuous force clamps and infeasibility behavior;
 - selector authority and recommendation disagreement metrics;

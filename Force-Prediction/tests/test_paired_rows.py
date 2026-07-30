@@ -9,9 +9,11 @@ from modules.contracts import (
     JointGripperPrediction,
     PerGripperPrediction,
 )
+from modules.expforce import pipeline_result_from_dict, pipeline_result_to_dict
 from modules.hardware import fabricate_records
 from modules.pipeline import Pipeline, query_input_from_object
 from modules.retrieval import ExperienceIndex, RetrievalMode
+from streamlit_app.prediction_ui import paired_retrieval_table
 from tests.fakes import FakeEmbeddingProvider, install_gemini_fakes
 
 
@@ -260,7 +262,23 @@ def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
     assert e4_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
     assert e5_payload["retrieval_config"]["normalized_weights"]["roughness"] > 0
     assert e5_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
-    assert e6_payload["retrieval_config"]["normalized_weights"]["contact"] > 0
+    assert e6_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
+    assert e5_payload["retrieval_config"]["ranking_features"] == [
+        "semantic",
+        "mass",
+        "roughness",
+    ]
+    assert e6_payload["retrieval_config"]["ranking_features"] == [
+        "semantic",
+        "mass",
+        "roughness",
+    ]
+    assert e6_payload["retrieval_config"][
+        "projected_contact_used_for_surface_ranking"
+    ] is False
+    assert [item["surface_id"] for item in e5_payload["retrieved_objects"]] == [
+        item["surface_id"] for item in e6_payload["retrieved_objects"]
+    ]
     assert results["e4"].effective_inputs[-1] == "mass"
     assert results["e5"].effective_inputs[-2:] == ("mass", "roughness")
     assert results["e6"].effective_inputs[-3:] == (
@@ -268,6 +286,22 @@ def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
         "roughness",
         "projected_contact",
     )
+    serialized = pipeline_result_to_dict(results["e6"])
+    assert serialized["retrieval_payload_version"] == 3
+    assert serialized["ranking_features"] == ["semantic", "mass", "roughness"]
+    restored = pipeline_result_from_dict(serialized)
+    assert restored.ranking_features == ("semantic", "mass", "roughness")
+    assert restored.visible_condition_fields == (
+        "mass_g",
+        "roughness_index",
+        "projected_contact_fraction",
+    )
+    assert restored.condition_policy == "baseline_plus_visible_controlled_variants"
+    retrieval_table = paired_retrieval_table(restored)
+    assert {"condition_role", "changed_fields", "surface_score"}.issubset(
+        retrieval_table.columns
+    )
+    assert set(retrieval_table["condition_role"]) == {"baseline"}
 
 
 def test_e5_forces_continuous_roughness_and_withholds_contact(monkeypatch):

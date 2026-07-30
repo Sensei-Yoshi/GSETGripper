@@ -17,7 +17,7 @@ define the hardware being predicted and are not object-specific measurements.
 | **E3** | Image + semantic descriptor + active-gripper outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval modeled after Exp-Force? |
 | **E4** | E3 + mass | Semantic + mass | What does mass-conditioned retrieval add? |
 | **E5** | E4 + continuous roughness | Semantic + mass + roughness | What is the incremental value of measured roughness? |
-| **E6** | E5 + projected contact fraction | All four terms | What is the incremental value of the contact proxy and the complete pipeline? |
+| **E6** | E5-ranked experiences + projected contact fraction | Semantic + mass + roughness | What is the incremental value of contact as query and controlled-condition evidence? |
 
 One selected gripper produces one `PerGripperPrediction`; both selected grippers produce
 one joint response and an explicit recommendation. Python remains authoritative. Selection,
@@ -44,7 +44,7 @@ This is the right role for E3 because it creates clean comparisons:
 - E3 minus E1 estimates the contribution of semantic experiential retrieval.
 - E4 minus E3 estimates the contribution of mass-conditioned retrieval.
 - E5 minus E4 estimates the incremental contribution of continuous roughness.
-- E6 minus E5 estimates the incremental contribution of projected contact.
+- E6 minus E5 estimates the incremental contribution of projected contact without changing the retrieved surface set.
 
 E6 having the lowest error is a hypothesis, not a guaranteed result. Sensor noise,
 retrieval mismatch, prompt sensitivity, or a small experience set can make fusion worse.
@@ -53,23 +53,26 @@ expected ordering as a premise.
 
 ## E4–E6: nested semantic and sensor-fusion retrieval
 
-E4–E6 use the same grouped-surface representation as E3 and draw nested subsets from
-the configured hybrid score:
+E4–E6 use the same grouped-surface representation as E3. Their surface score draws
+nested subsets from the configured hybrid terms:
 
 `S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough + w_a S_contact`.
 
-E4 enables semantic and mass terms, E5 also enables continuous roughness, and E6 also
-enables projected contact. Disabled terms receive zero weight and the remaining terms are
-renormalized. The query measurements and corresponding neighbor values for that condition
-are available to the VLM. E5 and E6 always use the continuous roughness index, even if the
-separate E2 roughness-representation control is set to binary.
+E4 enables semantic and mass terms. E5 and E6 both add continuous roughness to surface
+ranking, so they retrieve identical physical surfaces for the same query and pool. E6 exposes
+projected contact only as query and controlled same-surface condition evidence. Disabled
+ranking terms receive zero weight and the remaining terms are renormalized. E5 and E6 always
+use the continuous roughness index, even if the separate E2 control is set to binary.
 
 The VLM receives the normalized weights and kernel scales so it can understand why a
 neighbor was ranked highly. These values are ranking provenance, not physical coefficients
 and not a force equation. The retrieval score only ranks candidates; it never computes
 force. Force evidence comes from the paired
-observed outcomes attached to those conditions. A surface is ranked by its best condition;
-the top `retrieval.k` distinct surfaces are retained. None receives a physics prediction.
+observed outcomes attached to those conditions. A surface is ranked by its best eligible
+condition; the top `retrieval.k` distinct surfaces are retained. Each surface then contributes
+its baseline and at most two controlled variants. E4 admits only mass changes, E5 admits only
+mass/roughness changes, and E6 admits mass/roughness/contact changes. Conditions that also
+change an experiment-hidden measurement are excluded. None receives a physics prediction.
 
 ## Evaluation and reporting
 

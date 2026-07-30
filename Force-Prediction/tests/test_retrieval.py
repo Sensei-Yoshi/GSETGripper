@@ -6,6 +6,7 @@ import pytest
 
 from modules.config import load_config
 from modules.contracts import Gripper, Query
+from modules.expforce import load_rows, to_experiences
 from modules.hardware import fabricate_records
 from modules.prediction import _generation_payload
 from modules.retrieval import (
@@ -143,6 +144,342 @@ def test_surface_retrieval_embeds_once_and_scores_sibling_conditions_separately(
     assert first_surface[0].condition_id == "condition_3"
     assert len({item.score for item in first_surface}) == 3
     assert {item.surface_rank for item in results} == {1, 2}
+
+
+def test_visibility_aware_conditions_exclude_hidden_and_mixed_changes():
+    cfg = load_config().model_copy(deep=True)
+    cfg.retrieval.k = 20
+    cfg.retrieval.conditions_per_surface = 3
+    records = fabricate_records(cfg, 4)
+    surface_id = records[0].object_id
+    baseline_records = [record for record in records if record.object_id == surface_id]
+    baseline = baseline_records[0]
+
+    def sibling(condition_id: str, **updates):
+        return [
+            record.model_copy(
+                update={
+                    "object_id": f"{surface_id}__{condition_id}",
+                    "surface_id": surface_id,
+                    "condition_id": condition_id,
+                    **updates,
+                }
+            )
+            for record in baseline_records
+        ]
+
+    records.extend(sibling("condition_2", mass_g=baseline.mass_g + 100.0))
+    records.extend(
+        sibling("condition_3", roughness_index=baseline.roughness_index + 100.0)
+    )
+    records.extend(
+        sibling(
+            "condition_4",
+            projected_contact_fraction=max(
+                0.0, baseline.projected_contact_fraction - 0.1
+            ),
+        )
+    )
+    records.extend(
+        sibling(
+            "condition_5",
+            mass_g=baseline.mass_g + 50.0,
+            projected_contact_fraction=max(
+                0.0, baseline.projected_contact_fraction - 0.2
+            ),
+        )
+    )
+    records.extend(sibling("condition_6"))
+
+    index = ExperienceIndex(
+        cfg, FakeEmbeddingProvider(cfg.retrieval.embedding.dim)
+    ).fit(records)
+    query = Query(
+        object_id="query",
+        image_path="",
+        mass_g=baseline.mass_g + 50.0,
+        roughness_index=baseline.roughness_index,
+        projected_contact_fraction=baseline.projected_contact_fraction,
+        semantic_description=baseline.semantic_description,
+    )
+    query_vec = index.embed_query(query)
+
+    e4 = index.retrieve_objects(
+        query,
+        query_vec,
+        mode=RetrievalMode.HYBRID,
+        ranking_features=("semantic", "mass"),
+        visible_condition_fields=("mass_g",),
+    )
+    e5 = index.retrieve_objects(
+        query,
+        query_vec,
+        mode=RetrievalMode.HYBRID,
+        ranking_features=("semantic", "mass", "roughness"),
+        visible_condition_fields=("mass_g", "roughness_index"),
+    )
+
+    assert {
+        item.condition_id for item in e4 if item.surface_id == surface_id
+    } == {"baseline", "condition_2"}
+    assert {
+        item.condition_id for item in e5 if item.surface_id == surface_id
+    } == {"baseline", "condition_2", "condition_3"}
+    assert all(
+        item.condition_id not in {"condition_4", "condition_5", "condition_6"}
+        for item in e5
+        if item.surface_id == surface_id
+    )
+    displayed_e5 = [item for item in e5 if item.surface_id == surface_id]
+    assert displayed_e5[0].surface_score is not None
+    assert displayed_e5[0].surface_score > max(item.score for item in displayed_e5)
+
+
+def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants(monkeypatch):
+    cfg = load_config().model_copy(deep=True)
+    cfg.retrieval.k = 5
+    cfg.retrieval.conditions_per_surface = 3
+    records = fabricate_records(cfg, 8)
+    surface_id = records[0].object_id
+    baseline_records = [record for record in records if record.object_id == surface_id]
+    baseline = baseline_records[0]
+    for number, contact in ((2, 0.5), (3, 0.1)):
+        records.extend(
+            record.model_copy(
+                update={
+                    "object_id": f"{surface_id}__condition_{number}",
+                    "surface_id": surface_id,
+                    "condition_id": f"condition_{number}",
+                    "projected_contact_fraction": contact,
+                }
+            )
+            for record in baseline_records
+        )
+
+    index = ExperienceIndex(
+        cfg, FakeEmbeddingProvider(cfg.retrieval.embedding.dim)
+    ).fit(records)
+    query = Query(
+        object_id="query",
+        image_path="",
+        mass_g=baseline.mass_g,
+        roughness_index=baseline.roughness_index,
+        projected_contact_fraction=1.0,
+        semantic_description=baseline.semantic_description,
+    )
+    query_vec = index.embed_query(query)
+    ranking_features = ("semantic", "mass", "roughness")
+    e5 = index.retrieve_objects(
+        query,
+        query_vec,
+        ranking_features=ranking_features,
+        visible_condition_fields=("mass_g", "roughness_index"),
+    )
+
+    monkeypatch.setattr(
+        "modules.retrieval.s_contact",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("E6 must not evaluate contact similarity")
+        ),
+    )
+    e6 = index.retrieve_objects(
+        query,
+        query_vec,
+        ranking_features=ranking_features,
+        visible_condition_fields=(
+            "mass_g",
+            "roughness_index",
+            "projected_contact_fraction",
+        ),
+    )
+
+    def ranked_surfaces(items):
+        return [
+            item.surface_id
+            for item in items
+            if item.condition_rank == 1
+        ]
+
+    assert ranked_surfaces(e5) == ranked_surfaces(e6)
+    surface_conditions = [item for item in e6 if item.surface_id == surface_id]
+    assert [item.condition_id for item in surface_conditions] == [
+        "baseline",
+        "condition_2",
+        "condition_3",
+    ]
+    expected_deltas = (
+        0.5 - baseline.projected_contact_fraction,
+        0.1 - baseline.projected_contact_fraction,
+    )
+    for item, expected_delta in zip(
+        surface_conditions[1:], expected_deltas, strict=True
+    ):
+        comparison = item.comparison_to_baseline
+        assert item.condition_role == "controlled_variant"
+        assert comparison is not None
+        assert comparison.changed_fields == ("projected_contact_fraction",)
+        assert comparison.deltas["projected_contact_fraction"] == pytest.approx(
+            expected_delta
+        )
+        # The variants only change contact, so the measured gecko force is
+        # unchanged and its within-surface delta is exactly zero.
+        assert comparison.force_deltas["gecko_min_force_delta_n"] == pytest.approx(
+            0.0
+        )
+
+    payload = _generation_payload(
+        cfg,
+        query,
+        e6,
+        active_grippers=(Gripper.GECKO,),
+        include_measured=True,
+        include_retrieval=True,
+        retrieval_mode=RetrievalMode.HYBRID,
+        ranking_features=ranking_features,
+        visible_condition_fields=(
+            "mass_g",
+            "roughness_index",
+            "projected_contact_fraction",
+        ),
+    )
+    retrieval_config = payload["retrieval_config"]
+    assert retrieval_config["normalized_weights"]["contact"] == 0
+    assert retrieval_config["projected_contact_used_for_surface_ranking"] is False
+    assert "sigma_contact" not in retrieval_config
+    surface_payload = next(
+        item
+        for item in payload["retrieved_objects"]
+        if item["surface_id"] == surface_id
+    )
+    assert surface_payload["schema_version"] == 3
+    assert [item["condition_role"] for item in surface_payload["conditions"]] == [
+        "baseline",
+        "controlled_variant",
+        "controlled_variant",
+    ]
+    assert surface_payload["conditions"][1]["comparison_to_baseline"][
+        "changed_fields"
+    ] == ["projected_contact_fraction"]
+    assert (
+        "gecko_min_force_delta_n"
+        in surface_payload["conditions"][1]["comparison_to_baseline"]["force_deltas"]
+    )
+    # A neighbor baseline's absolute contact is the cross-object confound E6 excludes;
+    # it is suppressed while the within-surface variant keeps its contact evidence.
+    assert "projected_contact_fraction" not in surface_payload["conditions"][0]
+    assert "projected_contact_fraction" in surface_payload["conditions"][1]
+
+
+def test_matforce_contact_sweeps_are_e6_evidence_but_not_e5_neighbors():
+    cfg = load_config().model_copy(deep=True)
+    cfg.dataset_id = "MatForceFinal"
+    cfg.retrieval.k = 100
+    rows = load_rows(cfg)
+    records = to_experiences(cfg, [row for row in rows if row.split == "train"])
+    index = ExperienceIndex(
+        cfg, FakeEmbeddingProvider(cfg.retrieval.embedding.dim)
+    ).fit(records)
+    source = next(
+        row
+        for row in rows
+        if row.object_name == "Large Cardboard Box"
+        and row.condition_id == "baseline"
+    )
+    query = Query(
+        object_id="validation_query",
+        image_path="",
+        mass_g=source.mass_g,
+        roughness_index=source.roughness_index,
+        projected_contact_fraction=source.projected_contact_fraction,
+        semantic_description=source.object_name,
+    )
+    query_vec = index.embed_query(query)
+    ranking_features = ("semantic", "mass", "roughness")
+    e5 = index.retrieve_objects(
+        query,
+        query_vec,
+        ranking_features=ranking_features,
+        visible_condition_fields=("mass_g", "roughness_index"),
+    )
+    e6 = index.retrieve_objects(
+        query,
+        query_vec,
+        ranking_features=ranking_features,
+        visible_condition_fields=(
+            "mass_g",
+            "roughness_index",
+            "projected_contact_fraction",
+        ),
+    )
+
+    def ranked_surfaces(items):
+        return [item.surface_id for item in items if item.condition_rank == 1]
+
+    assert ranked_surfaces(e5) == ranked_surfaces(e6)
+    for surface_id, expected_delta in {
+        "large_cardboard_box": -0.5,
+        "creatine": -0.95,
+        "beaker": -0.6,
+    }.items():
+        assert [
+            item.condition_id for item in e5 if item.surface_id == surface_id
+        ] == ["baseline"]
+        e6_conditions = [item for item in e6 if item.surface_id == surface_id]
+        assert [item.condition_id for item in e6_conditions] == [
+            "baseline",
+            "condition_2",
+        ]
+        comparison = e6_conditions[1].comparison_to_baseline
+        assert comparison is not None
+        assert comparison.changed_fields == ("projected_contact_fraction",)
+        assert comparison.deltas["projected_contact_fraction"] == pytest.approx(
+            expected_delta
+        )
+
+
+def test_multiple_conditions_require_a_baseline():
+    cfg = load_config().model_copy(deep=True)
+    records = fabricate_records(cfg, 2)
+    surface_id = records[0].object_id
+    records = [
+        record.model_copy(
+            update={
+                "condition_id": "condition_2",
+                "object_id": f"{surface_id}__condition_2",
+                "surface_id": surface_id,
+            }
+        )
+        for record in records
+        if record.object_id == surface_id
+    ]
+    first_condition = list(records)
+    records.extend(
+        record.model_copy(
+            update={
+                "condition_id": "condition_3",
+                "object_id": f"{surface_id}__condition_3",
+                "surface_id": surface_id,
+            }
+        )
+        for record in first_condition
+    )
+
+    index = ExperienceIndex(
+        cfg, FakeEmbeddingProvider(cfg.retrieval.embedding.dim)
+    ).fit(records)
+    query = Query(
+        object_id="query",
+        image_path="",
+        mass_g=records[0].mass_g,
+        semantic_description=records[0].semantic_description,
+    )
+    with pytest.raises(ValueError, match="multiple conditions but no baseline"):
+        index.retrieve_objects(
+            query,
+            index.embed_query(query),
+            ranking_features=("semantic", "mass"),
+            visible_condition_fields=("mass_g",),
+        )
 
 
 def test_e3_grouped_payload_hides_condition_identity_and_physical_fields():

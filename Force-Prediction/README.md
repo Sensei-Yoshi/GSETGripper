@@ -15,7 +15,7 @@ The active research suite has six explicit VLM ablation methods:
 | E3 | Semantic-only experiential retrieval + VLM response |
 | E4 | Semantic + mass retrieval + VLM response |
 | E5 | E4 + continuous roughness |
-| E6 | E5 + projected contact fraction |
+| E6 | E5-ranked surfaces + projected-contact condition evidence |
 
 Single-candidate runs use a direct per-gripper response. Paired E1–E6 runs also return an
 explicit model recommendation, but Python's lowest-feasible-force rule remains authoritative.
@@ -50,7 +50,8 @@ inputs and reference outcomes are ready; they no longer wait for dataset-wide co
 
 Known-object runs are leave-one-object-out and custom queries use the entire eligible
 experience pool. E3 retrieves by semantic cosine similarity only. E4 adds mass to ranking,
-E5 adds continuous roughness, and E6 adds projected contact. The global Gecko/silicone checkboxes request either one
+E5 adds continuous roughness. E6 keeps E5's surface ranking and adds projected contact
+as query and controlled same-surface condition evidence. The global Gecko/silicone checkboxes request either one
 direct per-gripper response or one paired structured response.
 
 Benchmarks use two explicit stages and the dataset CSV's `split=train/test` assignment.
@@ -102,7 +103,9 @@ The reported topographic score is an uncalibrated monocular-image proxy. Preserv
 statistics and calibrate it against measured slip or friction before using it as a physical value.
 
 E4–E6 are fixed nested ablations. E4 exposes mass, E5 adds continuous roughness, and E6 adds
-projected contact; the same fields govern both retrieval scoring and the VLM payload. Disabled
+projected contact as VLM evidence without using it for cross-object surface ranking. E4/E5
+condition variants are visibility-filtered so hidden measurements cannot explain conflicting
+force labels. Disabled
 terms receive zero retrieval weight and the remaining weights are renormalized. E1 and E3
 exclude physical fields by construction.
 

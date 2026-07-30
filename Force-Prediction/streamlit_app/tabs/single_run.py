@@ -8,13 +8,14 @@ import streamlit as st
 
 from modules.config import EXPERIMENT_IDS, Config
 from modules.contracts import ExperienceRecord, group_by_object
+from modules.datasets import DatasetObject
 from modules.experiments import EXPERIMENT_CATALOG, experiment_eligibility
 from modules.expforce import (
     load_experience_pool,
     save_pipeline_run,
 )
 from modules.pipeline import Pipeline, QueryInput
-from modules.retrieval import normalized_weights
+from modules.retrieval import RankingFeature, normalized_weights
 from modules.roughness_representation import binary_roughness_category
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import (
@@ -36,6 +37,7 @@ def _run_config(
     sigma_mass: float,
     sigma_contact: float,
     validate_hybrid_weights: bool,
+    ranking_features: tuple[RankingFeature, ...] | None,
 ) -> Config:
     cfg = base.model_copy(deep=True)
     cfg.retrieval.weights.semantic = semantic
@@ -45,7 +47,7 @@ def _run_config(
     cfg.retrieval.sigma_mass = sigma_mass
     cfg.retrieval.sigma_contact = sigma_contact
     if validate_hybrid_weights:
-        normalized_weights(cfg)
+        normalized_weights(cfg, ranking_features)
     return cfg
 
 
@@ -58,6 +60,22 @@ def _decode_upload(uploaded) -> np.ndarray | None:  # noqa: ANN001
 
 def _rgb(image_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+
+def _object_label(row: DatasetObject) -> str:
+    """Selector label that disambiguates sibling conditions of one surface.
+
+    Objects sharing a physical surface share a display name (e.g. both hand
+    sanitizer conditions), so key the selector on the condition and flag
+    surface_validation objects, which are single-run only and never in the
+    benchmark train/test aggregates.
+    """
+    label = row.name
+    if row.condition_id and row.condition_id != "baseline":
+        label = f"{label} — {row.condition_id}"
+    if row.split == "surface_validation":
+        label = f"{label} [surface validation]"
+    return label
 
 
 def _single_run_training_records(
@@ -89,7 +107,7 @@ def render(context: AppContext) -> None:
     records = load_experience_pool(base_cfg)
     objects = group_by_object(records)
     dataset_objects = {row.object_id: row for row in rows}
-    names = {row.name: row.object_id for row in rows}
+    names = {_object_label(row): row.object_id for row in rows}
 
     controls, output = st.columns([0.38, 0.62], gap="large")
     with controls:
@@ -120,6 +138,7 @@ def render(context: AppContext) -> None:
         uses_hybrid_retrieval = (
             experiment_spec.retrieval_mode is not None and experiment != "e3"
         )
+        contact_ranks_surfaces = "contact" in experiment_spec.ranking_features
         eligibility = experiment_eligibility(context.dataset, base_cfg, experiment)
         query_reasons = eligibility.query_reasons(object_id)
         if query_reasons:
@@ -194,8 +213,8 @@ def render(context: AppContext) -> None:
             )
         with st.expander("Input and retrieval tuning", expanded=True):
             st.caption(
-                "E4-E6 have fixed sensor subsets; these weights change neighbor ranking "
-                "within the selected condition."
+                "E4-E6 have fixed ranking subsets; only enabled weights affect "
+                "cross-object surface ranking."
             )
             semantic_w = st.slider(
                 "Semantic weight", 0.0, 1.0,
@@ -216,12 +235,11 @@ def render(context: AppContext) -> None:
                 "Contact weight", 0.0, 1.0,
                 float(base_cfg.retrieval.weights.contact), 0.05,
                 disabled=(
-                    not uses_projected_contact
-                    or not uses_hybrid_retrieval
+                    not uses_hybrid_retrieval or not contact_ranks_surfaces
                 ),
             )
             contact_w = (
-                configured_contact_w if uses_projected_contact else 0.0
+                configured_contact_w if contact_ranks_surfaces else 0.0
             )
             sigma_mass = st.slider(
                 "Mass sigma", 0.1, 3.0,
@@ -232,8 +250,7 @@ def render(context: AppContext) -> None:
                 "Contact sigma", 0.05, 1.0,
                 float(base_cfg.retrieval.sigma_contact), 0.05,
                 disabled=(
-                    not uses_projected_contact
-                    or not uses_hybrid_retrieval
+                    not uses_hybrid_retrieval or not contact_ranks_surfaces
                 ),
             )
             st.caption(f"Neighbor count comes from config.yaml: k = {base_cfg.retrieval.k}.")
@@ -255,6 +272,7 @@ def render(context: AppContext) -> None:
             sigma_mass=sigma_mass,
             sigma_contact=sigma_contact,
             validate_hybrid_weights=uses_hybrid_retrieval,
+            ranking_features=experiment_spec.ranking_features or None,
         )
     except ValueError as error:
         with output:
@@ -373,7 +391,10 @@ def render(context: AppContext) -> None:
             if experiment == "e3":
                 render_semantic_formula()
             elif uses_hybrid_retrieval:
-                render_formula(experiment_spec.scoped_config(cfg))
+                render_formula(
+                    experiment_spec.scoped_config(cfg),
+                    experiment_spec.ranking_features or None,
+                )
             else:
                 st.caption(f"{experiment.upper()} does not use experiential retrieval.")
         else:

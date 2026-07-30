@@ -77,12 +77,12 @@ roughness:
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
   k: 5                  # distinct physical-surface neighbors for E3-E6
-  conditions_per_surface: 3
-  weights:              # hybrid score S = w_s*cos + w_m*Smass + w_r*Srough + w_a*Scontact
+  conditions_per_surface: 3  # total cap including the baseline condition
+  weights:              # available hybrid terms; each experiment declares its ranking subset
     semantic: 0.40
     mass: 0.25
     roughness: 0.20
-    contact: 0.15
+    contact: 0.15       # retained for configurable retrieval; E6 surface ranking excludes it
   sigma_mass: 0.7       # scale for exp(-|log m_q - log m_i| / sigma) ; log-grams
   sigma_contact: 0.25   # scale for exp(-|a_q - a_i| / sigma)
   embedding:

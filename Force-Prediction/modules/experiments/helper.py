@@ -25,6 +25,8 @@ from ..prediction import (
 )
 from ..retrieval import (
     ExperienceIndex,
+    MeasurementField,
+    RankingFeature,
     RetrievalMode,
     RetrievedObjectExperience,
     get_embedding_provider,
@@ -43,6 +45,8 @@ class ExperimentSpec:
     uses_projected_contact: bool = False
     roughness_representation: Literal["continuous", "binary"] | None = None
     retrieval_mode: RetrievalMode | None = None
+    ranking_features: tuple[RankingFeature, ...] = ()
+    visible_condition_fields: tuple[MeasurementField, ...] = ()
 
     def scoped_config(self, cfg: Config) -> Config:
         """Return a config whose optional inputs exactly match this ablation."""
@@ -84,6 +88,9 @@ class PipelineRunResult:
     active_grippers: tuple[str, ...] = ("gecko", "silicone")
     generation_mode: Literal["single", "joint"] = "joint"
     retrieval_mode: str | None = None
+    ranking_features: tuple[RankingFeature, ...] = ()
+    visible_condition_fields: tuple[MeasurementField, ...] = ()
+    condition_policy: str | None = None
     effective_inputs: tuple[str, ...] = ()
     object_id: str = ""
     surface_id: str | None = None
@@ -178,6 +185,8 @@ class ExperimentStrategy(ABC):
                 include_measured=include_measured,
                 include_retrieval=include_retrieval,
                 retrieval_mode=self.spec.retrieval_mode,
+                ranking_features=self.spec.ranking_features,
+                visible_condition_fields=self.spec.visible_condition_fields,
             )
             return select({gripper: prediction})
 
@@ -190,6 +199,8 @@ class ExperimentStrategy(ABC):
             include_measured=include_measured,
             include_retrieval=include_retrieval,
             retrieval_mode=self.spec.retrieval_mode,
+            ranking_features=self.spec.ranking_features,
+            visible_condition_fields=self.spec.visible_condition_fields,
         )
         return select(
             predictions_from_joint(response),
@@ -229,6 +240,13 @@ class ExperimentStrategy(ABC):
             ),
             retrieval_mode=(
                 self.spec.retrieval_mode.value if self.spec.retrieval_mode else None
+            ),
+            ranking_features=self.spec.ranking_features,
+            visible_condition_fields=self.spec.visible_condition_fields,
+            condition_policy=(
+                "baseline_plus_visible_controlled_variants"
+                if self.spec.visible_condition_fields
+                else None
             ),
             effective_inputs=effective_inputs,
             object_id=query.object_id if query is not None else "",
@@ -297,6 +315,8 @@ class RetrievalVLMExperiment(ExperimentStrategy):
             self.index.embed_query(query),
             exclude_object_id=query_input.object_id,
             mode=self.retrieval_mode,
+            ranking_features=self.spec.ranking_features or None,
+            visible_condition_fields=self.spec.visible_condition_fields or None,
         )
         selection = self._predict_and_select(
             query,

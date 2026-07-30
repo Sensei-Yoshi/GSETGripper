@@ -21,7 +21,7 @@ from .storage import (
 class DatasetObjectEdit(BaseModel):
     """Nullable measurements and partial outcome labels for one dataset object."""
 
-    split: Literal["train", "test"] | None = None
+    split: Literal["train", "test", "surface_validation"] | None = None
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)

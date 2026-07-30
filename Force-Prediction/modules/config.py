@@ -127,7 +127,7 @@ class EmbeddingConfig(BaseModel):
 
 class RetrievalConfig(BaseModel):
     k: int = Field(gt=0)
-    conditions_per_surface: int = Field(default=3, gt=0)
+    conditions_per_surface: int = Field(default=3, gt=0, le=3)
     weights: RetrievalWeights
     sigma_mass: float = Field(gt=0)
     sigma_contact: float = Field(gt=0)
@@ -208,7 +208,7 @@ class ExperimentMethod(StrEnum):
 
 
 EXPERIMENT_IDS = ("e1", "e2", "e3", "e4", "e5", "e6")
-EXPERIMENT_DEFINITION_VERSION = 10
+EXPERIMENT_DEFINITION_VERSION = 11
 
 
 class ExperimentConfig(BaseModel):
