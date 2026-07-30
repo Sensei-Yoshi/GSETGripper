@@ -8,22 +8,20 @@
   "image_sha256": "a5eac8097cdb990fbd90aefcfab2ec62e93cc4c9a1e36fb8c2437a988b2edf82",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Rigid plastic compartment box containing metal hardware. The intended contact region is clean, smooth, and flat with vertical sidewalls and corners.",
-    "contact_region": "The lateral vertical exterior walls of the plastic organizer box.",
-    "contact_material": "Plastic",
-    "visible_surface_material": "Plastic",
-    "visible_surface_condition": "Clean, dry, and smooth",
-    "local_geometry": "Flat vertical planar surfaces meeting at 90-degree corners with horizontal lid closure seams near the top edge",
-    "contact_patch_visibility": "Clearly visible on the exterior side walls",
-    "uncertainty": "The exact internal contents are visible through the transparent walls, but the primary contact regions on the outer plastic housing are clearly defined."
+    "retrieval_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+    "contact_material": "plastic",
+    "visible_surface_material": "plastic",
+    "visible_surface_condition": "clean and dry",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:09:00.231101+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "5f205da6ffc39ce64e304d8d7dda17c49e580a953978daa09bb81c4b3dd3ff32",
+  "embedding_cache_key": "13454b3b2c6efce8d6ec48490dfc8bb251c99f2437767935f2b80ce5ae5dfa16",
+  "embedding_sha256": "6c764499f48c07aa7991b0e037c6e500d4d7666e5de8f5200434a9531f0711ff",
+  "updated_at": "2026-07-30T00:42:56.554278+00:00"
 }

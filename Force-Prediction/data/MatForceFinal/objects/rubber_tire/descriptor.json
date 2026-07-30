@@ -8,22 +8,20 @@
   "image_sha256": "d93e441a8b7143b34585b84fc5b1aee16e73c7e618835fccff12df73baea333c",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Black rubber toroidal tire object with a smooth, dry, nonporous outer sidewall and continuous circular curvature. The intended contact region has no visible seams or texture interruptions.",
-    "contact_region": "outer lateral cylindrical band of the tire",
-    "contact_material": "rubber",
-    "visible_surface_material": "rubber",
-    "visible_surface_condition": "clean, dry, matte",
-    "local_geometry": "convex curved cylindrical band with continuous circular geometry",
-    "contact_patch_visibility": "fully visible on lateral surfaces",
-    "uncertainty": "none regarding visible lateral surfaces"
+    "retrieval_description": "Clean, dry elastomeric polymer contact surface with a smooth matte finish and no visible contamination.",
+    "contact_material": "Elastomeric polymer",
+    "visible_surface_material": "Elastomeric polymer substrate",
+    "visible_surface_condition": "Clean, dry, and matte",
+    "contact_patch_visibility": "Clearly visible and unobstructed",
+    "uncertainty": "None"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:05:36.236298+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "900e9ffe7538961ca858de41cadc658120f7d13be1b8f5474f573ca87c548a79",
+  "embedding_cache_key": "c8ba5042d25ff6a49f753f44c837f951e5c984c1f0f6719e2805675aacb861dd",
+  "embedding_sha256": "ae63a7523990b43ae436281a3c33d7a2bc75fc5d745359c8df2505104e29e5d5",
+  "updated_at": "2026-07-30T00:42:51.381436+00:00"
 }

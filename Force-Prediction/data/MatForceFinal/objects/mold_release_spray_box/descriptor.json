@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "mold_release_spray_box",
   "object_name": "Mold Release Spray Box",
@@ -8,23 +8,20 @@
   "image_sha256": "10cd9349430ae72aac6bcf9805e3fa6cb6608ebd98650ed5522f9f6b31cf9a4f",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Cardboard packaging box with a rectangular prism shape and smooth, dry paper surfaces. The intended contact region is clean, flat, and features vertical corner edges.",
-    "contact_region": "Opposing lateral flat sides of the rectangular box",
-    "contact_material": "Paperboard",
-    "visible_surface_material": "Paperboard with printed finish",
-    "visible_surface_condition": "Clean, dry, and intact",
-    "local_geometry": "Flat faces meeting at vertical 90-degree corner edges",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "None"
+    "retrieval_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+    "contact_material": "paperboard with printed coating",
+    "visible_surface_material": "paperboard with smooth printed coating",
+    "visible_surface_condition": "clean, dry, and smooth",
+    "contact_patch_visibility": "clearly visible",
+    "uncertainty": "none"
   },
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "00b146022ff5a05d201b83b02d79132117205bf82a453ec77e44430ff2eedb31",
-  "embedding_cache_key": "f12c232ac744ade91f761a37699691b527e7f575446c72961dd71e0f35273493",
-  "embedding_sha256": "7c3c8a817a77c463d654b969653095154732cefd3fd7800c69c754c5e2d9bc57",
-  "updated_at": "2026-07-29T16:49:34.811768+00:00"
+  "embedding_descriptor_sha256": "7c31ff99dd643d19cd28032a8711ddd141652a65489ff7fcea29bfd937920728",
+  "embedding_cache_key": "926c5e62046e27368a6ca7c08b6a98f1c8caf0b1651b9619425afbf0b1218c82",
+  "embedding_sha256": "eeecf9bd3c2e2023156898c6292cbafffc227a8ec5526b6f22c962a53ff9774e",
+  "updated_at": "2026-07-30T00:42:56.939456+00:00"
 }

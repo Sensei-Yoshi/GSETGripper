@@ -8,22 +8,20 @@
   "image_sha256": "e9031c9f7fb951a541b207918db9134e0a25d1fc6f641b86188b5813a708a808",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Soft fabric storage pouch with a flexible textile exterior. The intended contact region is clean and dry, featuring broad continuous sidewalls with rounded corners and a central perimeter zipper seam.",
-    "contact_region": "Opposing lateral sidewalls of the fabric pouch",
-    "contact_material": "Woven textile fabric",
-    "visible_surface_material": "Woven textile fabric",
-    "visible_surface_condition": "Clean and dry",
-    "local_geometry": "Flat to slightly convex flexible panels with rounded vertical corners and a horizontal zipper running along the middle perimeter",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "Internal contents and firmness of the pouch are not visible, but the exterior contact surfaces are clearly observable."
+    "retrieval_description": "Dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+    "contact_material": "woven textile",
+    "visible_surface_material": "woven textile",
+    "visible_surface_condition": "clean, dry, and compliant",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:06:10.435284+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "880123ce3c96d8bceff3a23b48b4d975a987a8b14672cd0be0d65c7141294f4e",
+  "embedding_cache_key": "2ee55d94e94be8472f70c3d270c571b468eacbea6f2e797dc16a26728c21a496",
+  "embedding_sha256": "5addebb4d3896b8ae43a838c6904f0353c42356969941cd52b44876bd4912af8",
+  "updated_at": "2026-07-30T00:42:52.152309+00:00"
 }

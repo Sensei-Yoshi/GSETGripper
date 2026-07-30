@@ -8,22 +8,20 @@
   "image_sha256": "dba59204eef67e1a250f5319392962716623eb332020379f007b0bce29766f36",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Metallic combination padlock with a smooth, dry, curved metallic housing body. The intended contact region is clean with continuous curvature across the lateral faces.",
-    "contact_region": "Lateral opposing sides of the lock body housing",
-    "contact_material": "Metal substrate",
-    "visible_surface_material": "Metal substrate",
-    "visible_surface_condition": "Clean and dry",
-    "local_geometry": "Smooth, rounded cylindrical curvature with a flat face and a dial interruption on the front",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The rear surface of the lock body is not visible, but the lateral sides are clearly presented."
+    "retrieval_description": "Clean, dry metal contact surface with a smooth nonporous metallic finish and no visible coating or contamination.",
+    "contact_material": "metal",
+    "visible_surface_material": "metal",
+    "visible_surface_condition": "clean and dry",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:04:57.101690+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "3218575bee0aa6b2cb6cec46056782a4c601cc9987065d24d490e549e18cd92a",
+  "embedding_cache_key": "0a9c466f45403c61d26a4cf8f321390d554ea7f168b991723d83289a63a24e50",
+  "embedding_sha256": "0f4353cc6d4c8138162f5a99af1b162a8916cd75f98fcddb30e2f533b05bfc15",
+  "updated_at": "2026-07-30T00:42:50.625556+00:00"
 }

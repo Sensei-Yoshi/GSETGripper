@@ -8,22 +8,20 @@
   "image_sha256": "e5ead1aebd4881827ace29423575209f8859c3278ee51421b3d9eff73e22865e",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Spherical citrus fruit with a textured, porous peel and rounded curvature. The intended contact region is clean and dry, featuring natural pebbled texture.",
-    "contact_region": "Lateral opposing sides of the spherical fruit within the centered grasp band",
-    "contact_material": "Citrus peel substrate",
-    "visible_surface_material": "Citrus peel",
-    "visible_surface_condition": "Clean, dry, and textured with natural oil glands",
-    "local_geometry": "Convex, approximately spherical curvature with a finely textured, pebbled surface without sharp edges or seams",
-    "contact_patch_visibility": "Clearly visible on the exposed lateral surfaces facing the camera viewpoint",
-    "uncertainty": "The exact tactile compliance of the interior and the precise friction coefficient under load cannot be determined purely from visual evidence."
+    "retrieval_description": "Clean, dry organic peel contact surface with a textured, pebbled natural finish and no visible moisture or loose debris.",
+    "contact_material": "organic peel",
+    "visible_surface_material": "organic rind",
+    "visible_surface_condition": "clean, dry, textured, pebbled natural finish",
+    "contact_patch_visibility": "fully visible contact surface properties",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:06:51.908933+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "544778abfce7f2f5cdc5b9488d654671805a10f24d583fbb0765b3986adb75cb",
+  "embedding_cache_key": "d49d7a09062d64e120d80fe438ae3f8558ff2742a8810d4592bd62e1dff00966",
+  "embedding_sha256": "47c5bb2004145b01e88b64064f448b23aeb9fb4f703ba5435141bc6fac7c871e",
+  "updated_at": "2026-07-30T00:42:53.134113+00:00"
 }

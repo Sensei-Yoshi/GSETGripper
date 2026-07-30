@@ -7,7 +7,7 @@ import numpy as np
 import streamlit as st
 
 from modules.config import EXPERIMENT_IDS, Config
-from modules.contracts import group_by_object
+from modules.contracts import ExperienceRecord, group_by_object
 from modules.experiments import EXPERIMENT_CATALOG, experiment_eligibility
 from modules.expforce import (
     load_experience_pool,
@@ -58,6 +58,26 @@ def _decode_upload(uploaded) -> np.ndarray | None:  # noqa: ANN001
 
 def _rgb(image_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
+
+
+def _single_run_training_records(
+    records: list[ExperienceRecord],
+    *,
+    experiment: str,
+    query_object_id: str,
+    query_surface_id: str | None,
+    reference_ids: tuple[str, ...],
+) -> list[ExperienceRecord]:
+    """Build the fold-local pool without exposing held-out or sibling truth."""
+    if experiment not in {"e3", "e4"}:
+        return [record for record in records if record.object_id != query_object_id]
+
+    allowed = set(reference_ids)
+    return [
+        record
+        for record in records
+        if record.object_id in allowed and record.surface_id != query_surface_id
+    ]
 
 
 def render(context: AppContext) -> None:
@@ -243,15 +263,13 @@ def render(context: AppContext) -> None:
                 )
             )
         )
-        training = [
-            record
-            for record in records
-            if record.object_id != object_id
-            and (
-                experiment not in {"e3", "e4"}
-                or record.object_id in eligibility.reference_ids
-            )
-        ]
+        training = _single_run_training_records(
+            records,
+            experiment=experiment,
+            query_object_id=object_id,
+            query_surface_id=dataset_object.surface_id,
+            reference_ids=eligibility.reference_ids,
+        )
         prepared_text = (
             dataset_object.description.value.description
             if dataset_object.description is not None
@@ -279,17 +297,7 @@ def render(context: AppContext) -> None:
             )
             baseline = None
             if counterfactual and object_id in eligibility.query_ids:
-                baseline_pipe = Pipeline(cfg, experiment).fit(
-                    [
-                        record
-                        for record in records
-                        if record.object_id != object_id
-                        and (
-                            experiment not in {"e3", "e4"}
-                            or record.object_id in eligibility.reference_ids
-                        )
-                    ]
-                )
+                baseline_pipe = Pipeline(cfg, experiment).fit(training)
                 baseline = baseline_pipe.predict_detailed(
                     QueryInput(
                         object_id=object_id,

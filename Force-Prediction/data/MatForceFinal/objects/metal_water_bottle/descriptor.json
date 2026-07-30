@@ -8,22 +8,20 @@
   "image_sha256": "1cf02a96c1416fbd38454ada8795ea269fc5501af3da728649a3a46c2de7a3c7",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Blue coated metal water bottle with a cylindrical and slightly tapered body. The intended contact region is clean, dry, nonporous, and features continuous smooth curvature along the lateral surfaces.",
-    "contact_region": "Lateral cylindrical surface of the bottle body",
-    "contact_material": "Coated metal substrate",
-    "visible_surface_material": "Painted or powder-coated metal",
-    "visible_surface_condition": "Clean, dry, and smooth",
-    "local_geometry": "Cylindrical with continuous smooth curvature",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "None; the surface condition and geometry are clearly observable from the image."
+    "retrieval_description": "Clean, dry metal substrate with a fine textured matte painted coating and no visible contamination.",
+    "contact_material": "matte painted metal",
+    "visible_surface_material": "metal with matte painted coating",
+    "visible_surface_condition": "clean, dry, fine-textured matte finish",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:05:43.256531+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "252c34eef3917f85294ddb4053924990b87c94a1f04e76fa2476c45f87ed2d64",
+  "embedding_cache_key": "d74ff55e1cff4501e11ebb62f199dc68b98e3747d00be5315a175890c23aa435",
+  "embedding_sha256": "74760a6e024949dc035ea6fec9b5bed072dbaf6e1e7bbce2448ed45f3b81651c",
+  "updated_at": "2026-07-30T00:42:51.574968+00:00"
 }

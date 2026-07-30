@@ -8,22 +8,20 @@
   "image_sha256": "2ba3f688e7dd93c78c342b99b155b82f0c3bc23ab61c79f6f3ff1a839d0c5d49",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Black rectangular metallic enclosure with a smooth, dry, coated surface and planar sides. The intended contact region is clean and flat with no interruptions.",
-    "contact_region": "Opposing lateral flat sides of the enclosure",
-    "contact_material": "Painted metal enclosure substrate",
-    "visible_surface_material": "Coated metal",
-    "visible_surface_condition": "Clean, dry, and matte",
-    "local_geometry": "Flat planar surfaces meeting at distinct vertical corner edges",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The exact texture and friction coefficient of the coating cannot be fully determined from visual inspection alone."
+    "retrieval_description": "Clean, dry metal contact surface with a smooth painted finish and no visible contamination.",
+    "contact_material": "metal",
+    "visible_surface_material": "metal substrate with a painted coating",
+    "visible_surface_condition": "clean, dry, and smooth with minor wear",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:05:59.128710+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "f7bd592606e0a7733d9bca7a5b42c30116cfb154dc5fb6e78586a6adb21a4822",
+  "embedding_cache_key": "1636d59d2b8138468add1e19529b2a47d6458de1aed69a3b55abdf2a73ce57b6",
+  "embedding_sha256": "1e8a95ebecb1539491e268b0c20d93d19de0a2dcbbc7b7c6d92135c09ce66c84",
+  "updated_at": "2026-07-30T00:42:51.974773+00:00"
 }

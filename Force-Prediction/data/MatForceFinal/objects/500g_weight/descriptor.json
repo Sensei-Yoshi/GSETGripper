@@ -8,22 +8,20 @@
   "image_sha256": "1639f58fa8e9357efa86f3207028c03baaca8716f1d46e83337fb13d3f3c448d",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Black cylindrical rubber object with a smooth, dry lateral sidewall and continuous curvature. The intended contact region has no visible seams or interruptions, though minor manufacturing ridges may be present.",
-    "contact_region": "The lateral curved surface of the cylindrical body where opposing fingers would engage.",
-    "contact_material": "Rubber",
-    "visible_surface_material": "Rubber",
-    "visible_surface_condition": "clean, dry",
-    "local_geometry": "cylindrical curvature with continuous smooth area",
-    "contact_patch_visibility": "clearly visible",
-    "uncertainty": "Lighting and resolution prevent detailed micro-texture inspection, but overall geometry and surface material are clear."
+    "retrieval_description": "Clean, dry polymeric contact surface with a smooth nonporous finish and no visible coating or contamination.",
+    "contact_material": "polymer",
+    "visible_surface_material": "polymer",
+    "visible_surface_condition": "clean, dry, smooth",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:05:06.725507+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "37e2fb3acdfcb7c2cf850eafd6df7ec7a39b89a3fe04454a9ff4a52750c904bb",
+  "embedding_cache_key": "323949e4956f8fd07d343443241f8c0651aad6106e1016e1072a2e191c888065",
+  "embedding_sha256": "3a934174e58d4bb9f6b920867b72777429c14a0e183a84bcc931185d371de763",
+  "updated_at": "2026-07-30T00:42:50.816400+00:00"
 }

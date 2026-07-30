@@ -1,24 +1,46 @@
 prompts:
-  descriptor_system: 'You create contact-region records for a robotic grasp-experience
-    retrieval system.
+  descriptor_system: 'You create material-interface records for a robotic grasp-experience
+    retrieval
 
-    Analyze only visible evidence in the supplied object image. The robot uses two
-
-    opposing compliant fingers at a fixed, centered grasp band around the object''s
-
-    lateral surfaces. Focus on the surface patches those pads are most likely to touch.
+    system.
 
 
-    The record will be converted into a text embedding and used to retrieve objects
+    The photographed object surface is deliberately positioned so that the visible
 
-    with similar pad-to-object interfaces. Describe discriminating contact evidence;
+    primary surface is the exact surface contacted by the gripper pads. Treat this
 
-    do not recommend a gripper, predict force, infer a force label, or restate measured
+    dataset convention as authoritative and analyze only visible evidence from that
 
-    mass, measured roughness index, or projected contact fraction. If the likely contact
-    patch
+    surface. Do not infer a different grasp pose or contact region.
 
-    is hidden or ambiguous, say so rather than inventing material or condition.
+
+    The retrieval_description will be converted into a text embedding and used to
+
+    retrieve surfaces with similar pad-to-material interfaces. Keep it concise and
+
+    discriminating.
+
+
+    Describe only properties of the material that actually touches the pads: the
+
+    substrate; any coating, label, wrapper, sleeve, or finish covering it; relevant
+
+    visible texture, porosity, or apparent compliance; and visible condition such
+    as
+
+    clean, dry, dusty, wet, oily, worn, or unknown. If the material, coating, or
+
+    condition is ambiguous, state that uncertainty rather than inventing it.
+
+
+    Do not mention object identity, branding, color, size, shape, pose, grasp
+
+    orientation, curvature, contact region, local geometry, edges, openings, or overall
+
+    surface area. Do not recommend a gripper, predict force, infer a force label,
+    or
+
+    restate measured mass, measured roughness index, or projected contact fraction.
 
     '
   prediction_system: "You are a robotics model for grasp-material selection and pre-grasp\
@@ -63,24 +85,25 @@ prompts:
     \ are requested,\ncomparison_evidence and recommendation_summary must explain\
     \ the decisive comparison.\nDo not return an unsupported number or omit\nevidence\
     \ merely to keep the answer short.\n"
-  descriptor: "Inspect the likely opposing finger-contact patches in the centered\
-    \ grasp band.\nReturn the requested structured JSON with:\n- the likely contact\
-    \ region and whether it is clearly visible;\n- the material actually touching\
-    \ the pads, distinguishing substrate from a\n  label, wrapper, coating, sleeve,\
-    \ or exposed contents;\n- visible condition such as clean, dry, dusty, wet, oily,\
-    \ worn, or unknown;\n- local geometry, including curvature, broad continuous area,\
-    \ seams, ridges,\n  edges, lobes, or other interruptions;\n- an uncertainty statement\
-    \ grounded in what the image does or does not show;\n- a concise retrieval_description\
-    \ containing the most discriminating\n  pad-to-object interface evidence in 1-2\
-    \ sentences. Roughly follow this template: [Material/object form]. The intended\
-    \ contact region is [surface condition], [geometry], and [other relevant properties].\n\
-    \nGood retrieval_description examples:\n1. \"Transparent cylindrical glass object\
-    \ with a smooth, dry, nonporous sidewall and continuous curvature. The intended\
-    \ contact region has no visible seams, texture, or contamination.\"\n2. \"Small\
-    \ curved snack chip with a porous, visibly textured surface and a thin, brittle\
-    \ structure. Its irregular geometry provides only a small, uneven contact region.\"\
-    \n\nDo not\nchoose gecko or silicone and do not estimate force. Return only JSON\
-    \ matching\nthe supplied schema.\n"
+  descriptor: "Inspect the photographed pad-contact surface and return the requested\
+    \ structured\nJSON with:\n- the material actually touching the pads, distinguishing\
+    \ the substrate from any\n  label, wrapper, coating, sleeve, finish, or exposed\
+    \ contents;\n- the visible material and surface condition;\n- whether the material\
+    \ properties are clearly visible;\n- uncertainty limited to material, coating,\
+    \ finish, or condition identification;\n- a single concise retrieval_description\
+    \ sentence containing only the most\n  discriminating pad-to-material interface\
+    \ properties.\n\nUse this retrieval_description format:\n\"[Contact material or\
+    \ substrate] with [coating or finish if present] and [visible\nmaterial condition\
+    \ or interface property].\"\n\nGood retrieval_description examples:\n1. \"Clean,\
+    \ dry glass contact surface with a smooth nonporous finish and no visible\n  \
+    \ coating or contamination.\"\n2. \"Dry woven textile contact surface with a compliant\
+    \ fibrous texture and no\n   visible moisture or loose debris.\"\n3. \"Clean,\
+    \ dry paperboard contact surface with a thin matte printed coating over a\n  \
+    \ rigid fibrous substrate.\"\n\nDo not mention the object name or type, branding,\
+    \ color, shape, size, curvature,\npose, grasp orientation, contact region, local\
+    \ geometry, edges, openings, contact\narea, mass, measured roughness, or projected\
+    \ contact fraction. Do not choose gecko\nor silicone and do not estimate force.\
+    \ Return only JSON matching the supplied\nschema.\n"
   experiments:
     e1: 'E1 ZERO-SHOT VISION-ONLY CONDITION.
 

@@ -8,22 +8,20 @@
   "image_sha256": "cc2495f588d78fa8bf1620287b12a82b53cd751d6ec12d571969a596222d5c2c",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Elongated rectangular yellow elastomer-coated electronic instrument. The intended contact region is dry, slightly scuffed, flat sides with rounded longitudinal edges.",
-    "contact_region": "Lateral opposing side surfaces of the handheld housing",
-    "contact_material": "Elastomeric protective holster sleeve",
-    "visible_surface_material": "Elastomer / rubber",
-    "visible_surface_condition": "Dry, slightly scuffed and dusty",
-    "local_geometry": "Flat rectangular surfaces with smooth rounded longitudinal edges and slight surface texture",
-    "contact_patch_visibility": "Clearly visible on both lateral flanks",
-    "uncertainty": "The rear face is partially obscured by the prop stand, but the lateral gripping bands are fully visible."
+    "retrieval_description": "Dry elastomeric polymer contact surface with a smooth matte finish and minor surface dust.",
+    "contact_material": "elastomeric polymer",
+    "visible_surface_material": "elastomeric polymer",
+    "visible_surface_condition": "dry, dusty, and matte",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "exact polymer composition is unknown"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:08:04.743891+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "f374939575ae4cdb76908ffb6aefd07f8b45407d8d4b61aa9965ec71e4a46a5e",
+  "embedding_cache_key": "8497227084195895bdb170c6495d5a1b207eb7e0e1c366f931c88802bc1d09d6",
+  "embedding_sha256": "64e8952cc5b4b00c73977693980dbf4ed4910650374f80e4e9c996661fe0d14a",
+  "updated_at": "2026-07-30T00:42:54.416019+00:00"
 }

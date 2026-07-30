@@ -8,22 +8,20 @@
   "image_sha256": "b9e7516ce2391cb4b436a1308b994a5129b86c683bb8ebd8d7d08389b0cc8da5",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Flexible dark fabric pouch with a smooth, dry textile surface and low-profile rectangular form. The intended contact region is clean, flat, and soft with gently rounded edges.",
-    "contact_region": "Lateral opposing faces of the fabric pouch",
-    "contact_material": "Woven fabric",
-    "visible_surface_material": "Woven fabric",
-    "visible_surface_condition": "Clean and dry",
-    "local_geometry": "Flat, soft, rectangular panels with rounded edges and minor thickness",
-    "contact_patch_visibility": "Clearly visible on both sides",
-    "uncertainty": "The internal contents and rigidity of the pouch are not fully visible, though the exterior surface and tactile nature are clear."
+    "retrieval_description": "Clean, dry woven fabric contact surface with a textured synthetic weave and no visible moisture or loose debris.",
+    "contact_material": "synthetic woven fabric",
+    "visible_surface_material": "synthetic woven textile substrate",
+    "visible_surface_condition": "clean, dry, and undamaged with a textured weave finish",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:07:24.677900+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "a217bd3f022894f823d59986559b821b339a4291e6b5d084fefec55e50c170f9",
+  "embedding_cache_key": "a7010d74ab7670dd17de9cae3ce5d5f20903d1222c71af72472fab36e9ca5b1f",
+  "embedding_sha256": "a9324a0a4140c17789101cb37ff7abcb817d5bd8adbe9a9693b5c73bf64312e0",
+  "updated_at": "2026-07-30T00:42:53.704261+00:00"
 }

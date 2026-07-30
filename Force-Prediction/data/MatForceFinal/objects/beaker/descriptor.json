@@ -8,22 +8,20 @@
   "image_sha256": "269d295738f62559b09b6a9af1c8d9d4747bf977d800a676f054aafbcb579124",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Transparent cylindrical glass beaker with a smooth, dry, nonporous sidewall and continuous curvature. The intended contact region has no visible contamination, featuring smooth glass surfaces with printed measurement markings.",
-    "contact_region": "Lateral sidewalls of the glass beaker within the centered grasp band",
-    "contact_material": "Glass substrate with printed white measurement markings",
-    "visible_surface_material": "Glass",
-    "visible_surface_condition": "Clean, dry, and smooth",
-    "local_geometry": "Cylindrical with continuous outward curvature and smooth continuous area",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "None regarding the visible surface material and geometry; minor uncertainty regarding whether the grasp pads will intersect the printed graduation markings."
+    "retrieval_description": "Clean, dry glass contact surface with a smooth nonporous finish and printed markings.",
+    "contact_material": "glass",
+    "visible_surface_material": "glass with printed ceramic markings",
+    "visible_surface_condition": "clean and dry",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:04:56.617993+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "41eb1e66495e610f44b84b7a447e0a36e69345c372349f490e3449d979fafc63",
+  "embedding_cache_key": "9e97deb2423b6a21e90e159bbcb50793b077b9dd2fd93f5b6678f926c491061e",
+  "embedding_sha256": "39ba0baf1af2657511e85d07bccdb35a5d61260fb1f446fabb0c021cae60d12e",
+  "updated_at": "2026-07-30T00:42:50.421992+00:00"
 }

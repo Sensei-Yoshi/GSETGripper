@@ -8,22 +8,20 @@
   "image_sha256": "1daffe4c99f7e2df1896d5aed3faf4e1686b2edf11db45f70d88decdd3a07cc1",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Curved organic banana object with a smooth, dry peel and longitudinal facets. The intended contact region has slight bruising and smooth curved geometry.",
-    "contact_region": "Lateral surfaces of the banana body in the centered grasp band",
-    "contact_material": "Banana peel",
-    "visible_surface_material": "Banana peel",
-    "visible_surface_condition": "Dry with minor bruising and dark spots",
-    "local_geometry": "Curved profile with subtle longitudinal ridges",
-    "contact_patch_visibility": "Clearly visible on the upper and front-facing lateral sides",
-    "uncertainty": "The underside resting against the surface is occluded, but the lateral grasping band is fully visible."
+    "retrieval_description": "Smooth organic peel contact surface with a slightly waxy finish and a dry, bruised interface condition.",
+    "contact_material": "organic peel",
+    "visible_surface_material": "organic peel with waxy finish",
+    "visible_surface_condition": "dry, bruised, smooth",
+    "contact_patch_visibility": "clearly visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:05:26.104223+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "04fc195b7d2f29522e161397cdbcac22bb3de8b85b66b7d1ce0b6dd382e2afd5",
+  "embedding_cache_key": "2634d3dfd7f2c2c1bfc5b1938789f1a7aa930c43c2ce0b020270e1bf77ee2603",
+  "embedding_sha256": "34a4b654bdf3ff1e0963f98d2575ce9529fcf402617c947f2c5de035a29b617f",
+  "updated_at": "2026-07-30T00:42:51.186647+00:00"
 }

@@ -124,7 +124,9 @@ def experiment_eligibility(
         sorted(
             item.object_id
             for item in dataset.objects.values()
-            if experiment in {"e3", "e4"} and _reference_ready(item, cfg, experiment)
+            if experiment in {"e3", "e4"}
+            and item.split == "train"
+            and _reference_ready(item, cfg, experiment)
         )
     )
     skipped_queries: dict[str, tuple[str, ...]] = {}
@@ -134,7 +136,8 @@ def experiment_eligibility(
     for item in dataset.objects.values():
         reasons = _input_reasons(item, cfg, experiment)
         if experiment in {"e3", "e4"} and not any(
-            reference_id != item.object_id for reference_id in reference_ids
+            dataset.objects[reference_id].surface_id != item.surface_id
+            for reference_id in reference_ids
         ):
             reasons.append("no eligible reference object remains after query exclusion")
         if reasons:

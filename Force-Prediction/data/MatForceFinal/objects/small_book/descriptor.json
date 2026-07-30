@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "small_book",
   "object_name": "Small Book",
@@ -8,23 +8,20 @@
   "image_sha256": "62f5a0b4483b8c9ab4edf1686f4a58d751271084aa481e0238193415e751625c",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Small rectangular wooden and leather-bound object with a dry, textured surface and flat lateral sides. The intended contact region has vertical planar geometry with slight edge bevels and no major obstructions.",
-    "contact_region": "The lateral vertical sides of the small book-like object, specifically the leather-covered edges and spine/pages area.",
-    "contact_material": "Leather and paper",
-    "visible_surface_material": "Wood, leather, and fabric thread",
-    "visible_surface_condition": "Clean and dry",
-    "local_geometry": "Flat planar vertical surfaces with slight rounded edges and textured binding seams",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The exact frictional properties of the leather and spine region cannot be precisely determined from visual evidence alone."
+    "retrieval_description": "Clean, dry leather contact surface with a textured embossed finish over a rigid substrate and no visible moisture or loose debris.",
+    "contact_material": "leather",
+    "visible_surface_material": "leather over a rigid substrate",
+    "visible_surface_condition": "clean, dry, textured with embossed details",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "c4c278894c931807cfc9bb45d681f27826b7c6bf5471705a3aecaf8723900e4b",
-  "embedding_cache_key": "21dbaef7e8641b52661ae3e2739d6b9bcfe02c9e82bcc8d7aa94d2312213e1af",
-  "embedding_sha256": "2ccbf7f1b40bfbed3fb54dbe59cc130e3383b8bd2f0aab6b896019ce27e8ac27",
-  "updated_at": "2026-07-29T16:49:33.015752+00:00"
+  "embedding_descriptor_sha256": "ba849e48f82cece0b853e085031d8bdb198a9fb657e471ff0c22d1f375de0a67",
+  "embedding_cache_key": "9896bc8d79a4671528aaeeee649b8bb51e318c1446bf1a0574f4fe70f45e31bf",
+  "embedding_sha256": "75895a7093cd1d2f1b2e5a9642adcee59bf7141aff63d258cbe5ecdfc26985b2",
+  "updated_at": "2026-07-30T00:42:55.701717+00:00"
 }

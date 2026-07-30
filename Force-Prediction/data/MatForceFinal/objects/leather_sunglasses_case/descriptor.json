@@ -8,22 +8,20 @@
   "image_sha256": "0f7ba0550072047063290db2ebb1ddecd6a7a21cb05ac158813a40368cb77dd3",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Black textured synthetic leather glasses case with a firm, semi-rigid structure. The intended contact region is clean and dry with gently curved lateral side panels, presenting a consistent pebbled texture without obstructing closures or seams.",
-    "contact_region": "Lateral side panels of the glasses case",
-    "contact_material": "Synthetic leather exterior coating",
-    "visible_surface_material": "Synthetic leather",
-    "visible_surface_condition": "Clean and dry with a textured pebbled finish",
-    "local_geometry": "Gently convex, smooth curvature along the lateral walls tapering toward the ends",
-    "contact_patch_visibility": "Clearly visible on the front-facing and top-facing lateral surfaces",
-    "uncertainty": "The exact internal rigidity and backing material beneath the synthetic leather coating cannot be directly verified from visual evidence alone."
+    "retrieval_description": "Synthetic leather contact surface with a textured pebbled finish and no visible moisture or contamination.",
+    "contact_material": "synthetic leather",
+    "visible_surface_material": "synthetic leather with textured pebbled finish",
+    "visible_surface_condition": "clean, dry, and undamaged",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:05:52.161511+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "358a2d16b1b13725c802650b0e9d4e1973ebfdc6945225172e610355421f5450",
+  "embedding_cache_key": "98efd0ba458f4ba54c01e34cdcc291748a092848f8526f9f8d6545569cab6aad",
+  "embedding_sha256": "cfc93aeb23cfdb61f83b2b4da740e444f43fa0adf7495183cfb0c9164ee1822c",
+  "updated_at": "2026-07-30T00:42:51.763037+00:00"
 }

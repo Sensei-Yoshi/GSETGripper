@@ -8,22 +8,20 @@
   "image_sha256": "8667e7f5baad84d32755941552e96ec97a1c56d0b64c86fa9545eb6670021eb4",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Porous yellow rectangular sponge object. The intended contact region is clean and dry with a flat, compressible profile and textured, absorbent surfaces.",
-    "contact_region": "The opposing lateral side faces of the rectangular sponge, designed for a centered two-finger pinch grasp.",
-    "contact_material": "Cellulose sponge material",
-    "visible_surface_material": "Cellulose sponge material",
-    "visible_surface_condition": "Clean and dry with visible porous texture",
-    "local_geometry": "Flat planar sides meeting at sharp 90-degree edges with a porous, compliant structure",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "None"
+    "retrieval_description": "Clean, dry porous foam contact surface with a highly compliant cellular texture and no visible coating or contamination.",
+    "contact_material": "cellular foam",
+    "visible_surface_material": "porous synthetic foam",
+    "visible_surface_condition": "clean, dry, and highly compliant with open pores",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:08:49.773932+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "84600a93962f3870155ceba4426348e75e36b7863c3738d88abf763f46299cdc",
+  "embedding_cache_key": "ddd816cc2af76da8e57839016171032adee8ee068d33ba50e1ffcf6f3b41e703",
+  "embedding_sha256": "0859079913afeee0d192585f5bc7346da84634bca80c7f9b365e9326578e8427",
+  "updated_at": "2026-07-30T00:42:55.247187+00:00"
 }

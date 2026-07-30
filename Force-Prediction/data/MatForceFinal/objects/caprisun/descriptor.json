@@ -8,22 +8,20 @@
   "image_sha256": "eb48b0254bd89c9684ce36c3d88daf3e6ad76723ffe9f7a0872e6362fa8ff9bd",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Flexible foil drink pouch with a smooth, dry metallic exterior and printed plastic film coating. The intended contact region is clean and pliable, featuring broad flat surfaces with sealed edge ridges.",
-    "contact_region": "The lateral front and back faces of the flexible pouch within the centered grasp band.",
-    "contact_material": "Printed plastic film laminated over aluminum foil substrate.",
-    "visible_surface_material": "Printed plastic film and metallic foil.",
-    "visible_surface_condition": "Clean, dry, and reflective with minor wrinkles.",
-    "local_geometry": "Broad, pliable, slightly bulging flat surfaces transitioning into sealed vertical side fins and horizontal top/bottom seams.",
-    "contact_patch_visibility": "Clearly visible.",
-    "uncertainty": "The internal fluid shifting may alter the exact local contour and pliability under actual clamping forces."
+    "retrieval_description": "Clean, dry flexible foil pouch contact surface with a smooth glossy printed finish over a metallic plastic laminate substrate.",
+    "contact_material": "metallic plastic laminate wrapper",
+    "visible_surface_material": "flexible foil film with printed glossy finish",
+    "visible_surface_condition": "clean, dry, smooth",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:08:12.305308+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "aab05a697961b1b1000e29e2092a9ca5ede96547211010ef0b87dd1c54c3cdec",
+  "embedding_cache_key": "917c73ca3215c936cf592790730208ff3188ce66dc11ad93c0109207934f8690",
+  "embedding_sha256": "96bc9a3d08a3f31c4b5c210870dfe7ca92be2b98c31ece0d08afe6d3a1189dbb",
+  "updated_at": "2026-07-30T00:42:54.566117+00:00"
 }

@@ -471,11 +471,10 @@ def _description_catalog(context: AppContext) -> None:
                 )
                 st.write(descriptor.description)
                 st.markdown(
-                    f"**Contact region:** {descriptor.contact_region}  \n"
                     f"**Contact material:** {descriptor.contact_material}  \n"
                     f"**Surface condition:** "
                     f"{descriptor.visible_surface_condition}  \n"
-                    f"**Local geometry:** {descriptor.local_geometry}  \n"
+                    f"**Material visibility:** {descriptor.contact_patch_visibility}  \n"
                     f"**Uncertainty:** {descriptor.uncertainty}"
                 )
 

@@ -130,6 +130,47 @@ def test_single_gripper_dataset_capabilities_and_eligibility(tmp_path) -> None:
     assert paired.benchmark_ids == ()
 
 
+def test_experiment_references_are_train_only_and_surface_safe(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/SplitReferences/objects"
+    image_bytes = base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    )
+    object_ids = ("shared", "shared__condition_2", "held_out")
+    for object_id in object_ids:
+        image = root / object_id / "image.png"
+        image.parent.mkdir(parents=True)
+        image.write_bytes(image_bytes)
+
+    dataset = get_dataset(cfg, "SplitReferences")
+    for index, object_id in enumerate(object_ids, start=1):
+        dataset = update_dataset_object(
+            cfg,
+            dataset,
+            object_id,
+            DatasetObjectEdit(
+                split="test" if object_id == "held_out" else "train",
+                mass_g=100 + index,
+                roughness_index=2,
+                projected_contact_fraction=0.7,
+                gecko_feasible=True,
+                gecko_force_n=1.0 + index / 10,
+            ),
+        )
+
+    run_cfg = dataset.runtime_config(cfg)
+    run_cfg.prediction.active_grippers = (Gripper.GECKO,)
+    report = experiment_eligibility(dataset, run_cfg, "e4")
+
+    assert report.reference_ids == ("shared", "shared__condition_2")
+    assert report.query_ids == ("held_out",)
+    for object_id in ("shared", "shared__condition_2"):
+        assert report.query_reasons(object_id) == (
+            "no eligible reference object remains after query exclusion",
+        )
+
+
 def test_experiment_eligibility_uses_only_enabled_inputs(tmp_path) -> None:
     cfg = _config_at(tmp_path)
     root = tmp_path / "data/Partial/objects"

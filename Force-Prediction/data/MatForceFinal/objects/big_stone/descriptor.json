@@ -8,22 +8,20 @@
   "image_sha256": "ae1e084bd9f61b939eb095f2255277e4ab6b83ca201e93a8a68d73ea1468ff34",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Rough aggregate concrete fragment with a porous, dry, and heavily textured surface. The intended contact region has irregular edges, fractured faces, and non-uniform geometry.",
-    "contact_region": "Opposing lateral sides of the concrete fragment.",
-    "contact_material": "Concrete substrate",
-    "visible_surface_material": "Concrete",
-    "visible_surface_condition": "Dry, rough, and dusty",
-    "local_geometry": "Irregular edges, rough flat top and bottom faces with fractured sides exhibiting uneven topography",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The exact tactile properties of the bottom side and interior fractures are partially occluded by the viewing angle, but lateral surfaces are visible."
+    "retrieval_description": "Clean, dry mineral composite substrate with a rough, highly porous granular finish and no visible coating or contamination.",
+    "contact_material": "mineral composite substrate",
+    "visible_surface_material": "concrete or asphalt aggregate",
+    "visible_surface_condition": "clean, dry, rough, and porous with exposed aggregate particles",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:06:18.084789+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "89d87ea93e0080bc7d04b3db7e9a31668d8abc137e81fe7c4bef0f0b8199a3f7",
+  "embedding_cache_key": "23c66a7ff5ae5c5ad7efecc5dfbae98c5f45bf25e9baa5943a2d5d79552438f9",
+  "embedding_sha256": "a591bed87fe50f7b20abd6580e7aae23ab9fc6e604a983049d146a1d26e56789",
+  "updated_at": "2026-07-30T00:42:52.352453+00:00"
 }

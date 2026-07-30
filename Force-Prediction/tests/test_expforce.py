@@ -72,7 +72,9 @@ def test_config_exposes_only_the_final_explicit_experiment_methods():
     assert cfg.experiment("e4").method is ExperimentMethod.HYBRID_RETRIEVAL_VLM
     with pytest.raises(KeyError, match="unknown experiment"):
         cfg.experiment("e5")
-    assert "surface patches" in cfg.prompts.descriptor_system
+    assert "exact surface contacted by the gripper pads" in cfg.prompts.descriptor_system
+    assert "Do not mention object identity" in cfg.prompts.descriptor_system
+    assert "curvature" in cfg.prompts.descriptor_system
     assert "text embedding" in cfg.prompts.descriptor_system
     assert not hasattr(cfg.models, "dry_run")
     assert not hasattr(cfg.retrieval.embedding, "provider")

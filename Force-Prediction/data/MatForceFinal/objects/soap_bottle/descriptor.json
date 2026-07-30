@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "soap_bottle",
   "object_name": "Soap Bottle",
@@ -8,23 +8,20 @@
   "image_sha256": "c14f003defb99d065b60f161664f330c7f613b426d45fccc484ce81a5916de3c",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Opaque plastic bottle with smooth, dry lateral surfaces. The intended contact region has continuous curvature with subtle vertical flattened panels and no visible contamination.",
-    "contact_region": "Lateral side panels of the bottle body",
-    "contact_material": "Plastic substrate",
-    "visible_surface_material": "Plastic",
-    "visible_surface_condition": "Clean, dry, and smooth",
-    "local_geometry": "Flattened rectangular vertical panels with rounded corners and smooth vertical curvature",
-    "contact_patch_visibility": "Clearly visible on the side facing the camera and partially visible on the opposite side",
-    "uncertainty": "The exact texture and condition of the reverse side are inferred from the visible side."
+    "retrieval_description": "Clean, dry rigid plastic contact surface with a smooth semi-gloss finish and no visible contamination.",
+    "contact_material": "rigid plastic substrate",
+    "visible_surface_material": "plastic",
+    "visible_surface_condition": "clean, dry, smooth",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "0ffc15e18bb83edbbb16c3305cd362a7e0c9e8ab5ebc6a28d6cd044aea97ac4a",
-  "embedding_cache_key": "7505e124ae1f05e85cc3f52fa4013123cd9156e5d7d196535fc2fe7343b6ea72",
-  "embedding_sha256": "4eb40f97a60e78cd78e5c391619daed990fe1d94d8b9503d361f9d0b047fab29",
-  "updated_at": "2026-07-29T16:49:34.136361+00:00"
+  "embedding_descriptor_sha256": "c84f308698e59ade4315db13b85ffe089b0f3830b15849c3ab17412a94189770",
+  "embedding_cache_key": "f2154606be4adb4b99292988cd96604afc803560a4166ca4f20a24172ab5f76a",
+  "embedding_sha256": "1b88af22e0b252e8a6c536d45926a36d310cf8dabcb3cee0361dbbe392a224d4",
+  "updated_at": "2026-07-30T00:42:56.550473+00:00"
 }

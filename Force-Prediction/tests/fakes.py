@@ -21,7 +21,6 @@ class FakeGeminiClient:
         if schema is Description:
             return Description(
                 retrieval_description="test Gemini object descriptor",
-                contact_region="lateral grasp band",
                 contact_material="test material",
             ).model_dump(mode="json")
         if schema is JointGripperPrediction:

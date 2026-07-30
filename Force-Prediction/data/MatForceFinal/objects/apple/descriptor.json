@@ -8,22 +8,20 @@
   "image_sha256": "9f61ec9e108ad1b46b7cad32b49714166abbbe83a15615f45d18bcb462f90591",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Green spherical organic fruit with a smooth, firm, nonporous skin and continuous curved surface. The intended contact region has slight natural variations and subtle lenticels.",
-    "contact_region": "Lateral opposing flanks of the apple along the centered grasp band",
-    "contact_material": "Natural organic peel/skin of the apple",
-    "visible_surface_material": "Natural organic peel/skin of the apple",
-    "visible_surface_condition": "Clean, dry, and smooth with subtle natural lenticels",
-    "local_geometry": "Slightly curved, nearly spherical continuous surface with mild natural lobes and no sharp edges",
-    "contact_patch_visibility": "Clearly visible on the lateral surfaces",
-    "uncertainty": "The exact compliance and friction coefficient of the skin cannot be determined from visual evidence alone."
+    "retrieval_description": "Smooth organic skin contact surface with a waxy semi-gloss finish and clean, dry condition.",
+    "contact_material": "organic fruit skin",
+    "visible_surface_material": "organic fruit skin over firm pulp substrate",
+    "visible_surface_condition": "clean, dry, and intact with a smooth waxy finish",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:05:16.359761+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "11a6e0cf544dfa26776ae4dff879b4deb9723c5aa7620b3ae5a3fae8de3d6b38",
+  "embedding_cache_key": "2c2a98d7d059d4cd229766dc301e9aad276f8161696e99d6139e3214fe9a005c",
+  "embedding_sha256": "6a8ef2561a4e5ead587f3143d2138ea8f9f4fee49580cbf95a1d1a7c3ba74e64",
+  "updated_at": "2026-07-30T00:42:51.019099+00:00"
 }

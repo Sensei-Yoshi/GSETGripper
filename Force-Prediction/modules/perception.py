@@ -11,11 +11,9 @@ from .models.gemini import get_client
 
 class Description(BaseModel):
     retrieval_description: str = ""
-    contact_region: str = "unknown"
     contact_material: str = "unknown"
     visible_surface_material: str = "unknown"
     visible_surface_condition: str = "unknown"
-    local_geometry: str = "unknown"
     contact_patch_visibility: str = "unknown"
     uncertainty: str = "unknown"
 

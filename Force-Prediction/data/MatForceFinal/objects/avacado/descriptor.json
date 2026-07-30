@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "avacado",
   "object_name": "Avacado",
@@ -8,23 +8,20 @@
   "image_sha256": "90786816e47407e042fa0fa147a3806fd61ce4cc0e26e3fb6a5349bba79fd6dc",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Pebbled organic fruit form with a rough, dry skin and tapering convex curvature. The intended contact region has a textured, bumpy surface topography.",
-    "contact_region": "Lateral opposing flanks of the fruit",
-    "contact_material": "Avocado skin",
-    "visible_surface_material": "Avocado skin",
-    "visible_surface_condition": "Dry and pebbled",
-    "local_geometry": "Convex, tapered curvature with a pebbled, bumpy texture",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "Lighting and viewing angle are clear, showing the surface texture and geometry directly."
+    "retrieval_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+    "contact_material": "organic rind substrate with a pebbled texture",
+    "visible_surface_material": "organic rind substrate with a textured finish",
+    "visible_surface_condition": "clean, dry, slightly rough and pebbled with no visible coatings or contamination",
+    "contact_patch_visibility": "fully visible primary surface",
+    "uncertainty": "none"
   },
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "c354722f1a31a81e469c567fb4cd53869085c51742b3dde18f3fff73d9bb0c6e",
-  "embedding_cache_key": "867ec0e2be5d2cdd59075f1cdcb3732a517197014e609e6dad4976d6d69c6391",
-  "embedding_sha256": "62af26ec997223fba4931ed7ac2ea7aefda48bb86057f27c179b381e9a7437e7",
-  "updated_at": "2026-07-29T16:49:33.234334+00:00"
+  "embedding_descriptor_sha256": "81e894977b969ead020e09362a0d7aadf0ed48200809e8d4f10605a292fc9f93",
+  "embedding_cache_key": "959ce459a9184f365e8e603e57ae9ffa54d9656006f6170bac52b0b980421e54",
+  "embedding_sha256": "73226b268b994fd01b2501d816a07d6ca7b57f226610f97092d715e753f2f868",
+  "updated_at": "2026-07-30T00:42:55.862692+00:00"
 }

@@ -186,9 +186,10 @@ def test_descriptor_editor_shows_the_standard_retrieval_template() -> None:
         item for item in app.text_area if item.label == "Descriptor instruction"
     )
     assert (
-        "[Material/object form]. The intended contact region is [surface condition], "
-        "[geometry], and [other relevant properties]."
+        "[Contact material or substrate] with [coating or finish if present] and "
+        "[visible\nmaterial condition or interface property]."
     ) in descriptor.value
+    assert "Do not mention the object name or type" in descriptor.value
 
 
 def test_marigold_tab_accepts_multiple_dataset_images() -> None:

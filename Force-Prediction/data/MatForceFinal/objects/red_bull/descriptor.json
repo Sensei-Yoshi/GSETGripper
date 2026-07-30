@@ -8,22 +8,20 @@
   "image_sha256": "ef4c637a55f99fc2954b047edaac63bab60338fc7a14a30b25198f96b59d32dd",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Painted aluminum beverage can with a smooth, dry, nonporous metallic sidewall and continuous cylindrical curvature. The intended contact region has no visible seams or interruptions, though it features printed branding graphics.",
-    "contact_region": "Lateral sidewall surfaces located within the centered vertical grasp band of the aluminum can.",
-    "contact_material": "Painted aluminum substrate.",
-    "visible_surface_material": "Painted aluminum metal with a glossy finish.",
-    "visible_surface_condition": "Clean, dry, and smooth.",
-    "local_geometry": "Convex cylindrical curvature forming a continuous, smooth surface without prominent ridges or seams in the primary contact band.",
-    "contact_patch_visibility": "Clearly visible on the front and sides facing the camera.",
-    "uncertainty": "The rear side of the object is occluded from camera view, but the cylindrical symmetry ensures similar material and geometry."
+    "retrieval_description": "Smooth nonporous metal contact surface with a clean, dry, painted metallic finish and no visible moisture or loose debris.",
+    "contact_material": "painted metal",
+    "visible_surface_material": "metal substrate with a painted coating",
+    "visible_surface_condition": "clean, dry, smooth",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:08:19.956249+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "f263c15c1d2e35dc13005e7fef9ad695a343ef31b063d1703848c4f337da1975",
+  "embedding_cache_key": "8430e2606590f0c8967763e323db77679b3cbbb8576418824a970ebb13912f17",
+  "embedding_sha256": "7d44c720e9b110ebbd74cebd07d8117509d20b607ae1a814e288ae7c999b1b9d",
+  "updated_at": "2026-07-30T00:42:54.735463+00:00"
 }

@@ -8,22 +8,20 @@
   "image_sha256": "1da11e11eec2a6dcd761acda369da93de1c54103cab3a4dc88f18b5d8d944bb1",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Rectangular book object with a paper-covered front cover and fabric-textured spine. The intended contact region is clean and dry, featuring flat surfaces and sharp 90-degree corner edges.",
-    "contact_region": "The lateral opposing surfaces of the book cover, specifically the front white paper panel and the rear or spine area, forming a centered grasp band.",
-    "contact_material": "Paper substrate on the cover panel and fabric or cloth material on the spine.",
-    "visible_surface_material": "Paper and fabric",
-    "visible_surface_condition": "Clean, dry, and matte",
-    "local_geometry": "Flat planar surfaces meeting at distinct 90-degree vertical edges, with a rounded spine transition on one side.",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "None; the surfaces and edges within the grasp band are fully visible."
+    "retrieval_description": "Clean, dry paperboard contact surface with a matte finish over a rigid fibrous substrate.",
+    "contact_material": "Paperboard substrate with a matte paper finish",
+    "visible_surface_material": "Paperboard with matte finish",
+    "visible_surface_condition": "Clean, dry, and smooth",
+    "contact_patch_visibility": "Fully visible",
+    "uncertainty": "None"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:08:39.323039+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "2482127422cc2e6dafaa9904a52d82e19d141a900575aa28e6543fb9d15f5017",
+  "embedding_cache_key": "e23e2466ec56f87f9cdfa78c101a8165ea0c81ad3b5218bd6f2add255c3566a4",
+  "embedding_sha256": "09b258c128df49dd3716b8204a1115326640ac6b10313271b40c924af7700b41",
+  "updated_at": "2026-07-30T00:42:55.069826+00:00"
 }

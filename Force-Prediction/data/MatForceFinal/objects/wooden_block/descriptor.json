@@ -8,22 +8,20 @@
   "image_sha256": "791fa8f4138b26f58c9a265818a69d0cddd35cf246caf834b313324307b5982c",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Rectangular wooden block with a dry, matte surface and flat planar sides meeting at sharp edges. The intended contact region is dry, flat, and features visible wood grain and minor scratches.",
-    "contact_region": "The opposing lateral vertical faces of the rectangular block.",
-    "contact_material": "Wood substrate",
-    "visible_surface_material": "Wood",
-    "visible_surface_condition": "Dry, with minor scratches and scuffs",
-    "local_geometry": "Flat planar surfaces meeting at 90-degree edges",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The exact friction coefficient and internal composition of the wood are not visible from the image."
+    "retrieval_description": "Clean, dry wood contact surface with a visible grain finish and no visible coating or contamination.",
+    "contact_material": "wood",
+    "visible_surface_material": "wood",
+    "visible_surface_condition": "clean, dry, and worn with surface scratches",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-29T23:07:32.850901+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "ffbb698e53a38fdc0eb004e6c89e962e3e2a8b347c34958820fce6f7ecf95010",
+  "embedding_cache_key": "1095eb30a00741644edfb5eecff84e33bb54ead9008aa6c7b69037ce3b5bf76d",
+  "embedding_sha256": "f83de0bdebbba45ea8471b1b6ab1fd4e4df3861be4fb7030b23471a8adb0d520",
+  "updated_at": "2026-07-30T00:42:53.889163+00:00"
 }

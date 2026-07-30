@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "plastic_resistor_box",
   "object_name": "Plastic Resistor Box",
@@ -8,23 +8,20 @@
   "image_sha256": "ef309e272161a4224400ff2d38f390368543f04b075422b7bddd219c5b1c5b1f",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Rectangular plastic storage box. The intended contact region is clean, dry, and flat with rigid orthogonal faces and slightly rounded vertical edges.",
-    "contact_region": "Opposing lateral exterior sidewalls of the plastic storage case",
-    "contact_material": "Plastic",
-    "visible_surface_material": "Plastic",
-    "visible_surface_condition": "Clean, dry, smooth",
-    "local_geometry": "Flat orthogonal vertical faces meeting at rounded corner edges with a horizontal hinge and latch seam across the rear and front",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The rear hinge and front clasp details are partially obscured from this top-down perspective, but the primary lateral side surfaces are fully clear."
+    "retrieval_description": "Clean, dry polymer contact surface with a smooth rigid finish and no visible coating or contamination.",
+    "contact_material": "polymer",
+    "visible_surface_material": "polymer",
+    "visible_surface_condition": "clean and dry",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "5d8480718798fcff1cc84ec6d02e80b2aa80beac2608f9a79aca152653ce8093",
-  "embedding_cache_key": "7223f61961e9fc491af1ba3ba1f8f7b87c605a1cf6fcab54a669482ca7e31586",
-  "embedding_sha256": "af584d64623116b0e7ca464a58db7d22e9a60e2dc5f5a105237ac91ff4c970ee",
-  "updated_at": "2026-07-29T16:49:35.393064+00:00"
+  "embedding_descriptor_sha256": "c2eecf07018f71f7b1f0f0c54abda4e649570f350e041f0f509b85f5b8451692",
+  "embedding_cache_key": "473bee9b77e3e00e8ad2c393fade531b33c33ed3ff96731523a04fc58d55c9ac",
+  "embedding_sha256": "eae8cf8ad89f4855036a8d0b00199621f1dbacb6be8d580a8b1b76081414fa57",
+  "updated_at": "2026-07-30T00:42:57.105126+00:00"
 }

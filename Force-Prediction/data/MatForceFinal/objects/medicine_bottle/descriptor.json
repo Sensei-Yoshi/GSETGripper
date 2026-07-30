@@ -1,5 +1,5 @@
 {
-  "schema_version": 4,
+  "schema_version": 3,
   "dataset_id": "MatForceFinal",
   "object_id": "medicine_bottle",
   "object_name": "Medicine Bottle",
@@ -8,23 +8,20 @@
   "image_sha256": "80fe4da593f50b540359a51d606c6c2c73ba15879ad75b71abb0ae4004d9d766",
   "descriptor_source": "live_gemini",
   "descriptor_model": "gemini-flash-lite-latest",
-  "descriptor_signature": "b9de6be69bbdc2bd229f8fb58891c6f3b7905d1898280ce62073e8e9f039d627",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
   "descriptor": {
-    "retrieval_description": "Cylindrical plastic bottle with a smooth, dry, nonporous label surface and continuous curvature. The intended contact region has a paper label overlaying the sidewall with no visible seams or contamination.",
-    "contact_region": "Lateral sidewall surfaces wrapped with a paper product label",
-    "contact_material": "Paper label over plastic substrate",
-    "visible_surface_material": "Paper and rigid plastic",
-    "visible_surface_condition": "Clean and dry",
-    "local_geometry": "Cylindrical with continuous curvature across the grasp band",
-    "contact_patch_visibility": "Clearly visible",
-    "uncertainty": "The exact thickness of the paper label and the underlying rigid plastic wall thickness are not visible, but the surface condition is clear from the image perspective."
+    "retrieval_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and a paper label wrap.",
+    "contact_material": "rigid plastic with paper label",
+    "visible_surface_material": "rigid plastic and paper",
+    "visible_surface_condition": "clean, dry, smooth",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
   },
   "embedding_status": "ready",
   "embedding_model": "gemini-embedding-2-preview",
   "embedding_dim": 1536,
-  "embedding_task_format": "symmetric_similarity",
-  "embedding_descriptor_sha256": "db1a54a0df79206f038306c86411a4ca28531503a4c69821e740d42b4f86258a",
-  "embedding_cache_key": "3669fee132fa9ad9f61d00bc1cfe39db4f8aff3c72b75731821a16eae2e2429e",
-  "embedding_sha256": "bdc60c8098d7417c725d7fbb7f62d853f2f15cb4d18637f2e76e61c8a72b3bbf",
-  "updated_at": "2026-07-29T16:49:34.544198+00:00"
+  "embedding_descriptor_sha256": "0ef01565bcd4d4bb1dbd6c6cd34d263fe59b2c2f46c68c71f94ca6e83e0b041f",
+  "embedding_cache_key": "4b06527b72532aac09f910bd270f5abcb1cadbb1819dba620b1984f5c9f7e851",
+  "embedding_sha256": "b056063843f04ec92c5a48c125b926d2cbcf9d5a184c065f2ce25d117b62423d",
+  "updated_at": "2026-07-30T00:42:56.769533+00:00"
 }

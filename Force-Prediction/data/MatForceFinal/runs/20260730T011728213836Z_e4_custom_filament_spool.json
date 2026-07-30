@@ -1,0 +1,1068 @@
+{
+  "schema_version": 9,
+  "dataset_id": "MatForceFinal",
+  "run_id": "20260730T011728213836Z_e4_custom_filament_spool",
+  "created_at": "2026-07-30T01:17:28.213836+00:00",
+  "source_sha256": "f41657dc14d3929c61d683764b66a0855709d2b2f53ba8f8d52767360048ec3f",
+  "evaluation_protocol": "custom",
+  "experiment": "e4",
+  "experiment_method": "hybrid_retrieval_vlm",
+  "experiment_definition_version": 9,
+  "experiment_definition": {
+    "method": "hybrid_retrieval_vlm",
+    "prompt": "e4"
+  },
+  "prediction_prompts": {
+    "system": "You are a robotics model for grasp-material selection and pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. The controller accepts\ncontinuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, roughness evidence, and projected contact fraction are authoritative. Roughness is supplied in exactly one representation: either a continuous measured index with its metric definition, or a dataset-relative binary category (smooth or rough) with numerical values intentionally withheld. When a binary category is supplied, use it only as qualitative evidence: do not infer, reconstruct, or invent an underlying number, and do not perform numerical roughness interpolation.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\nIf a contact area fraction is given, you can likely assume the orientation in which the gripper grasped the object if necessary as well.\nAssume all objects are grasped in the most optimal direction to maximize surface area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+    "instruction_key": "e4",
+    "instruction": "E4 SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmeasurements, and one hybrid-ranked object list to estimate the requested force or forces.\nExplain how close retrieved outcomes and available mass/contact scaling support the\nestimates. No calibrated physics estimate is available; do not invent one.\n",
+    "target_instruction_key": "single",
+    "target_instruction": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n"
+  },
+  "prompt_context": {
+    "bundle_file": "prompts.yaml",
+    "bundle_sha256": "d095a5e88be91bb3a4aa82d30df816861bc39238b63417f38d6a3b49d928737a",
+    "experiment_instructions": {
+      "e1": "E1 ZERO-SHOT VISION-ONLY CONDITION.\nFrom the object image and requested gripper embodiment context, estimate the minimum\nstationary-finger normal force for each requested candidate. No authoritative mass,\nroughness, projected contact measurement, physics estimate, or retrieved experience\nis available. Reason from visible scale, material, condition, and geometry and state\nuncertainty because those judgments are necessarily rough visual approximations.\nDo not invent physical constants or claim to run calibrated physics.\n",
+      "e2": "E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, and supplied authoritative\nmeasurements: mass, roughness, and projected contact fraction.\nNo retrieved experience or physics estimate is available. Do not infer hidden\nfriction or adhesion constants.\n",
+      "e3": "E3 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.\nUse the object image, fixed gripper embodiment context, and the ranked semantic\nexperience list to predict the requested force or forces. Neighbors were selected only by cosine\nsimilarity between semantic contact-region descriptions and provide outcomes for\nthe requested candidate or candidates. No authoritative query or neighbor mass, roughness, projected\ncontact, hybrid physical score, or physics estimate is available. Do not imply that\nany omitted sensor value was measured or used.",
+      "e4": "E4 SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmeasurements, and one hybrid-ranked object list to estimate the requested force or forces.\nExplain how close retrieved outcomes and available mass/contact scaling support the\nestimates. No calibrated physics estimate is available; do not invent one.\n"
+    },
+    "target_instructions": {
+      "single": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n",
+      "joint": "JOINT-CANDIDATE OUTPUT CONDITION.\nPredict both requested grippers, compare their force and feasibility estimates, and\nreturn an explicit recommendation with the comparison evidence required by the schema.\n"
+    },
+    "prediction": {
+      "system": "You are a robotics model for grasp-material selection and pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. The controller accepts\ncontinuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, roughness evidence, and projected contact fraction are authoritative. Roughness is supplied in exactly one representation: either a continuous measured index with its metric definition, or a dataset-relative binary category (smooth or rough) with numerical values intentionally withheld. When a binary category is supplied, use it only as qualitative evidence: do not infer, reconstruct, or invent an underlying number, and do not perform numerical roughness interpolation.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\nIf a contact area fraction is given, you can likely assume the orientation in which the gripper grasped the object if necessary as well.\nAssume all objects are grasped in the most optimal direction to maximize surface area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+      "instruction_key": "e4",
+      "instruction": "E4 SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmeasurements, and one hybrid-ranked object list to estimate the requested force or forces.\nExplain how close retrieved outcomes and available mass/contact scaling support the\nestimates. No calibrated physics estimate is available; do not invent one.\n",
+      "target_instruction_key": "single",
+      "target_instruction": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n"
+    },
+    "descriptor": {
+      "system": "You create material-interface records for a robotic grasp-experience retrieval\nsystem.\n\nThe photographed object surface is deliberately positioned so that the visible\nprimary surface is the exact surface contacted by the gripper pads. Treat this\ndataset convention as authoritative and analyze only visible evidence from that\nsurface. Do not infer a different grasp pose or contact region.\n\nThe retrieval_description will be converted into a text embedding and used to\nretrieve surfaces with similar pad-to-material interfaces. Keep it concise and\ndiscriminating.\n\nDescribe only properties of the material that actually touches the pads: the\nsubstrate; any coating, label, wrapper, sleeve, or finish covering it; relevant\nvisible texture, porosity, or apparent compliance; and visible condition such as\nclean, dry, dusty, wet, oily, worn, or unknown. If the material, coating, or\ncondition is ambiguous, state that uncertainty rather than inventing it.\n\nDo not mention object identity, branding, color, size, shape, pose, grasp\norientation, curvature, contact region, local geometry, edges, openings, or overall\nsurface area. Do not recommend a gripper, predict force, infer a force label, or\nrestate measured mass, measured roughness index, or projected contact fraction.\n",
+      "instruction": "Inspect the photographed pad-contact surface and return the requested structured\nJSON with:\n- the material actually touching the pads, distinguishing the substrate from any\n  label, wrapper, coating, sleeve, finish, or exposed contents;\n- the visible material and surface condition;\n- whether the material properties are clearly visible;\n- uncertainty limited to material, coating, finish, or condition identification;\n- a single concise retrieval_description sentence containing only the most\n  discriminating pad-to-material interface properties.\n\nUse this retrieval_description format:\n\"[Contact material or substrate] with [coating or finish if present] and [visible\nmaterial condition or interface property].\"\n\nGood retrieval_description examples:\n1. \"Clean, dry glass contact surface with a smooth nonporous finish and no visible\n   coating or contamination.\"\n2. \"Dry woven textile contact surface with a compliant fibrous texture and no\n   visible moisture or loose debris.\"\n3. \"Clean, dry paperboard contact surface with a thin matte printed coating over a\n   rigid fibrous substrate.\"\n\nDo not mention the object name or type, branding, color, shape, size, curvature,\npose, grasp orientation, contact region, local geometry, edges, openings, contact\narea, mass, measured roughness, or projected contact fraction. Do not choose gecko\nor silicone and do not estimate force. Return only JSON matching the supplied\nschema.\n"
+    },
+    "embodiments": {
+      "gecko": {
+        "description": "Parallel-jaw gripper with two opposing, rigid fin-ray-shaped fingers. One finger is stationary, while the other translates laterally toward it to close around an object positioned between them. Each finger carries an inward-facing, mushroom-tipped gecko-inspired dry-adhesive pad of length 4.2 inches mounted on a rigid backing. The fingers and adhesive backings remain rigid during grasping and do not conform to the object. Therefore, the maximum adhesion requires the object\u2019s opposing sidewalls to be sufficiently flat, parallel, and aligned with the pads so that broad contact can form. Generally, the greater the adhesion, the lower the grasp force required to pick up the object. Dry adhesion performs best on clean, dry, smooth, nonporous surfaces and degrades with roughness, porosity, contamination, moisture, and loose coatings. Additionally, gecko should be fully avoided for greasy, dusty, and sharp objects."
+      }
+    }
+  },
+  "backend": {
+    "force": "gemini_single_generation",
+    "semantic_embedding": "gemini-embedding-2-preview"
+  },
+  "models": {
+    "vlm": "gemini-flash-lite-latest",
+    "embedding": "gemini-embedding-2-preview",
+    "embedding_dim": 1536
+  },
+  "inputs": {
+    "use_roughness": true,
+    "use_projected_contact": true,
+    "roughness_representation": "continuous"
+  },
+  "roughness_measurement": {
+    "metric_name": "high_frequency_scattering_index",
+    "units": "unitless_index",
+    "higher_is_rougher": true,
+    "characteristic_scale": 500.0,
+    "binary_threshold": 1340.0
+  },
+  "active_grippers": [
+    "gecko"
+  ],
+  "generation_mode": "single",
+  "retrieval_config": {
+    "k": 5,
+    "conditions_per_surface": 3,
+    "weights": {
+      "semantic": 0.4,
+      "mass": 0.25,
+      "roughness": 0.2,
+      "contact": 0.15
+    },
+    "sigma_mass": 0.7,
+    "sigma_contact": 0.25,
+    "embedding": {
+      "model": "gemini-embedding-2-preview",
+      "dim": 1536
+    }
+  },
+  "query": {
+    "object_id": "custom_filament_spool",
+    "surface_id": "filament_spool",
+    "condition_id": "baseline",
+    "source_object_id": "filament_spool",
+    "object_name": "Filament spool",
+    "mass_g": 965.32,
+    "roughness_index": 600.0,
+    "projected_contact_fraction": 0.5952380952,
+    "semantic_description": "Clean, dry paperboard contact surface with a smooth printed finish over a rigid fibrous substrate.",
+    "original_image_path": "data/MatForceFinal/filament_spool.jpeg",
+    "image_artifact_path": "data/MatForceFinal/run_images/108e8a6a65d3e6c9239830b50fb6b26c8ea4c6d0424cee9fa14a5bcc023f44f4.png",
+    "image_sha256": "108e8a6a65d3e6c9239830b50fb6b26c8ea4c6d0424cee9fa14a5bcc023f44f4"
+  },
+  "counterfactual": true,
+  "truth": {
+    "true_gecko_force_n": 4.4,
+    "true_selection": null,
+    "object_id": "filament_spool",
+    "surface_id": "filament_spool",
+    "condition_id": "baseline",
+    "active_grippers": [
+      "gecko"
+    ],
+    "gecko_feasible": true
+  },
+  "result": {
+    "experiment_id": "e4",
+    "experiment_method": "hybrid_retrieval_vlm",
+    "experiment_definition_version": 9,
+    "selection": {
+      "desired_gripper": "gecko",
+      "predicted_normal_force_n": 7.08,
+      "candidate_predictions": {
+        "gecko": {
+          "candidate_gripper": "gecko",
+          "visible_surface_material": "Clean, dry paperboard contact surface with a smooth printed finish over a rigid fibrous substrate.",
+          "visible_surface_condition": "Clean, dry, smooth and flat paperboard sidewall suitable for gecko dry-adhesive pads.",
+          "compatibility": "high",
+          "feasible": true,
+          "predicted_normal_force_n": 7.08,
+          "evidence_used": [
+            "Query mass = 965.32 g",
+            "Query roughness index = 600.0",
+            "Query projected contact fraction = 0.5952380952",
+            "Retrieved nearest match: large_cardboard_box condition_2 (mass: 671.94 g, roughness: 810.34, contact: 0.5, gecko_min_force_n: 6.154)",
+            "Retrieved baseline match: camera_cardboard_box (mass: 871.93 g, roughness: 804.32, contact: 1.0, gecko_min_force_n: 7.46)"
+          ],
+          "calculation_summary": "Interpolated/scaled normal force from retrieved cardboard box experiences based on mass ratio (965.32 g vs 871.93 g and 671.94 g), roughness index (600.0 vs ~804-810), and contact fraction (0.595 vs 0.5 and 1.0), yielding approximately 7.08 N.",
+          "assumptions_and_uncertainty": [
+            "Assumes the cardboard sidewall of the filament spool behaves similarly in friction and adhesion to the retrieved paperboard box categories.",
+            "Uncertainty arises from differences in contact geometry since the spool has circular flanges rather than flat rectangular box sides."
+          ],
+          "reasoning_trace": "The query object is a filament spool with paperboard sidewalls, closely matching the semantic descriptions of paperboard boxes in the retrieved database. The query mass is 965.32 g, which is heavier than the retrieved camera cardboard box (871.93 g requiring 7.46 N) and large cardboard box (671.94 g requiring 6.154 N / 4.54 N). Accounting for the query's smoother roughness index (600.0 vs ~804) which improves gecko adhesion, but heavier mass and reduced contact fraction (0.595), the required normal force scales proportionally. Combining these retrieved references results in an estimated stationary-finger normal force of 7.08 N, well within the 0 to 8 N constraint."
+        }
+      },
+      "reasoning_trace": "lowest feasible predicted stationary-finger force",
+      "prediction_tie": false,
+      "tie_break_reason": null,
+      "model_recommended_gripper": null,
+      "model_comparison_evidence": [],
+      "model_recommendation_summary": null,
+      "recommendation_agrees_with_selector": null
+    },
+    "semantic_description": "Clean, dry paperboard contact surface with a smooth printed finish over a rigid fibrous substrate.",
+    "object_id": "custom_filament_spool",
+    "surface_id": "filament_spool",
+    "condition_id": "baseline",
+    "retrieval_payload_version": 2,
+    "retrieved_objects": [
+      {
+        "object_id": "large_cardboard_box__condition_2",
+        "surface_id": "large_cardboard_box",
+        "condition_id": "condition_2",
+        "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+        "mass_g": 671.94,
+        "roughness_index": 810.34,
+        "projected_contact_fraction": 0.5,
+        "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+        "gecko_min_force_n": 6.154,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.7503966681698272,
+        "rank": 1,
+        "surface_rank": 1,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9190038346056741,
+          "mass": 0.5959741397608921,
+          "roughness": 0.6566001798523804,
+          "contact": 0.6832104227790563,
+          "semantic_contribution": 0.3676015338422697,
+          "mass_contribution": 0.14899353494022302,
+          "roughness_contribution": 0.1313200359704761,
+          "contact_contribution": 0.10248156341685845,
+          "total": 0.7503966681698272
+        }
+      },
+      {
+        "object_id": "large_cardboard_box",
+        "surface_id": "large_cardboard_box",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+        "mass_g": 671.94,
+        "roughness_index": 810.34,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+        "gecko_min_force_n": 4.54,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.6776281943204808,
+        "rank": 1,
+        "surface_rank": 1,
+        "condition_rank": 2,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9190038346056741,
+          "mass": 0.5959741397608921,
+          "roughness": 0.6566001798523804,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.3676015338422697,
+          "mass_contribution": 0.14899353494022302,
+          "roughness_contribution": 0.1313200359704761,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.6776281943204808
+        }
+      },
+      {
+        "object_id": "camera_cardboard_box",
+        "surface_id": "camera_cardboard_box",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+        "mass_g": 871.93,
+        "roughness_index": 804.32,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+        "gecko_min_force_n": 7.46,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.7481648907654834,
+        "rank": 2,
+        "surface_rank": 2,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9234072979467626,
+          "mass": 0.8647127852782004,
+          "roughness": 0.6645534284985811,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.36936291917870506,
+          "mass_contribution": 0.2161781963195501,
+          "roughness_contribution": 0.13291068569971623,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.7481648907654834
+        }
+      },
+      {
+        "object_id": "book",
+        "surface_id": "book",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/book.jpg",
+        "mass_g": 540.59,
+        "roughness_index": 646.42,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry paperboard contact surface with a matte finish over a rigid fibrous substrate.",
+        "gecko_min_force_n": 2.68,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.6943431528596394,
+        "rank": 3,
+        "surface_rank": 3,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9329065280595589,
+          "mass": 0.4367983659371458,
+          "roughness": 0.9113393029200869,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.37316261122382355,
+          "mass_contribution": 0.10919959148428646,
+          "roughness_contribution": 0.1822678605840174,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.6943431528596394
+        }
+      },
+      {
+        "object_id": "smooth_screw_box",
+        "surface_id": "smooth_screw_box",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+        "mass_g": 819.27,
+        "roughness_index": 791.89,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "gecko_min_force_n": 1.3,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.6845763297914721,
+        "rank": 4,
+        "surface_rank": 4,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8020900723826799,
+          "mass": 0.7910838110210587,
+          "roughness": 0.6812812925781161,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.320836028953072,
+          "mass_contribution": 0.19777095275526468,
+          "roughness_contribution": 0.13625625851562323,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.6845763297914721
+        }
+      },
+      {
+        "object_id": "large_hand_sanitizer_sa_1",
+        "surface_id": "large_hand_sanitizer_sa_1",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+        "mass_g": 836.04,
+        "roughness_index": 958.71,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "gecko_min_force_n": 1.3,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.6651964018202404,
+        "rank": 5,
+        "surface_rank": 5,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8357548019739868,
+          "mass": 0.8143178073058838,
+          "roughness": 0.48800969818331336,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.33430192078959475,
+          "mass_contribution": 0.20357945182647094,
+          "roughness_contribution": 0.09760193963666268,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.6651964018202404
+        }
+      }
+    ],
+    "retrieved_surfaces": [
+      {
+        "surface_id": "large_cardboard_box",
+        "conditions": [
+          {
+            "object_id": "large_cardboard_box__condition_2",
+            "surface_id": "large_cardboard_box",
+            "condition_id": "condition_2",
+            "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+            "mass_g": 671.94,
+            "roughness_index": 810.34,
+            "projected_contact_fraction": 0.5,
+            "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+            "gecko_min_force_n": 6.154,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7503966681698272,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9190038346056741,
+              "mass": 0.5959741397608921,
+              "roughness": 0.6566001798523804,
+              "contact": 0.6832104227790563,
+              "semantic_contribution": 0.3676015338422697,
+              "mass_contribution": 0.14899353494022302,
+              "roughness_contribution": 0.1313200359704761,
+              "contact_contribution": 0.10248156341685845,
+              "total": 0.7503966681698272
+            }
+          },
+          {
+            "object_id": "large_cardboard_box",
+            "surface_id": "large_cardboard_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+            "mass_g": 671.94,
+            "roughness_index": 810.34,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+            "gecko_min_force_n": 4.54,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6776281943204808,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 2,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9190038346056741,
+              "mass": 0.5959741397608921,
+              "roughness": 0.6566001798523804,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.3676015338422697,
+              "mass_contribution": 0.14899353494022302,
+              "roughness_contribution": 0.1313200359704761,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.6776281943204808
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "camera_cardboard_box",
+        "conditions": [
+          {
+            "object_id": "camera_cardboard_box",
+            "surface_id": "camera_cardboard_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+            "mass_g": 871.93,
+            "roughness_index": 804.32,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+            "gecko_min_force_n": 7.46,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7481648907654834,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9234072979467626,
+              "mass": 0.8647127852782004,
+              "roughness": 0.6645534284985811,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.36936291917870506,
+              "mass_contribution": 0.2161781963195501,
+              "roughness_contribution": 0.13291068569971623,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.7481648907654834
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "book",
+        "conditions": [
+          {
+            "object_id": "book",
+            "surface_id": "book",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/book.jpg",
+            "mass_g": 540.59,
+            "roughness_index": 646.42,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry paperboard contact surface with a matte finish over a rigid fibrous substrate.",
+            "gecko_min_force_n": 2.68,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6943431528596394,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9329065280595589,
+              "mass": 0.4367983659371458,
+              "roughness": 0.9113393029200869,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.37316261122382355,
+              "mass_contribution": 0.10919959148428646,
+              "roughness_contribution": 0.1822678605840174,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.6943431528596394
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "smooth_screw_box",
+        "conditions": [
+          {
+            "object_id": "smooth_screw_box",
+            "surface_id": "smooth_screw_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+            "mass_g": 819.27,
+            "roughness_index": 791.89,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+            "gecko_min_force_n": 1.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6845763297914721,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8020900723826799,
+              "mass": 0.7910838110210587,
+              "roughness": 0.6812812925781161,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.320836028953072,
+              "mass_contribution": 0.19777095275526468,
+              "roughness_contribution": 0.13625625851562323,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.6845763297914721
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "large_hand_sanitizer_sa_1",
+        "conditions": [
+          {
+            "object_id": "large_hand_sanitizer_sa_1",
+            "surface_id": "large_hand_sanitizer_sa_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+            "mass_g": 836.04,
+            "roughness_index": 958.71,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+            "gecko_min_force_n": 1.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6651964018202404,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8357548019739868,
+              "mass": 0.8143178073058838,
+              "roughness": 0.48800969818331336,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.33430192078959475,
+              "mass_contribution": 0.20357945182647094,
+              "roughness_contribution": 0.09760193963666268,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.6651964018202404
+            }
+          }
+        ]
+      }
+    ],
+    "physics_estimates": {},
+    "cache_stats": {
+      "enabled": true,
+      "hits": 41,
+      "misses": 1,
+      "writes": 1,
+      "read_errors": 0,
+      "legacy_hits": 0,
+      "generation": {
+        "hits": 0,
+        "misses": 1,
+        "writes": 1,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "embeddings": {
+        "hits": 41,
+        "misses": 0,
+        "writes": 0,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "backend_attempts": {
+        "generation": 1,
+        "embedding": 0
+      }
+    },
+    "active_grippers": [
+      "gecko"
+    ],
+    "generation_mode": "single",
+    "retrieval_mode": "hybrid",
+    "effective_inputs": [
+      "object_image",
+      "gripper_context",
+      "semantic_descriptor",
+      "semantic_experiences",
+      "mass",
+      "roughness",
+      "projected_contact"
+    ]
+  },
+  "baseline": {
+    "experiment_id": "e4",
+    "experiment_method": "hybrid_retrieval_vlm",
+    "experiment_definition_version": 9,
+    "selection": {
+      "desired_gripper": "gecko",
+      "predicted_normal_force_n": 7.46,
+      "candidate_predictions": {
+        "gecko": {
+          "candidate_gripper": "gecko",
+          "visible_surface_material": "Clean, dry paperboard contact surface with a smooth printed finish over a rigid fibrous substrate.",
+          "visible_surface_condition": "Smooth, dry, non-porous finish with no visible contamination or damage.",
+          "compatibility": "high",
+          "feasible": true,
+          "predicted_normal_force_n": 7.46,
+          "evidence_used": [
+            "Query object image showing a clean, smooth paperboard spool surface",
+            "Query mass of 965.32 g",
+            "Query roughness index of 813.2",
+            "Query projected contact fraction of 0.5952380952",
+            "Retrieved example 'camera_cardboard_box' with mass 871.93 g, roughness index 804.32, and gecko_min_force_n of 7.46 N"
+          ],
+          "calculation_summary": "Retrieved camera_cardboard_box (mass 871.93 g, roughness 804.32, contact fraction 1.0) requires 7.46 N. The query object has a slightly higher mass (965.32 g) and similar roughness, but a lower contact fraction (0.595), which scales up the required holding force to compensate for reduced contact area. Interpolating from the nearest chemically and texturally matched paperboard example, the estimated required normal force is set at 7.46 N.",
+          "assumptions_and_uncertainty": [
+            "Assumes the object's sidewalls are sufficiently flat and parallel to allow proper gecko pad engagement.",
+            "Uncertainty arises from differences in contact fraction between the query and retrieved reference examples.",
+            "No direct physics-based friction coefficient was calculated; estimate relies purely on empirical retrieval scaling."
+          ],
+          "reasoning_trace": "The query object presents a smooth, clean, dry paperboard surface highly compatible with the gecko gripper's dry-adhesive pads. The mass is 965.32 g with a roughness index of 813.2. Looking at the hybrid-ranked retrieved objects, similar paperboard objects such as the camera_cardboard_box (871.93 g, 7.46 N required) and large_cardboard_box (671.94 g, 6.154 N required for partial contact) provide direct empirical guidance. Accounting for the query mass and contact fraction, the predicted minimum stationary-finger normal force is established at 7.46 N, well within the 0 to 8 N controller limit and confirmed as feasible."
+        }
+      },
+      "reasoning_trace": "lowest feasible predicted stationary-finger force",
+      "prediction_tie": false,
+      "tie_break_reason": null,
+      "model_recommended_gripper": null,
+      "model_comparison_evidence": [],
+      "model_recommendation_summary": null,
+      "recommendation_agrees_with_selector": null
+    },
+    "semantic_description": "Clean, dry paperboard contact surface with a smooth printed finish over a rigid fibrous substrate.",
+    "object_id": "filament_spool",
+    "surface_id": "filament_spool",
+    "condition_id": "baseline",
+    "retrieval_payload_version": 2,
+    "retrieved_objects": [
+      {
+        "object_id": "large_cardboard_box__condition_2",
+        "surface_id": "large_cardboard_box",
+        "condition_id": "condition_2",
+        "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+        "mass_g": 671.94,
+        "roughness_index": 810.34,
+        "projected_contact_fraction": 0.5,
+        "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+        "gecko_min_force_n": 6.154,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.8179358978099535,
+        "rank": 1,
+        "surface_rank": 1,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9190038346056741,
+          "mass": 0.5959741397608921,
+          "roughness": 0.9942963280530116,
+          "contact": 0.6832104227790563,
+          "semantic_contribution": 0.3676015338422697,
+          "mass_contribution": 0.14899353494022302,
+          "roughness_contribution": 0.19885926561060233,
+          "contact_contribution": 0.10248156341685845,
+          "total": 0.8179358978099535
+        }
+      },
+      {
+        "object_id": "large_cardboard_box",
+        "surface_id": "large_cardboard_box",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+        "mass_g": 671.94,
+        "roughness_index": 810.34,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+        "gecko_min_force_n": 4.54,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.7451674239606071,
+        "rank": 1,
+        "surface_rank": 1,
+        "condition_rank": 2,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9190038346056741,
+          "mass": 0.5959741397608921,
+          "roughness": 0.9942963280530116,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.3676015338422697,
+          "mass_contribution": 0.14899353494022302,
+          "roughness_contribution": 0.19885926561060233,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.7451674239606071
+        }
+      },
+      {
+        "object_id": "camera_cardboard_box",
+        "surface_id": "camera_cardboard_box",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+        "mass_g": 871.93,
+        "roughness_index": 804.32,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+        "gecko_min_force_n": 7.46,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.8117335609246807,
+        "rank": 2,
+        "surface_rank": 2,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9234072979467626,
+          "mass": 0.8647127852782004,
+          "roughness": 0.9823967792945675,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.36936291917870506,
+          "mass_contribution": 0.2161781963195501,
+          "roughness_contribution": 0.19647935585891352,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.8117335609246807
+        }
+      },
+      {
+        "object_id": "smooth_screw_box",
+        "surface_id": "smooth_screw_box",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+        "mass_g": 819.27,
+        "roughness_index": 791.89,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "gecko_min_force_n": 1.3,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.7399751643888928,
+        "rank": 3,
+        "surface_rank": 3,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8020900723826799,
+          "mass": 0.7910838110210587,
+          "roughness": 0.9582754655652197,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.320836028953072,
+          "mass_contribution": 0.19777095275526468,
+          "roughness_contribution": 0.19165509311304396,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.7399751643888928
+        }
+      },
+      {
+        "object_id": "large_hand_sanitizer_sa_1",
+        "surface_id": "large_hand_sanitizer_sa_1",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+        "mass_g": 836.04,
+        "roughness_index": 958.71,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "gecko_min_force_n": 1.3,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.7170946077543844,
+        "rank": 4,
+        "surface_rank": 4,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8357548019739868,
+          "mass": 0.8143178073058838,
+          "roughness": 0.7475007278540328,
+          "contact": 0.19808726378341393,
+          "semantic_contribution": 0.33430192078959475,
+          "mass_contribution": 0.20357945182647094,
+          "roughness_contribution": 0.14950014557080657,
+          "contact_contribution": 0.029713089567512087,
+          "total": 0.7170946077543844
+        }
+      },
+      {
+        "object_id": "500g_weight",
+        "surface_id": "500g_weight",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/500g_weight.jpg",
+        "mass_g": 500.0,
+        "roughness_index": 1129.82,
+        "projected_contact_fraction": 0.5952380952,
+        "semantic_description": "Clean, dry polymeric contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "gecko_min_force_n": 1.03,
+        "gecko_feasible": true,
+        "silicone_min_force_n": null,
+        "silicone_feasible": null,
+        "score": 0.6807492428303308,
+        "rank": 5,
+        "surface_rank": 5,
+        "condition_rank": 1,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.817244432300993,
+          "mass": 0.3907106828214792,
+          "roughness": 0.5308689960228187,
+          "contact": 1.0,
+          "semantic_contribution": 0.32689777292039723,
+          "mass_contribution": 0.0976776707053698,
+          "roughness_contribution": 0.10617379920456374,
+          "contact_contribution": 0.15,
+          "total": 0.6807492428303308
+        }
+      }
+    ],
+    "retrieved_surfaces": [
+      {
+        "surface_id": "large_cardboard_box",
+        "conditions": [
+          {
+            "object_id": "large_cardboard_box__condition_2",
+            "surface_id": "large_cardboard_box",
+            "condition_id": "condition_2",
+            "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+            "mass_g": 671.94,
+            "roughness_index": 810.34,
+            "projected_contact_fraction": 0.5,
+            "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+            "gecko_min_force_n": 6.154,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.8179358978099535,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9190038346056741,
+              "mass": 0.5959741397608921,
+              "roughness": 0.9942963280530116,
+              "contact": 0.6832104227790563,
+              "semantic_contribution": 0.3676015338422697,
+              "mass_contribution": 0.14899353494022302,
+              "roughness_contribution": 0.19885926561060233,
+              "contact_contribution": 0.10248156341685845,
+              "total": 0.8179358978099535
+            }
+          },
+          {
+            "object_id": "large_cardboard_box",
+            "surface_id": "large_cardboard_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/large_cardboard_box.jpg",
+            "mass_g": 671.94,
+            "roughness_index": 810.34,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry paperboard contact surface with a fibrous texture over a rigid substrate and no visible coating or contamination.",
+            "gecko_min_force_n": 4.54,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7451674239606071,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 2,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9190038346056741,
+              "mass": 0.5959741397608921,
+              "roughness": 0.9942963280530116,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.3676015338422697,
+              "mass_contribution": 0.14899353494022302,
+              "roughness_contribution": 0.19885926561060233,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.7451674239606071
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "camera_cardboard_box",
+        "conditions": [
+          {
+            "object_id": "camera_cardboard_box",
+            "surface_id": "camera_cardboard_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+            "mass_g": 871.93,
+            "roughness_index": 804.32,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+            "gecko_min_force_n": 7.46,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.8117335609246807,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9234072979467626,
+              "mass": 0.8647127852782004,
+              "roughness": 0.9823967792945675,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.36936291917870506,
+              "mass_contribution": 0.2161781963195501,
+              "roughness_contribution": 0.19647935585891352,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.8117335609246807
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "smooth_screw_box",
+        "conditions": [
+          {
+            "object_id": "smooth_screw_box",
+            "surface_id": "smooth_screw_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+            "mass_g": 819.27,
+            "roughness_index": 791.89,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+            "gecko_min_force_n": 1.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7399751643888928,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8020900723826799,
+              "mass": 0.7910838110210587,
+              "roughness": 0.9582754655652197,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.320836028953072,
+              "mass_contribution": 0.19777095275526468,
+              "roughness_contribution": 0.19165509311304396,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.7399751643888928
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "large_hand_sanitizer_sa_1",
+        "conditions": [
+          {
+            "object_id": "large_hand_sanitizer_sa_1",
+            "surface_id": "large_hand_sanitizer_sa_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+            "mass_g": 836.04,
+            "roughness_index": 958.71,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+            "gecko_min_force_n": 1.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.7170946077543844,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8357548019739868,
+              "mass": 0.8143178073058838,
+              "roughness": 0.7475007278540328,
+              "contact": 0.19808726378341393,
+              "semantic_contribution": 0.33430192078959475,
+              "mass_contribution": 0.20357945182647094,
+              "roughness_contribution": 0.14950014557080657,
+              "contact_contribution": 0.029713089567512087,
+              "total": 0.7170946077543844
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "500g_weight",
+        "conditions": [
+          {
+            "object_id": "500g_weight",
+            "surface_id": "500g_weight",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/500g_weight.jpg",
+            "mass_g": 500.0,
+            "roughness_index": 1129.82,
+            "projected_contact_fraction": 0.5952380952,
+            "semantic_description": "Clean, dry polymeric contact surface with a smooth nonporous finish and no visible coating or contamination.",
+            "gecko_min_force_n": 1.03,
+            "gecko_feasible": true,
+            "silicone_min_force_n": null,
+            "silicone_feasible": null,
+            "score": 0.6807492428303308,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.817244432300993,
+              "mass": 0.3907106828214792,
+              "roughness": 0.5308689960228187,
+              "contact": 1.0,
+              "semantic_contribution": 0.32689777292039723,
+              "mass_contribution": 0.0976776707053698,
+              "roughness_contribution": 0.10617379920456374,
+              "contact_contribution": 0.15,
+              "total": 0.6807492428303308
+            }
+          }
+        ]
+      }
+    ],
+    "physics_estimates": {},
+    "cache_stats": {
+      "enabled": true,
+      "hits": 82,
+      "misses": 2,
+      "writes": 2,
+      "read_errors": 0,
+      "legacy_hits": 0,
+      "generation": {
+        "hits": 0,
+        "misses": 2,
+        "writes": 2,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "embeddings": {
+        "hits": 82,
+        "misses": 0,
+        "writes": 0,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "backend_attempts": {
+        "generation": 2,
+        "embedding": 0
+      }
+    },
+    "active_grippers": [
+      "gecko"
+    ],
+    "generation_mode": "single",
+    "retrieval_mode": "hybrid",
+    "effective_inputs": [
+      "object_image",
+      "gripper_context",
+      "semantic_descriptor",
+      "semantic_experiences",
+      "mass",
+      "roughness",
+      "projected_contact"
+    ]
+  }
+}
