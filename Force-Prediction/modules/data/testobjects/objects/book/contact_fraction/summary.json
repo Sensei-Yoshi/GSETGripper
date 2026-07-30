@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "metric": "projected_two_pad_contact_fraction",
+  "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
+  "name": "book",
+  "timestamp": "2026-07-30T12:41:42",
+  "image": "image.png",
+  "px_per_mm": 10.085,
+  "params": {
+    "mode": "rigid",
+    "pad_length_mm": 106.68,
+    "side_angle_deg": 30.0,
+    "minimum_contact_fraction": 0.05,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "closing_axis": "x",
+    "rigid_contact_tolerance_mm": 2.5,
+    "finger_extension_mm": 63.5,
+    "planar_threshold": 0.15,
+    "placement": "maximized_contact_area"
+  },
+  "results": {
+    "object_height_mm": 286.57,
+    "object_width_mm": 37.94,
+    "perimeter_mm": 624.33,
+    "grasp_feasible": true,
+    "antipodal_grasp": true,
+    "chosen_pad_top_mm": 264.079,
+    "left": {
+      "contact_length_mm": 106.657,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.9998
+    },
+    "right": {
+      "contact_length_mm": 106.58,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.9991
+    },
+    "combined_contact_length_mm": 213.237,
+    "geometric_contact_fraction": 0.9994,
+    "contact_floor_applied": false,
+    "combined_contact_fraction": 0.9994,
+    "is_planar": true
+  },
+  "bend_radius_sweep_combined_fraction": {}
+}

@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "metric": "projected_two_pad_contact_fraction",
+  "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
+  "name": "apple",
+  "timestamp": "2026-07-30T12:44:06",
+  "image": "image.png",
+  "px_per_mm": 10.085,
+  "params": {
+    "mode": "rigid",
+    "pad_length_mm": 106.68,
+    "side_angle_deg": 30.0,
+    "minimum_contact_fraction": 0.05,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "closing_axis": "x",
+    "rigid_contact_tolerance_mm": 0.5,
+    "finger_extension_mm": 63.5,
+    "planar_threshold": 0.15,
+    "placement": "maximized_contact_area"
+  },
+  "results": {
+    "object_height_mm": 72.23,
+    "object_width_mm": 74.26,
+    "perimeter_mm": 233.16,
+    "grasp_feasible": true,
+    "antipodal_grasp": true,
+    "chosen_pad_top_mm": 72.193,
+    "left": {
+      "contact_length_mm": 12.652,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.1186
+    },
+    "right": {
+      "contact_length_mm": 13.277,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.1245
+    },
+    "combined_contact_length_mm": 25.929,
+    "geometric_contact_fraction": 0.1215,
+    "contact_floor_applied": false,
+    "combined_contact_fraction": 0.1215,
+    "is_planar": false
+  },
+  "bend_radius_sweep_combined_fraction": {}
+}

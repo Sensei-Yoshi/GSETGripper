@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "metric": "projected_two_pad_contact_fraction",
+  "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
+  "name": "hand_sanitizer",
+  "timestamp": "2026-07-30T12:41:33",
+  "image": "image.png",
+  "px_per_mm": 10.085,
+  "params": {
+    "mode": "rigid",
+    "pad_length_mm": 106.68,
+    "side_angle_deg": 30.0,
+    "minimum_contact_fraction": 0.05,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "closing_axis": "x",
+    "rigid_contact_tolerance_mm": 2.5,
+    "finger_extension_mm": 63.5,
+    "planar_threshold": 0.15,
+    "placement": "maximized_contact_area"
+  },
+  "results": {
+    "object_height_mm": 167.5,
+    "object_width_mm": 39.56,
+    "perimeter_mm": 399.64,
+    "grasp_feasible": true,
+    "antipodal_grasp": true,
+    "chosen_pad_top_mm": 119.779,
+    "left": {
+      "contact_length_mm": 106.576,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.999
+    },
+    "right": {
+      "contact_length_mm": 106.639,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.9996
+    },
+    "combined_contact_length_mm": 213.215,
+    "geometric_contact_fraction": 0.9993,
+    "contact_floor_applied": false,
+    "combined_contact_fraction": 0.9993,
+    "is_planar": true
+  },
+  "bend_radius_sweep_combined_fraction": {}
+}

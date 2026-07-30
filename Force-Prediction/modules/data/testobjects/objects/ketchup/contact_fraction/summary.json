@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "metric": "projected_two_pad_contact_fraction",
+  "metric_definition": "max(minimum_contact_fraction, geometric_contact_fraction) for an antipodal grasp; otherwise 0",
+  "name": "ketchup",
+  "timestamp": "2026-07-30T12:44:37",
+  "image": "image.png",
+  "px_per_mm": 10.085,
+  "params": {
+    "mode": "rigid",
+    "pad_length_mm": 106.68,
+    "side_angle_deg": 30.0,
+    "minimum_contact_fraction": 0.05,
+    "ds_mm": 0.25,
+    "smoothing_mm": 0.2,
+    "closing_axis": "x",
+    "rigid_contact_tolerance_mm": 0.5,
+    "finger_extension_mm": 63.5,
+    "planar_threshold": 0.15,
+    "placement": "maximized_contact_area"
+  },
+  "results": {
+    "object_height_mm": 171.66,
+    "object_width_mm": 86.78,
+    "perimeter_mm": 463.86,
+    "grasp_feasible": true,
+    "antipodal_grasp": true,
+    "chosen_pad_top_mm": 112.617,
+    "left": {
+      "contact_length_mm": 16.09,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.1508
+    },
+    "right": {
+      "contact_length_mm": 14.791,
+      "pad_length_mm": 106.68,
+      "contact_fraction": 0.1386
+    },
+    "combined_contact_length_mm": 30.881,
+    "geometric_contact_fraction": 0.1447,
+    "contact_floor_applied": false,
+    "combined_contact_fraction": 0.1447,
+    "is_planar": false
+  },
+  "bend_radius_sweep_combined_fraction": {}
+}

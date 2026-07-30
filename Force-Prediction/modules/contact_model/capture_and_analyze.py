@@ -156,7 +156,7 @@ def main() -> int:
     parser.add_argument("--minimum-bend-radius-mm", type=float, default=20.0)
     parser.add_argument("--side-angle-deg", type=float, default=30.0)
     parser.add_argument("--minimum-contact-fraction", type=float, default=0.05)
-    parser.add_argument("--rigid-contact-tolerance-mm", type=float, default=0.5)
+    parser.add_argument("--rigid-contact-tolerance-mm", type=float, default=2.5)
     parser.add_argument("--finger-extension-mm", type=float, default=63.5)
     parser.add_argument("--planar-threshold", type=float, default=0.15)
     parser.add_argument("--ds", type=float, default=0.25)

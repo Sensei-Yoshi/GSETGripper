@@ -25,3 +25,12 @@ data/expforce/results/
 
 # Keep the cache directory itself
 !data/cache/
+
+# Contact-model regenerable renders (rebuild via
+# python -m modules.contact_model.capture_and_analyze --image <object image.png>)
+modules/data/*/objects/*/contact_fraction/cutout.png
+modules/data/*/objects/*/contact_fraction/spline_overlay.png
+
+# Raw capture staging area; the source photo is preserved as each object's
+# modules/data/<dataset>/objects/<name>/image.png once processed
+scripts/testObjects/
