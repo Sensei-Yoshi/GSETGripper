@@ -118,7 +118,7 @@ def _card_editor(
             key=f"{prefix}_split",
             on_change=save_change,
             help=(
-                "Train rows may be used as E3/E4 references. Test rows are the only "
+                "Train rows may be used as E3-E6 references. Test rows are the only "
                 "objects predicted and scored by a fixed-holdout benchmark."
             ),
         )

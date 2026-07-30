@@ -18,6 +18,7 @@ from modules.config import load_config
 from modules.contracts import Gripper
 from modules.datasets import DatasetObjectEdit, get_dataset, update_dataset_object
 from modules.suites import (
+    SUITE_REPORTING_VERSION,
     create_suite,
     evaluate_suite,
     run_suite_predictions,
@@ -179,7 +180,10 @@ def test_suite_generates_e1_early_then_resumes_other_experiments(
 
     assert manifest["status"] == "partially_generated"
     assert manifest["runs"]["e1"]["status"] == "completed"
-    assert {manifest["runs"][name]["status"] for name in ("e2", "e3", "e4")} == {
+    assert {
+        manifest["runs"][name]["status"]
+        for name in ("e2", "e3", "e4", "e5", "e6")
+    } == {
         "waiting"
     }
     e1_batch_id = manifest["runs"]["e1"]["prediction_batch_id"]
@@ -202,11 +206,35 @@ def test_suite_generates_e1_early_then_resumes_other_experiments(
     artifacts = suite_evaluation_artifacts(cfg, manifest)
 
     assert manifest["status"] == "evaluated"
-    assert set(artifacts) == {"e1", "e2", "e3", "e4"}
+    assert set(artifacts) == {"e1", "e2", "e3", "e4", "e5", "e6"}
     assert manifest["evaluations"][-1]["common_object_ids"] == ["one", "two"]
     assert set(manifest["evaluations"][-1]["exports"]) == {
         "png",
         "svg",
+        "force_by_object_png",
+        "force_by_object_svg",
+        "percentage_error_png",
+        "percentage_error_svg",
         "data_csv",
         "metrics_csv",
+        "statistics_csv",
     }
+    assert (
+        manifest["evaluations"][-1]["reporting_version"]
+        == SUITE_REPORTING_VERSION
+    )
+
+    unchanged = evaluate_suite(cfg, manifest)
+    assert len(unchanged["evaluations"]) == 1
+
+    manifest["evaluations"][0]["reporting_version"] = 1
+    upgraded = evaluate_suite(cfg, manifest)
+    assert len(upgraded["evaluations"]) == 2
+    assert upgraded["evaluations"][0]["reporting_version"] == 1
+    assert (
+        upgraded["evaluations"][-1]["reporting_version"]
+        == SUITE_REPORTING_VERSION
+    )
+
+    reused_upgrade = evaluate_suite(cfg, upgraded)
+    assert len(reused_upgrade["evaluations"]) == 2

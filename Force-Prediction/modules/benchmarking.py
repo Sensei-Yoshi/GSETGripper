@@ -169,7 +169,8 @@ def benchmark_scope(cfg: Config, experiment: str) -> BenchmarkScope:
         for object_id in test_ids
         if object_id in eligibility.skipped_queries
     }
-    if experiment_id in {"e3", "e4"} and not references:
+    spec = EXPERIMENT_CATALOG[experiment_id]
+    if spec.retrieval_mode is not None and not references:
         reason = ("no eligible training reference object",)
         for object_id in queries:
             skipped[object_id] = reason
@@ -226,7 +227,7 @@ def generate_benchmark_predictions(
                 else record.surface_id != item.surface_id
             )
             and (
-                experiment_id not in {"e3", "e4"}
+                EXPERIMENT_CATALOG[experiment_id].retrieval_mode is None
                 or record.object_id in reference_ids
             )
         ]
@@ -297,7 +298,9 @@ def generate_benchmark_predictions(
             progress(index, len(object_ids), object_id)
 
     definition = cfg.experiment(experiment_id)
-    retrieval_mode = EXPERIMENT_CATALOG[experiment_id].retrieval_mode
+    experiment_spec = EXPERIMENT_CATALOG[experiment_id]
+    effective_cfg = experiment_spec.scoped_config(cfg)
+    retrieval_mode = experiment_spec.retrieval_mode
     prompt_context = prompt_provenance(cfg, definition.prompt)
     metadata = {
         "batch_id": batch_id,
@@ -343,7 +346,8 @@ def generate_benchmark_predictions(
         "model": cfg.models.vlm,
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,
-        "inputs": cfg.inputs.model_dump(mode="json"),
+        "inputs": effective_cfg.inputs.model_dump(mode="json"),
+        "effective_inputs": list(rows[0]["pipeline_result"]["effective_inputs"]),
         "roughness_measurement": cfg.roughness.model_dump(mode="json"),
         "active_grippers": [gripper.value for gripper in active_grippers],
         "generation_mode": "joint" if joint_mode else "single",

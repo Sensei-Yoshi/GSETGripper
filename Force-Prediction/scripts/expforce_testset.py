@@ -9,7 +9,7 @@ reported ~0.43 N.
     python scripts/expforce_testset.py --limit 20 --k 5 --confirm-gemini-cost
 
 Roughness/contact are unknown here, held constant (index 500, a=1.0), so this is a
-single-embodiment compatibility check of the E4 interface, not a full E4 evaluation.
+single-embodiment compatibility check of the E6 interface, not a full E6 evaluation.
 Cost is bounded by --limit;
 all calls disk-cached.
 """
@@ -128,7 +128,7 @@ def run(cfg, records, k: int) -> None:
                 q,
                 image,
                 retrieved,
-                instruction=cfg.prompts.experiments["e4"],
+                instruction=cfg.prompts.experiments["e6"],
                 include_retrieval=True,
                 include_measured=True,
             )

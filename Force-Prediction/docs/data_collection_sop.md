@@ -121,6 +121,6 @@ is rebuildable and is not source data.
 ## Splitting (must not leak)
 Set the source CSV's `split` column to `train` or `test` before benchmark prediction.
 Every condition of one physical `surface_id` must use the same value. Fixed-holdout
-benchmarks predict and score only test rows; E3/E4 may retrieve only train rows.
+benchmarks predict and score only test rows; E3–E6 may retrieve only train rows.
 The CLI cross-validation runner separately supports grouped folds through
 `evaluation.make_folds`.

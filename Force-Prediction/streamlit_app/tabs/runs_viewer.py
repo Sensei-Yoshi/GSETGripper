@@ -20,10 +20,14 @@ from modules.reporting import (
     calibration_figure,
     common_intersection_artifacts,
     comparison_rows,
+    force_error_statistics_rows,
     individual_calibration_figure,
     metrics_rows,
+    suite_force_by_object_figure,
+    suite_percentage_error_figure,
 )
 from modules.suites import (
+    PRIMARY_EXPERIMENTS,
     SUITE_SCHEMA_VERSION,
     create_suite,
     evaluate_suite,
@@ -100,26 +104,91 @@ def _render_comparison(
         for experiment, artifact in artifacts.items()
     }
     st.write("**Per-experiment evaluated samples:**", counts)
-    st.subheader("Per-experiment metrics")
-    st.dataframe(pd.DataFrame(metrics_rows(artifacts)), hide_index=True, width="stretch")
-
     comparable, common_ids = common_intersection_artifacts(artifacts, context.config)
     if not common_ids:
         st.info(
-            "A cross-experiment comparison needs at least one object evaluated in all E1–E4 "
-            "conditions. Individual metrics remain available above."
+            "A cross-experiment comparison needs at least one object evaluated in all E1–E6 "
+            "conditions. Individual metrics remain available below."
+        )
+        st.subheader("Per-experiment metrics")
+        st.dataframe(
+            pd.DataFrame(metrics_rows(artifacts)),
+            hide_index=True,
+            width="stretch",
         )
         return
     st.caption(
         f"Cross-experiment comparison uses the common intersection of {len(common_ids)} objects."
     )
-    figure = calibration_figure(comparable)
-    st.pyplot(figure, width="stretch")
+
+    st.subheader("Force predictions by object")
+    force_figure = suite_force_by_object_figure(
+        comparable,
+        image_root=context.config.root,
+    )
+    st.pyplot(force_figure, width="stretch")
     import matplotlib.pyplot as plt
 
+    plt.close(force_figure)
+
+    st.subheader("Signed percentage error by object")
+    percentage_figure = suite_percentage_error_figure(
+        comparable,
+        image_root=context.config.root,
+    )
+    st.pyplot(percentage_figure, width="stretch")
+    plt.close(percentage_figure)
+
+    st.subheader("True-vs-predicted calibration grid")
+    figure = calibration_figure(comparable)
+    st.pyplot(figure, width="stretch")
     plt.close(figure)
-    st.subheader("Common-intersection metrics")
-    st.dataframe(pd.DataFrame(metrics_rows(comparable)), hide_index=True, width="stretch")
+
+    st.subheader("Force-error statistics")
+    statistics = pd.DataFrame(force_error_statistics_rows(comparable)).rename(
+        columns={
+            "experiment": "Experiment",
+            "scope": "Scope",
+            "n": "n",
+            "mae_n": "MAE (N)",
+            "rmse_n": "RMSE (N)",
+            "residual_std_n": "Residual SD (N)",
+            "overprediction_count": "Over count",
+            "underprediction_count": "Under count",
+            "exact_prediction_count": "Exact count",
+            "average_overprediction_n": "Avg. over (N)",
+            "average_underprediction_n": "Avg. under (N)",
+        }
+    )
+    numeric_columns = [
+        "MAE (N)",
+        "RMSE (N)",
+        "Residual SD (N)",
+        "Avg. over (N)",
+        "Avg. under (N)",
+    ]
+    st.dataframe(
+        statistics.style.format(
+            {column: "{:.3f}" for column in numeric_columns},
+            na_rep="N/A",
+        ),
+        hide_index=True,
+        width="stretch",
+    )
+
+    with st.expander("Comprehensive evaluation metrics"):
+        st.caption("All available rows by experiment")
+        st.dataframe(
+            pd.DataFrame(metrics_rows(artifacts)),
+            hide_index=True,
+            width="stretch",
+        )
+        st.caption("Common-object intersection")
+        st.dataframe(
+            pd.DataFrame(metrics_rows(comparable)),
+            hide_index=True,
+            width="stretch",
+        )
 
     st.subheader("Object detail")
     long_frame = pd.DataFrame(comparison_rows(comparable))
@@ -152,7 +221,7 @@ def _render_comparison(
 
 def _suite_comparison(context: AppContext) -> None:
     cfg = context.config
-    st.subheader("E1–E4 suite comparison")
+    st.subheader("E1–E6 suite comparison")
     st.caption(
         "Prediction generation and evaluation are separate. Completed prediction batches "
         "remain immutable while missing conditions can become ready later."
@@ -160,7 +229,7 @@ def _suite_comparison(context: AppContext) -> None:
     confirmed = st.checkbox(
         "Confirm Gemini cost",
         value=False,
-        help="A full suite can make up to 516 Gemini force-prediction calls.",
+        help="A full suite makes one force-prediction call per eligible object and condition.",
         key="suite_cost_confirmation",
     )
 
@@ -182,7 +251,7 @@ def _suite_comparison(context: AppContext) -> None:
         )
 
     pending_counts: dict[str, int] = {}
-    for experiment in ("e1", "e2", "e3", "e4"):
+    for experiment in PRIMARY_EXPERIMENTS:
         completed = (
             selected is not None
             and selected.get("schema_version") == SUITE_SCHEMA_VERSION

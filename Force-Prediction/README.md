@@ -6,16 +6,18 @@ select the lowest-force feasible option.
 The command range is continuous from `0` to `8 N`; predictions are never rounded to a
 collection grid.
 
-The active research suite has four explicit VLM ablation methods:
+The active research suite has six explicit VLM ablation methods:
 
 | ID | Method |
 |---|---|
 | E1 | Vision-only zero-shot VLM response |
 | E2 | Image + measured-input VLM response |
 | E3 | Semantic-only experiential retrieval + VLM response |
-| E4 | Semantic + sensor-fusion retrieval + VLM response |
+| E4 | Semantic + mass retrieval + VLM response |
+| E5 | E4 + continuous roughness |
+| E6 | E5 + projected contact fraction |
 
-Single-candidate runs use a direct per-gripper response. Paired E1–E4 runs also return an
+Single-candidate runs use a direct per-gripper response. Paired E1–E6 runs also return an
 explicit model recommendation, but Python's lowest-feasible-force rule remains authoritative.
 
 ## Quickstart
@@ -47,13 +49,13 @@ surface/contact estimation. Partial datasets can run any experiment whose object
 inputs and reference outcomes are ready; they no longer wait for dataset-wide completion.
 
 Known-object runs are leave-one-object-out and custom queries use the entire eligible
-experience pool. E3 retrieves by semantic cosine similarity only. E4 uses the configured
-semantic + physical hybrid score. The global Gecko/silicone checkboxes request either one
+experience pool. E3 retrieves by semantic cosine similarity only. E4 adds mass to ranking,
+E5 adds continuous roughness, and E6 adds projected contact. The global Gecko/silicone checkboxes request either one
 direct per-gripper response or one paired structured response.
 
 Benchmarks use two explicit stages and the dataset CSV's `split=train/test` assignment.
-**Run predictions** saves immutable, truth-free E1–E4 prediction batches for query-ready test
-objects; E3/E4 use only train rows as references. **Evaluate & generate plots** later joins a
+**Run predictions** saves immutable, truth-free E1–E6 prediction batches for query-ready test
+objects; E3–E6 use only train rows as references. **Evaluate & generate plots** later joins a
 saved batch to the currently available force labels, evaluates the labeled subset without model
 calls, and versions JSON, CSV, PNG, and SVG results. Detailed prediction/evaluation histories and
 suite comparisons live in **Runs Viewer**. Its benchmark **Object Inspector** dropdown opens any
@@ -69,7 +71,7 @@ streamlit run app.py
 
 Edit the fixed written gripper descriptions and all prompt text in `prompts.yaml` or the
 **Prompts & Embodiments** tab. No gripper images are sent to the VLM. The **Runs Viewer** creates and
-resumes saved E1–E4 suites, compares the two grippers in separate panels, inspects
+resumes saved E1–E6 suites, compares the two grippers in separate panels, inspects
 provenance, and exports PNG, SVG, and CSV results. The **Data Viewer** shows the selected
 dataset's images, optional measurements/outcomes, descriptions, and embedding status. For a
 dataset, its object editor auto-saves nullable measurement/outcome corrections, recalculates
@@ -99,15 +101,15 @@ python scripts/analyze_topography.py --dataset Matforcedata --objects lechee ora
 The reported topographic score is an uncalibrated monocular-image proxy. Preserve its raw angular
 statistics and calibrate it against measured slip or friction before using it as a physical value.
 
-Global roughness and projected-contact switches sit beside the Dataset selector. Disabling
-one removes it from E2/E4 VLM payloads and sets its E4 retrieval weight to zero before the
-remaining weights are renormalized. E1 and E3 are unaffected because physical fields are
-excluded by construction.
+E4–E6 are fixed nested ablations. E4 exposes mass, E5 adds continuous roughness, and E6 adds
+projected contact; the same fields govern both retrieval scoring and the VLM payload. Disabled
+terms receive zero retrieval weight and the remaining weights are renormalized. E1 and E3
+exclude physical fields by construction.
 
-The adjacent **Roughness sent to VLM** control supports an experimental binary mode. It
+The **Roughness sent to VLM** control supports an experimental binary mode for E2. It
 derives `smooth` below 1340 and `rough` at or above 1340, then withholds the raw index,
-continuous roughness similarity, and threshold from Gemini. E4 retrieval still uses the
-continuous index, keeping the neighbor set directly comparable with the continuous baseline.
+continuous roughness similarity, and threshold from Gemini. E5 and E6 remain continuous by
+definition so cross-run ablations stay comparable.
 
 The force pipeline uses the recorded continuous `roughness_index` from the LED measurement
 system; larger values mean rougher surfaces. It is separate from the Marigold appearance and
@@ -127,11 +129,11 @@ under `data/cache/<dataset>/{generation,embeddings}` and resumable. The legacy f
 ## Experiment runner
 
 ```bash
-python scripts/run_experiment.py --exp e4 --confirm-gemini-cost
+python scripts/run_experiment.py --exp e6 --confirm-gemini-cost
 python scripts/run_experiment.py --all --confirm-gemini-cost
 ```
 
-E1–E4 use Gemini generation and E3/E4 use Gemini embeddings. Cached identical requests
+E1–E6 use Gemini generation and E3–E6 use Gemini embeddings. Cached identical requests
 make no new call.
 
 ## Data collection
@@ -162,7 +164,7 @@ the precision of predictions or hardware commands. See
 | `modules/cache.py` | Dataset-isolated response caches plus Exp-Force legacy read-through |
 | `modules/expforce.py` | Synthetic fixture preparation and saved single-run provenance |
 | `modules/benchmarking.py` | Immutable prediction batches and versioned truth evaluation |
-| `modules/suites.py` / `reporting.py` | Two-stage E1–E4 suites and paper-ready comparisons |
+| `modules/suites.py` / `reporting.py` | Two-stage E1–E6 suites and paper-ready comparisons |
 | `modules/models/` | Gemini, background-removal, and Marigold model adapters |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 

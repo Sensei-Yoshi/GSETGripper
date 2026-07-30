@@ -5,7 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from ..config import Config
+from ..config import EXPERIMENT_IDS, Config
+from .catalog import EXPERIMENT_CATALOG
 
 if TYPE_CHECKING:
     from ..datasets.models import Dataset, DatasetObject
@@ -34,17 +35,15 @@ class EvaluationTruthEligibility:
 
 def _input_reasons(item: DatasetObject, cfg: Config, experiment_id: str) -> list[str]:
     reasons: list[str] = []
+    spec = EXPERIMENT_CATALOG[experiment_id]
     if not item.image.available or not (cfg.root / item.image.path).is_file():
         reasons.append("image unavailable")
-    if experiment_id in {"e2", "e4"}:
+    if spec.uses_measurements:
         if item.mass_g is None:
             reasons.append("mass not recorded")
-        if cfg.inputs.use_roughness and item.roughness_index is None:
+        if spec.uses_roughness and item.roughness_index is None:
             reasons.append("roughness index not recorded")
-        if (
-            cfg.inputs.use_projected_contact
-            and item.projected_contact_fraction is None
-        ):
+        if spec.uses_projected_contact and item.projected_contact_fraction is None:
             reasons.append("projected contact fraction not recorded")
     return reasons
 
@@ -56,12 +55,13 @@ def _reference_ready(item: DatasetObject, cfg: Config, experiment_id: str) -> bo
         for gripper in cfg.prediction.active_grippers
     ):
         return False
-    if experiment_id == "e4":
+    spec = EXPERIMENT_CATALOG[experiment_id]
+    if spec.retrieval_mode is not None and spec.uses_measurements:
         if item.mass_g is None:
             return False
-        if cfg.inputs.use_roughness and item.roughness_index is None:
+        if spec.uses_roughness and item.roughness_index is None:
             return False
-        if cfg.inputs.use_projected_contact and item.projected_contact_fraction is None:
+        if spec.uses_projected_contact and item.projected_contact_fraction is None:
             return False
     return True
 
@@ -117,14 +117,15 @@ def experiment_eligibility(
 ) -> ExperimentEligibility:
     """Return query/reference/benchmark readiness without requiring full coverage."""
     experiment = experiment_id.lower()
-    if experiment not in {"e1", "e2", "e3", "e4"}:
+    if experiment not in EXPERIMENT_IDS:
         raise KeyError(f"unknown active experiment {experiment_id!r}")
+    spec = EXPERIMENT_CATALOG[experiment]
 
     reference_ids = tuple(
         sorted(
             item.object_id
             for item in dataset.objects.values()
-            if experiment in {"e3", "e4"}
+            if spec.retrieval_mode is not None
             and item.split == "train"
             and _reference_ready(item, cfg, experiment)
         )
@@ -135,7 +136,7 @@ def experiment_eligibility(
     benchmark_ids: list[str] = []
     for item in dataset.objects.values():
         reasons = _input_reasons(item, cfg, experiment)
-        if experiment in {"e3", "e4"} and not any(
+        if spec.retrieval_mode is not None and not any(
             dataset.objects[reference_id].surface_id != item.surface_id
             for reference_id in reference_ids
         ):

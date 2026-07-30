@@ -26,14 +26,13 @@ def render(context: AppContext) -> None:
 3. Open **Single Run**, choose one of the {object_count} active objects, or upload an image.
    E1 can run from an image alone; other conditions report exactly which inputs or references
    are still missing.
-4. Select Gecko, silicone, or both with the global prediction checkboxes. For conditions
-   that use measurements, record mass and optionally enable roughness and projected contact.
-5. Choose an experiment. Adjust retrieval weights and hybrid similarity constants for E4;
-   E3 is fixed to semantic cosine similarity.
+4. Select Gecko, silicone, or both with the global prediction checkboxes. Record every
+   measurement required by the selected fixed experiment profile.
+5. Choose an experiment. Adjust retrieval weights for E4-E6; E3 is fixed to semantic cosine.
 6. Click **Run pipeline**. Single-target runs show force and feasibility; paired runs also
    compare candidates and select the lowest-force feasible gripper.
 7. Use **Benchmark** to save truth-free predictions and evaluate them later without model
-   calls. Use **Runs Viewer** for versioned results, a resumable E1–E4 comparison, and
+   calls. Use **Runs Viewer** for versioned results, a resumable E1–E6 comparison, and
    saved-run inspection. Use **Data Viewer** for the experience catalog and
    **Cache Status** to confirm that repeated Gemini requests are being reused.
         """
@@ -44,7 +43,9 @@ def render(context: AppContext) -> None:
         "e1": "Image + target-aware VLM",
         "e2": "Image + sensors + target-aware VLM",
         "e3": "Image + semantic-only retrieval + target-aware VLM",
-        "e4": "Sensors + hybrid retrieval + target-aware VLM",
+        "e4": "Semantic + mass retrieval + target-aware VLM",
+        "e5": "E4 + continuous roughness",
+        "e6": "E5 + projected contact",
     }
     experiments = pd.DataFrame(
         [
@@ -59,7 +60,8 @@ def render(context: AppContext) -> None:
     st.dataframe(experiments, hide_index=True, width="stretch")
     st.caption(
         "Primary comparisons: E1 vs E2 tests sensors without experience; E1 vs E3 tests "
-        "semantic experience without sensors; E4 tests their combined system."
+        "semantic experience without sensors; E4-E6 isolate the incremental value of "
+        "mass, roughness, and projected contact."
     )
 
     st.subheader("Prediction prompt routing")
@@ -69,19 +71,21 @@ def render(context: AppContext) -> None:
     )
     with st.expander("Shared prediction system prompt"):
         st.code(base_cfg.prompts.prediction_system, language=None)
-    for experiment in ("e1", "e2", "e3", "e4"):
+    for experiment in EXPERIMENT_IDS:
         prompt_key = base_cfg.experiment(experiment).prompt
         assert prompt_key is not None
         with st.expander(f"{experiment.upper()} instruction — prompts.experiments.{prompt_key}"):
             st.code(base_cfg.prompts.experiments[prompt_key], language=None)
 
-    st.header("What Gemini-backed E3/E4 means")
+    st.header("What Gemini-backed E3-E6 means")
     st.markdown(
         """
 For a known dataset object, the pipeline excludes that object and uses eligible outcomes from the other objects.
 For a custom query, it uses the eligible outcomes in the active dataset. It reuses one cached text embedding per reference object for
 the active grippers and embeds the query description. E3 ranks by semantic cosine only and hides
-all sensor values. E4 ranks with the displayed semantic + sensor hybrid similarity. Each
+all sensor values. E4 adds mass, E5 adds continuous roughness, and E6 adds projected contact.
+The hybrid conditions receive the normalized ranking weights as provenance; those weights are
+not a force equation. Each
 retrieves five objects once, with only active-gripper outcomes attached to each object.
 One target uses a per-gripper response; two targets use one joint response. Neither
 condition constructs or sends a physics estimate. Python selects the lower feasible
@@ -135,7 +139,7 @@ refresh visual descriptions and reference embeddings.
             },
             {
                 "Section": "Runs Viewer",
-                "Purpose": "Inspect prediction/evaluation history and run two-stage E1–E4 suites.",
+                "Purpose": "Inspect prediction/evaluation history and run two-stage E1–E6 suites.",
             },
             {
                 "Section": "Data Viewer",

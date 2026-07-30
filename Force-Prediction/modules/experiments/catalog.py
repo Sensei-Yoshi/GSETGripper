@@ -8,6 +8,8 @@ from .e1 import E1Strategy
 from .e2 import E2Strategy
 from .e3 import E3Strategy
 from .e4 import E4Strategy
+from .e5 import E5Strategy
+from .e6 import E6Strategy
 from .helper import ExperimentSpec, ExperimentStrategy
 
 EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
@@ -25,6 +27,8 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         "E1 plus authoritative mass, roughness, and projected contact.",
         1,
         uses_measurements=True,
+        uses_roughness=True,
+        uses_projected_contact=True,
     ),
     "e3": ExperimentSpec(
         "e3",
@@ -37,10 +41,33 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
     "e4": ExperimentSpec(
         "e4",
         ExperimentMethod.HYBRID_RETRIEVAL_VLM,
-        "Semantic + sensor-fusion retrieval",
-        "Measurements and hybrid-ranked experiences for the active grippers.",
+        "Semantic + mass retrieval",
+        "Semantic experiences ranked with semantic similarity and mass only.",
         1,
         uses_measurements=True,
+        retrieval_mode=RetrievalMode.HYBRID,
+    ),
+    "e5": ExperimentSpec(
+        "e5",
+        ExperimentMethod.HYBRID_RETRIEVAL_VLM,
+        "Semantic + mass + roughness retrieval",
+        "E4 plus authoritative continuous roughness in ranking and VLM evidence.",
+        1,
+        uses_measurements=True,
+        uses_roughness=True,
+        roughness_representation="continuous",
+        retrieval_mode=RetrievalMode.HYBRID,
+    ),
+    "e6": ExperimentSpec(
+        "e6",
+        ExperimentMethod.HYBRID_RETRIEVAL_VLM,
+        "Full sensor-fusion retrieval",
+        "E5 plus authoritative projected contact fraction in ranking and VLM evidence.",
+        1,
+        uses_measurements=True,
+        uses_roughness=True,
+        uses_projected_contact=True,
+        roughness_representation="continuous",
         retrieval_mode=RetrievalMode.HYBRID,
     ),
 }
@@ -53,6 +80,8 @@ STRATEGY_TYPES: dict[str, type[ExperimentStrategy]] = {
     "e2": E2Strategy,
     "e3": E3Strategy,
     "e4": E4Strategy,
+    "e5": E5Strategy,
+    "e6": E6Strategy,
 }
 
 

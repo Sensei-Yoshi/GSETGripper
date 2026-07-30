@@ -224,10 +224,13 @@ def test_experiment_eligibility_uses_only_enabled_inputs(tmp_path) -> None:
 
     run_cfg.inputs.use_roughness = False
     run_cfg.inputs.use_projected_contact = False
-    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == (
+    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == ("complete",)
+    assert experiment_eligibility(dataset, run_cfg, "e4").query_ids == (
         "complete",
         "mass_only",
     )
+    assert experiment_eligibility(dataset, run_cfg, "e5").query_ids == ()
+    assert experiment_eligibility(dataset, run_cfg, "e6").query_ids == ()
     assert experiment_eligibility(dataset, run_cfg, "e4").reference_ids == (
         "complete",
         "mass_only",

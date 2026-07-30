@@ -1,4 +1,4 @@
-"""Resumable two-stage E1–E4 prediction and evaluation suites."""
+"""Resumable two-stage E1–E6 prediction and evaluation suites."""
 
 from __future__ import annotations
 
@@ -20,15 +20,16 @@ from .benchmarking import (
 )
 from .config import EXPERIMENT_DEFINITION_VERSION, Config, prompt_bundle_sha256
 from .datasets.storage import write_json_atomic
-from .experiments import experiment_eligibility
+from .experiments import EXPERIMENT_CATALOG, experiment_eligibility
 from .expforce import prompt_provenance
 from .reporting import (
     common_intersection_artifacts,
     export_comparison,
 )
 
-PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4")
-SUITE_SCHEMA_VERSION = 10
+PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4", "e5", "e6")
+SUITE_SCHEMA_VERSION = 11
+SUITE_REPORTING_VERSION = 2
 
 
 def _definition_snapshot(cfg: Config) -> dict:
@@ -53,6 +54,10 @@ def _definition_snapshot(cfg: Config) -> dict:
         "prompt_bundle_sha256": prompt_bundle_sha256(cfg),
         "experiment_definition_version": EXPERIMENT_DEFINITION_VERSION,
         "experiment_definitions": definitions,
+        "experiment_input_profiles": {
+            name: EXPERIMENT_CATALOG[name].scoped_config(cfg).inputs.model_dump(mode="json")
+            for name in PRIMARY_EXPERIMENTS
+        },
         "models": {
             "vlm": cfg.models.vlm,
             "embedding": cfg.retrieval.embedding.model,
@@ -88,7 +93,7 @@ def suite_manifest_path(cfg: Config, suite_id: str) -> Path:
 
 def create_suite(cfg: Config) -> dict:
     created_at = datetime.now(UTC)
-    suite_id = created_at.strftime("%Y%m%dT%H%M%S%fZ_primary_e1_e4")
+    suite_id = created_at.strftime("%Y%m%dT%H%M%S%fZ_primary_e1_e6")
     snapshot = _definition_snapshot(cfg)
     manifest = {
         "schema_version": SUITE_SCHEMA_VERSION,
@@ -303,7 +308,10 @@ def evaluate_suite(cfg: Config, manifest: dict) -> dict:
 
     signature = _suite_evaluation_signature(evaluations)
     for existing in manifest.get("evaluations", []):
-        if existing.get("truth_snapshot_sha256") == signature:
+        if (
+            existing.get("truth_snapshot_sha256") == signature
+            and existing.get("reporting_version", 1) == SUITE_REPORTING_VERSION
+        ):
             return manifest
 
     created_at = datetime.now(UTC)
@@ -320,7 +328,11 @@ def evaluate_suite(cfg: Config, manifest: dict) -> dict:
             / "evaluations"
             / suite_evaluation_id
         )
-        exported = export_comparison(comparable, destination)
+        exported = export_comparison(
+            comparable,
+            destination,
+            image_root=cfg.root,
+        )
         exports = {
             name: str(Path(path).relative_to(cfg.root))
             for name, path in exported.items()
@@ -330,6 +342,7 @@ def evaluate_suite(cfg: Config, manifest: dict) -> dict:
         {
             "evaluation_id": suite_evaluation_id,
             "created_at": created_at.isoformat(),
+            "reporting_version": SUITE_REPORTING_VERSION,
             "truth_snapshot_sha256": signature,
             "artifacts": paths_by_experiment,
             "coverage": {

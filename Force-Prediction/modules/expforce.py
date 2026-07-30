@@ -564,7 +564,7 @@ def prompt_provenance(cfg: Config, prompt_key: str | None) -> dict:
 
 def backend_provenance(cfg: Config, experiment: str) -> dict[str, str | None]:
     """Record the actual force and semantic backends used by an experiment."""
-    if experiment in {"e1", "e2", "e3", "e4"}:
+    if experiment in EXPERIMENT_CATALOG:
         return {
             "force": (
                 "gemini_single_generation"
@@ -572,7 +572,9 @@ def backend_provenance(cfg: Config, experiment: str) -> dict[str, str | None]:
                 else "gemini_joint_generation"
             ),
             "semantic_embedding": (
-                cfg.retrieval.embedding.model if experiment in {"e3", "e4"} else None
+                cfg.retrieval.embedding.model
+                if EXPERIMENT_CATALOG[experiment].retrieval_mode is not None
+                else None
             ),
         }
     raise KeyError(f"unknown experiment {experiment!r}")
@@ -630,6 +632,7 @@ def save_pipeline_run(
 
     run_id = f"{created_at.strftime('%Y%m%dT%H%M%S%fZ')}_{experiment}_{query['object_id']}"
     definition = cfg.experiment(experiment)
+    effective_cfg = EXPERIMENT_CATALOG[experiment].scoped_config(cfg)
     prompt_key = definition.prompt
     prompt_context = prompt_provenance(cfg, prompt_key)
     artifact = {
@@ -653,7 +656,7 @@ def save_pipeline_run(
             "embedding": cfg.retrieval.embedding.model,
             "embedding_dim": cfg.retrieval.embedding.dim,
         },
-        "inputs": cfg.inputs.model_dump(mode="json"),
+        "inputs": effective_cfg.inputs.model_dump(mode="json"),
         "roughness_measurement": cfg.roughness.model_dump(mode="json"),
         "active_grippers": [
             gripper.value for gripper in cfg.prediction.active_grippers
@@ -726,6 +729,12 @@ def saved_run_experiment_label(run: dict) -> str:
     experiment = str(run.get("experiment", "unknown")).lower()
     version = int(run.get("experiment_definition_version", 0) or 0)
     method = str(run.get("experiment_method") or _legacy_experiment_method(run))
+    if (
+        experiment == "e4"
+        and 3 <= version < 10
+        and method == ExperimentMethod.HYBRID_RETRIEVAL_VLM.value
+    ):
+        return f"E4 — Semantic + sensor-fusion retrieval (v{version})"
     if experiment in EXPERIMENT_CATALOG:
         expected = EXPERIMENT_CATALOG[experiment].method.value
         if version >= 3 and method == expected:

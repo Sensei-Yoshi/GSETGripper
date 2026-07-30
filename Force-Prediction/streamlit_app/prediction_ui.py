@@ -163,7 +163,7 @@ def render_prediction(
             if result.model_recommended_gripper is not None
             else "Not applicable",
         )
-    active_experiment = experiment or st.session_state.get("last_experiment", "e4")
+    active_experiment = experiment or st.session_state.get("last_experiment", "e6")
     metric_cols[3].metric("Experiment", format_experiment(active_experiment))
 
     if result.recommendation_agrees_with_selector is False:
@@ -281,7 +281,7 @@ def render_prediction(
 
     st.subheader(f"Top {cfg.retrieval.k} reference matches")
     if detailed.retrieved_objects:
-        retrieval_label = "E3" if detailed.retrieval_mode == "semantic_only" else "E4"
+        retrieval_label = detailed.experiment_id.upper()
         st.caption(
             f"{retrieval_label} retrieves each object once and sends outcomes only for "
             f"the active grippers: {', '.join(active_grippers)}."
@@ -299,4 +299,4 @@ def render_prediction(
     if detailed.retrieval_mode == "semantic_only":
         render_semantic_formula()
     elif detailed.retrieval_mode == "hybrid":
-        render_formula(cfg)
+        render_formula(EXPERIMENT_CATALOG[detailed.experiment_id].scoped_config(cfg))

@@ -207,8 +207,8 @@ class ExperimentMethod(StrEnum):
     HYBRID_RETRIEVAL_VLM = "hybrid_retrieval_vlm"
 
 
-EXPERIMENT_IDS = ("e1", "e2", "e3", "e4")
-EXPERIMENT_DEFINITION_VERSION = 9
+EXPERIMENT_IDS = ("e1", "e2", "e3", "e4", "e5", "e6")
+EXPERIMENT_DEFINITION_VERSION = 10
 
 
 class ExperimentConfig(BaseModel):
@@ -289,7 +289,7 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
     if "dry_run" in raw.get("models", {}):
         raise ValueError(
             "models.dry_run is no longer supported; Gemini is the production backend "
-            "for descriptions, embeddings, and E1-E4 prediction"
+            "for descriptions, embeddings, and E1-E6 prediction"
         )
     if "provider" in raw.get("retrieval", {}).get("embedding", {}):
         raise ValueError(

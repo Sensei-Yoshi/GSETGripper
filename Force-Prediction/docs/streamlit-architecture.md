@@ -48,7 +48,7 @@ used by the camera and background-removal model preserve this rule.
 The **Benchmark** tab owns the two actions: immutable prediction generation and later
 truth evaluation. The **Runs Viewer** owns saved single runs, prediction/evaluation histories,
 a Single Run-style object inspector for every prediction in a selected benchmark batch, and
-resumable two-stage E1–E4 suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
+resumable two-stage E1–E6 suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
 auto-saving measurement and partial outcome labels. CSV sources remain authoritative; image
 folders use `objects/<object_id>/measurements.json`. Each save is atomic, recalculates any
 complete derived label, and refreshes completed experience records. Names, images,
@@ -130,18 +130,17 @@ results remain historical and are not rewritten; their source fingerprint mismat
 by inspectors.
 
 Benchmarking uses the source CSV's fixed train/test holdout. It generates predictions only
-for query-ready test rows, and E3/E4 may retrieve only from eligible train rows. If a legacy
+for query-ready test rows, and E3–E6 may retrieve only from eligible train rows. If a legacy
 dataset has no test rows, the existing leave-one-surface-out behavior remains available.
 
 `roughness_index` is the nonnegative numerical output recorded from the LED measurement
 system, with larger values indicating rougher surfaces. It is intentionally distinct from
 the image-derived Marigold `roughness` artifact. Schema-v1 measurements and CSV rows that
 contain only `roughness_class` are loaded as legacy provenance; no class-to-index conversion
-is performed, so roughness-enabled E2/E4 remain ineligible until a real index is recorded.
+is performed, so roughness-enabled E2/E5/E6 remain ineligible until a real index is recorded.
 The global **Roughness sent to VLM** control can derive an experimental binary class at the
-1340 threshold. This is a request-time representation only: stored data and E4 retrieval stay
-continuous, while Gemini receives no numerical roughness evidence. The chosen mode and
-threshold are persisted with runs, prediction batches, and suite snapshots.
+1340 threshold for E2. E5/E6 remain continuous by definition. The chosen mode and threshold
+are persisted with runs, prediction batches, and suite snapshots.
 
 ## Adding a tab
 

@@ -4,18 +4,23 @@ import pytest
 from PIL import Image
 
 from modules.config import (
+    EXPERIMENT_IDS,
     PromptBundle,
     load_config,
     load_prompt_bundle,
     save_prompt_bundle,
 )
 from modules.reporting import (
+    EXPERIMENT_STYLES,
     calibration_figure,
     common_intersection_artifacts,
     comparison_rows,
     export_comparison,
+    force_error_statistics_rows,
     individual_calibration_figure,
     metrics_rows,
+    suite_force_by_object_figure,
+    suite_percentage_error_figure,
 )
 from modules.suites import run_suite
 
@@ -106,7 +111,7 @@ def test_prompt_bundle_round_trip(tmp_path):
     loaded = load_prompt_bundle(destination)
 
     assert loaded == source
-    assert set(loaded.prompts.experiments) == {"e1", "e2", "e3", "e4"}
+    assert set(loaded.prompts.experiments) == set(EXPERIMENT_IDS)
     assert set(loaded.prompts.target_instructions) == {"single", "joint"}
     assert set(loaded.embodiments) == {"gecko", "silicone"}
 
@@ -119,9 +124,9 @@ def test_legacy_suite_is_read_only():
 def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:
     artifacts = {
         experiment: _artifact(index / 10)
-        for index, experiment in enumerate(("e1", "e2", "e3", "e4"), start=1)
+        for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
     }
-    artifacts["e4"]["rows"] = artifacts["e4"]["rows"][:1]
+    artifacts["e6"]["rows"] = artifacts["e6"]["rows"][:1]
 
     comparable, object_ids = common_intersection_artifacts(artifacts, load_config())
 
@@ -133,33 +138,43 @@ def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:
     )
 
 
-def test_calibration_export_has_eight_panels_and_no_identity_lines(tmp_path):
+def test_calibration_export_has_twelve_panels_and_no_identity_lines(tmp_path):
     artifacts = {
         experiment: _artifact(index / 10)
-        for index, experiment in enumerate(("e1", "e2", "e3", "e4"), start=1)
+        for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
     }
     figure = calibration_figure(artifacts)
 
-    assert len(figure.axes) == 8
+    assert len(figure.axes) == 12
     assert all(not axis.lines for axis in figure.axes)
-    assert len(comparison_rows(artifacts)) == 16
-    assert len(metrics_rows(artifacts)) == 4
+    assert len(comparison_rows(artifacts)) == 24
+    assert len(metrics_rows(artifacts)) == 6
 
     exports = export_comparison(artifacts, tmp_path / "exports")
-    assert set(exports) == {"png", "svg", "data_csv", "metrics_csv"}
+    assert set(exports) == {
+        "png",
+        "svg",
+        "force_by_object_png",
+        "force_by_object_svg",
+        "percentage_error_png",
+        "percentage_error_svg",
+        "data_csv",
+        "metrics_csv",
+        "statistics_csv",
+    }
     assert all((tmp_path / "exports" / path.split("/")[-1]).is_file() for path in exports.values())
 
 
-def test_single_gripper_calibration_has_four_panels():
+def test_single_gripper_calibration_has_six_panels():
     artifacts = {
         experiment: _single_artifact(index / 10)
-        for index, experiment in enumerate(("e1", "e2", "e3", "e4"), start=1)
+        for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
     }
 
     figure = calibration_figure(artifacts)
 
-    assert len(figure.axes) == 4
-    assert len(comparison_rows(artifacts)) == 8
+    assert len(figure.axes) == 6
+    assert len(comparison_rows(artifacts)) == 12
     assert all(
         row["active_grippers"] == "silicone" for row in metrics_rows(artifacts)
     )
@@ -193,3 +208,89 @@ def test_individual_benchmark_plot_orders_objects_and_adds_images(tmp_path):
     assert axis.collections[0].get_label() == "Predicted force"
     assert len(axis.artists) == 2
     assert axis.get_ylabel() == "Force (N)"
+
+
+def test_suite_force_plot_overlays_all_experiments_with_stable_styles():
+    artifacts = {
+        experiment: _artifact(index / 10)
+        for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
+    }
+
+    figure = suite_force_by_object_figure(artifacts)
+
+    assert len(figure.axes) == 2
+    for axis in figure.axes:
+        assert axis.lines[0].get_label() == "Oracle minimum force"
+        assert [collection.get_label() for collection in axis.collections] == [
+            experiment.upper() for experiment in EXPERIMENT_IDS
+        ]
+        for collection, experiment in zip(
+            axis.collections,
+            EXPERIMENT_IDS,
+            strict=True,
+        ):
+            expected = EXPERIMENT_STYLES[experiment]["color"].lower()
+            actual = collection.get_facecolor()[0]
+            assert "#{:02x}{:02x}{:02x}".format(
+                *(round(channel * 255) for channel in actual[:3])
+            ) == expected
+
+
+def test_suite_percentage_error_is_signed_and_omits_zero_truth():
+    artifacts = {
+        experiment: _artifact(index / 10)
+        for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
+    }
+    for artifact in artifacts.values():
+        row = next(row for row in artifact["rows"] if row["object_id"] == "object_a")
+        row["true_gecko_force_n"] = 0.0
+
+    figure = suite_percentage_error_figure(artifacts)
+    gecko_axis = figure.axes[0]
+
+    assert gecko_axis.lines[0].get_label() == "Zero error"
+    assert "1 zero-truth omitted" in gecko_axis.get_title()
+    assert list(gecko_axis.collections[0].get_offsets()[:, 1]) == pytest.approx([5.0])
+    assert list(gecko_axis.collections[1].get_offsets()[:, 1]) == pytest.approx([10.0])
+
+
+def test_force_error_statistics_include_direction_and_active_gripper_scopes():
+    artifacts = {
+        experiment: _artifact(0.0) for experiment in EXPERIMENT_IDS
+    }
+    for artifact in artifacts.values():
+        first, second = artifact["rows"]
+        first["pred_gecko_force_n"] = 2.0
+        second["pred_gecko_force_n"] = 1.5
+        first["pred_silicone_force_n"] = 1.5
+        second["pred_silicone_force_n"] = 4.5
+
+    rows = force_error_statistics_rows(artifacts)
+    e1_rows = {row["scope"]: row for row in rows if row["experiment"] == "E1"}
+
+    assert set(e1_rows) == {"Overall", "Gecko", "Silicone"}
+    gecko = e1_rows["Gecko"]
+    assert gecko["n"] == 2
+    assert gecko["mae_n"] == pytest.approx(0.75)
+    assert gecko["rmse_n"] == pytest.approx((0.625) ** 0.5)
+    assert gecko["residual_std_n"] == pytest.approx(1.5 / (2**0.5))
+    assert gecko["overprediction_count"] == 1
+    assert gecko["underprediction_count"] == 1
+    assert gecko["exact_prediction_count"] == 0
+    assert gecko["average_overprediction_n"] == pytest.approx(1.0)
+    assert gecko["average_underprediction_n"] == pytest.approx(0.5)
+
+    silicone = e1_rows["Silicone"]
+    assert silicone["overprediction_count"] == 1
+    assert silicone["underprediction_count"] == 0
+    assert silicone["exact_prediction_count"] == 1
+    assert silicone["average_overprediction_n"] == pytest.approx(2.0)
+    assert silicone["average_underprediction_n"] is None
+
+    single = {
+        experiment: _single_artifact(index / 10)
+        for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
+    }
+    single_rows = force_error_statistics_rows(single)
+    assert len(single_rows) == len(EXPERIMENT_IDS)
+    assert {row["scope"] for row in single_rows} == {"Silicone"}

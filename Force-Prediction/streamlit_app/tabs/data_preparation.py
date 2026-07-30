@@ -73,7 +73,7 @@ def render(context: AppContext) -> None:
         st.warning(
             f"{dataset.capabilities.legacy_roughness_class_count} objects contain only "
             "legacy roughness classes. Record numerical indices before using roughness "
-            "in E2 or E4."
+            "in E2 or E4-E6 as defined by each fixed input profile."
         )
     distributions = [
         {"dimension": "Favored gripper", "category": category, "count": count}

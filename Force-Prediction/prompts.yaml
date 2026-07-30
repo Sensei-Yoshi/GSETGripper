@@ -151,17 +151,44 @@ prompts:
       that
 
       any omitted sensor value was measured or used.'
-    e4: 'E4 SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.
+    e4: 'E4 SEMANTIC AND MASS RETRIEVAL CONDITION.
 
       Use the object image, fixed gripper embodiment context, supplied authoritative
 
-      measurements, and one hybrid-ranked object list to estimate the requested force
-      or forces.
+      mass, and one object list ranked using semantic similarity and mass only to estimate
+      the requested force or forces. Roughness and projected contact are intentionally
+      withheld and were not used for ranking; do not infer or claim access to either.
 
-      Explain how close retrieved outcomes and available mass/contact scaling support
-      the
+      Explain how the retrieved outcomes and mass similarity support the estimates.
+      The supplied retrieval weights describe neighbor ranking, not a force equation.
 
-      estimates. No calibrated physics estimate is available; do not invent one.
+      No calibrated physics estimate is available; do not invent one.
+
+      '
+    e5: 'E5 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.
+
+      Use the object image, fixed gripper embodiment context, supplied authoritative
+
+      mass and continuous roughness index, and one object list ranked using semantic,
+      mass, and continuous-roughness similarity. Projected contact is intentionally
+      withheld and was not used for ranking; do not infer or claim access to it.
+
+      Explain how retrieved outcomes plus mass and roughness differences support the
+      estimates. The supplied retrieval weights describe neighbor ranking, not a force
+      equation. No calibrated physics estimate is available; do not invent one.
+
+      '
+    e6: 'E6 FULL SEMANTIC AND SENSOR-FUSION RETRIEVAL CONDITION.
+
+      Use the object image, fixed gripper embodiment context, supplied authoritative
+
+      mass, continuous roughness index, and projected contact fraction, plus one object
+      list ranked using all four configured similarity terms.
+
+      Explain how retrieved outcomes and the measured differences support the estimates.
+      Treat projected contact fraction as a dimensionless contact proxy, not literal
+      physical area. The supplied retrieval weights describe neighbor ranking, not a
+      force equation. No calibrated physics estimate is available; do not invent one.
 
       '
   target_instructions:
@@ -187,27 +214,28 @@ prompts:
       '
 embodiments:
   gecko:
-    description: Parallel-jaw gripper with two opposing, rigid fin-ray-shaped fingers.
-      One finger is stationary, while the other translates laterally toward it to
-      close around an object positioned between them. Each finger carries an inward-facing,
-      mushroom-tipped gecko-inspired dry-adhesive pad of length 4.2 inches mounted
-      on a rigid backing. The fingers and adhesive backings remain rigid during grasping
-      and do not conform to the object. Therefore, the maximum adhesion requires the
-      object’s opposing sidewalls to be sufficiently flat, parallel, and aligned with
-      the pads so that broad contact can form. Generally, the greater the adhesion,
-      the lower the grasp force required to pick up the object. Dry adhesion performs
-      best on clean, dry, smooth, nonporous surfaces and degrades with roughness,
-      porosity, contamination, moisture, and loose coatings. Additionally, gecko should
-      be fully avoided for greasy, dusty, and sharp objects.
+    description: Parallel-jaw gripper with two opposing, rigid fingers. One finger
+      is stationary, while the other translates laterally toward it to close around
+      an object positioned between them. Each finger carries an inward-facing, mushroom-tipped
+      gecko-inspired dry-adhesive pad of length 4.2 inches mounted on a rigid backing.
+      The fingers and adhesive backings remain rigid during grasping and do not conform
+      to the object. Therefore, the maximum adhesion requires the object’s opposing
+      sidewalls to be sufficiently flat, parallel, and aligned with the pads so that
+      broad contact can form. Generally, the greater the adhesion, the lower the grasp
+      force required to pick up the object. Dry adhesion performs best on clean, dry,
+      smooth, nonporous surfaces and degrades with roughness, porosity, contamination,
+      moisture, and loose coatings. On objects that are incompatible with dry adhesion,
+      limited frictional support still applies; thus, the gecko-adhesive-based gripper
+      can technically still grasp the objects; however, gecko should be fully avoided
+      for greasy, dusty, and sharp objects.
   silicone:
-    description: Parallel-jaw gripper with two opposing, rigid fin-ray-shaped fingers.
-      One finger is stationary, while the other translates laterally toward it to
-      close around an object positioned between them. Each finger carries an inward-facing,
-      non-adhesive, high-friction silicone pad of 4.2 inches in length mounted on
-      a rigid backing. The fingers and backing do not flex or conform to the object,
-      although the silicone surface may deform locally at the contact interface. Holding
-      capacity arises mainly from normal force, friction, and the silicone pad’s viscoelastic
-      interaction with the surface. The silicone pads can remain effective on rough,
-      irregular, or interrupted surfaces, but performance still decreases when the
-      contact area is small, the object is highly curved or misaligned, or the surface
-      is wet, oily, or contaminated.
+    description: Parallel-jaw gripper with two opposing, rigid fingers. One finger
+      is stationary, while the other translates laterally toward it to close around
+      an object positioned between them. Each finger carries an inward-facing, non-adhesive,
+      high-friction silicone pad of 4.2 inches in length mounted on a rigid backing.
+      The fingers and backing do not flex or conform to the object, although the silicone
+      surface may deform locally at the contact interface. Holding capacity arises
+      mainly from normal force, friction, and the silicone pad’s viscoelastic interaction
+      with the surface. The silicone pads are effective on rough, irregular, or interrupted
+      surfaces, but performance still decreases when the contact area is small, the
+      object is highly curved or misaligned, or the surface is wet, oily, or contaminated.

@@ -1,4 +1,4 @@
-"""E4: hybrid semantic-and-sensor paired experiential retrieval."""
+"""E4: semantic-and-mass paired experiential retrieval."""
 
 from ..retrieval import RetrievalMode
 from .helper import RetrievalVLMExperiment

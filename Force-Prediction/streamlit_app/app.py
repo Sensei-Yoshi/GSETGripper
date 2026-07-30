@@ -80,16 +80,8 @@ def main() -> None:
         st.session_state["predict_gecko_force"] = Gripper.GECKO in defaults
         st.session_state["predict_silicone_force"] = Gripper.SILICONE in defaults
     with roughness_col:
-        use_roughness = st.checkbox(
-            "Consider measured roughness",
-            value=base_cfg.inputs.use_roughness,
-            key="consider_roughness",
-            on_change=clear_run_state,
-            help=(
-                "Uses the recorded roughness measurement in E2 and E4. E4 retrieval "
-                "always retains the continuous index."
-            ),
-        )
+        st.caption("Sensor subsets are fixed by experiment (E4-E6).")
+        use_roughness = True
     with roughness_mode_col:
         roughness_representation = st.selectbox(
             "Roughness sent to VLM",
@@ -104,20 +96,14 @@ def main() -> None:
             ),
             key="roughness_representation",
             on_change=clear_run_state,
-            disabled=not use_roughness,
             help=(
-                "Binary mode withholds all numerical roughness values from Gemini. "
-                "The smooth/rough threshold is 1340; retrieval remains continuous."
+                "This switch applies to E2. E5 and E6 always receive the continuous "
+                "roughness index so the ablation remains fixed."
             ),
         )
     with contact_col:
-        use_projected_contact = st.checkbox(
-            "Consider projected contact fraction",
-            value=base_cfg.inputs.use_projected_contact,
-            key="consider_projected_contact",
-            on_change=clear_run_state,
-            help="Controls E2 inputs and the E4 hybrid retrieval term.",
-        )
+        st.caption("Projected contact is used only by E2 and E6.")
+        use_projected_contact = True
     selectable = set(selected_dataset.selectable_grippers())
     if Gripper.GECKO not in selectable:
         st.session_state["predict_gecko_force"] = False

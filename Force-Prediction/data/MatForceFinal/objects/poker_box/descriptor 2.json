@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "poker_box",
+  "object_name": "Poker Box",
+  "image_name": "poker_box.jpg",
+  "image_path": "data/MatForceFinal/poker_box.jpg",
+  "image_sha256": "841d51dcb398cba9b5dad091c1ccd89eea54bbf85c5e99cd2fb4a41e763a93ee",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
+  "descriptor": {
+    "retrieval_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+    "contact_material": "paperboard with a smooth printed coating",
+    "visible_surface_material": "paperboard",
+    "visible_surface_condition": "clean, dry, and intact",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "7c31ff99dd643d19cd28032a8711ddd141652a65489ff7fcea29bfd937920728",
+  "embedding_cache_key": "926c5e62046e27368a6ca7c08b6a98f1c8caf0b1651b9619425afbf0b1218c82",
+  "embedding_sha256": "eeecf9bd3c2e2023156898c6292cbafffc227a8ec5526b6f22c962a53ff9774e",
+  "updated_at": "2026-07-30T02:19:41.359041+00:00"
+}

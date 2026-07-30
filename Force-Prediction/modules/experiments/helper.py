@@ -39,7 +39,19 @@ class ExperimentSpec:
     summary: str
     force_generation_calls: int
     uses_measurements: bool = False
+    uses_roughness: bool = False
+    uses_projected_contact: bool = False
+    roughness_representation: Literal["continuous", "binary"] | None = None
     retrieval_mode: RetrievalMode | None = None
+
+    def scoped_config(self, cfg: Config) -> Config:
+        """Return a config whose optional inputs exactly match this ablation."""
+        scoped = cfg.model_copy(deep=True)
+        scoped.inputs.use_roughness = self.uses_roughness
+        scoped.inputs.use_projected_contact = self.uses_projected_contact
+        if self.roughness_representation is not None:
+            scoped.inputs.roughness_representation = self.roughness_representation
+        return scoped
 
 
 @dataclass
@@ -87,7 +99,10 @@ class ExperimentStrategy(ABC):
                 f"{spec.experiment_id} must use {spec.method.value!r}, "
                 f"not {definition.method.value!r}"
             )
-        self.cfg = cfg
+        # Every named experiment is a fixed ablation. Scope the configuration before
+        # retrieval and payload construction so global UI/config switches cannot turn
+        # E4-E6 into undocumented variants.
+        self.cfg = spec.scoped_config(cfg)
         self.spec = spec
         self.definition = definition
 
@@ -258,7 +273,7 @@ class JointVLMExperiment(ExperimentStrategy):
 
 
 class RetrievalVLMExperiment(ExperimentStrategy):
-    """Shared E3/E4 active-gripper object-retrieval lifecycle."""
+    """Shared E3-E6 active-gripper object-retrieval lifecycle."""
 
     include_measured = False
     retrieval_mode = RetrievalMode.SEMANTIC_ONLY

@@ -2,7 +2,7 @@
 
 Usage per evaluation fold::
 
-    pipe = Pipeline(cfg, "e4").fit(train_records)
+    pipe = Pipeline(cfg, "e6").fit(train_records)
     result = pipe.predict(query_input)
 
 All fold-local fitting and experiment-specific behavior lives in the

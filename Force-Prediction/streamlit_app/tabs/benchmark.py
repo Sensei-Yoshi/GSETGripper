@@ -90,10 +90,10 @@ def render(context: AppContext) -> None:
             on_change=clear_benchmark_summary,
         )
         scope = benchmark_scope(cfg, experiment)
-        if experiment in {"e2", "e4"} and cfg.inputs.use_roughness:
+        if experiment in {"e2", "e5", "e6"}:
             mode_label = (
                 "Smooth/Rough only (experimental)"
-                if cfg.inputs.roughness_representation == "binary"
+                if experiment == "e2" and cfg.inputs.roughness_representation == "binary"
                 else "Continuous index (baseline)"
             )
             st.caption(f"VLM roughness evidence: **{mode_label}**")

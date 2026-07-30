@@ -70,8 +70,10 @@ def test_config_exposes_only_the_final_explicit_experiment_methods():
     assert cfg.experiment("e2").method is ExperimentMethod.MEASURED_VLM
     assert cfg.experiment("e3").method is ExperimentMethod.SEMANTIC_RETRIEVAL_VLM
     assert cfg.experiment("e4").method is ExperimentMethod.HYBRID_RETRIEVAL_VLM
+    assert cfg.experiment("e5").method is ExperimentMethod.HYBRID_RETRIEVAL_VLM
+    assert cfg.experiment("e6").method is ExperimentMethod.HYBRID_RETRIEVAL_VLM
     with pytest.raises(KeyError, match="unknown experiment"):
-        cfg.experiment("e5")
+        cfg.experiment("e7")
     assert "exact surface contacted by the gripper pads" in cfg.prompts.descriptor_system
     assert "Do not mention object identity" in cfg.prompts.descriptor_system
     assert "curvature" in cfg.prompts.descriptor_system
@@ -122,16 +124,19 @@ def test_backend_provenance_exposes_only_active_gemini_paths():
         "force": "gemini_joint_generation",
         "semantic_embedding": None,
     }
+    assert backend_provenance(cfg, "e6")["semantic_embedding"] == (
+        cfg.retrieval.embedding.model
+    )
     with pytest.raises(KeyError, match="unknown experiment"):
-        backend_provenance(cfg, "e5")
+        backend_provenance(cfg, "e7")
     assert artifact_backend_label({"execution_mode": "Offline"}) == "Legacy Offline"
 
 
 def test_each_vlm_experiment_routes_to_an_explicit_config_prompt():
     cfg = load_config()
 
-    assert set(cfg.prompts.experiments) == {"e1", "e2", "e3", "e4"}
-    for experiment in ("e1", "e2", "e3", "e4"):
+    assert set(cfg.prompts.experiments) == set(EXPERIMENT_IDS)
+    for experiment in EXPERIMENT_IDS:
         definition = cfg.experiment(experiment)
         assert definition.prompt == experiment
         assert cfg.prompts.experiments[experiment].strip()
@@ -322,6 +327,13 @@ def test_e2_binary_roughness_payload_withholds_numerical_index(monkeypatch):
 
 
 def test_legacy_e4_e5_artifact_labels_preserve_old_meanings():
+    assert saved_run_experiment_label(
+        {
+            "experiment": "e4",
+            "experiment_method": "hybrid_retrieval_vlm",
+            "experiment_definition_version": 9,
+        }
+    ) == "E4 — Semantic + sensor-fusion retrieval (v9)"
     assert saved_run_experiment_label(
         {
             "experiment": "e5",

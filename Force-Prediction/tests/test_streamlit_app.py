@@ -72,12 +72,10 @@ def test_default_app_structure_matches_research_lab() -> None:
     assert {
         "Gemini descriptions",
         "Text embeddings",
-        "Marigold roughness",
-        "Surface/contact fraction from image_2",
-        "Experience records",
-        "Consider measured roughness",
-        "Consider projected contact fraction",
-        "Predict Gecko force",
+            "Marigold roughness",
+            "Surface/contact fraction from image_2",
+            "Experience records",
+            "Predict Gecko force",
         "Predict silicone force",
     } <= checkbox_labels
     markdown_values = {item.value for item in app.markdown}
@@ -89,9 +87,7 @@ def test_default_app_structure_matches_research_lab() -> None:
     )
     expected_state = {
         "active_dataset_id",
-        "consider_roughness",
-        "roughness_representation",
-        "consider_projected_contact",
+            "roughness_representation",
         "predict_gecko_force",
         "predict_silicone_force",
         "benchmark_experiment",
@@ -126,7 +122,9 @@ def test_default_app_structure_matches_research_lab() -> None:
         "prompt_instruction_e1",
         "prompt_instruction_e2",
         "prompt_instruction_e3",
-        "prompt_instruction_e4",
+            "prompt_instruction_e4",
+            "prompt_instruction_e5",
+            "prompt_instruction_e6",
         "prompt_target_single",
         "prompt_target_joint",
         "embodiment_description_gecko",

@@ -200,8 +200,7 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     assert detailed.selection.recommendation_agrees_with_selector is False
 
 
-def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
-    """E4 adds paired experience retrieval to the same measured VLM query."""
+def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
@@ -235,29 +234,46 @@ def test_e2_and_e4_differ_only_by_experiential_retrieval_inputs(monkeypatch):
         "modules.experiments.helper.get_embedding_provider",
         lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
     )
-    e2 = Pipeline(cfg, "e2").fit(train).predict_detailed(query)
-    e4 = Pipeline(cfg, "e4").fit(train).predict_detailed(query)
-
-    assert e2.physics_estimates == e4.physics_estimates == {}
-    assert len(payloads) == 2
-    e2_payload, e4_payload = payloads
-    assert e4_payload["query"] == e2_payload["query"]
-    assert e4_payload["force_constraints"] == e2_payload["force_constraints"]
-    assert e4_payload["roughness_measurement"] == e2_payload["roughness_measurement"]
-    assert set(e4_payload) - set(e2_payload) == {
-        "query_semantic_description",
-        "retrieved_objects",
-        "retrieval_config",
+    results = {
+        experiment: Pipeline(cfg, experiment).fit(train).predict_detailed(query)
+        for experiment in ("e4", "e5", "e6")
     }
-    assert len(e4_payload["retrieved_objects"]) == cfg.retrieval.k
+
+    assert all(result.physics_estimates == {} for result in results.values())
+    assert len(payloads) == 3
+    e4_payload, e5_payload, e6_payload = payloads
+    assert set(e4_payload["query"]) == {"mass_g"}
+    assert set(e5_payload["query"]) == {"mass_g", "roughness_index"}
+    assert set(e6_payload["query"]) == {
+        "mass_g",
+        "roughness_index",
+        "projected_contact_fraction",
+    }
+    assert "roughness_measurement" not in e4_payload
+    assert "roughness_measurement" in e5_payload
+    assert e5_payload["roughness_measurement"] == e6_payload["roughness_measurement"]
+    assert all(
+        len(payload["retrieved_objects"]) == cfg.retrieval.k
+        for payload in payloads
+    )
+    assert e4_payload["retrieval_config"]["normalized_weights"]["roughness"] == 0
+    assert e4_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
+    assert e5_payload["retrieval_config"]["normalized_weights"]["roughness"] > 0
+    assert e5_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
+    assert e6_payload["retrieval_config"]["normalized_weights"]["contact"] > 0
+    assert results["e4"].effective_inputs[-1] == "mass"
+    assert results["e5"].effective_inputs[-2:] == ("mass", "roughness")
+    assert results["e6"].effective_inputs[-3:] == (
+        "mass",
+        "roughness",
+        "projected_contact",
+    )
 
 
-def test_e4_binary_roughness_is_internal_to_retrieval_and_categorical_for_vlm(
-    monkeypatch,
-):
+def test_e5_forces_continuous_roughness_and_withholds_contact(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.inputs.roughness_representation = "binary"
-    cfg.inputs.use_projected_contact = False
+    cfg.inputs.use_projected_contact = True
     records = fabricate_records(cfg, 12)
     held = records[0].object_id
     train = [record for record in records if record.object_id != held]
@@ -290,42 +306,37 @@ def test_e4_binary_roughness_is_internal_to_retrieval_and_categorical_for_vlm(
         lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
     )
 
-    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+    detailed = Pipeline(cfg, "e5").fit(train).predict_detailed(
         _query_with_image(test, cfg)
     )
 
-    assert captured["query"]["roughness_category"] in {"smooth", "rough"}
-    assert "roughness_index" not in captured["query"]
-    assert captured["roughness_measurement"]["numeric_values_withheld"] is True
-    assert captured["retrieval_config"] == {
-        "mode": "hybrid",
-        "k": cfg.retrieval.k,
-        "vlm_roughness_representation": "binary_category",
-        "ranking_note": (
-            "Neighbors were ranked upstream with the configured hybrid retrieval. "
-            "Continuous roughness values are intentionally withheld; do not infer them."
-        ),
-    }
+    assert "roughness_index" in captured["query"]
+    assert "roughness_category" not in captured["query"]
+    assert "projected_contact_fraction" not in captured["query"]
+    assert captured["roughness_measurement"]["metric_name"] == (
+        cfg.roughness.metric_name
+    )
+    weights = captured["retrieval_config"]["normalized_weights"]
+    assert weights["roughness"] > 0
+    assert weights["contact"] == 0
     for surface in captured["retrieved_objects"]:
-        assert "score" not in surface
         for condition in surface["conditions"]:
-            assert condition["roughness_category"] in {"smooth", "rough"}
-            assert "roughness_index" not in condition
-            assert "score" not in condition
+            assert "roughness_index" in condition
+            assert "roughness_category" not in condition
+            assert "projected_contact_fraction" not in condition
             similarity = condition["similarity"]
-            assert "roughness" not in similarity
-            assert "roughness_contribution" not in similarity
-            assert "total" not in similarity
+            assert similarity["roughness"] is not None
+            assert "contact" not in similarity
     assert all(item.roughness_index is not None for item in detailed.retrieved_objects)
     assert all(
         item.similarity.roughness is not None for item in detailed.retrieved_objects
     )
 
 
-def test_e4_optional_input_ablation_removes_roughness_and_contact(monkeypatch):
+def test_e4_fixed_profile_removes_roughness_and_contact(monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    cfg.inputs.use_roughness = False
-    cfg.inputs.use_projected_contact = False
+    cfg.inputs.use_roughness = True
+    cfg.inputs.use_projected_contact = True
     records = fabricate_records(cfg, 12)
     held = records[0].object_id
     captured = {}

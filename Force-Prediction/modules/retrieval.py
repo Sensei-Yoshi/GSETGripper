@@ -1,6 +1,6 @@
 """Grouped physical-surface retrieval over semantics and measurement conditions.
 
-E3 ranks by semantic cosine only; E4 uses the configured hybrid score. Both return
+E3 ranks by semantic cosine only; E4-E6 use nested subsets of the configured hybrid score. All return
 the available gripper labels for every neighbor; request payloads expose only active ones.
 Exact search is appropriate for this dataset (<1k objects), so no vector database
 is required. The hybrid score is only a neighbor-ranking heuristic: it never
@@ -254,12 +254,12 @@ class ExperienceIndex:
             )
         w = normalized_weights(self.cfg)
         if query.mass_g is None or rec.mass_g is None:
-            raise ValueError("E4 hybrid retrieval requires query and reference mass")
+            raise ValueError("hybrid retrieval requires query and reference mass")
         mass = s_mass(query.mass_g, rec.mass_g, self.cfg.retrieval.sigma_mass)
         roughness = None
         if self.cfg.inputs.use_roughness:
             if query.roughness_index is None or rec.roughness_index is None:
-                raise ValueError("E4 hybrid retrieval requires enabled roughness values")
+                raise ValueError("hybrid retrieval requires enabled roughness values")
             roughness = s_roughness(
                 query.roughness_index, rec.roughness_index, self.cfg
             )
@@ -269,7 +269,7 @@ class ExperienceIndex:
                 query.projected_contact_fraction is None
                 or rec.projected_contact_fraction is None
             ):
-                raise ValueError("E4 hybrid retrieval requires enabled contact values")
+                raise ValueError("hybrid retrieval requires enabled contact values")
             contact = s_contact(
                 query.projected_contact_fraction,
                 rec.projected_contact_fraction,
@@ -366,10 +366,10 @@ class ExperienceIndex:
             )
         scored_surfaces.sort(key=lambda item: (-item[0], item[1]))
         output: list[RetrievedObjectExperience] = []
-        for surface_rank, (_, _surface_id, conditions) in enumerate(
+        for surface_rank, (_, _surface_id, retrieved_conditions) in enumerate(
             scored_surfaces[:k], start=1
         ):
-            for condition_rank, item in enumerate(conditions, start=1):
+            for condition_rank, item in enumerate(retrieved_conditions, start=1):
                 item.rank = surface_rank
                 item.surface_rank = surface_rank
                 item.condition_rank = condition_rank

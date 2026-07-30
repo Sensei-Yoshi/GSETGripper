@@ -88,9 +88,10 @@ The shared query contains:
 - optional prepared semantic contact-region description.
 
 Measured values are authoritative when an experiment exposes them. E1 and E3 intentionally
-hide all measurements from the force-prediction VLM. E2 and E4 always expose mass and
-optionally expose roughness/contact according to the global switches. E3 may use an image-derived semantic
-descriptor, but no numeric sensor field may enter its ranking or retrieved payload.
+hide all measurements from the force-prediction VLM. E2 exposes all three measurements,
+E4 exposes mass, E5 adds continuous roughness, and E6 adds projected contact. E3 may use
+an image-derived semantic descriptor, but no numeric sensor field may enter its ranking or
+retrieved payload.
 
 `projected_contact_fraction` is a dimensionless geometry proxy, not physical surface area in
 square millimeters. Its intended approximation is:
@@ -114,7 +115,7 @@ f_contact = max(0.05, f_geometric) for an antipodal grasp; otherwise 0
 It assumes constant pad width, which cancels from the ratio, and reports no
 absolute mm² area. Contact must be contiguous, within 30 degrees of the jaw
 direction, and conformable under a default 20 mm minimum bend radius. This
-geometric estimator is not yet wired into E1–E4 and must not be confused with
+geometric estimator is not yet wired into E1–E6 and must not be confused with
 the current 65 mm `projected_contact_fraction` input.
 
 ### Contact-fraction mathematics
@@ -176,16 +177,9 @@ fixtures.
 For Python entry points, returned fields, schema-v2 JSON/CSV paths, and safe
 integration examples, see [`contact-fraction-integration.md`](contact-fraction-integration.md).
 
-Streamlit provides global roughness and projected-contact switches beside the Dataset
-selector. Disabled fields are omitted from E2/E4 payloads, receive zero E4 retrieval
-weight, and are excluded from reference eligibility. E1/E3 are unchanged because their
-evidence is measurement-free.
-
-When roughness is enabled, the global representation control selects either the continuous
-index baseline or the experimental binary VLM mode. Binary mode derives `smooth` below 1340
-and `rough` otherwise. It never sends Gemini the query/neighbor indices, threshold,
-continuous roughness similarities, or their contributions. Retrieval and saved provenance
-retain the continuous measurement, isolating the effect of VLM evidence representation.
+Streamlit displays fixed sensor profiles for E4–E6. The roughness representation control
+applies only to E2; its binary mode derives `smooth` below 1340 and `rough` otherwise. E5 and
+E6 always use continuous roughness so their ranking and VLM evidence remain definition-locked.
 
 Curvature, seams, ridges, porosity, coatings, contamination, and local contact visibility
 currently enter through the semantic descriptor rather than separate numeric columns.
@@ -254,7 +248,7 @@ upstream stage was selected.
 
 The source CSV's `split` column assigns each physical surface to `train` or `test`; all sibling
 conditions must remain together. Benchmark generation predicts only query-ready test objects,
-and E3/E4 retrieve only eligible train objects. Predictions are persisted without truth; later
+and E3–E6 retrieve only eligible train objects. Predictions are persisted without truth; later
 evaluation joins only the current truth-ready subset. Custom counterfactual queries use the full
 eligible reference pool.
 
@@ -279,20 +273,22 @@ Exact in-memory search is sufficient for the current corpus, so no vector databa
 
 ## 7. Active experiment suite
 
-The active IDs are E1 through E4 and form the VLM ablation suite.
+The active IDs are E1 through E6 and form the VLM ablation suite.
 
 | ID | Method | Force-generation calls | Meaning |
 |---|---|---:|---|
 | E1 | `vision_vlm` | 1 | Object-image zero-shot prediction |
 | E2 | `measured_vlm` | 1 | E1 plus authoritative physical measurements |
 | E3 | `semantic_retrieval_vlm` | 1 | Semantic-cosine experiential retrieval, without sensor inputs |
-| E4 | `hybrid_retrieval_vlm` | 1 | Semantic + sensor-fusion retrieval |
+| E4 | `hybrid_retrieval_vlm` | 1 | Semantic + mass retrieval |
+| E5 | `hybrid_retrieval_vlm` | 1 | E4 + continuous roughness |
+| E6 | `hybrid_retrieval_vlm` | 1 | E5 + projected contact |
 
-“Force-generation call” means a VLM call that returns force predictions. E3 and E4
+“Force-generation call” means a VLM call that returns force predictions. E3–E6
 may need descriptor or embedding calls when semantic data is not already cached. Those
 preparation calls are distinct from force generation.
 
-Live E1–E4 calls receive the query-object image and fixed written descriptions of the
+Live E1–E6 calls receive the query-object image and fixed written descriptions of the
 globally active gripper embodiments. One target uses `PerGripperPrediction`; two targets
 use one `JointGripperPrediction`. No gripper images are sent.
 
@@ -305,7 +301,7 @@ return `recommended_gripper`.
 ### E2: measured-input zero-shot
 
 E2 uses the same response contract and adds authoritative mass, roughness, and projected
-contact when enabled. It sends no retrieved examples and no physics estimate. E2 minus E1
+contact. It sends no retrieved examples and no physics estimate. E2 minus E1
 therefore isolates the value of measured physical inputs.
 
 ### E3: semantic-only experience-conditioned VLM
@@ -320,22 +316,22 @@ or physics estimate. This hard boundary models semantic experiential retrieval i
 style of Exp-Force and makes E3 minus E1 an interpretable estimate of semantic experience
 value.
 
-### E4: semantic and sensor-fusion experience-conditioned VLM
+### E4–E6: nested semantic and sensor-fusion experience-conditioned VLM
 
-E4 shares E3's grouped representation, calculates semantic similarity once per surface,
-and separately scores each condition using mass, LED roughness, and optional projected
-contact. Each surface is ranked by its best condition and contributes up to three conditions.
-The VLM payload exposes the authoritative query measurements and retained condition records,
-subject to the selected roughness representation described above.
+E4–E6 share E3's grouped representation and calculate semantic similarity once per surface.
+E4 ranks conditions using semantic and mass terms, E5 adds continuous LED roughness, and E6
+adds projected contact. Each surface is ranked by its best condition and contributes up to
+three conditions. The VLM payload exposes exactly the authoritative query measurements and
+retained condition values enabled by that condition.
 
 The score only ranks neighbors; it never computes force. Force evidence comes from the
-observed active-gripper outcomes. E4 receives no physics value. Comparing E4 with E2 and E3
-tests the proposed fusion, but E4's superiority is an empirical hypothesis rather than an
-assumed result.
+observed active-gripper outcomes. E4–E6 receive no physics value. The adjacent E4→E5→E6
+comparisons isolate the incremental value of roughness and projected contact; improved error
+is an empirical hypothesis rather than an assumed result.
 
 ## 8. Target-aware VLM response and authoritative selection
 
-With one active gripper, E1–E4 use `PerGripperPrediction` directly. With both active,
+With one active gripper, E1–E6 use `PerGripperPrediction` directly. With both active,
 they use `JointGripperPrediction`:
 
 ```text
@@ -371,8 +367,8 @@ E3 uses only the semantic term:
 S_E3(q, i) = cos(e_q, e_i)
 ```
 
-Its trace and VLM payload omit every sensor value and physical score term. E4 uses the
-full hybrid score:
+Its trace and VLM payload omit every sensor value and physical score term. E4–E6 use
+nested subsets of the hybrid score:
 
 For query `q` and reference object `i`:
 
@@ -380,7 +376,7 @@ For query `q` and reference object `i`:
 S(q, i) =
     w_sem     * cos(e_q, e_i)
   + w_mass    * exp(-|ln(m_q) - ln(m_i)| / sigma_mass)
-  + w_rough   * (1 - |r_q - r_i| / 4)
+  + w_rough   * exp(-|r_q - r_i| / roughness_characteristic_scale)
   + w_contact * exp(-|a_q - a_i| / sigma_contact)
 ```
 
@@ -398,8 +394,9 @@ Current configured defaults are:
 
 Weights normalize before scoring. Results are sorted by descending score and stable object
 ID, assigned ranks from one through `k`, and expose raw terms plus weighted contributions.
-E3 and E4 construct retrieval traces. E3 traces expose semantic similarity only; E4
-traces expose the raw hybrid terms and weighted contributions.
+E3–E6 construct retrieval traces. E3 traces expose semantic similarity only; E4–E6
+expose only their enabled raw hybrid terms and weighted contributions. Normalized weights
+are also sent to the VLM as ranking provenance, not as force-model coefficients.
 
 ## 10. Code architecture and public interface
 
@@ -410,7 +407,7 @@ The package is organized by concern, with one module per experiment strategy:
 | `config.yaml` | Numerical tunables and explicit experiment methods |
 | `prompts.yaml` | Editable prompts and fixed written embodiment descriptions |
 | `modules/config.py` | Typed loading and fail-fast validation |
-| `modules/experiments/` | Shared strategy helper, eligibility, catalog, and E1–E4 modules |
+| `modules/experiments/` | Shared strategy helper, eligibility, catalog, and E1–E6 modules |
 | `modules/pipeline.py` | Thin shared fit/predict facade |
 | `modules/contracts.py` | Experience, query, joint prediction, and selection models |
 | `modules/prediction.py` | Joint VLM request, clamp, selector |
@@ -421,7 +418,7 @@ The package is organized by concern, with one module per experiment strategy:
 | `modules/cache.py` | Dataset-scoped API caches and Exp-Force legacy read-through |
 | `modules/expforce.py` | Fixture preparation and saved single-run provenance |
 | `modules/benchmarking.py` | Truth-free prediction batches and versioned evaluations |
-| `modules/suites.py` | Definition-locked, resumable two-stage E1–E4 suites |
+| `modules/suites.py` | Definition-locked, resumable two-stage E1–E6 suites |
 | `modules/reporting.py` | Comparison tables, panels, and paper exports |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 
@@ -431,7 +428,7 @@ The UI module flow and tab-extension contract are documented in
 The public lifecycle is:
 
 ```python
-pipe = Pipeline(cfg, "e4").fit(train_records)
+pipe = Pipeline(cfg, "e6").fit(train_records)
 selection = pipe.predict(query)
 detailed = pipe.predict_detailed(query)
 ```
@@ -441,10 +438,11 @@ combinations. Resource loading is method-specific:
 
 - E1/E2: no descriptor, embedding, or retrieval fit;
 - E3: descriptor as needed, embedding provider, semantic-only object index, target-aware VLM;
-- E4: descriptor as needed, embedding provider, hybrid object index, target-aware VLM.
+- E4–E6: descriptor as needed, embedding provider, profile-scoped hybrid object index,
+  target-aware VLM.
 
 `PipelineRunResult` contains stable experiment ID/method/version, selection, semantic
-description, E3/E4 paired retrieval evidence, effective-input declaration, and cache telemetry.
+description, E3–E6 paired retrieval evidence, effective-input declaration, and cache telemetry.
 
 ## 11. Configuration and prompt routing
 
@@ -456,6 +454,8 @@ experiments:
   e2: {method: measured_vlm, prompt: e2}
   e3: {method: semantic_retrieval_vlm, prompt: e3}
   e4: {method: hybrid_retrieval_vlm, prompt: e4}
+  e5: {method: hybrid_retrieval_vlm, prompt: e5}
+  e6: {method: hybrid_retrieval_vlm, prompt: e6}
 ```
 
 The active force-prediction instructions are:
@@ -466,11 +466,13 @@ prompts.experiments.e1
 prompts.experiments.e2
 prompts.experiments.e3
 prompts.experiments.e4
+prompts.experiments.e5
+prompts.experiments.e6
 ```
 
 These instructions and the `gecko`/`silicone` written embodiment descriptions live in
 `prompts.yaml`; `config.yaml` references that file. Configuration validation
-requires exactly the four active IDs, a valid prompt for every method, and no unused
+requires exactly the six active IDs, a valid prompt for every method, and no unused
 experiment prompt. Researcher tunables such as force range, collection steps, retrieval
 `k`, weights, sigmas, and models must not be shadowed by hidden script constants.
 
@@ -484,10 +486,10 @@ The application provides:
 
 - a global **Dataset** selector, populated from direct folders under `data/`, that controls
   every dataset-dependent tab and path;
-- **Single Run:** known leave-one-out or custom query with E1–E4 eligibility;
+- **Single Run:** known leave-one-out or custom query with E1–E6 eligibility;
 - **Benchmark:** immutable prediction generation plus later partial-truth evaluation;
 - **Runs Viewer:** versioned benchmark results with a per-object Single Run-style inspector,
-  resumable E1–E4 suite comparison, saved single-run inspection, provenance, separate gripper
+  resumable E1–E6 suite comparison, saved single-run inspection, provenance, separate gripper
   panels, and PNG/SVG/CSV exports;
 - **Data Viewer:** active-dataset images, train/test membership, optional measurements/outcomes,
   descriptions, embedding status, and an auto-saving editor for split and nullable measurements
@@ -503,8 +505,8 @@ The application provides:
 - **Help & Experiments:** current experiment definitions loaded from configuration.
 
 Single Run shows both predicted forces, final selector output, raw VLM recommendation,
-and paired retrieval for E3/E4. Sensor controls are ignored/disabled for E1/E3 and by the
-global roughness/contact switches.
+and paired retrieval for E3–E6. Measurement controls are enabled only for the fields in the
+selected fixed experiment profile.
 
 Changing an image or measured value creates a counterfactual query. The viewer does not
 score it against the unchanged source label; it displays a delta from the original query.
@@ -512,8 +514,8 @@ score it against the unchanged source label; it displays a delta from the origin
 ## 13. Evaluation
 
 Each experiment generates predictions for every query-ready test object. Evaluation can happen
-later and scores only test rows with complete required truth. E3/E4 retrieval references come
-only from train rows, and E1–E4 cross-condition reporting uses the common evaluated object
+later and scores only test rows with complete required truth. E3–E6 retrieval references come
+only from train rows, and E1–E6 cross-condition reporting uses the common evaluated object
 intersection.
 
 Metrics include:
@@ -522,7 +524,7 @@ Metrics include:
 - feasibility precision and recall per gripper;
 - deterministic selection accuracy and infeasible-pick rate;
 - mean, median, and worst selection regret;
-- raw VLM recommendation accuracy and agreement with the selector for E1–E4.
+- raw VLM recommendation accuracy and agreement with the selector for E1–E6.
 
 Regret is the true force of the selected gripper minus the true force of the oracle gripper.
 It distinguishes a small force penalty from a materially poor selection.
@@ -546,7 +548,7 @@ Evaluation artifacts record the prediction batch ID, current truth snapshot hash
 metrics, evaluated rows, and JSON/CSV/PNG/SVG exports. Repeating an unchanged truth snapshot
 reuses its evaluation; corrected truth creates a new version. Suite manifests lock prompts,
 experiment definitions, model IDs, retrieval settings, inputs, and active grippers while
-excluding mutable truth. They checkpoint each prediction batch so E1 can finish before E2–E4
+excluding mutable truth. They checkpoint each prediction batch so E1 can finish before E2–E6
 become data-ready.
 
 In Runs Viewer, selecting a benchmark batch exposes an **Object Inspector** dropdown containing
@@ -565,7 +567,7 @@ Legacy E5 — paired retrieval VLM
 Legacy E4 — calibrated physics
 ```
 
-This prevents retired experiment IDs from being misread as active E1–E4 conditions.
+This prevents retired experiment IDs from being misread as active E1–E6 conditions.
 
 ## 15. Cache behavior
 
@@ -591,15 +593,16 @@ written to artifacts.
 
 Network-isolated verification with explicit Gemini test fakes must cover:
 
-- only E1–E4 accepted;
-- one single- or joint-target force-generation call for E1–E4;
+- only E1–E6 accepted;
+- one single- or joint-target force-generation call for E1–E6;
 - E1 payload contains no measurements or retrieval;
 - E2 payload contains measurements but no retrieval or physics;
 - E3 ranks by semantic cosine only and exposes no query/neighbor sensor or physical-score
   terms;
-- E4 uses configured `k`, excludes the query, retrieves once, and calls jointly once;
-- roughness/contact ablations remove disabled values and retrieval components;
-- E1/E3 run without physical measurements while E2/E4 report missing required inputs;
+- E4–E6 use configured `k`, exclude the query, retrieve once, and call jointly once;
+- E4 uses only mass, E5 adds continuous roughness, and E6 adds projected contact in both
+  ranking and VLM payloads;
+- E1/E3 run without physical measurements while measured conditions report missing inputs;
 - continuous force clamps and infeasibility behavior;
 - selector authority and recommendation disagreement metrics;
 - schema-v10 truth-free batches, versioned partial evaluations, resumable suites, and legacy read-only compatibility;
@@ -619,7 +622,7 @@ Real collection should:
    environment, pad ID, and trials;
 4. assign and freeze the CSV train/test split before tuning;
 5. fit retrieval weights inside training folds only;
-6. compare E1–E4 on their common eligible object intersection;
+6. compare E1–E6 on their common eligible object intersection;
 7. report uncertainty, subgroup behavior, feasibility errors, force error, selection, and
    regret;
 8. preserve exact model, prompt, source, and configuration provenance.
@@ -636,7 +639,7 @@ From `GSETGripper/Force-Prediction`:
 ../../env/bin/python -m pytest
 ../../env/bin/python -m ruff check .
 ../../env/bin/python -m mypy modules
-../../env/bin/python scripts/run_experiment.py --exp e4 --confirm-gemini-cost
+../../env/bin/python scripts/run_experiment.py --exp e6 --confirm-gemini-cost
 ../../env/bin/python scripts/run_experiment.py --all --confirm-gemini-cost
 ../../env/bin/python scripts/prepare_dataset.py --list
 ../../env/bin/python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --confirm-gemini-cost
@@ -649,14 +652,14 @@ From `GSETGripper/Force-Prediction`:
 
 1. Never mix or double force conventions.
 2. Never round continuous model output to collection steps.
-3. Keep each physical surface in one CSV split and restrict E3/E4 benchmark retrieval to train rows.
+3. Keep each physical surface in one CSV split and restrict E3–E6 benchmark retrieval to train rows.
 4. Keep source data separate from generated artifacts.
 5. Keep prompts and embodiment context in `prompts.yaml`; keep numerical tunables and
    experiment methods in `config.yaml`.
 6. Keep E1 image-only and E2 retrieval/physics-free.
 7. Keep E3 semantic-only: no measured query/neighbor fields or hybrid physical terms.
-8. Keep E4 as one semantic + sensor-fusion retrieval and one joint force response with no
-   physics input.
+8. Keep E4–E6 as nested semantic/mass/roughness/contact retrieval ablations with one force
+   response and no physics input.
 9. Keep Python selection authoritative and score model recommendation separately.
 10. Persist stable method/version/prompt/embodiment provenance and preserve legacy
    artifacts read-only.

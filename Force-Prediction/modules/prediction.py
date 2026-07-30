@@ -1,6 +1,6 @@
 """Shared VLM force estimation and the authoritative deterministic selector.
 
-E1 through E4 use one joint VLM response for both grippers. Python always makes the final
+E1 through E6 use one joint VLM response for both grippers. Python always makes the final
 feasible minimum-force selection and records agreement with the VLM's explicit
 recommendation.
 """
@@ -46,6 +46,8 @@ def _query_payload(query: Query, cfg: Config, *, include_measured: bool) -> dict
     if include_measured:
         payload["mass_g"] = query.mass_g
         if cfg.inputs.use_roughness:
+            if query.roughness_index is None:
+                raise ValueError("enabled measured roughness requires a query value")
             if cfg.inputs.roughness_representation == "binary":
                 payload["roughness_category"] = binary_roughness_category(
                     query.roughness_index,

@@ -69,7 +69,7 @@ def _single_run_training_records(
     reference_ids: tuple[str, ...],
 ) -> list[ExperienceRecord]:
     """Build the fold-local pool without exposing held-out or sibling truth."""
-    if experiment not in {"e3", "e4"}:
+    if EXPERIMENT_CATALOG[experiment].retrieval_mode is None:
         return [record for record in records if record.object_id != query_object_id]
 
     allowed = set(reference_ids)
@@ -110,11 +110,16 @@ def render(context: AppContext) -> None:
         experiment = st.selectbox(
             "Experiment profile",
             list(EXPERIMENT_IDS),
-            index=3,
+            index=len(EXPERIMENT_IDS) - 1,
             format_func=format_experiment,
         )
-        uses_measurements = EXPERIMENT_CATALOG[experiment].uses_measurements
-        uses_hybrid_retrieval = experiment == "e4"
+        experiment_spec = EXPERIMENT_CATALOG[experiment]
+        uses_measurements = experiment_spec.uses_measurements
+        uses_roughness = experiment_spec.uses_roughness
+        uses_projected_contact = experiment_spec.uses_projected_contact
+        uses_hybrid_retrieval = (
+            experiment_spec.retrieval_mode is not None and experiment != "e3"
+        )
         eligibility = experiment_eligibility(context.dataset, base_cfg, experiment)
         query_reasons = eligibility.query_reasons(object_id)
         if query_reasons:
@@ -142,12 +147,13 @@ def render(context: AppContext) -> None:
             step=0.01,
             format="%.2f",
             placeholder="Not recorded",
-            disabled=not uses_measurements or not base_cfg.inputs.use_roughness,
+            disabled=not uses_roughness,
             help="Continuous sensor value; larger values indicate rougher surfaces.",
         )
         if (
-            base_cfg.inputs.use_roughness
-            and base_cfg.inputs.roughness_representation == "binary"
+            uses_roughness
+            and experiment_spec.scoped_config(base_cfg).inputs.roughness_representation
+            == "binary"
             and roughness is not None
         ):
             st.caption(
@@ -168,17 +174,28 @@ def render(context: AppContext) -> None:
                 else None
             ),
             step=0.001,
-            disabled=not uses_measurements or not base_cfg.inputs.use_projected_contact,
+            disabled=not uses_projected_contact,
         )
         if not uses_measurements:
             st.caption(
                 f"{experiment.upper()} does not expose mass, roughness, or projected "
                 "contact to the estimator."
             )
+        elif experiment in {"e4", "e5", "e6"}:
+            enabled_measurements = ["mass"]
+            if uses_roughness:
+                enabled_measurements.append("continuous roughness")
+            if uses_projected_contact:
+                enabled_measurements.append("projected contact")
+            st.caption(
+                f"{experiment.upper()} is a fixed ablation: "
+                + ", ".join(enabled_measurements)
+                + "."
+            )
         with st.expander("Input and retrieval tuning", expanded=True):
             st.caption(
-                "The roughness and projected-contact switches beside the Dataset selector "
-                "control every new run. Stored values remain available for later use."
+                "E4-E6 have fixed sensor subsets; these weights change neighbor ranking "
+                "within the selected condition."
             )
             semantic_w = st.slider(
                 "Semantic weight", 0.0, 1.0,
@@ -193,18 +210,18 @@ def render(context: AppContext) -> None:
             roughness_w = st.slider(
                 "Roughness weight", 0.0, 1.0,
                 float(base_cfg.retrieval.weights.roughness), 0.05,
-                disabled=not uses_hybrid_retrieval or not base_cfg.inputs.use_roughness,
+                disabled=not uses_hybrid_retrieval or not uses_roughness,
             )
             configured_contact_w = st.slider(
                 "Contact weight", 0.0, 1.0,
                 float(base_cfg.retrieval.weights.contact), 0.05,
                 disabled=(
-                    not base_cfg.inputs.use_projected_contact
+                    not uses_projected_contact
                     or not uses_hybrid_retrieval
                 ),
             )
             contact_w = (
-                configured_contact_w if base_cfg.inputs.use_projected_contact else 0.0
+                configured_contact_w if uses_projected_contact else 0.0
             )
             sigma_mass = st.slider(
                 "Mass sigma", 0.1, 3.0,
@@ -215,7 +232,7 @@ def render(context: AppContext) -> None:
                 "Contact sigma", 0.05, 1.0,
                 float(base_cfg.retrieval.sigma_contact), 0.05,
                 disabled=(
-                    not base_cfg.inputs.use_projected_contact
+                    not uses_projected_contact
                     or not uses_hybrid_retrieval
                 ),
             )
@@ -233,7 +250,7 @@ def render(context: AppContext) -> None:
             base_cfg,
             semantic=semantic_w,
             mass=mass_w,
-            roughness=(roughness_w if base_cfg.inputs.use_roughness else 0.0),
+            roughness=(roughness_w if uses_roughness else 0.0),
             contact=contact_w,
             sigma_mass=sigma_mass,
             sigma_contact=sigma_contact,
@@ -253,11 +270,11 @@ def render(context: AppContext) -> None:
                 and (
                     mass != dataset_object.mass_g
                     or (
-                        base_cfg.inputs.use_roughness
+                        uses_roughness
                         and roughness != dataset_object.roughness_index
                     )
                     or (
-                        base_cfg.inputs.use_projected_contact
+                        uses_projected_contact
                         and contact != dataset_object.projected_contact_fraction
                     )
                 )
@@ -355,8 +372,8 @@ def render(context: AppContext) -> None:
             st.info("Select a dataset object or upload an image, then run the pipeline.")
             if experiment == "e3":
                 render_semantic_formula()
-            elif experiment == "e4":
-                render_formula(cfg)
+            elif uses_hybrid_retrieval:
+                render_formula(experiment_spec.scoped_config(cfg))
             else:
                 st.caption(f"{experiment.upper()} does not use experiential retrieval.")
         else:

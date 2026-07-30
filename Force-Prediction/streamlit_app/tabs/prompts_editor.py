@@ -5,6 +5,7 @@ from __future__ import annotations
 import streamlit as st
 
 from modules.config import (
+    EXPERIMENT_IDS,
     Config,
     EmbodimentContext,
     PromptBundle,
@@ -31,7 +32,7 @@ def _sync_widgets_from_config(cfg: Config) -> str:
             "prompt_descriptor_instruction": cfg.prompts.descriptor,
             **{
                 f"prompt_instruction_{experiment}": cfg.prompts.experiments[experiment]
-                for experiment in ("e1", "e2", "e3", "e4")
+                for experiment in EXPERIMENT_IDS
             },
             **{
                 f"prompt_target_{mode}": cfg.prompts.target_instructions[mode]
@@ -50,7 +51,7 @@ def _sync_widgets_from_config(cfg: Config) -> str:
 def _bundle_from_widgets(context: AppContext) -> PromptBundle:
     experiments = {
         experiment: st.session_state[f"prompt_instruction_{experiment}"]
-        for experiment in ("e1", "e2", "e3", "e4")
+        for experiment in EXPERIMENT_IDS
     }
     return PromptBundle(
         prompts=Prompts(
@@ -102,7 +103,7 @@ def render(context: AppContext) -> None:
         )
 
     st.subheader("Experiment instructions")
-    for experiment in ("e1", "e2", "e3", "e4"):
+    for experiment in EXPERIMENT_IDS:
         st.text_area(
             f"{experiment.upper()} instruction",
             height=170,

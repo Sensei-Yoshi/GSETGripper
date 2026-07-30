@@ -277,7 +277,7 @@ regressions require `f(10 mm) >= f(20 mm) >= f(30 mm)`.
 
 ## Relationship to the force-prediction pipeline
 
-The active E1–E4 contract retains the field name
+The active E1–E6 contract retains the field name
 `projected_contact_fraction` for compatibility. Newly collected physical
 objects populate it from schema-v2 `combined_contact_fraction` and preserve
 model provenance in `Meta`. ExpForce remains a synthetic fixture and is not
