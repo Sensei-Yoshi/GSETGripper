@@ -17,11 +17,11 @@
     "contact_patch_visibility": "fully visible",
     "uncertainty": "none"
   },
-  "embedding_status": "pending",
-  "embedding_model": null,
-  "embedding_dim": null,
-  "embedding_descriptor_sha256": null,
-  "embedding_cache_key": null,
-  "embedding_sha256": null,
-  "updated_at": "2026-07-30T04:24:03.496463+00:00"
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "e8ca85beae1d62a282c6a6e2be456dca5b629112ecee0a18f003c8fb8f274052",
+  "embedding_cache_key": "6e61f4e54398ad88123c2bcd3962e523ab768d5cb9ded0a677a0b8c1cf1de3ce",
+  "embedding_sha256": "11d516c5178a28431b3ba990b9ac28a7b78eeb30bbc32f28d9bfac0c04f5450d",
+  "updated_at": "2026-07-30T20:48:58.532671+00:00"
 }

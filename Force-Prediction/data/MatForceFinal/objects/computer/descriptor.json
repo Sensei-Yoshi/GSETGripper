@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "computer",
+  "object_name": "Computer",
+  "image_name": "computer.jpg",
+  "image_path": "data/MatForceFinal/computer.jpg",
+  "image_sha256": "db0ce50667da5e4af3cba486a44020b020f4014be09a62fe9e71eca9abbc5172",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
+  "descriptor": {
+    "retrieval_description": "Clean, dry metal contact surface with a smooth anodized finish and no visible moisture or loose debris.",
+    "contact_material": "metal",
+    "visible_surface_material": "anodized aluminum",
+    "visible_surface_condition": "clean, dry, and smooth",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "14dd66af93c48e807adec250223f84ba32253c173ea1da5d193c37e56ac04970",
+  "embedding_cache_key": "92788b36b2e575fd29528c7282809e4e9b40328b82a76a1067eb48484b599249",
+  "embedding_sha256": "a0d3a3c356c247916d618dc9f5f5c68deebd2a6718da5d2d7b202285af7aee97",
+  "updated_at": "2026-07-30T20:48:58.850939+00:00"
+}

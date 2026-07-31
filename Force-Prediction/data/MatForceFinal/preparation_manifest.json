@@ -1,25 +1,33 @@
 {
   "schema_version": 4,
   "dataset_id": "MatForceFinal",
-  "source_fingerprint": "fba9acf297512c55a0c5dc170439f7df53455291c989c7d49ddbaf81762520d9",
-  "created_at": "2026-07-30T04:24:02.890977+00:00",
-  "updated_at": "2026-07-30T16:30:38.226667+00:00",
+  "source_fingerprint": "f661edaf85fa770f5173a68d78bda844d47480cceb61d191b961bb62337a868f",
+  "created_at": "2026-07-30T20:48:57.829067+00:00",
+  "updated_at": "2026-07-31T03:13:35.099375+00:00",
   "stages": {
     "index": {
       "status": "complete",
-      "completed": 40,
-      "total": 40,
+      "completed": 41,
+      "total": 41,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-30T04:26:28.452212+00:00"
+      "updated_at": "2026-07-30T20:48:57.852724+00:00"
     },
     "descriptions": {
       "status": "complete",
-      "completed": 40,
-      "total": 40,
+      "completed": 41,
+      "total": 41,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-30T04:26:28.543272+00:00"
+      "updated_at": "2026-07-30T20:48:58.517251+00:00"
+    },
+    "embeddings": {
+      "status": "complete",
+      "completed": 41,
+      "total": 41,
+      "failed_object": null,
+      "error": null,
+      "updated_at": "2026-07-30T20:48:58.852567+00:00"
     },
     "experiences": {
       "status": "complete",
@@ -27,7 +35,7 @@
       "total": 44,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-30T16:30:38.226655+00:00"
+      "updated_at": "2026-07-31T03:13:35.099360+00:00"
     }
   },
   "missing_images": [],
@@ -71,6 +79,7 @@
     "plastic_resistor_box",
     "large_hand_sanitizer",
     "poker_box",
-    "creatine"
+    "creatine",
+    "computer"
   ]
 }

@@ -1,0 +1,1321 @@
+{
+  "schema_version": 10,
+  "artifact_type": "benchmark_evaluation",
+  "metadata": {
+    "evaluation_id": "20260730T195651693180Z_29b2816df010",
+    "prediction_batch_id": "20260730T192115975891Z_e1",
+    "dataset_id": "MatForceFinal",
+    "created_at": "2026-07-30T19:56:51.693180+00:00",
+    "experiment": "e1",
+    "experiment_method": "vision_vlm",
+    "experiment_definition_version": 11,
+    "active_grippers": [
+      "gecko"
+    ],
+    "generation_mode": "single",
+    "evaluation_protocol": "fixed_train_test_holdout",
+    "backend": {
+      "force": "gemini_single_generation",
+      "semantic_embedding": null
+    },
+    "prediction_created_at": "2026-07-30T19:21:15.975891+00:00",
+    "generation_source_sha256": "07f6b857ce5a85fc777fc911bc228399b9f8b629c048653a6c9b4e7739054773",
+    "generation_input_sha256": "900189b61f9f989696e81c991b3ab52a2044c618e26a760dee45bae33ffe9f99",
+    "truth_source_sha256": "07f6b857ce5a85fc777fc911bc228399b9f8b629c048653a6c9b4e7739054773",
+    "truth_snapshot_sha256": "29b2816df0101017e37b9d7f05d58b7880ba32dbad47fb92b3cb0499f10897bf",
+    "coverage": {
+      "predicted": 11,
+      "evaluated": 11,
+      "skipped": 0,
+      "fraction": 1.0
+    },
+    "skipped_truth": {},
+    "exports": {
+      "json": "data/MatForceFinal/results/evaluations/20260730T192115975891Z_e1/20260730T195651693180Z_29b2816df010.json",
+      "csv": "data/MatForceFinal/results/evaluations/20260730T192115975891Z_e1/20260730T195651693180Z_29b2816df010.csv",
+      "png": "data/MatForceFinal/results/evaluations/20260730T192115975891Z_e1/20260730T195651693180Z_29b2816df010.png",
+      "svg": "data/MatForceFinal/results/evaluations/20260730T192115975891Z_e1/20260730T195651693180Z_29b2816df010.svg"
+    }
+  },
+  "metrics": {
+    "force": {
+      "gecko": {
+        "n": 10,
+        "mae": 1.9951999999999999,
+        "rmse": 2.3874255171627867,
+        "medae": 1.585,
+        "within_0.25n": 0.1,
+        "within_0.5n": 0.1
+      },
+      "overall": {
+        "n": 10,
+        "mae": 1.9951999999999999,
+        "rmse": 2.3874255171627867,
+        "medae": 1.585,
+        "within_0.25n": 0.1,
+        "within_0.5n": 0.1
+      }
+    },
+    "feasibility": {
+      "gecko": {
+        "tp": 10,
+        "fp": 0,
+        "tn": 0,
+        "fn": 1,
+        "precision": 1.0,
+        "recall": 0.9090909090909091
+      }
+    },
+    "selection": {
+      "applicable": false,
+      "n": 0
+    },
+    "model_recommendation": {
+      "applicable": false,
+      "n": 0
+    }
+  },
+  "rows": [
+    {
+      "object_id": "avacado",
+      "surface_id": "avacado",
+      "condition_id": "baseline",
+      "object_name": "Avacado",
+      "image_path": "data/MatForceFinal/avacado.jpeg",
+      "image_sha256": "90786816e47407e042fa0fa147a3806fd61ce4cc0e26e3fb6a5349bba79fd6dc",
+      "mass_g": 157.55,
+      "roughness_index": 2415.65,
+      "projected_contact_fraction": 0.1,
+      "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "none",
+      "predicted_normal_force_n": null,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "none",
+          "predicted_normal_force_n": null,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "organic produce / pebbled skin avocado",
+              "visible_surface_condition": "textured, slightly rough, non-uniform curvature",
+              "compatibility": "low",
+              "feasible": false,
+              "predicted_normal_force_n": 5.5,
+              "evidence_used": [
+                "Object image shows an avocado resting on a surface",
+                "Avocado has a rough, pebbled skin surface texture lacking flat, parallel sidewalls",
+                "Gecko gripper embodiment requires flat, parallel, smooth, nonporous surfaces for reliable dry adhesion"
+              ],
+              "calculation_summary": "Estimated normal force = baseline object weight compensation combined with low dry-adhesion contact efficiency, resulting in a high required normal force of 5.5 N due to limited frictional support and poor surface matching.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass or friction coefficient was provided, introducing visual estimation uncertainty",
+                "Object geometry is rounded rather than flat, preventing full gecko pad engagement"
+              ],
+              "reasoning_trace": "The query object is an avocado, which presents a bumpy, pebbled, curved skin incompatible with the rigid flat pads of the gecko gripper. Because dry adhesion requires flat, smooth surfaces, the gecko pads will achieve very poor contact area. The gripper can still technically grasp it using limited frictional support, but due to the poor compatibility and curved geometry, a higher normal force is required to prevent slip during lifting. Thus, a force of 5.5 N is estimated."
+            }
+          },
+          "reasoning_trace": "no feasible gripper",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+        "object_id": "avacado",
+        "surface_id": "avacado",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.5,
+      "pred_gecko_feasible": false,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.24,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 4.26,
+      "absolute_error_gecko_n": 4.26
+    },
+    {
+      "object_id": "camera_cardboard_box",
+      "surface_id": "camera_cardboard_box",
+      "condition_id": "baseline",
+      "object_name": "Camera Cardboard Box",
+      "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+      "image_sha256": "3e353710f8a3077c21e9ace671d33500c26947691c4da1fafd3d7e3651dce996",
+      "mass_g": 871.93,
+      "roughness_index": 804.32,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Cardboard",
+              "visible_surface_condition": "Matte, somewhat porous, flat vertical sidewalls",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "Object is a rectangular cardboard box with flat vertical sidewalls suitable for parallel flat pads.",
+                "Cardboard surface has slight porosity and micro-roughness which moderately reduces gecko dry adhesive performance compared to ideal smooth glass/metal.",
+                "Visual scale suggests a medium-sized object requiring moderate normal force."
+              ],
+              "calculation_summary": "F_normal = F_base - F_adhesion_contribution; estimated baseline normal force for a medium cardboard object at 3.5 N given moderate gecko adhesion compatibility.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass or friction coefficient was provided, introducing visual estimation uncertainty.",
+                "Cardboard porosity and micro-roughness prevent optimal gecko dry-adhesion engagement, requiring higher mechanical normal force than smooth nonporous surfaces."
+              ],
+              "reasoning_trace": "The query object is a cardboard box presenting flat, parallel vertical sidewalls that accommodate the rigid gecko pads. However, cardboard is porous and microscopically rough, which degrades dry adhesive performance compared to smooth surfaces. While gecko adhesion is somewhat compromised, the gripper can still grasp the object through a combination of reduced adhesion and frictional support. Without authoritative mass measurements, the required normal force is visually estimated at 3.5 N to ensure a secure lift."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+        "object_id": "camera_cardboard_box",
+        "surface_id": "camera_cardboard_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 3.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 6.22,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -2.7199999999999998,
+      "absolute_error_gecko_n": 2.7199999999999998
+    },
+    {
+      "object_id": "clay_bowl",
+      "surface_id": "clay_bowl",
+      "condition_id": "baseline",
+      "object_name": "Clay Bowl",
+      "image_path": "data/MatForceFinal/clay_bowl.jpg",
+      "image_sha256": "de1b845b4662fb46b27d674cefb9e02353ea1578cb272aaf90617b6a5e707d13",
+      "mass_g": 286.71,
+      "roughness_index": 1847.68,
+      "projected_contact_fraction": 0.4166666667,
+      "semantic_description": "Rigid mineral substrate with a painted ceramic-like coating and dry, slightly textured surface finish.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 5.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 5.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Painted clay or ceramic",
+              "visible_surface_condition": "Textured, porous, and unevenly painted with multiple colors (white, yellow, green, pink)",
+              "compatibility": "low",
+              "feasible": true,
+              "predicted_normal_force_n": 5.5,
+              "evidence_used": [
+                "Object image showing a small handmade bowl or cup made of clay or ceramic",
+                "Visible surface texture is rough, irregular, and porous with painted layers",
+                "Lack of flat, parallel sidewalls required for broad gecko pad contact",
+                "Gecko gripper embodiment description specifying performance degrades with roughness, porosity, and uneven geometry"
+              ],
+              "calculation_summary": "Force estimated based on qualitative visual assessment. Due to poor surface compatibility (rough, porous, non-flat painted clay), gecko adhesion is heavily compromised, requiring reliance on limited frictional support and a higher normal force near the upper half of the 0 to 8 N range: F_normal \u2248 5.5 N.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass or friction measurements were provided",
+                "Visual estimation of object scale, weight, and surface roughness introduces high uncertainty",
+                "Assumes the parallel-jaw gripper can make sufficient point or partial contact to lift the irregular object despite lack of flat sidewalls"
+              ],
+              "reasoning_trace": "The query object is a small handmade container with a porous, unevenly painted clay or ceramic surface and irregular geometry lacking flat, parallel sidewalls. According to the gecko gripper embodiment description, dry adhesion performs poorly on rough, porous, and non-flat surfaces. Because the surface is incompatible with effective dry adhesion, the gecko gripper must rely primarily on limited frictional support to lift the object. Without authoritative mass measurements and given the poor contact mechanics, a moderately high normal force of 5.5 N is estimated to ensure a secure grasp under frictional forces alone while remaining within the 0 to 8 N controller limits."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Rigid mineral substrate with a painted ceramic-like coating and dry, slightly textured surface finish.",
+        "object_id": "clay_bowl",
+        "surface_id": "clay_bowl",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 3.63,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 1.87,
+      "absolute_error_gecko_n": 1.87
+    },
+    {
+      "object_id": "large_hand_sanitizer",
+      "surface_id": "large_hand_sanitizer",
+      "condition_id": "baseline",
+      "object_name": "Large hand sanitizer",
+      "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+      "image_sha256": "1cc772e5cf5b3f015189c37c0030f044352a8625cb0acc79a733b04b146b99ac",
+      "mass_g": 836.04,
+      "roughness_index": 958.71,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "smooth rigid plastic bottle containing gel hand sanitizer",
+              "visible_surface_condition": "smooth, clean, nonporous, with flat parallel sides suitable for dry adhesion",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 1.5,
+              "evidence_used": [
+                "Object image shows a large transparent plastic bottle with relatively flat cylindrical sidewalls.",
+                "Material is clean, smooth, nonporous plastic.",
+                "Gecko embodiment context states dry adhesion performs best on clean, dry, smooth, nonporous surfaces and greater adhesion lowers required grasp force."
+              ],
+              "calculation_summary": "Force estimated via visual approximation for a clean smooth plastic container using gecko dry-adhesive pads, applying a low baseline pre-grasp normal force (1.5 N) since high adhesion is leveraged by the flat, smooth sidewalls.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass, roughness, or projected contact measurements were supplied.",
+                "Visual approximation of the bottle's weight and sidewall flatness introduces uncertainty.",
+                "Assumes the bottle is completely dry and free of external grease or liquid contamination."
+              ],
+              "reasoning_trace": "The visual inspection shows a smooth, clean, transparent plastic hand sanitizer bottle with reasonably flat sidewalls that offer good compatibility with the mushroom-tipped gecko-inspired dry-adhesive pads. Because gecko adhesion is highly effective on clean, smooth, nonporous surfaces, maximal directional adhesion can be achieved. This high adhesion significantly reduces the normal force required to lift the object against gravity. Integrating the visual scale of the 1000 mL bottle with the dry adhesive properties leads to a predicted stationary-finger normal force of 1.5 N."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "object_id": "large_hand_sanitizer",
+        "surface_id": "large_hand_sanitizer",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.3,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.19999999999999996,
+      "absolute_error_gecko_n": 0.19999999999999996
+    },
+    {
+      "object_id": "mold_release_spray_box",
+      "surface_id": "mold_release_spray_box",
+      "condition_id": "baseline",
+      "object_name": "Mold Release Spray Box",
+      "image_path": "data/MatForceFinal/mold release spray box.jpeg",
+      "image_sha256": "10cd9349430ae72aac6bcf9805e3fa6cb6608ebd98650ed5522f9f6b31cf9a4f",
+      "mass_g": 156.15,
+      "roughness_index": 1123.76,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.2,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "cardboard/paper with printed finish",
+              "visible_surface_condition": "flat, clean, smooth, nonporous printed packaging box",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 1.2,
+              "evidence_used": [
+                "Object is a small rectangular packaging box (Mold Release Spray box)",
+                "Sidewalls appear flat, smooth, and rigid, well-suited for parallel-jaw gecko dry-adhesive pad contact",
+                "Surface is clean and dry paper/cardboard finish"
+              ],
+              "calculation_summary": "Force estimated via zero-shot heuristic based on object scale and high compatibility with gecko dry adhesive. F_normal = F_base_flat_box * scale_factor = 1.2 N (well within the 0 to 8 N constraint).",
+              "assumptions_and_uncertainty": [
+                "Object mass is unmeasured and estimated visually from size to be relatively light (approx. 100-200g).",
+                "Surface friction and adhesion are assumed uniform based on visual appearance.",
+                "Visual approximation introduces uncertainty in exact required normal force."
+              ],
+              "reasoning_trace": "The query object is a small rectangular box labeled 'Mold Release Spray'. Visually, its sidewalls are flat, smooth, and rigid, providing an ideal substrate for the rigid mushroom-tipped gecko adhesive pads. Because dry adhesion performs exceptionally well on clean, smooth, nonporous surfaces, compatibility is high. Without authoritative mass or friction coefficients, we apply a modest baseline normal force typical for lifting a lightweight packaged item securely with gecko adhesion, yielding 1.2 N."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+        "object_id": "mold_release_spray_box",
+        "surface_id": "mold_release_spray_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.2,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.42,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.78,
+      "absolute_error_gecko_n": 0.78
+    },
+    {
+      "object_id": "plastic_resistor_box",
+      "surface_id": "plastic_resistor_box",
+      "condition_id": "baseline",
+      "object_name": "Plastic Resistor Box",
+      "image_path": "data/MatForceFinal/resistor box.jpeg",
+      "image_sha256": "ef309e272161a4224400ff2d38f390368543f04b075422b7bddd219c5b1c5b1f",
+      "mass_g": 179.86,
+      "roughness_index": 678.41,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry polymer contact surface with a smooth rigid finish and no visible coating or contamination.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "plastic",
+              "visible_surface_condition": "smooth and clean container surface",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 1.5,
+              "evidence_used": [
+                "Object is a rigid plastic component storage box with flat, smooth parallel sidewalls",
+                "Visible surface is clean and nonporous",
+                "Gecko gripper embodiment description requiring flat, parallel sidewalls for broad contact and dry adhesion"
+              ],
+              "calculation_summary": "F_normal = F_base_min + visual_scale_adjustment = 1.0 + 0.5 = 1.5 N",
+              "assumptions_and_uncertainty": [
+                "Exact object mass is unmeasured and estimated visually from container size",
+                "Surface friction and gecko adhesion coefficients are not explicitly calibrated",
+                "Sidewalls are assumed sufficiently flat and rigid to engage the mushroom-tipped pads"
+              ],
+              "reasoning_trace": "The query image shows a plastic component organizer box resting on a table. The box features smooth, flat, rigid plastic sidewalls suitable for engagement with the rigid gecko-adhesive pads. Since the surface is clean, smooth, and nonporous, high compatibility with the dry-adhesive pads is expected, permitting effective directional adhesion. Because adhesion assists in lifting, a relatively low normal force is sufficient to achieve a secure hold under the standardized test protocol. Accounting for the medium-small visual scale and moderate estimated weight of the box, a conservative normal force estimate of 1.5 N is assigned."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry polymer contact surface with a smooth rigid finish and no visible coating or contamination.",
+        "object_id": "plastic_resistor_box",
+        "surface_id": "plastic_resistor_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.2,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 1.3,
+      "absolute_error_gecko_n": 1.3
+    },
+    {
+      "object_id": "poker_box",
+      "surface_id": "poker_box",
+      "condition_id": "baseline",
+      "object_name": "Poker Box",
+      "image_path": "data/MatForceFinal/poker_box.jpg",
+      "image_sha256": "841d51dcb398cba9b5dad091c1ccd89eea54bbf85c5e99cd2fb4a41e763a93ee",
+      "mass_g": 457.69,
+      "roughness_index": 800.2,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.2,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "cardboard",
+              "visible_surface_condition": "smooth, clean, printed paperboard box",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 1.2,
+              "evidence_used": [
+                "Object is a vertical rectangular box of poker chips with smooth, flat, clean cardboard sidewalls suitable for gecko dry-adhesion contact.",
+                "Cardboard material provides a nonporous, smooth enough surface for effective mushroom-tipped gecko pad engagement.",
+                "Moderate object scale and weight estimate for a 100-chip box."
+              ],
+              "calculation_summary": "F_normal = F_baseline_light_box - F_adhesion_bonus = 3.0N - 1.8N = 1.2N (estimated heuristically based on high gecko adhesion compatibility with flat cardboard box sidewalls).",
+              "assumptions_and_uncertainty": [
+                "Assumes the box sidewalls are sufficiently flat and rigid to engage the 4.2-inch gecko pads fully.",
+                "Exact object mass is unmeasured and visually estimated, introducing uncertainty into the required normal force.",
+                "Friction and adhesion contributions are visually approximated without direct sensor measurements."
+              ],
+              "reasoning_trace": "The visual inspection reveals a standard cardboard box containing 100 poker chips, presenting clean, flat, and smooth vertical sidewalls. These characteristics are highly compatible with the parallel-jaw gecko gripper's mushroom-tipped dry-adhesive pads. Because effective dry adhesion significantly increases holding traction on smooth, flat, nonporous surfaces, the required stationary-finger normal force to lift the object is relatively low. Accounting for the estimated weight of a standard poker chip box and utilizing the high adhesion benefit, a normal force of 1.2 N is estimated as sufficient for a stable lift under zero-shot vision-only conditions."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+        "object_id": "poker_box",
+        "surface_id": "poker_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.2,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 2.07,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.8699999999999999,
+      "absolute_error_gecko_n": 0.8699999999999999
+    },
+    {
+      "object_id": "rough_tile",
+      "surface_id": "rough_tile",
+      "condition_id": "baseline",
+      "object_name": "Rough Tile",
+      "image_path": "data/MatForceFinal/rough_tile.jpg",
+      "image_sha256": "75c2b235a9adb7857d13db6611a0f5aaae21da37a6316b27702850c3fbe8c0e0",
+      "mass_g": 178.52,
+      "roughness_index": 1992.71,
+      "projected_contact_fraction": 0.5952380952,
+      "semantic_description": "Rigid ceramic substrate with a patterned decorative glazed finish and dry, clean surface condition.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 5.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 5.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "ceramic / terracotta tile shard",
+              "visible_surface_condition": "porous, textured, and patterned with white grout or coating",
+              "compatibility": "low",
+              "feasible": true,
+              "predicted_normal_force_n": 5.5,
+              "evidence_used": [
+                "Object image showing a flat ceramic or terracotta sherd with a textured/patterned surface and white decorative lines",
+                "Gecko gripper embodiment description requiring flat, smooth, clean, nonporous surfaces for optimal dry adhesion",
+                "Gecko adhesion degradation on porous, rough, or contaminated surfaces"
+              ],
+              "calculation_summary": "Since gecko dry adhesion performs poorly on porous, textured, or coated surfaces, adhesive contribution is minimal. The required normal force relies mostly on fallback frictional support, estimated visually based on object weight and limited friction to be around 5.5 N.",
+              "assumptions_and_uncertainty": [
+                "Object mass is estimated visually as no authoritative mass was supplied.",
+                "Surface porosity and texture significantly reduce gecko pad dry adhesion, increasing the required normal force.",
+                "Uncertainty exists regarding exact friction coefficients and object weight due to zero-shot vision-only conditions."
+              ],
+              "reasoning_trace": "The query object is a small ceramic or terracotta sherd with a rough/textured surface and white patterning. The gecko gripper requires flat, smooth, clean, and nonporous surfaces to establish strong dry adhesion. Because the object surface is porous and textured, dry adhesion is degraded, meaning the gripper must rely heavily on fallback frictional support. Without high adhesion, a higher normal force is required to lift the object securely. Therefore, a moderate-to-high normal force of 5.5 N is estimated to compensate for the poor gecko compatibility."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Rigid ceramic substrate with a patterned decorative glazed finish and dry, clean surface condition.",
+        "object_id": "rough_tile",
+        "surface_id": "rough_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 2.459,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 3.041,
+      "absolute_error_gecko_n": 3.041
+    },
+    {
+      "object_id": "small_book",
+      "surface_id": "small_book",
+      "condition_id": "baseline",
+      "object_name": "Small Book",
+      "image_path": "data/MatForceFinal/small_book.jpg",
+      "image_sha256": "62f5a0b4483b8c9ab4edf1686f4a58d751271084aa481e0238193415e751625c",
+      "mass_g": 118.4,
+      "roughness_index": 1532.23,
+      "projected_contact_fraction": 0.880952381,
+      "semantic_description": "Clean, dry leather contact surface with a textured embossed finish over a rigid substrate and no visible moisture or loose debris.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 4.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 4.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "wood and leather",
+              "visible_surface_condition": "textured with decorative engravings and stitched binding",
+              "compatibility": "low",
+              "feasible": true,
+              "predicted_normal_force_n": 4.5,
+              "evidence_used": [
+                "Object image showing a small decorative book or box with wood cover panels, embossed leather border, and exposed string binding.",
+                "Gecko gripper embodiment requiring flat, parallel, smooth, nonporous surfaces for optimal dry adhesion.",
+                "Textured/engraved surface features that reduce real contact area for rigid gecko pads."
+              ],
+              "calculation_summary": "Force estimated based on zero-shot visual approximation. Without high dry adhesion due to surface texture and engravings, the gecko gripper relies primarily on limited frictional support, requiring a moderate-high normal force (4.5 N out of 8.0 N maximum) to lift the object securely.",
+              "assumptions_and_uncertainty": [
+                "Mass and exact center of mass are unmeasured and estimated purely from visual scale.",
+                "Surface relief from engravings and binding strings prevents full pad-to-surface engagement.",
+                "Frictional support coefficient is assumed to be moderate."
+              ],
+              "reasoning_trace": "The query object is a small wooden and leather-bound decorative box with textured engravings and exposed string binding. The gecko gripper requires smooth, flat, nonporous surfaces to maximize dry-adhesive contact. Because the visible surface condition includes decorative embossing, crevices, and material transitions, true contact fraction will be substantially reduced. Consequently, adhesion is poor, forcing the gripper to rely heavily on standard frictional clamping rather than gecko dry adhesion. To compensate for the lower adhesive contribution while safely lifting the object, a higher stationary-finger normal force of 4.5 N is predicted."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry leather contact surface with a textured embossed finish over a rigid substrate and no visible moisture or loose debris.",
+        "object_id": "small_book",
+        "surface_id": "small_book",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 4.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 1.03,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 3.4699999999999998,
+      "absolute_error_gecko_n": 3.4699999999999998
+    },
+    {
+      "object_id": "soap_bottle",
+      "surface_id": "soap_bottle",
+      "condition_id": "baseline",
+      "object_name": "Soap Bottle",
+      "image_path": "data/MatForceFinal/soap_bottle.jpg",
+      "image_sha256": "c14f003defb99d065b60f161664f330c7f613b426d45fccc484ce81a5916de3c",
+      "mass_g": 236.11,
+      "roughness_index": 736.99,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry rigid plastic contact surface with a smooth semi-gloss finish and no visible contamination.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "smooth plastic bottle",
+              "visible_surface_condition": "clean, dry, and flat sidewalls",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 1.5,
+              "evidence_used": [
+                "Object image showing a standard plastic bottle with smooth, flat opposing sidewalls",
+                "Gecko gripper embodiment requiring flat, parallel, smooth, clean surfaces for optimal dry-adhesive contact",
+                "Zero-shot visual scale estimation indicating a modest-sized consumer liquid bottle"
+              ],
+              "calculation_summary": "Estimated base pre-grasp force using nominal heuristic for clean smooth plastic objects with gecko pads: F_normal = F_base + delta_mass_scale = 1.0 N + 0.5 N = 1.5 N within the 0 to 8 N constraint range.",
+              "assumptions_and_uncertainty": [
+                "Object weight is visually estimated as moderate (around 200-400 grams)",
+                "Sidewalls are assumed sufficiently flat and rigid to engage the gecko pads properly",
+                "Exact mass, center of mass, and coefficient of friction are unmeasured visual approximations"
+              ],
+              "reasoning_trace": "The query image displays a standard plastic bottle with clean, smooth, and relatively flat sidewalls, which provide an ideal substrate for the rigid gecko-inspired dry-adhesive pads. Because gecko adhesion performs best on clean, smooth, nonporous surfaces, compatibility is high. Based on visual scale and standard object weight for such bottles, a low normal force of 1.5 N is sufficient to achieve a secure lift while leveraging directional dry adhesion, avoiding excessive force."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth semi-gloss finish and no visible contamination.",
+        "object_id": "soap_bottle",
+        "surface_id": "soap_bottle",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.303,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 1.197,
+      "absolute_error_gecko_n": 1.197
+    },
+    {
+      "object_id": "very_smooth_tile",
+      "surface_id": "very_smooth_tile",
+      "condition_id": "baseline",
+      "object_name": "Very Smooth Tile",
+      "image_path": "data/MatForceFinal/very_smooth_tile.jpg",
+      "image_sha256": "620a7195ae010d4041096b222cca186ec509443e1c19b155284b64ae070990bf",
+      "mass_g": 178.52,
+      "roughness_index": 730.45,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry ceramic contact surface with a glazed finish and smooth nonporous texture over a rigid substrate.",
+      "active_grippers": [
+        "gecko"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 5.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 5.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "ceramic sherd with glazed/textured top and rough broken edges",
+              "visible_surface_condition": "irregular shard shape with non-parallel sidewalls and rough fracture surfaces",
+              "compatibility": "low",
+              "feasible": true,
+              "predicted_normal_force_n": 5.5,
+              "evidence_used": [
+                "Object image showing a small, irregular ceramic shard with non-flat opposing edges and a textured top surface.",
+                "Gecko gripper description requiring flat, parallel sidewalls and clean, smooth, nonporous surfaces for effective dry adhesion."
+              ],
+              "calculation_summary": "Force estimated via visual heuristic based on low gecko compatibility due to non-flat and non-parallel gripping surfaces, requiring reliance on limited frictional support and higher clamping force within the 0 to 8 N range.",
+              "assumptions_and_uncertainty": [
+                "Mass and exact dimensions are unmeasured and estimated purely from visual scale.",
+                "Sidewalls lack the flatness and parallelism required for optimal gecko dry adhesion.",
+                "Uncertainty exists regarding the exact friction coefficient between the gecko backing/pads and the ceramic sherd."
+              ],
+              "reasoning_trace": "The visual inspection reveals an irregular ceramic shard with fractured, non-parallel edges. The gecko gripper relies on flat, parallel sidewalls for broad contact and maximum dry adhesion. Because the object geometry is incompatible with optimal gecko pad engagement, adhesion is severely degraded, and the gripper must rely primarily on limited frictional support. To overcome the lack of gecko-induced dry adhesion and safely secure the irregularly shaped object, a higher normal force is required. Based on these qualitative visual constraints, a moderate-to-high force of 5.5 N is estimated within the 0 to 8 N allowable range."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry ceramic contact surface with a glazed finish and smooth nonporous texture over a rigid substrate.",
+        "object_id": "very_smooth_tile",
+        "surface_id": "very_smooth_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.5,
+      "pred_gecko_feasible": true,
+      "true_favored": null,
+      "selection_correct": null,
+      "regret_n": null,
+      "true_gecko_force_n": 0.996,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 4.504,
+      "absolute_error_gecko_n": 4.504
+    }
+  ]
+}

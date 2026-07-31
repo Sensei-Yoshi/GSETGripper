@@ -32,6 +32,15 @@ EXPERIMENT_STYLES = {
 ERROR_ZERO_TOLERANCE_N = 1e-9
 
 
+def present_experiments(artifacts: dict[str, dict]) -> tuple[str, ...]:
+    """Experiments actually present in a bundle, in canonical E1→E6 order.
+
+    Suites may run any subset (e.g. E1–E5), so comparison and figure helpers
+    iterate the experiments that are present rather than assuming all six.
+    """
+    return tuple(name for name in PRIMARY_EXPERIMENTS if artifacts.get(name) is not None)
+
+
 def artifact_grippers(artifact: dict) -> tuple[str, ...]:
     """Read target provenance, defaulting historical artifacts to paired."""
     metadata = artifact.get("metadata", artifact)
@@ -45,11 +54,12 @@ def common_intersection_artifacts(
     artifacts: dict[str, dict],
     cfg: Config,
 ) -> tuple[dict[str, dict], tuple[str, ...]]:
-    """Filter all six artifacts to the same objects and recompute comparable metrics."""
-    if any(experiment not in artifacts for experiment in PRIMARY_EXPERIMENTS):
+    """Filter the present artifacts to shared objects and recompute comparable metrics."""
+    present = present_experiments(artifacts)
+    if not present:
         return {}, ()
     target_sets = {
-        artifact_grippers(artifacts[experiment]) for experiment in PRIMARY_EXPERIMENTS
+        artifact_grippers(artifacts[experiment]) for experiment in present
     }
     if len(target_sets) != 1:
         raise ValueError("cross-experiment comparison requires identical active grippers")
@@ -58,11 +68,11 @@ def common_intersection_artifacts(
     metrics_cfg.prediction.active_grippers = tuple(Gripper(name) for name in names)
     object_sets = [
         {row["object_id"] for row in artifacts[experiment]["rows"]}
-        for experiment in PRIMARY_EXPERIMENTS
+        for experiment in present
     ]
     common_ids = tuple(sorted(set.intersection(*object_sets))) if object_sets else ()
     filtered: dict[str, dict] = {}
-    for experiment in PRIMARY_EXPERIMENTS:
+    for experiment in present:
         artifact = copy.deepcopy(artifacts[experiment])
         rows = [row for row in artifact["rows"] if row["object_id"] in common_ids]
         artifact["rows"] = rows
@@ -221,24 +231,23 @@ def _suite_gripper_points(
     gripper: str,
 ) -> list[dict]:
     """Align all experiment predictions to one truth-ordered object sequence."""
-    missing = [name for name in PRIMARY_EXPERIMENTS if name not in artifacts]
-    if missing:
-        labels = ", ".join(name.upper() for name in missing)
-        raise ValueError(f"suite comparison is missing experiments: {labels}")
+    present = present_experiments(artifacts)
+    if not present:
+        return []
 
     rows_by_experiment = {
         experiment: {
             str(row["object_id"]): row
             for row in artifacts[experiment].get("rows", [])
         }
-        for experiment in PRIMARY_EXPERIMENTS
+        for experiment in present
     }
     common_ids = set.intersection(
         *(set(rows) for rows in rows_by_experiment.values())
     )
     points: list[dict] = []
     for object_id in common_ids:
-        anchor = rows_by_experiment[PRIMARY_EXPERIMENTS[0]][object_id]
+        anchor = rows_by_experiment[present[0]][object_id]
         truth = anchor.get(f"true_{gripper}_force_n")
         if truth is None:
             continue
@@ -246,7 +255,7 @@ def _suite_gripper_points(
             experiment: rows_by_experiment[experiment][object_id].get(
                 f"pred_{gripper}_force_n"
             )
-            for experiment in PRIMARY_EXPERIMENTS
+            for experiment in present
         }
         if any(value is None for value in predictions.values()):
             continue
@@ -278,9 +287,9 @@ def _suite_point_sets(
     }
 
 
-def _experiment_offsets() -> dict[str, float]:
-    offsets = np.linspace(-0.24, 0.24, len(PRIMARY_EXPERIMENTS))
-    return dict(zip(PRIMARY_EXPERIMENTS, offsets, strict=True))
+def _experiment_offsets(experiments: tuple[str, ...]) -> dict[str, float]:
+    offsets = np.linspace(-0.24, 0.24, len(experiments))
+    return dict(zip(experiments, offsets, strict=True))
 
 
 def _suite_figure(
@@ -314,17 +323,18 @@ def suite_force_by_object_figure(
     image_root: str | Path | None = None,
 ):  # noqa: ANN201
     """Overlay E1–E6 force predictions on one object plot per active gripper."""
+    present = present_experiments(artifacts)
     grippers, point_sets = _suite_point_sets(artifacts)
     resolved_image_root = Path(image_root) if image_root is not None else None
     figure, axes = _suite_figure(point_sets, grippers, sharey=True)
-    offsets = _experiment_offsets()
+    offsets = _experiment_offsets(present)
     all_forces = [
         force
         for points in point_sets.values()
         for point in points
         for force in (
             point["true_force_n"],
-            *[point["predictions"][name] for name in PRIMARY_EXPERIMENTS],
+            *[point["predictions"][name] for name in present],
         )
     ]
     y_max = max(1.0, math.ceil(max(all_forces, default=1.0) * 1.15 * 2) / 2)
@@ -345,7 +355,7 @@ def suite_force_by_object_figure(
             label="Oracle minimum force",
             zorder=2,
         )
-        for experiment in PRIMARY_EXPERIMENTS:
+        for experiment in present:
             style = EXPERIMENT_STYLES[experiment]
             axis.scatter(
                 [position + offsets[experiment] for position in positions],
@@ -372,7 +382,7 @@ def suite_force_by_object_figure(
         labels,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.94),
-        ncol=len(PRIMARY_EXPERIMENTS) + 1,
+        ncol=len(present) + 1,
         frameon=False,
         fontsize=9,
     )
@@ -386,10 +396,11 @@ def suite_percentage_error_figure(
     image_root: str | Path | None = None,
 ):  # noqa: ANN201
     """Overlay signed E1–E6 percentage errors per active gripper and object."""
+    present = present_experiments(artifacts)
     grippers, point_sets = _suite_point_sets(artifacts)
     resolved_image_root = Path(image_root) if image_root is not None else None
     figure, axes = _suite_figure(point_sets, grippers, sharey=True)
-    offsets = _experiment_offsets()
+    offsets = _experiment_offsets(present)
     all_percentages: list[float] = []
     total_omitted = 0
 
@@ -410,7 +421,7 @@ def suite_percentage_error_figure(
             label="Zero error",
             zorder=1,
         )
-        for experiment in PRIMARY_EXPERIMENTS:
+        for experiment in present:
             plotted = [
                 (position, point)
                 for position, point in zip(positions, points, strict=True)
@@ -459,7 +470,7 @@ def suite_percentage_error_figure(
         labels,
         loc="upper center",
         bbox_to_anchor=(0.5, 0.94),
-        ncol=len(PRIMARY_EXPERIMENTS) + 1,
+        ncol=len(present) + 1,
         frameon=False,
         fontsize=9,
     )
@@ -551,18 +562,19 @@ def calibration_figure(artifacts: dict[str, dict]):  # noqa: ANN201
     plt = _pyplot()
 
     grippers = _target_grippers(artifacts)
+    present = present_experiments(artifacts) or PRIMARY_EXPERIMENTS
     long_rows = comparison_rows(artifacts)
     figure, axes = plt.subplots(
         len(grippers),
-        len(PRIMARY_EXPERIMENTS),
-        figsize=(3.75 * len(PRIMARY_EXPERIMENTS), 3.75 * len(grippers)),
+        len(present),
+        figsize=(3.75 * len(present), 3.75 * len(grippers)),
         sharex=True,
         sharey=True,
         squeeze=False,
     )
     colors = {"gecko": "#147a4a", "silicone": "#b45f19"}
     for row_index, gripper in enumerate(grippers):
-        for column_index, experiment in enumerate(PRIMARY_EXPERIMENTS):
+        for column_index, experiment in enumerate(present):
             axis = axes[row_index][column_index]
             points = [
                 row

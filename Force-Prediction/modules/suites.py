@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -32,7 +32,28 @@ SUITE_SCHEMA_VERSION = 11
 SUITE_REPORTING_VERSION = 2
 
 
-def _definition_snapshot(cfg: Config) -> dict:
+def normalize_suite_experiments(
+    experiments: Iterable[str] | None,
+) -> tuple[str, ...]:
+    """Resolve a requested subset into canonical order, defaulting to all primaries."""
+    if experiments is None:
+        return PRIMARY_EXPERIMENTS
+    selected = {name.lower() for name in experiments}
+    unknown = selected - set(PRIMARY_EXPERIMENTS)
+    if unknown:
+        raise ValueError(f"unknown suite experiments: {sorted(unknown)}")
+    ordered = tuple(name for name in PRIMARY_EXPERIMENTS if name in selected)
+    if not ordered:
+        raise ValueError("a suite needs at least one experiment")
+    return ordered
+
+
+def suite_experiments(manifest: dict) -> tuple[str, ...]:
+    """The experiments a manifest runs, tolerant of legacy manifests without the field."""
+    return normalize_suite_experiments(manifest.get("experiments"))
+
+
+def _definition_snapshot(cfg: Config, experiments: tuple[str, ...]) -> dict:
     """Configuration lock that intentionally excludes mutable dataset truth."""
     from .datasets import get_dataset
 
@@ -47,7 +68,7 @@ def _definition_snapshot(cfg: Config) -> dict:
     }
     definitions = {
         name: cfg.experiment(name).model_dump(mode="json")
-        for name in PRIMARY_EXPERIMENTS
+        for name in experiments
     }
     return {
         "dataset_id": cfg.dataset_id,
@@ -56,7 +77,7 @@ def _definition_snapshot(cfg: Config) -> dict:
         "experiment_definitions": definitions,
         "experiment_input_profiles": {
             name: EXPERIMENT_CATALOG[name].scoped_config(cfg).inputs.model_dump(mode="json")
-            for name in PRIMARY_EXPERIMENTS
+            for name in experiments
         },
         "models": {
             "vlm": cfg.models.vlm,
@@ -91,10 +112,14 @@ def suite_manifest_path(cfg: Config, suite_id: str) -> Path:
     return cfg.root / "data" / cfg.dataset_id / "suites" / suite_id / "manifest.json"
 
 
-def create_suite(cfg: Config) -> dict:
+def create_suite(
+    cfg: Config,
+    experiments: Iterable[str] | None = None,
+) -> dict:
+    selected = normalize_suite_experiments(experiments)
     created_at = datetime.now(UTC)
-    suite_id = created_at.strftime("%Y%m%dT%H%M%S%fZ_primary_e1_e6")
-    snapshot = _definition_snapshot(cfg)
+    suite_id = created_at.strftime("%Y%m%dT%H%M%S%fZ_") + "_".join(selected)
+    snapshot = _definition_snapshot(cfg, selected)
     manifest = {
         "schema_version": SUITE_SCHEMA_VERSION,
         "suite_id": suite_id,
@@ -104,17 +129,17 @@ def create_suite(cfg: Config) -> dict:
         "backend": snapshot["backend"],
         "active_grippers": snapshot["active_grippers"],
         "generation_mode": snapshot["generation_mode"],
-        "experiments": list(PRIMARY_EXPERIMENTS),
+        "experiments": list(selected),
         "definition_snapshot": snapshot,
         "definition_snapshot_sha256": _snapshot_hash(snapshot),
-        "prompt_context": prompt_provenance(cfg, "e1"),
+        "prompt_context": prompt_provenance(cfg, selected[0]),
         "runs": {
             name: {
                 "status": "pending",
                 "prediction_json_path": None,
                 "prediction_csv_path": None,
             }
-            for name in PRIMARY_EXPERIMENTS
+            for name in selected
         },
         "evaluations": [],
     }
@@ -145,7 +170,7 @@ def _validate_resumable(cfg: Config, manifest: dict) -> None:
             f"Legacy suites are read-only; start a schema-v{SUITE_SCHEMA_VERSION} "
             "suite for two-stage execution"
         )
-    current = _definition_snapshot(cfg)
+    current = _definition_snapshot(cfg, suite_experiments(manifest))
     if _snapshot_hash(current) != manifest["definition_snapshot_sha256"]:
         raise ValueError(
             "Current prompts, model, retrieval, inputs, active grippers, or experiment "
@@ -180,7 +205,7 @@ def run_suite_predictions(
         from .datasets import get_dataset
 
         dataset = get_dataset(cfg, cfg.dataset_id)
-        for experiment in PRIMARY_EXPERIMENTS:
+        for experiment in suite_experiments(manifest):
             state = manifest["runs"][experiment]
             saved = state.get("prediction_json_path")
             if (
@@ -271,7 +296,7 @@ def suite_prediction_batches(
     batches: dict[str, BenchmarkPredictionBatch] = {}
     if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
         return batches
-    for experiment in PRIMARY_EXPERIMENTS:
+    for experiment in suite_experiments(manifest):
         relative = manifest["runs"][experiment].get("prediction_json_path")
         if relative and (cfg.root / relative).is_file():
             batches[experiment] = load_prediction_batch(cfg.root / relative)

@@ -23,6 +23,7 @@ from modules.suites import (
     evaluate_suite,
     run_suite_predictions,
     suite_evaluation_artifacts,
+    suite_experiments,
 )
 from tests.fakes import install_gemini_fakes
 
@@ -166,6 +167,23 @@ def test_explicit_blank_benchmark_name_is_rejected(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="benchmark name is required"):
         generate_benchmark_predictions(cfg, "e1", display_name="   ")
+
+
+def test_suite_runs_only_the_selected_experiment_subset(tmp_path, monkeypatch) -> None:
+    cfg, _dataset = _image_only_config(tmp_path)
+    install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
+
+    manifest = create_suite(cfg, ["e5", "e1", "e3"])
+    # Stored in canonical order, and only the chosen runs exist.
+    assert manifest["experiments"] == ["e1", "e3", "e5"]
+    assert set(manifest["runs"]) == {"e1", "e3", "e5"}
+    assert suite_experiments(manifest) == ("e1", "e3", "e5")
+
+    manifest = run_suite_predictions(cfg, manifest)
+    # E1 is image-only and runs immediately; E2/E4/E6 are never touched.
+    assert manifest["runs"]["e1"]["status"] == "completed"
+    assert "e2" not in manifest["runs"]
+    assert "e6" not in manifest["runs"]
 
 
 def test_suite_generates_e1_early_then_resumes_other_experiments(

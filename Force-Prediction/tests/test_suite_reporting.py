@@ -138,6 +138,30 @@ def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:
     )
 
 
+def test_reporting_handles_experiment_subset(tmp_path):
+    subset = ("e1", "e2", "e3", "e4", "e5")
+    artifacts = {
+        experiment: _artifact(index / 10)
+        for index, experiment in enumerate(subset, start=1)
+    }
+
+    comparable, object_ids = common_intersection_artifacts(artifacts, load_config())
+    assert set(comparable) == set(subset)
+    assert object_ids == ("object_a", "object_b")
+
+    # One calibration column per present experiment, times the active grippers.
+    assert len(calibration_figure(artifacts).axes) == len(subset) * 2
+    assert len(metrics_rows(artifacts)) == len(subset)
+    assert suite_force_by_object_figure(artifacts).axes
+    assert suite_percentage_error_figure(artifacts).axes
+
+    exports = export_comparison(artifacts, tmp_path / "exports")
+    assert all(
+        (tmp_path / "exports" / path.split("/")[-1]).is_file()
+        for path in exports.values()
+    )
+
+
 def test_calibration_export_has_twelve_panels_and_no_identity_lines(tmp_path):
     artifacts = {
         experiment: _artifact(index / 10)

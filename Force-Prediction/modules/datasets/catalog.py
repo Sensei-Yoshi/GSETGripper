@@ -525,12 +525,30 @@ def _attach_roughness_summary(cfg: Config, item: DatasetObject, object_dir: Path
 
 
 def _file_hash(path: Path) -> str | None:
-    return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else None
+    if not path.is_file():
+        return None
+    # A read can still fail even when is_file() succeeds: an iCloud/cloud-synced
+    # file may be offloaded (dataless), so read_bytes() triggers an on-demand
+    # download that can time out (TimeoutError, an OSError subclass). Never let
+    # one unreadable image crash dataset discovery / app startup.
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
 
 
 def _inventory_hash(root: Path, images: list[Path]) -> str:
     digest = hashlib.sha256()
     for path in images:
         digest.update(str(path.relative_to(root)).encode("utf-8"))
-        digest.update(path.read_bytes())
+        try:
+            digest.update(path.read_bytes())
+        except OSError:
+            # Unreadable (e.g. offloaded) file: fold in stable stat metadata so
+            # the fingerprint stays deterministic without blocking discovery.
+            try:
+                stat = path.stat()
+                digest.update(f":{stat.st_size}:{stat.st_mtime_ns}".encode())
+            except OSError:
+                digest.update(b":unreadable")
     return digest.hexdigest()

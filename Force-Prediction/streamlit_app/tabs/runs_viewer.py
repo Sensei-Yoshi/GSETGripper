@@ -36,6 +36,7 @@ from modules.suites import (
     run_suite_predictions,
     suite_benchmarks,
     suite_evaluation_artifacts,
+    suite_experiments,
     suite_prediction_batches,
 )
 from streamlit_app.benchmark_inspector import render_benchmark_object_inspector
@@ -107,8 +108,8 @@ def _render_comparison(
     comparable, common_ids = common_intersection_artifacts(artifacts, context.config)
     if not common_ids:
         st.info(
-            "A cross-experiment comparison needs at least one object evaluated in all E1–E6 "
-            "conditions. Individual metrics remain available below."
+            "A cross-experiment comparison needs at least one object evaluated in every "
+            "experiment in this suite. Individual metrics remain available below."
         )
         st.subheader("Per-experiment metrics")
         st.dataframe(
@@ -221,7 +222,7 @@ def _render_comparison(
 
 def _suite_comparison(context: AppContext) -> None:
     cfg = context.config
-    st.subheader("E1–E6 suite comparison")
+    st.subheader("Experiment suite comparison")
     st.caption(
         "Prediction generation and evaluation are separate. Completed prediction batches "
         "remain immutable while missing conditions can become ready later."
@@ -250,8 +251,27 @@ def _suite_comparison(context: AppContext) -> None:
             "This legacy suite is read-only. Its saved results remain inspectable below."
         )
 
+    # A new suite runs a chosen subset; a resumed suite is fixed to its own set.
+    if selected is None:
+        chosen = st.multiselect(
+            "Experiments to run",
+            list(PRIMARY_EXPERIMENTS),
+            default=["e1", "e2", "e3", "e4", "e5"],
+            format_func=str.upper,
+            key="suite_experiment_choice",
+            help=(
+                "Surface-area E6 is optional. The current test set has no held-out "
+                "contact-varied objects, so it cannot separate E6 from E5."
+            ),
+        )
+        active_experiments = tuple(
+            name for name in PRIMARY_EXPERIMENTS if name in set(chosen)
+        )
+    else:
+        active_experiments = suite_experiments(selected)
+
     pending_counts: dict[str, int] = {}
-    for experiment in PRIMARY_EXPERIMENTS:
+    for experiment in active_experiments:
         completed = (
             selected is not None
             and selected.get("schema_version") == SUITE_SCHEMA_VERSION
@@ -271,14 +291,19 @@ def _suite_comparison(context: AppContext) -> None:
     run_clicked = action_columns[0].button(
         "Run/Resume suite predictions",
         type="primary",
-        disabled=not confirmed or not resumable or call_count == 0,
+        disabled=(
+            not confirmed
+            or not resumable
+            or call_count == 0
+            or not active_experiments
+        ),
         key="run_primary_suite",
         width="stretch",
     )
 
     if run_clicked:
         if selected is None:
-            selected = create_suite(cfg.model_copy(deep=True))
+            selected = create_suite(cfg.model_copy(deep=True), active_experiments)
         offsets: dict[str, int] = {}
         cumulative = 0
         for experiment, count in pending_counts.items():

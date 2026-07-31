@@ -71,6 +71,8 @@ def _load_objects() -> list[DatasetObject]:
             if row["roughness_index"].strip()
             else None
         )
+        if split not in {"train", "test"}:
+            continue
         if (
             not name
             or not split
@@ -146,64 +148,71 @@ def _make_mass_plot(objects: list[DatasetObject]) -> None:
     if not ordered:
         raise ValueError("Dataset contains no measured masses")
     masses = np.asarray([item.mass_g for item in ordered], dtype=float)
-    ranks = np.arange(1, len(ordered) + 1)
+    positions = np.arange(len(ordered))
 
-    fig, ax = plt.subplots(figsize=(7.2, 4.8), constrained_layout=True)
-    ax.plot(masses, ranks, color=GRID, linewidth=1.2, zorder=1)
+    fig, ax = plt.subplots(figsize=(7.6, 8.0), constrained_layout=True)
+    ax.hlines(
+        positions,
+        xmin=masses.min() * 0.8,
+        xmax=masses,
+        color=GRID,
+        linewidth=0.8,
+        zorder=1,
+    )
     for split in _split_order(ordered):
         mask = np.asarray([item.split == split for item in ordered])
         ax.scatter(
             masses[mask],
-            ranks[mask],
-            s=42,
+            positions[mask],
+            s=48,
             color=_split_color(split),
             edgecolor="white",
             linewidth=0.7,
             zorder=2,
         )
+    for mass, position in zip(masses, positions, strict=True):
+        ax.text(
+            mass * 1.045,
+            position,
+            f"{mass:g} g",
+            ha="left",
+            va="center",
+            color=DARK,
+            fontsize=7.7,
+        )
 
     ax.set_xscale("log")
-    ax.set_xlim(2.5, 5000)
-    ax.set_ylim(0, len(ordered) + 5)
+    ax.set_xlim(masses.min() * 0.72, masses.max() * 1.8)
+    ax.set_ylim(-0.8, len(ordered) - 0.2)
     ax.xaxis.set_major_locator(LogLocator(base=10, subs=(1, 2, 5)))
     ax.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:g}"))
     ax.set_xlabel("Object mass (g, log scale)")
-    ax.set_ylabel("Objects ordered from lightest to heaviest")
     ax.set_title("Measured mass diversity across the dataset")
-    ax.text(
-        0.02,
-        0.96,
-        f"n = {len(ordered)} objects  |  range = {masses.min():g}-{masses.max():g} g",
-        transform=ax.transAxes,
-        va="top",
-        color=MUTED,
-        fontsize=8.5,
-    )
-    ax.grid(axis="y", color=GRID, linewidth=0.6)
+    ax.set_yticks(positions, [item.name for item in ordered])
     ax.grid(axis="x", color=GRID, linewidth=0.6, alpha=0.8)
-    ax.spines[["top", "right"]].set_visible(False)
+    ax.spines[["top", "right", "left"]].set_visible(False)
+    ax.tick_params(axis="y", length=0)
     ax.legend(
         handles=_split_legend(ordered),
         loc="upper left",
-        bbox_to_anchor=(0.0, 0.89),
-        frameon=False,
+        frameon=True,
+        facecolor="white",
+        framealpha=0.92,
+        edgecolor="none",
         title="Dataset split",
         fontsize=8,
         title_fontsize=8,
     )
-
-    for index in (0, len(ordered) - 1):
-        item = ordered[index]
-        ax.annotate(
-            f"{item.name}\n{item.mass_g:g} g",
-            (item.mass_g, ranks[index]),
-            xytext=(8, 0 if index == 0 else -5),
-            textcoords="offset points",
-            ha="left",
-            va="bottom" if index == 0 else "top",
-            color=DARK,
-            fontsize=8,
-        )
+    ax.text(
+        0.98,
+        0.02,
+        f"n = {len(ordered)} objects  |  range = {masses.min():g}-{masses.max():g} g",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        color=MUTED,
+        fontsize=8,
+    )
     _save_figure(fig, "dataset_mass_diversity")
 
 
@@ -248,7 +257,7 @@ def _make_roughness_plot(objects: list[DatasetObject]) -> None:
             fontsize=7.7,
         )
 
-    ax.set_xlabel("High-frequency scattering index (a.u.)")
+    ax.set_xlabel("Roughness Index")
     ax.set_title("Measured optical roughness diversity across the dataset")
     ax.set_yticks(positions, [item.name for item in ordered])
     ax.set_xlim(values.min() - 100, values.max() + 260)
