@@ -34,7 +34,6 @@ OPENCV_LED_ESTIMATES = {
     2000: 813.68,
 }
 BLUE = "#1769aa"
-ORANGE = "#d97706"
 DARK = "#202124"
 GRID = "#d7dce2"
 PANEL_BORDER = "#aeb6bf"
@@ -50,11 +49,19 @@ class SandpaperRun:
     source_sha256: str
 
 
+def _run_dir(grit: int) -> Path:
+    return RUN_ROOT / f"upload_sand_{grit}_jpeg" / "roughness" / "streamlit"
+
+
+def _metadata_path(grit: int) -> Path:
+    return _run_dir(grit) / "metadata.json"
+
+
 def _load_runs() -> list[SandpaperRun]:
     runs: list[SandpaperRun] = []
     for grit in GRITS:
-        run_dir = RUN_ROOT / f"upload_sand_{grit}_jpeg" / "roughness" / "streamlit"
-        metadata_path = run_dir / "metadata.json"
+        run_dir = _run_dir(grit)
+        metadata_path = _metadata_path(grit)
         if not metadata_path.is_file():
             raise FileNotFoundError(f"Missing Marigold metadata: {metadata_path}")
         metadata = json.loads(metadata_path.read_text(encoding="utf-8"))
@@ -124,28 +131,28 @@ def _write_source_data(runs: list[SandpaperRun]) -> None:
             )
 
 
-def _make_grit_plot(runs: list[SandpaperRun]) -> None:
-    grits = np.asarray([run.grit for run in runs], dtype=np.float64)
-    means = np.asarray([run.mean_roughness for run in runs], dtype=np.float64)
+def _make_grit_plot() -> None:
     led_grits = np.asarray(sorted(OPENCV_LED_ESTIMATES), dtype=np.float64)
     led_estimates = np.asarray(
         [OPENCV_LED_ESTIMATES[int(grit)] for grit in led_grits], dtype=np.float64
     )
     fig, ax = plt.subplots(figsize=(7.2, 4.6), constrained_layout=True)
-    ax.plot(grits, means, color=BLUE, linewidth=1.8, zorder=2)
-    ax.scatter(
-        grits,
-        means,
-        s=58,
+    ax.plot(
+        led_grits,
+        led_estimates,
         color=BLUE,
-        edgecolor="white",
-        linewidth=0.9,
-        zorder=3,
+        linewidth=1.8,
+        marker="s",
+        markersize=5.5,
+        markerfacecolor=BLUE,
+        markeredgecolor="white",
+        markeredgewidth=0.9,
+        zorder=2,
     )
-    for grit, mean in zip(grits, means, strict=True):
+    for grit, estimate in zip(led_grits, led_estimates, strict=True):
         ax.annotate(
-            f"{mean:.3f}",
-            (grit, mean),
+            f"{estimate:.0f}",
+            (grit, estimate),
             xytext=(0, 9),
             textcoords="offset points",
             ha="center",
@@ -154,43 +161,24 @@ def _make_grit_plot(runs: list[SandpaperRun]) -> None:
             fontsize=8.5,
         )
 
-    ax2 = ax.twinx()
-    ax2.plot(
-        led_grits,
-        led_estimates,
-        color=ORANGE,
-        linewidth=1.6,
-        linestyle="--",
-        marker="s",
-        markersize=5.5,
-        markerfacecolor=ORANGE,
-        markeredgecolor="white",
-        markeredgewidth=0.8,
-        zorder=2,
-    )
-
     ax.set_xscale("log")
     ax.set_xticks(led_grits)
     ax.get_xaxis().set_major_formatter(ScalarFormatter())
     ax.set_xlim(100, 2350)
-    ax.set_ylim(0.45, 0.78)
+    ax.set_ylim(750, 1750)
     ax.set_xlabel("Sandpaper grit (log scale)")
-    ax.set_ylabel("Mean predicted appearance roughness")
-    ax2.set_ylabel("Estimated Roughness Value", color=DARK)
-    ax2.tick_params(axis="y", colors=DARK)
-    ax2.spines["top"].set_visible(False)
-    ax2.spines["left"].set_visible(False)
-    ax2.spines["right"].set_color(DARK)
+    ax.set_ylabel("Estimated Roughness Value")
     ax.set_title("Roughness Detection Values across sandpaper grits")
     ax.grid(axis="y", color=GRID, linewidth=0.7)
     ax.grid(axis="x", visible=False)
     ax.spines[["top", "right"]].set_visible(False)
-    lines = ax.get_lines() + ax2.get_lines()
-    labels = [
-        "Marigold mean appearance roughness",
-        "OpenCV LED-system estimate",
-    ]
-    ax.legend(lines, labels, loc="upper right", frameon=False, fontsize=8.5)
+    ax.legend(
+        ax.get_lines(),
+        ["OpenCV LED-system estimate"],
+        loc="upper right",
+        frameon=False,
+        fontsize=8.5,
+    )
     _save_figure(fig, "sandpaper_grit_vs_appearance_roughness")
 
 
@@ -307,10 +295,15 @@ def _make_pipeline_montage(runs: list[SandpaperRun]) -> None:
 
 def main() -> None:
     _set_paper_style()
-    runs = _load_runs()
-    _write_source_data(runs)
-    _make_grit_plot(runs)
-    _make_pipeline_montage(runs)
+    # The grit plot is built from the OpenCV LED estimates alone, so it stays
+    # reproducible even when the saved Marigold runs are not available locally.
+    _make_grit_plot()
+    if all(_metadata_path(grit).is_file() for grit in GRITS):
+        runs = _load_runs()
+        _write_source_data(runs)
+        _make_pipeline_montage(runs)
+    else:
+        print(f"Skipping Marigold-derived outputs: no runs under {RUN_ROOT}")
     print(f"Generated sandpaper figures in {FIGURES_DIR}")
 
 
