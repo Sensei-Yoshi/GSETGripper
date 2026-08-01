@@ -1,5 +1,10 @@
 // Lowest point: 180
 //
+// BUILD 7 -- "Z +2" / "Z -2" are now RELATIVE jogs, matching GRIP. A bare
+// "Z 40" is still an absolute target. This is what the jog panel's tap sends,
+// and reading it as absolute made a key tap jump the carriage to near the top
+// of travel before the hold jogged it back down.
+//
 // BUILD 6 -- adds JOGLIVE, a browser-driven live jog that starts on keydown
 // and stops on keyup, with a serial watchdog so a dropped STOP cannot leave an
 // axis running. Works alongside the existing keyboard JOG mode and all line
@@ -69,9 +74,9 @@ const float SELECT_ACCELERATION_STEPS_PER_SEC2 = 2000.0;
 // Rotary turret, direct drive (no gearbox or belt), same 1.8 deg motor and 1/8
 // microstepping as Z: 200 steps/rev * 8 = 1600 microsteps per turret rev.
 const long SELECT_GEKKO_STEPS = 0; // head A, 0 deg
-const long SELECT_SILICONE_STEPS = 430; // head B
+const long SELECT_SILICONE_STEPS = 460; // head B
 const long SELECT_MIN_STEPS = 0;
-const long SELECT_MAX_STEPS = 430;
+const long SELECT_MAX_STEPS = 460;
 
 bool selectMovePending = false;
 
@@ -185,8 +190,8 @@ const float LIVEJOG_GRIP_SPEED = GRIP_JOG_SPEED_FAST;
 // and GND on the same header. Each amp needs its own clock line.
 const int LC1_DOUT = A5;
 const int LC1_SCK = A9;
-const int LC2_DOUT = A10;
-const int LC2_SCK = A11;
+const int LC2_DOUT = A11;
+const int LC2_SCK = A12;
 
 HX711_ADC loadCell1(LC1_DOUT, LC1_SCK);
 HX711_ADC loadCell2(LC2_DOUT, LC2_SCK);
@@ -368,7 +373,7 @@ void setup() {
 
  // Upload marker -- if you don't see this line in the serial monitor after
  // a reset, the new code did not actually get onto the board.
- Serial.println(F("READY BUILD 6 (jog + livejog, limits off)"));
+ Serial.println(F("READY BUILD 7 (jog + livejog, relative Z, limits off)"));
  calPrint();
  Serial.println(F("HELP for commands, JOG for keyboard control"));
 }
@@ -743,12 +748,20 @@ void processCommand(const String& message) {
  } else if (message.startsWith("Z ")) {
  String arg = message.substring(2);
  arg.trim();
- float targetMM;
- if (!parseFloatStrict(arg, targetMM)) {
+ float valueMM;
+ if (!parseFloatStrict(arg, valueMM)) {
  sendErr("bad value");
  return;
  }
- moveZTo(targetMM);
+ // A SIGNED value is a relative jog, a bare one is an absolute target --
+ // the same convention GRIP already uses. The jog panel's tap sends
+ // "Z +0.5"; read as absolute that would fling the carriage back to 0.5 mm
+ // below start before the hold took over, which looks like "up, then down".
+ if (arg[0] == '+' || arg[0] == '-') {
+ moveZRelative(valueMM);
+ } else {
+ moveZTo(valueMM);
+ }
 
  } else if (message.startsWith("SELECT ")) {
  String arg = message.substring(7);
@@ -922,6 +935,23 @@ void moveZTo(float targetMM) {
  zMovePending = true;
 
  Serial.print(F("MOVING Z to "));
+ Serial.print(targetMM, 2);
+ Serial.println(F(" mm below start"));
+}
+
+// Relative jog. Positive deltaMM moves DOWN by that many mm, negative UP --
+// the same sign convention as the absolute target. Works off the current
+// TARGET rather than the mid-flight position, so several taps fired back to
+// back stack correctly instead of each one re-measuring a moving carriage.
+void moveZRelative(float deltaMM) {
+ float targetMM = zTargetMM() + deltaMM;
+ stepperZA.moveTo(zStepsForMM(targetMM));
+ stepperZB.moveTo(zStepsForMM(targetMM));
+ zMovePending = true;
+
+ Serial.print(F("MOVING Z "));
+ Serial.print(deltaMM, 2);
+ Serial.print(F(" mm -> "));
  Serial.print(targetMM, 2);
  Serial.println(F(" mm below start"));
 }
@@ -1254,7 +1284,8 @@ void sendErr(const char* reason) {
 void printHelp() {
  Serial.println(F("JOG keyboard control mode (q to exit)"));
  Serial.println(F("JOGLIVE ... browser press/hold jog (see gantry-jog-panel.html)"));
- Serial.println(F("Z <mm> move Z to <mm> below start"));
+ Serial.println(F("Z <mm> move Z to <mm> below start (absolute)"));
+ Serial.println(F("Z +2 / Z -2 relative: + lowers, - raises"));
  Serial.println(F("SELECT GEKKO rotate turret to head A"));
  Serial.println(F("SELECT SILICONE rotate turret to head B"));
  Serial.println(F("GRIP OPEN jaws to fully-open home"));
