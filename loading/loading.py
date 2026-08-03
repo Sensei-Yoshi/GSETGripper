@@ -172,15 +172,5 @@ if __name__ == "__main__":
         roughness_index = calculate_fft_roughness(normalized_surface)
         print(f"\nCalculated High-Frequency Scattering Index: {roughness_index:.2f}")
        
-        # Classification thresholds calibrated for high-frequency optical energy
-        if roughness_index < 120.0:
-            print("Surface Classification: SMOOTH")
-        elif roughness_index < 650.0:
-            print("Surface Classification: Semi-Rough")
-        else:
-            print("Surface Classification: VERY ROUGH")
-    else:
-        print("Error: Could not process live camera image assets.")
-
 
 
