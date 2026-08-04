@@ -12,6 +12,7 @@ from modules.datasets import (
     DatasetObjectEdit,
     PreparationStage,
     add_dataset_condition,
+    add_dataset_object,
     delete_dataset_condition,
     get_dataset,
     prepare_dataset_stages,
@@ -64,6 +65,106 @@ def _write_source(root) -> None:
                 "favored_gripper": "gecko",
             }
         )
+
+
+def _png_bytes() -> bytes:
+    return base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    )
+
+
+def test_upload_adds_paired_csv_object_images_and_partial_baseline(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Physical"
+    _write_source(root)
+    dataset = get_dataset(cfg, "Physical")
+
+    refreshed, object_id = add_dataset_object(
+        cfg,
+        dataset,
+        "Ceramic Mug",
+        _png_bytes(),
+        DatasetObjectEdit(
+            split="test",
+            mass_g=275,
+            roughness_index=4.5,
+            gecko_feasible=True,
+            gecko_force_n=1.25,
+        ),
+        primary_filename="mug.png",
+        secondary_image=_png_bytes(),
+        secondary_filename="mug-side.png",
+    )
+
+    assert object_id == "ceramic_mug"
+    item = refreshed.objects[object_id]
+    assert item.name == "Ceramic Mug"
+    assert item.split == "test"
+    assert item.mass_g == 275
+    assert item.image.available
+    assert item.image_2 is not None and item.image_2.available
+    assert (root / "objects/ceramic_mug/image.png").is_file()
+    assert (root / "objects/ceramic_mug/image_2.png").is_file()
+    row = next(row for row in load_rows(cfg) if row.object_id == object_id)
+    assert row.image_name == "objects/ceramic_mug/image.png"
+    assert row.image_name_2 == "objects/ceramic_mug/image_2.png"
+    assert row.gecko_force_n == 1.25
+    assert row.silicone_feasible is None
+
+
+def test_upload_rejects_duplicate_names_and_invalid_images(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Physical"
+    _write_source(root)
+    dataset = get_dataset(cfg, "Physical")
+
+    with pytest.raises(ValueError, match="already exists"):
+        add_dataset_object(
+            cfg,
+            dataset,
+            "Test cup",
+            _png_bytes(),
+            DatasetObjectEdit(),
+            primary_filename="cup.png",
+        )
+    with pytest.raises(ValueError, match="not a readable image"):
+        add_dataset_object(
+            cfg,
+            dataset,
+            "Broken upload",
+            b"not an image",
+            DatasetObjectEdit(),
+            primary_filename="broken.png",
+        )
+    assert not (root / "objects/broken_upload").exists()
+
+
+def test_upload_preserves_existing_flat_image_folder_objects(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    cfg.dataset_id = "Photos"
+    root = tmp_path / "data/Photos"
+    root.mkdir(parents=True)
+    (root / "existing.png").write_bytes(_png_bytes())
+    dataset = get_dataset(cfg, "Photos")
+
+    refreshed, object_id = add_dataset_object(
+        cfg,
+        dataset,
+        "New Photo",
+        _png_bytes(),
+        DatasetObjectEdit(split="test", mass_g=42),
+        primary_filename="photo.png",
+    )
+
+    assert object_id == "new_photo"
+    assert set(refreshed.objects) == {"existing", "new_photo"}
+    assert (root / "new_photo.png").is_file()
+    measurements = json.loads(
+        (root / "objects/new_photo/measurements.json").read_text()
+    )
+    assert measurements["split"] == "test"
+    assert measurements["mass_g"] == 42
 
 
 def test_csv_object_edit_refreshes_measurements_and_experiences_only(

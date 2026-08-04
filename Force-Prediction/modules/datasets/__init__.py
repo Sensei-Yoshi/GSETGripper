@@ -4,6 +4,7 @@ from .catalog import discover_datasets, get_dataset, load_dataset
 from .editing import (
     DatasetObjectEdit,
     add_dataset_condition,
+    add_dataset_object,
     delete_dataset_condition,
     update_dataset_object,
 )
@@ -40,6 +41,7 @@ __all__ = [
     "RoughnessArtifact",
     "discover_datasets",
     "add_dataset_condition",
+    "add_dataset_object",
     "delete_dataset_condition",
     "get_dataset",
     "load_dataset",

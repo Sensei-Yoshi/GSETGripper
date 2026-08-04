@@ -55,6 +55,12 @@ complete derived label, and refreshes completed experience records. Names, image
 descriptors, and generated artifact metrics remain read-only. The **Prompts & Embodiments** tab edits `prompts.yaml` atomically,
 including the fixed written descriptions of both grippers.
 
+The **Upload Data** tab adds a new physical surface and baseline condition to the active
+dataset. It saves a required primary image, an optional calibrated geometry image, nullable
+measurements, the train/test split, and partial gripper outcomes under the canonical
+`objects/<object_id>/` layout. Paired CSV datasets also receive a validated source row;
+image-folder datasets store the labels in `measurements.json`.
+
 The **Marigold Roughness** tab is intentionally independent of the force pipeline. It can
 multi-select active-dataset images and uploads, then run IID appearance roughness,
 normals-based topography, or both sequentially across the batch. The default

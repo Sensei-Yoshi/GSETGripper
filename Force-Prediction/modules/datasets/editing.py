@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import shutil
+import tempfile
+from pathlib import Path
 from typing import Literal
 
+import cv2
+import numpy as np
 from pydantic import BaseModel, Field, model_validator
 
 from ..config import Config
@@ -71,6 +76,125 @@ class DatasetObjectEdit(BaseModel):
             gecko_feasible=self.gecko_feasible,
             favored_gripper=unchecked.expected_favored(),
         )
+
+
+def add_dataset_object(
+    cfg: Config,
+    dataset: Dataset,
+    object_name: str,
+    primary_image: bytes,
+    edit: DatasetObjectEdit,
+    *,
+    primary_filename: str,
+    secondary_image: bytes | None = None,
+    secondary_filename: str | None = None,
+) -> tuple[Dataset, str]:
+    """Add a new physical surface and its baseline condition to a dataset."""
+    name = object_name.strip()
+    if not name:
+        raise ValueError("object name is required")
+    object_id = _object_slug(name)
+    if object_id in dataset.objects:
+        raise ValueError(f"object ID {object_id!r} already exists")
+
+    _validate_edit(cfg, edit)
+    primary_suffix = _validated_image_suffix(primary_image, primary_filename)
+    secondary_suffix = None
+    if secondary_image is not None:
+        secondary_suffix = _validated_image_suffix(
+            secondary_image,
+            secondary_filename or "image_2",
+        )
+
+    objects_root = dataset.paths.objects
+    objects_root.mkdir(parents=True, exist_ok=True)
+    target = objects_root / object_id
+    if target.exists():
+        raise ValueError(f"object storage for {object_id!r} already exists")
+
+    stage = Path(tempfile.mkdtemp(prefix=f".{object_id}-upload-", dir=objects_root))
+    try:
+        primary_path = stage / f"image{primary_suffix}"
+        primary_path.write_bytes(primary_image)
+        secondary_path = None
+        if secondary_image is not None and secondary_suffix is not None:
+            secondary_path = stage / f"image_2{secondary_suffix}"
+            secondary_path.write_bytes(secondary_image)
+
+        if dataset.adapter == "image_folder":
+            measurements = DatasetObjectMeasurements(
+                object_id=object_id,
+                split=edit.split or "train",
+                **edit.model_dump(mode="python", exclude={"split"}),
+            )
+            write_json_atomic(
+                stage / "measurements.json",
+                measurements.model_dump(mode="json"),
+            )
+            uses_canonical_layout = not dataset.objects or any(
+                (cfg.root / item.image.path).parent.parent == objects_root
+                for item in dataset.objects.values()
+            )
+            if uses_canonical_layout:
+                stage.replace(target)
+            else:
+                flat_primary = dataset.paths.root / f"{object_id}{primary_suffix}"
+                flat_secondary = (
+                    dataset.paths.root / f"{object_id}_2{secondary_suffix}"
+                    if secondary_suffix is not None
+                    else None
+                )
+                if flat_primary.exists() or (
+                    flat_secondary is not None and flat_secondary.exists()
+                ):
+                    raise ValueError(f"image storage for {object_id!r} already exists")
+                primary_path.replace(flat_primary)
+                try:
+                    if secondary_path is not None and flat_secondary is not None:
+                        secondary_path.replace(flat_secondary)
+                    stage.replace(target)
+                except Exception:
+                    flat_primary.unlink(missing_ok=True)
+                    if flat_secondary is not None:
+                        flat_secondary.unlink(missing_ok=True)
+                    raise
+        elif dataset.adapter == "paired_csv":
+            rows = load_rows(cfg)
+            if any(row.surface_id == object_id for row in rows):
+                raise ValueError(f"object ID {object_id!r} already exists")
+            template = PairedCsvRow.model_construct(
+                object_name=name,
+                image_name=f"objects/{object_id}/{primary_path.name}",
+                image_name_2=(
+                    f"objects/{object_id}/{secondary_path.name}"
+                    if secondary_path is not None
+                    else None
+                ),
+                condition_id="baseline",
+                split=edit.split or "train",
+                mass_g=None,
+                roughness_index=None,
+                projected_contact_fraction=None,
+                silicone_force_n=None,
+                silicone_feasible=None,
+                gecko_force_n=None,
+                gecko_feasible=None,
+                favored_gripper=None,
+            )
+            new_row = edit.source_row(template)
+            stage.replace(target)
+            try:
+                save_rows(dataset.paths.root / "dataset.csv", [*rows, new_row])
+            except Exception:
+                shutil.rmtree(target, ignore_errors=True)
+                raise
+        else:
+            raise ValueError(f"dataset adapter {dataset.adapter!r} does not accept uploads")
+    finally:
+        if stage.exists():
+            shutil.rmtree(stage, ignore_errors=True)
+
+    return _rebuild(cfg, dataset.dataset_id), object_id
 
 
 def update_dataset_object(
@@ -245,6 +369,32 @@ def _next_condition_id(rows: list[PairedCsvRow]) -> str:
     while f"condition_{number}" in used:
         number += 1
     return f"condition_{number}"
+
+
+def _object_slug(value: str) -> str:
+    from .paired_csv import slug
+
+    object_id = slug(value)
+    if not object_id:
+        raise ValueError("object name must contain at least one letter or number")
+    return object_id
+
+
+def _validated_image_suffix(data: bytes, filename: str) -> str:
+    if not data:
+        raise ValueError(f"{filename!r} is empty")
+    if len(data) > 25 * 1024 * 1024:
+        raise ValueError(f"{filename!r} exceeds the 25 MB upload limit")
+    decoded = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+    if decoded is None or decoded.size == 0:
+        raise ValueError(f"{filename!r} is not a readable image")
+    if data.startswith(b"\x89PNG\r\n\x1a\n"):
+        return ".png"
+    if data.startswith(b"\xff\xd8\xff"):
+        return ".jpg"
+    if data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+        return ".webp"
+    raise ValueError(f"{filename!r} must be a PNG, JPEG, or WebP image")
 
 
 def _rebuild(cfg: Config, dataset_id: str) -> Dataset:

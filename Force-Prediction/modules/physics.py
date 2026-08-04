@@ -1,4 +1,4 @@
-"""Reduced-order calibrated physics for the two grippers (James et al., IEEE #11522915).
+"""Reduced-order calibrated physics for the two grippers.
 
 The model remains available for mock-hardware generation and calibration diagnostics;
 it is not an active experiment strategy.

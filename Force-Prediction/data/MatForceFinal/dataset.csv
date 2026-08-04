@@ -43,3 +43,8 @@ Creatine,creatine.jpg,train,condition_2,381.0,823.15,0.1,,True,3.961,True,
 Beaker,beaker.jpg,train,condition_2,351.24,1106.84,0.25,,True,4.19,True,
 Computer,computer.jpg,test,baseline,1550.0,780.1,1.0,10.506,True,2.5,True,gecko
 Large hand sanitizer,large_hand_sanitizer_sa_1.jpeg,surface_validation,condition_2,836.04,958.71,0.48,,True,2.1,True,
+Bambu Lab Kit,objects/bambu_lab_kit/image.jpg,train,baseline,,,,,,,True,
+Chinese bible,objects/chinese_bible/image.jpg,train,baseline,,,,,,,True,
+Fancy Driver,objects/fancy_driver/image.jpg,train,baseline,,,,,,,,
+Speaker,objects/speaker/image.jpg,train,baseline,,,,,,,,
+Power Bank,objects/power_bank/image.jpg,train,baseline,,,,,,,True,

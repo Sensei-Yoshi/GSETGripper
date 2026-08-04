@@ -18,6 +18,7 @@ EXPECTED_TABS = [
     "Benchmark",
     "Runs Viewer",
     "Data Viewer",
+    "Upload Data",
     "Prompts & Embodiments",
     "Contact Fraction",
     "Marigold Roughness",
@@ -45,6 +46,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Run Marigold",
         "Run selected preparation stages",
         "+ Add condition",
+        "Add object to dataset",
     ):
         assert label in button_labels
     selectbox_labels = [item.label for item in app.selectbox]

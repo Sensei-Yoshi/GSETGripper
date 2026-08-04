@@ -1,9 +1,9 @@
 {
   "schema_version": 4,
   "dataset_id": "MatForceFinal",
-  "source_fingerprint": "3d3ebd3a2003b5d46eb3e9bc8893b8789f1e55ac87724a354cb0c71010385a50",
+  "source_fingerprint": "4dedfc2342a08f11f8d19c104ea4e1a2a68c54380c5c3f568f5c2cbb02ed969c",
   "created_at": "2026-08-04T01:03:45.739590+00:00",
-  "updated_at": "2026-08-04T01:03:45.845462+00:00",
+  "updated_at": "2026-08-04T19:51:25.255549+00:00",
   "stages": {
     "index": {
       "status": "complete",
@@ -24,10 +24,10 @@
     "experiences": {
       "status": "complete",
       "completed": 44,
-      "total": 44,
+      "total": 49,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-08-04T01:03:45.845435+00:00"
+      "updated_at": "2026-08-04T19:51:25.255532+00:00"
     }
   },
   "missing_images": [],
