@@ -22,7 +22,7 @@ import numpy as np
 from sklearn.model_selection import GroupKFold
 
 from .config import Config
-from .contracts import ExperienceRecord, Gripper, ObjectRecord, SelectionResult, group_by_object
+from .contracts import ExperienceRecord, Gripper, ObjectRecord, SelectionResult
 
 
 # --------------------------------------------------------------------------- #
@@ -218,10 +218,3 @@ def compute_metrics(rows: list[EvalRow], cfg: Config) -> Metrics:
         ),
     }
     return m
-
-
-def records_for_objects(
-    records: list[ExperienceRecord], object_ids: list[str]
-) -> dict[str, ObjectRecord]:
-    wanted = set(object_ids)
-    return group_by_object([r for r in records if r.object_id in wanted])

@@ -1,4 +1,4 @@
-.PHONY: setup lint typecheck test collect run viewer all clean
+.PHONY: setup lint typecheck test run viewer all clean
 
 PY ?= python
 
@@ -14,10 +14,6 @@ typecheck:
 test:
 	pytest
 
-# Generate a synthetic dataset on the mock bench; descriptions use Gemini.
-collect:
-	$(PY) -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
-
 # Active experiments retain the stable IDs E1, E3, E4, E5, and E6.
 E ?= e6
 run:
@@ -28,9 +24,6 @@ run-all:
 
 viewer:
 	$(PY) -m streamlit run app.py
-
-# End-to-end Gemini smoke: dataset -> full experiment suite.
-smoke: collect run-all
 
 all: lint typecheck test
 

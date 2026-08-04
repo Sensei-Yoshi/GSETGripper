@@ -84,6 +84,7 @@ def test_default_app_structure_matches_research_lab() -> None:
             "Experience records",
             "Predict Gecko force",
         "Predict silicone force",
+        "Send selected force to gripper after run",
     } <= checkbox_labels
     markdown_values = {item.value for item in app.markdown}
     assert "**Image 1 — Perception view**" in markdown_values
@@ -96,6 +97,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "active_dataset_id",
         "predict_gecko_force",
         "predict_silicone_force",
+        "send_force_serial",
         "benchmark_experiment",
         "benchmark_display_name",
         "run_benchmark_predictions",
@@ -143,6 +145,48 @@ def test_default_app_structure_matches_research_lab() -> None:
     }
     assert expected_state <= set(app.session_state.filtered_state)
     assert any("Benchmark split · Train:" in item.value for item in app.caption)
+
+
+def test_single_run_serial_controls_are_opt_in(monkeypatch) -> None:
+    from modules.serial_output import SerialPort
+
+    monkeypatch.setattr(
+        "streamlit_app.tabs.single_run.list_serial_ports",
+        lambda: [SerialPort("/dev/fake", "Test gripper", "Arduino")],
+    )
+    app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
+
+    assert all(item.label != "Gripper serial port" for item in app.selectbox)
+    serial_checkbox = next(
+        item
+        for item in app.checkbox
+        if item.label == "Send selected force to gripper after run"
+    )
+    serial_checkbox.set_value(True)
+    app.run(timeout=30)
+
+    port = next(item for item in app.selectbox if item.label == "Gripper serial port")
+    assert port.value == "/dev/fake"
+    assert app.session_state["send_force_serial"] is True
+
+
+def test_single_run_serial_requires_detected_port(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "streamlit_app.tabs.single_run.list_serial_ports",
+        lambda: [],
+    )
+    app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
+    serial_checkbox = next(
+        item
+        for item in app.checkbox
+        if item.label == "Send selected force to gripper after run"
+    )
+    serial_checkbox.set_value(True)
+    app.run(timeout=30)
+
+    run = next(item for item in app.button if item.label == "Run pipeline")
+    assert run.disabled
+    assert any("No serial ports detected" in item.value for item in app.warning)
 
 
 def test_removed_roughness_mode_control_is_absent() -> None:

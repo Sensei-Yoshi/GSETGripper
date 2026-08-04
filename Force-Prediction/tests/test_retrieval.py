@@ -7,7 +7,6 @@ import pytest
 from modules.config import load_config
 from modules.contracts import Gripper, Query
 from modules.datasets.paired_csv import load_rows, to_experiences
-from modules.hardware import fabricate_records
 from modules.prediction import _generation_payload
 from modules.retrieval import (
     ExperienceIndex,
@@ -17,6 +16,7 @@ from modules.retrieval import (
     s_mass,
     s_roughness,
 )
+from tests.factories import fabricate_records
 from tests.fakes import FakeEmbeddingProvider
 
 CFG = load_config()

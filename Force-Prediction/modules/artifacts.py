@@ -88,7 +88,6 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
         "retrieval_payload_version": 3,
         "retrieved_objects": _object_retrieval_payload(detailed),
         "retrieved_surfaces": _surface_retrieval_payload(detailed),
-        "physics_estimates": detailed.physics_estimates,
         "cache_stats": detailed.cache_stats,
         "active_grippers": list(detailed.active_grippers),
         "generation_mode": detailed.generation_mode,
@@ -113,7 +112,6 @@ def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
             RetrievedObjectExperience.model_validate(item)
             for item in payload.get("retrieved_objects", [])
         ],
-        physics_estimates=payload.get("physics_estimates", {}),
         cache_stats=payload.get("cache_stats", {}),
         active_grippers=active_grippers,
         generation_mode=payload["generation_mode"],

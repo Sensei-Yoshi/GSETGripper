@@ -42,22 +42,6 @@ class Paths(BaseModel):
 class ForceConfig(BaseModel):
     limit_n: float = Field(gt=0)
     min_n: float = Field(ge=0)
-    hold_seconds: float = Field(ge=0)
-    lift_height_mm: float = Field(gt=0)
-    gravity: float = Field(gt=0)
-
-
-class CollectionConfig(BaseModel):
-    start_n: float = Field(ge=0)
-    coarse_step_n: float = Field(gt=0)
-    fine_step_n: float = Field(gt=0)
-    repeats: int = Field(gt=0)
-
-    @model_validator(mode="after")
-    def _coarse_is_not_finer_than_fine(self) -> CollectionConfig:
-        if self.coarse_step_n < self.fine_step_n:
-            raise ValueError("collection.coarse_step_n must be >= collection.fine_step_n")
-        return self
 
 
 class InputsConfig(BaseModel):
@@ -138,25 +122,6 @@ class RetrievalConfig(BaseModel):
     embedding: EmbeddingConfig
 
 
-class PhysicsBounds(BaseModel):
-    alpha0: tuple[float, float]
-    decay: tuple[float, float]
-    beta0: tuple[float, float]
-    beta_decay: tuple[float, float]
-    n50: tuple[float, float]
-
-
-class PhysicsConfig(BaseModel):
-    alpha_sil0: float
-    alpha_sil_decay: float
-    alpha_geo0: float
-    alpha_geo_decay: float
-    beta0: float
-    beta_decay: float
-    n50: float = Field(gt=0)
-    bounds: PhysicsBounds
-
-
 class ModelsConfig(BaseModel):
     vlm: str
     temperature: float = Field(ge=0)
@@ -223,13 +188,11 @@ class Config(BaseModel):
     seed: int
     paths: Paths
     force: ForceConfig
-    collection: CollectionConfig
     inputs: InputsConfig
     prediction: PredictionConfig
     geometry: GeometryConfig
     roughness: RoughnessConfig
     retrieval: RetrievalConfig
-    physics: PhysicsConfig
     models: ModelsConfig
     evaluation: EvaluationConfig
     prompts: Prompts

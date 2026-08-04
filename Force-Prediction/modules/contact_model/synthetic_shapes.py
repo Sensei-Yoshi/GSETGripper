@@ -54,20 +54,3 @@ def rounded_rect(
     segs.append(_line((-(w2 - rc), -h2), (w2 - rc, -h2)))
     segs.append(_arc((w2 - rc, -(h2 - rc)), rc, 3 * np.pi / 2, 2 * np.pi))
     return np.vstack(segs)
-
-
-def pentagon(side: float) -> np.ndarray:
-    """Regular pentagon with one flat face on the left and a vertex on the
-    right - the classic non-antipodal parallel-jaw case."""
-    rc = side / (2.0 * np.sin(np.pi / 5.0))
-    angles = np.radians([0, 72, 144, 216, 288])
-    verts = rc * np.column_stack((np.cos(angles), np.sin(angles)))
-    segs = [
-        _line(verts[i], verts[(i + 1) % 5]) for i in range(5)
-    ]
-    return np.vstack(segs)
-
-
-def add_noise(pts: np.ndarray, sigma: float, seed: int = 0) -> np.ndarray:
-    rng = np.random.default_rng(seed)
-    return pts + rng.normal(0.0, sigma, pts.shape)

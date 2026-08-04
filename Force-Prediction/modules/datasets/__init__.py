@@ -23,7 +23,6 @@ from .models import (
     RoughnessArtifact,
 )
 from .preparation import prepare_dataset_stages
-from .storage import load_dataset_experiences
 
 __all__ = [
     "Dataset",
@@ -45,7 +44,6 @@ __all__ = [
     "delete_dataset_condition",
     "get_dataset",
     "load_dataset",
-    "load_dataset_experiences",
     "prepare_dataset_stages",
     "update_dataset_object",
 ]

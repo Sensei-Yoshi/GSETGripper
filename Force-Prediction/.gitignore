@@ -9,6 +9,7 @@ __pycache__/
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+.DS_Store
 
 # Generated data and runtime caches
 data/cache/**

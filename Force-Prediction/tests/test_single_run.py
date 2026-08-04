@@ -1,7 +1,13 @@
 from __future__ import annotations
 
-from modules.contracts import ExperienceRecord, Gripper
-from streamlit_app.tabs.single_run import _single_run_training_records
+import pytest
+
+from modules.contracts import ExperienceRecord, Gripper, SelectionResult
+from modules.serial_output import SerialSendResult
+from streamlit_app.tabs.single_run import (
+    _send_selected_force,
+    _single_run_training_records,
+)
 
 
 def _record(object_id: str, surface_id: str) -> ExperienceRecord:
@@ -53,3 +59,52 @@ def test_single_run_non_retrieval_experiments_preserve_query_exclusion() -> None
     )
 
     assert [record.object_id for record in training] == ["other"]
+
+
+def test_serial_delivery_uses_authoritative_selected_gripper_and_force(monkeypatch) -> None:
+    captured = {}
+
+    def fake_send(port, gripper, force_n, limit_n):  # noqa: ANN001, ANN202
+        captured.update(
+            port=port,
+            gripper=gripper,
+            force_n=force_n,
+            limit_n=limit_n,
+        )
+        return SerialSendResult(
+            port=port,
+            gripper=Gripper(gripper),
+            force_n=force_n,
+        )
+
+    monkeypatch.setattr("streamlit_app.tabs.single_run.send_force", fake_send)
+    selection = SelectionResult(
+        desired_gripper="silicone",
+        predicted_normal_force_n=1.75,
+        candidate_predictions={},
+    )
+
+    result = _send_selected_force("/dev/fake", selection, 8.0)
+
+    assert result.gripper is Gripper.SILICONE
+    assert captured == {
+        "port": "/dev/fake",
+        "gripper": "silicone",
+        "force_n": 1.75,
+        "limit_n": 8.0,
+    }
+
+
+def test_serial_delivery_rejects_no_feasible_selection(monkeypatch) -> None:
+    monkeypatch.setattr(
+        "streamlit_app.tabs.single_run.send_force",
+        lambda *_args, **_kwargs: pytest.fail("serial transport must not be called"),
+    )
+    selection = SelectionResult(
+        desired_gripper="none",
+        predicted_normal_force_n=None,
+        candidate_predictions={},
+    )
+
+    with pytest.raises(ValueError, match="did not select"):
+        _send_selected_force("/dev/fake", selection, 8.0)

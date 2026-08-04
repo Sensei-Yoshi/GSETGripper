@@ -2,7 +2,7 @@
 # config.yaml  —  primary numerical and experiment configuration.
 #
 # Everything a researcher would want to sweep lives here: retrieval weights,
-# physics bounds, force limits, model IDs, and the EXPERIMENT definitions
+# force limits, model IDs, and the EXPERIMENT definitions
 # (E1 and E3–E6 as explicit methods). Editable prompts and fixed gripper embodiment
 # context live in prompts.yaml. No tunable is hard-coded in Python.
 #
@@ -21,23 +21,11 @@ paths:
 # All force values are the normal force read by the load cell behind the
 # STATIONARY finger, in newtons. Never doubled, never summed across fingers.
 force:
-  # Physical rig/collection safety guard only. Dataset labels, benchmark predictions,
-  # and evaluation are not capped by this value; hardware handoff still rejects unsafe
+  # Physical serial-actuation safety guard only. Dataset labels, benchmark predictions,
+  # and evaluation are not capped by this value; optional serial delivery rejects unsafe
   # commands above it.
   limit_n: 8.0
   min_n: 0.0            # benchmark predictions are continuous and nonnegative
-  hold_seconds: 3.0     # required successful-lift hold time
-  lift_height_mm: 50.0
-  gravity: 9.81
-
-# Ground-truth search resolution is an experimental-protocol choice, not a
-# restriction on prediction or command precision. Predictions are never snapped
-# to these steps.
-collection:
-  start_n: 0.0
-  coarse_step_n: 1.0
-  fine_step_n: 0.01
-  repeats: 3
 
 # --- Optional measured inputs -------------------------------------------------
 inputs:
@@ -83,32 +71,6 @@ retrieval:
   embedding:
     model: gemini-embedding-2-preview
     dim: 1536                 # Matryoshka truncation (<= 3072)
-
-# --- Physics reduced-order model ---------------------------------------------
-# Let r = roughness_index / characteristic_scale.
-# T_sil = alpha_sil(r) * a * N
-# T_geo = alpha_geo(r) * a * N + beta(r) * a * N/(N+N50)
-# Coefficients are smooth and monotone in the continuous roughness coordinate r.
-physics:
-  # alpha(r) = alpha0 * exp(-decay * r) (effective friction vs. roughness)
-  # Defaults sized so the 20 g - 1.5 kg synthetic range is mostly feasible for at
-  # least one gripper, with genuine heavy+rough infeasible cases. Replace with
-  # values calibrated from James et al. data once collected.
-  alpha_sil0: 2.0
-  alpha_sil_decay: -0.12
-  alpha_geo0: 2.2
-  alpha_geo_decay: 0.05
-  # beta(r) = beta0 * clip(1 - beta_decay * r, 0, 1)
-  beta0: 3.0
-  beta_decay: 0.28
-  n50: 0.7              # preload for adhesive seating in N/(N+N50)
-  # Calibration bounds (constrained least-squares); fit INSIDE each training fold.
-  bounds:
-    alpha0: [0.05, 5.0]
-    decay: [-0.3, 0.6]
-    beta0: [0.0, 30.0]
-    beta_decay: [0.0, 1.0]
-    n50: [0.05, 20.0]
 
 # --- Models (Gemini) ---------------------------------------------------------
 models:

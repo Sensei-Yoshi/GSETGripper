@@ -4,8 +4,7 @@ Given an unseen object, estimate the continuous minimum stationary-finger normal
 for the globally selected TPU–Gecko and/or TPU–silicone candidates. Paired runs then
 select the lowest-force feasible option.
 Benchmark force estimates are continuous, nonnegative, and have no analytical upper cap;
-predictions are never rounded to a collection grid. The physical rig retains its separate
-8 N handoff/collection safety guard.
+the optional physical serial path retains a separate 8 N actuation safety guard.
 
 The active research suite has five explicit VLM ablation methods with stable IDs:
 
@@ -30,10 +29,8 @@ make test
 Gemini stage checks require `GEMINI_API_KEY` or `GOOGLE_API_KEY`; exact requests are cached:
 
 ```bash
-python scripts/check_hardware.py
 python scripts/check_perception.py path/to/object.png
 python scripts/check_retrieval.py --confirm-gemini-cost
-python scripts/check_physics.py
 python scripts/check_pipeline.py path/to/object.png --confirm-gemini-cost
 ```
 
@@ -52,6 +49,12 @@ experience pool. E3 retrieves by semantic cosine similarity only. E4 adds mass t
 E5 adds continuous roughness. E6 keeps E5's surface ranking and adds projected contact
 as query and controlled same-surface condition evidence. The global Gecko/silicone checkboxes request either one
 direct per-gripper response or one paired structured response.
+
+Single Run can optionally send the deterministic selected result to the physical rig.
+Enable **Send selected force to gripper after run**, choose a detected serial port, and
+run the pipeline. The app waits for the firmware handshake, sends `SELECT` for the chosen
+gripper, then sends its `FORCE <newtons>` command. This command actuates the existing
+force-seek/lift firmware; prepare the rig before enabling it.
 
 Benchmarks use two explicit stages and the dataset CSV's `split=train/test` assignment.
 **Run predictions** saves immutable, truth-free prediction batches for query-ready test
@@ -130,29 +133,17 @@ python scripts/run_experiment.py --all --confirm-gemini-cost
 All five conditions use Gemini generation and E3–E6 use Gemini embeddings. Cached identical requests
 make no new call.
 
-## Data collection
-
-```bash
-python -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
-python -m modules.collect --dataset collected --port /dev/cu.usbmodemXXXX --confirm-gemini-cost
-```
-
-Mock collection simulates hardware but still uses Gemini for object descriptions. The
-coarse/fine staircase controls ground-truth search resolution only. It does not limit
-the precision or range of benchmark predictions. See
-[`docs/data_collection_sop.md`](docs/data_collection_sop.md).
-
 ## Code map
 
 | File | Responsibility |
 |---|---|
 | `config.yaml` / `prompts.yaml` | Numerical tunables/methods and editable prompts/embodiments |
 | `modules/experiments/` | Canonical per-experiment strategies plus shared helpers |
-| `modules/pipeline.py` | Thin shared `fit`/`predict` facade |
+| `modules/pipeline.py` | Shared `fit`/`predict` facade and single-gripper force helper |
 | `modules/contracts.py` | Records, joint predictions, and selection contracts |
 | `modules/prediction.py` | Joint VLM request, nonnegative force normalization, and selector |
 | `modules/retrieval.py` | Paired-object embeddings and hybrid retrieval |
-| `modules/physics.py` | Reduced-order equations, bounded calibration, solver |
+| `modules/serial_output.py` | Optional gripper selection and force actuation over serial |
 | `modules/evaluation.py` | Grouped splits and force/selection/recommendation metrics |
 | `modules/datasets/` | Dataset catalog, object/artifact models, storage, and preparation stages |
 | `modules/cache.py` | Dataset-isolated response caches |

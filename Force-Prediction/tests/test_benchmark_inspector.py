@@ -56,7 +56,6 @@ def _batch(cfg, image_path, image_sha256: str) -> BenchmarkPredictionBatch:  # n
         selection=selection,
         semantic_description="saved object description",
         retrieved_objects=[],
-        physics_estimates={"gecko": None},
         cache_stats={},
         active_grippers=("gecko",),
         generation_mode="single",
@@ -163,7 +162,6 @@ def _paired_batch_and_evaluation(
         ),
         semantic_description="saved object description",
         retrieved_objects=[],
-        physics_estimates={"gecko": None, "silicone": None},
         cache_stats={},
         active_grippers=("gecko", "silicone"),
         generation_mode="joint",
@@ -337,4 +335,3 @@ def test_prediction_batch_view_contains_object_inspector_subtab(tmp_path) -> Non
         "Provenance",
     ]
     assert any(item.label == "Benchmark object" for item in app.selectbox)
-

@@ -34,7 +34,7 @@ neighbor mass, roughness, or projected contact fraction in ranking or in the VLM
 Retrieval ranks distinct physical surfaces. Each surface exposes its semantic description
 once, followed by up to `retrieval.conditions_per_surface` active-gripper observations with
 no condition names or physical measurements. It receives no hybrid
-score components and no physics estimate. Tests enforce this boundary so later refactors
+score components. Tests enforce this boundary so later refactors
 cannot quietly leak sensor terms into E3.
 
 This is the right role for E3 because it creates clean comparisons:

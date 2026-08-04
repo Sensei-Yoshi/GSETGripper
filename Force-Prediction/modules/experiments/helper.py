@@ -80,7 +80,6 @@ class PipelineRunResult:
     selection: SelectionResult
     semantic_description: str
     retrieved_objects: list[RetrievedObjectExperience]
-    physics_estimates: dict[str, dict[str, Any] | None]
     cache_stats: dict[str, Any]
     active_grippers: tuple[str, ...] = ("gecko", "silicone")
     generation_mode: Literal["single", "joint"] = "joint"
@@ -214,7 +213,6 @@ class ExperimentStrategy(ABC):
         selection: SelectionResult,
         description: str,
         retrieved_objects: list[RetrievedObjectExperience] | None = None,
-        physics_estimates: dict[str, dict[str, Any] | None] | None = None,
         used_client: bool,
         effective_inputs: tuple[str, ...] = (),
         query: Query | None = None,
@@ -229,7 +227,6 @@ class ExperimentStrategy(ABC):
             selection=selection,
             semantic_description=description,
             retrieved_objects=retrieved_objects or [],
-            physics_estimates=physics_estimates or {},
             cache_stats=cache_stats,
             active_grippers=tuple(
                 gripper.value for gripper in self.cfg.prediction.active_grippers

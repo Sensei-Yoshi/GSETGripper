@@ -53,7 +53,7 @@ Publishable conclusions require a real two-gripper dataset collected under one c
 protocol with grouped held-out objects. Until then, the Streamlit app and result reports
 must label viewer metrics as synthetic diagnostics.
 
-## 3. Force convention and hardware behavior
+## 3. Force convention and optional serial actuation
 
 Every force value uses one convention:
 
@@ -61,14 +61,12 @@ Every force value uses one convention:
 - normal force measured behind the stationary gripper finger;
 - never doubled and never summed across both fingers;
 - nonnegative, continuous dataset labels and benchmark predictions with no analytical upper cap;
-- a separate physical rig command/collection safety range from `0` through `8.0 N`;
-- no model-output rounding or snapping;
-- nominal successful hold of `3.0 s` after a `50 mm` lift.
+- a separate physical serial-actuation safety range above `0` through `8.0 N`;
+- no model-output rounding or snapping.
 
-The hardware accepts arbitrary continuous commands inside its guarded range. The collection
-staircase has separate coarse and fine steps because ground-truth search needs a practical
-experimental resolution. Neither the collection staircase nor the hardware guard caps stored
-experience labels or offline benchmark predictions.
+The safety guard does not cap stored experience labels or offline benchmark predictions.
+Single Run may explicitly select the predicted gripper and send its continuous force to the
+existing firmware; this is an optional physical side effect, not part of model inference.
 
 A feasible record stores the measured minimum successful force. An infeasible record stores
 `min_force_n: null` and the force limit at which it failed. A failure at `8 N` must never be
@@ -294,7 +292,7 @@ use one `JointGripperPrediction`. No gripper images are sent.
 
 ### E1: vision-only zero-shot
 
-E1 sends no object-specific mass, roughness, contact, retrieved examples, or physics
+E1 sends no object-specific mass, roughness, contact, retrieved examples, or analytical
 estimate. Its structured response covers only the active candidates; paired runs also
 return `recommended_gripper`.
 
@@ -306,7 +304,7 @@ Each surface is sent once with semantic similarity and up to three active-grippe
 observations; condition names and measurement fields are omitted.
 
 E3 sends no query or neighbor mass, roughness, projected contact, hybrid score components,
-or physics estimate. This hard boundary models semantic experiential retrieval in the
+or analytical estimate. This hard boundary models semantic experiential retrieval in the
 current experience corpus and makes E3 minus E1 an interpretable estimate of semantic experience
 value.
 
@@ -320,7 +318,7 @@ eligible condition and contributes its baseline plus at most two variants whose 
 changes are fully visible in that experiment.
 
 The score only ranks neighbors; it never computes force. Force evidence comes from the
-observed active-gripper outcomes. E4–E6 receive no physics value. The adjacent E4→E5→E6
+observed active-gripper outcomes. E4–E6 receive no analytical force prior. The adjacent E4→E5→E6
 comparisons isolate the incremental value of roughness and projected contact; improved error
 is an empirical hypothesis rather than an assumed result.
 
@@ -402,11 +400,11 @@ The package is organized by concern, with one module per experiment strategy:
 | `prompts.yaml` | Editable prompts and fixed written embodiment descriptions |
 | `modules/config.py` | Typed loading and fail-fast validation |
 | `modules/experiments/` | Shared strategy helper, eligibility, catalog, and active strategy modules |
-| `modules/pipeline.py` | Thin shared fit/predict facade |
+| `modules/pipeline.py` | Shared fit/predict facade and single-gripper force helper |
 | `modules/contracts.py` | Experience, query, joint prediction, and selection models |
 | `modules/prediction.py` | Joint VLM request, nonnegative force normalization, selector |
 | `modules/retrieval.py` | Semantic-only and hybrid paired-object retrieval |
-| `modules/physics.py` | Equations, calibration, and minimum-force solve |
+| `modules/serial_output.py` | Optional selected-gripper force actuation over serial |
 | `modules/evaluation.py` | Grouped splits and metrics |
 | `modules/datasets/` | Dataset catalog, object/artifact models, storage, and stage runner |
 | `modules/cache.py` | Dataset-scoped API caches |
@@ -466,7 +464,7 @@ prompts.experiments.e6
 These instructions and the `gecko`/`silicone` written embodiment descriptions live in
 `prompts.yaml`; `config.yaml` references that file. Configuration validation
 requires exactly the five active IDs, a valid prompt for every method, and no unused
-experiment prompt. Researcher tunables such as force range, collection steps, retrieval
+experiment prompt. Researcher tunables such as force range, retrieval
 `k`, weights, sigmas, and models must not be shadowed by hidden script constants.
 
 Explicit CLI/UI overrides operate on a copied config and are persisted with the run. The
@@ -535,7 +533,7 @@ suite manifests use schema version 12, and suite reporting uses version 4. A pre
 - model and embedding versions;
 - retrieval configuration including `k`;
 - exact train/test IDs and split hash;
-- query snapshots, selection, evidence, physics, and cache telemetry, but no truth.
+- query snapshots, selection, evidence, and cache telemetry, but no truth.
 
 Evaluation artifacts record the prediction batch ID, current truth snapshot hash, coverage,
 metrics, evaluated rows, and JSON/CSV/PNG/SVG exports. Repeating an unchanged truth snapshot
@@ -595,25 +593,6 @@ Network-isolated verification with explicit Gemini test fakes must cover:
 The installed mypy 2.3.0 may currently terminate with its own internal error. Verification
 should still invoke it and distinguish that tool crash from source diagnostics.
 
-## 17. Transition to real data
-
-Real collection should:
-
-1. test both grippers for every object under the same protocol;
-2. keep paired rows under one object ID;
-3. record image, mass, calibrated roughness, contact proxy, minimum force, feasibility,
-   environment, pad ID, and trials;
-4. assign and freeze the CSV train/test split before tuning;
-5. fit retrieval weights inside training folds only;
-6. compare the active conditions on their common eligible object intersection;
-7. report uncertainty, subgroup behavior, feasibility errors, force error, selection, and
-   regret;
-8. preserve exact model, prompt, source, and configuration provenance.
-
-Open scientific questions include contact measurement repeatability, roughness calibration,
-pad cleaning/seating protocols, trial aggregation, fragile-object constraints, semantic
-embedding value beyond measurements, and robustness to incomplete physical measurements.
-
 ## 18. Common commands
 
 From `GSETGripper/Force-Prediction`:
@@ -628,13 +607,12 @@ From `GSETGripper/Force-Prediction`:
 ../../env/bin/python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --confirm-gemini-cost
 ../../env/bin/python scripts/prepare_dataset.py --dataset MatForceFinal --stages descriptions embeddings experiences --confirm-gemini-cost
 ../../env/bin/python -m streamlit run app.py
-../../env/bin/python -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
 ```
 
 ## 19. Invariants
 
 1. Never mix or double force conventions.
-2. Never round continuous model output to collection steps.
+2. Never round continuous model output before inference, evaluation, or artifact persistence.
 3. Keep each physical surface in one CSV split and restrict E3–E6 benchmark retrieval to train rows.
 4. Keep source data separate from generated artifacts.
 5. Keep prompts and embodiment context in `prompts.yaml`; keep numerical tunables and
@@ -645,7 +623,7 @@ From `GSETGripper/Force-Prediction`:
    contact conditions but must not use contact for cross-object ranking.
 9. Keep Python selection authoritative and score model recommendation separately.
 10. Persist stable method/version/prompt/embodiment provenance.
-11. Keep unit tests independent of hardware, credentials, and network access through explicit fakes.
+11. Keep unit tests independent of physical serial ports, credentials, and network access through explicit fakes.
 12. Treat current viewer results as pipeline validation only.
 13. Scope all dataset-dependent artifacts and caches to the active dataset.
 14. Update tests and this document whenever experiment behavior or contracts change.

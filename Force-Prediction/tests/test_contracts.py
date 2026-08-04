@@ -10,14 +10,6 @@ from modules.contracts import (
     Query,
     group_by_object,
 )
-from modules.hardware import (
-    CameraSource,
-    GripperController,
-    LoadCell,
-    MassSource,
-    RoughnessSource,
-    make_mock_bench,
-)
 
 CFG = load_config()
 
@@ -76,12 +68,3 @@ def test_group_and_oracle():
     obj = objects["o1"]
     g, f = obj.oracle()
     assert g is Gripper.GECKO and f == 1.25
-
-
-def test_mock_devices_satisfy_protocols():
-    _, devices = make_mock_bench(CFG)
-    assert isinstance(devices.gripper, GripperController)
-    assert isinstance(devices.load_cell, LoadCell)
-    assert isinstance(devices.roughness, RoughnessSource)
-    assert isinstance(devices.mass, MassSource)
-    assert isinstance(devices.camera, CameraSource)

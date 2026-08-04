@@ -10,7 +10,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.config import load_config  # noqa: E402
 from modules.contracts import Query, load_experiences  # noqa: E402
-from modules.hardware import fabricate_records  # noqa: E402
 from modules.retrieval import ExperienceIndex  # noqa: E402
 
 
@@ -21,7 +20,9 @@ def main() -> int:
     if not args.confirm_gemini_cost:
         parser.error("retrieval check requires --confirm-gemini-cost")
     cfg = load_config().model_copy(deep=True)
-    records = load_experiences(cfg.path("experiences")) or fabricate_records(cfg, 40)
+    records = load_experiences(cfg.path("experiences"))
+    if not records:
+        raise SystemExit("No prepared experience records found for the configured dataset.")
     index = ExperienceIndex(cfg).fit(records)
     probe = records[0]
     query = Query(

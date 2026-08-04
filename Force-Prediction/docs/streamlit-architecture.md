@@ -144,6 +144,12 @@ system, with larger values indicating rougher surfaces. It is intentionally dist
 the image-derived Marigold `roughness` artifact. E5 and E6 always use this continuous value;
 datasets without it remain ineligible for those conditions.
 
+Single Run owns the optional physical serial side effect. Its serial checkbox is off by
+default; when enabled, a detected-port selector is required before Run is available. A
+successful prediction is saved first, then the authoritative selected gripper and force are
+sent exactly once inside the Run-button event. Serial failures are displayed without
+discarding the prediction, and ordinary Streamlit reruns never repeat the command.
+
 ## Adding a tab
 
 These steps are the extension contract for either a human or an AI coding agent:
@@ -195,6 +201,7 @@ kept in an optional expander rather than serving as the primary detail view.
 - Only the shell calls `st.set_page_config`, and it does so before visible UI rendering.
 - The Dataset selector remains above the tabs and applies to every dataset-dependent tab.
 - Existing tab order and current widget keys are interface-sensitive.
+- `send_force_serial` and `gripper_serial_port` are the Single Run serial-control keys.
 - Session-state keys and stored payload shapes are shared across Single Run, Runs Viewer,
   and Cache Status; changes require coordinated migration and tests.
 - Contact Fraction keeps its cached camera/model resources and lazy optional-dependency

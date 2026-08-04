@@ -15,7 +15,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from modules.config import load_config  # noqa: E402
 from modules.contracts import load_experiences  # noqa: E402
-from modules.hardware import fabricate_records  # noqa: E402
 from modules.pipeline import Pipeline, query_input_from_object  # noqa: E402
 
 
@@ -28,7 +27,9 @@ def main() -> int:
         parser.error("pipeline check requires --confirm-gemini-cost")
     cfg = load_config()
 
-    records = load_experiences(cfg.path("experiences")) or fabricate_records(cfg, 40)
+    records = load_experiences(cfg.path("experiences"))
+    if not records:
+        raise SystemExit("No prepared experience records found for the configured dataset.")
     held_out = records[0].object_id
     train = [r for r in records if r.object_id != held_out]
     test = [r for r in records if r.object_id == held_out]

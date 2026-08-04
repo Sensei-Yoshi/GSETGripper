@@ -11,11 +11,12 @@ from modules.artifacts import (
     save_pipeline_run,
 )
 from modules.config import EXPERIMENT_IDS, Config
-from modules.contracts import ExperienceRecord, group_by_object
+from modules.contracts import ExperienceRecord, SelectionResult, group_by_object
 from modules.datasets import DatasetObject
 from modules.experiments import EXPERIMENT_CATALOG, experiment_eligibility
 from modules.pipeline import Pipeline, QueryInput
 from modules.retrieval import RankingFeature, normalized_weights
+from modules.serial_output import SerialSendResult, list_serial_ports, send_force
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import (
     format_experiment,
@@ -91,6 +92,22 @@ def _single_run_training_records(
         for record in records
         if record.object_id in allowed and record.surface_id != query_surface_id
     ]
+
+
+def _send_selected_force(
+    port: str,
+    selection: SelectionResult,
+    force_limit_n: float,
+) -> SerialSendResult:
+    """Validate and deliver the authoritative selector output."""
+    if selection.desired_gripper == "none":
+        raise ValueError("the pipeline did not select a feasible gripper")
+    return send_force(
+        port,
+        selection.desired_gripper,
+        selection.predicted_normal_force_n,
+        force_limit_n,
+    )
 
 
 def render(context: AppContext) -> None:
@@ -218,11 +235,41 @@ def render(context: AppContext) -> None:
             )
             st.caption(f"Neighbor count comes from config.yaml: k = {base_cfg.retrieval.k}.")
 
+        send_over_serial = st.checkbox(
+            "Send selected force to gripper after run",
+            key="send_force_serial",
+            help=(
+                "After prediction, select the physical gripper and execute the firmware's "
+                "FORCE command. The rig must be ready before running."
+            ),
+        )
+        selected_serial_port: str | None = None
+        if send_over_serial:
+            try:
+                serial_ports = list_serial_ports()
+            except (OSError, RuntimeError) as error:
+                serial_ports = []
+                st.error(f"Could not enumerate serial ports: {error}")
+            if serial_ports:
+                ports_by_device = {port.device: port for port in serial_ports}
+                selected_serial_port = st.selectbox(
+                    "Gripper serial port",
+                    list(ports_by_device),
+                    format_func=lambda device: ports_by_device[device].label,
+                    key="gripper_serial_port",
+                )
+            else:
+                st.warning("No serial ports detected. Connect the gripper before running.")
+
         run = st.button(
             "Run pipeline",
             type="primary",
             width="stretch",
-            disabled=bool(query_reasons) or query_image is None,
+            disabled=(
+                bool(query_reasons)
+                or query_image is None
+                or (send_over_serial and selected_serial_port is None)
+            ),
         )
 
     try:
@@ -241,6 +288,7 @@ def render(context: AppContext) -> None:
         return
 
     if run:
+        serial_delivery: tuple[str, SerialSendResult | str] | None = None
         truth = objects.get(object_id) if object_id in eligibility.benchmark_ids else None
         counterfactual = bool(
             uploaded is not None
@@ -334,6 +382,16 @@ def render(context: AppContext) -> None:
                 image_bgr=query_image,
                 baseline=baseline,
             )
+            if send_over_serial:
+                try:
+                    serial_result = _send_selected_force(
+                        selected_serial_port or "",
+                        detailed.selection,
+                        cfg.force.limit_n,
+                    )
+                    serial_delivery = ("success", serial_result)
+                except (OSError, RuntimeError, TimeoutError, ValueError) as error:
+                    serial_delivery = ("error", str(error))
             st.session_state["single_result"] = (
                 detailed,
                 truth,
@@ -342,6 +400,7 @@ def render(context: AppContext) -> None:
                 cfg,
                 experiment,
                 run_path,
+                serial_delivery,
             )
             st.session_state["last_experiment"] = experiment
 
@@ -367,6 +426,7 @@ def render(context: AppContext) -> None:
                 stored_cfg,
                 stored_experiment,
                 run_path,
+                serial_delivery,
             ) = st.session_state["single_result"]
             render_prediction(
                 detailed,
@@ -377,3 +437,15 @@ def render(context: AppContext) -> None:
                 experiment=stored_experiment,
             )
             st.caption(f"Saved run: {run_path.name}")
+            if serial_delivery is not None:
+                status, payload = serial_delivery
+                if status == "success":
+                    assert isinstance(payload, SerialSendResult)
+                    st.success(
+                        f"Sent {payload.force_n:g} N for {payload.gripper.value} "
+                        f"to {payload.port}."
+                    )
+                    for warning in payload.warnings:
+                        st.warning(f"Firmware: {warning}")
+                else:
+                    st.error(f"Serial delivery failed: {payload}")

@@ -87,7 +87,7 @@ The hybrid conditions receive the normalized ranking weights as provenance; thos
 not a force equation. Each
 retrieves five objects once, with only active-gripper outcomes attached to each object.
 One target uses a per-gripper response; two targets use one joint response. Neither
-condition constructs or sends a physics estimate. Python selects the lower feasible
+condition constructs or sends an analytical force prior. Python selects the lower feasible
 predicted force and explicitly reports a prediction tie only when the continuous estimates are equal.
 
 Gemini-backed descriptor, embedding, and VLM stages may make network calls. A cached identical

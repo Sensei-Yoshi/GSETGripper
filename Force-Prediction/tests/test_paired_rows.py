@@ -10,10 +10,10 @@ from modules.contracts import (
     JointGripperPrediction,
     PerGripperPrediction,
 )
-from modules.hardware import fabricate_records
 from modules.pipeline import Pipeline, query_input_from_object
 from modules.retrieval import ExperienceIndex, RetrievalMode
 from streamlit_app.prediction_ui import paired_retrieval_table
+from tests.factories import fabricate_records
 from tests.fakes import FakeEmbeddingProvider, install_gemini_fakes
 
 
@@ -130,7 +130,6 @@ def test_e4_detailed_result_contains_one_shared_top_k_list(monkeypatch):
     assert all(item.object_id != held for item in detailed.retrieved_objects)
     assert all(item.gecko_min_force_n is not None for item in detailed.retrieved_objects)
     assert all(item.silicone_min_force_n is not None for item in detailed.retrieved_objects)
-    assert detailed.physics_estimates == {}
 
 
 def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
@@ -241,7 +240,6 @@ def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
         for experiment in ("e4", "e5", "e6")
     }
 
-    assert all(result.physics_estimates == {} for result in results.values())
     assert len(payloads) == 3
     e4_payload, e5_payload, e6_payload = payloads
     assert set(e4_payload["query"]) == {"mass_g"}

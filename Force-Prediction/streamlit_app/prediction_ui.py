@@ -265,13 +265,6 @@ def render_prediction(
                 ),
                 delta_color="inverse",
             )
-            physics = detailed.physics_estimates.get(gripper)
-            if physics:
-                raw_force = physics.get("raw_force_n")
-                raw_label = format_force(raw_force) if raw_force is not None else "infeasible"
-                st.caption(f"Physics model: continuous estimate {raw_label}")
-            else:
-                st.caption("Physics model: not used by this experiment")
             st.write(pred.reasoning_trace or "No reasoning trace for this experiment.")
             if pred.evidence_used:
                 st.markdown("**Evidence used**")

@@ -8,7 +8,7 @@ import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
 
-from ..contracts import ExperienceRecord, Meta, load_experiences, save_experiences
+from ..contracts import ExperienceRecord, Meta, save_experiences
 from .models import (
     Dataset,
     DescriptionArtifact,
@@ -94,10 +94,6 @@ def save_manifest(dataset: Dataset, manifest: PreparationManifest) -> None:
         dataset.paths.preparation_manifest,
         manifest.model_dump(mode="json"),
     )
-
-
-def load_dataset_experiences(dataset: Dataset) -> list[ExperienceRecord]:
-    return load_experiences(dataset.paths.experiences)
 
 
 def build_dataset_experiences(dataset: Dataset, force_limit_n: float) -> list[ExperienceRecord]:

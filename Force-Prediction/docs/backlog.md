@@ -10,13 +10,6 @@ choices; each item below is a concrete upgrade path with the file it touches.
 - Include the RGB image in the embedding (the client already supports it) rather
   than relying only on the VLM-generated description text.
 
-## Physics  (`physics.py`)
-- Gecko seating study: determine whether the minimum-force protocol reaches the
-  saturated adhesion regime; if not, `N50` matters and the full nonlinear
-  seating term should stay. Consider per-class `N50`.
-- Recalibrate the continuous roughness characteristic scale and physics coefficients once ≥ ~200 objects give dense index
-  coverage.
-
 ## Objective & safety  (`prediction.py`, `contracts.py`)
 - Selection objective beyond `min F*`: damage risk, adhesive contamination, pad
   wear, release difficulty, tool-switch time, prediction uncertainty.

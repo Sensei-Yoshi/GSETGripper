@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from modules.config import load_config
 from modules.evaluation import make_folds
-from modules.hardware import fabricate_records
+from tests.factories import fabricate_records
 
 CFG = load_config()
 

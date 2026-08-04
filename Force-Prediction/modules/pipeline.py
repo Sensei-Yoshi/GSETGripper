@@ -11,13 +11,37 @@ All fold-local fitting and experiment-specific behavior lives in the
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
 
 from .config import Config
-from .contracts import ExperienceRecord, SelectionResult
+from .contracts import (
+    ExperienceRecord,
+    Gripper,
+    PerGripperPrediction,
+    SelectionResult,
+)
 from .experiments import PipelineRunResult, QueryInput, create_strategy
 
-__all__ = ["Pipeline", "PipelineRunResult", "QueryInput", "query_input_from_object"]
+__all__ = [
+    "ForcePrediction",
+    "Pipeline",
+    "PipelineRunResult",
+    "QueryInput",
+    "predict_gripper_force",
+    "query_input_from_object",
+]
+
+
+@dataclass(frozen=True)
+class ForcePrediction:
+    """One experiment's force estimate for one explicitly requested gripper."""
+
+    experiment_id: str
+    gripper: Gripper
+    feasible: bool
+    force_n: float | None
+    prediction: PerGripperPrediction
 
 
 class Pipeline:
@@ -36,6 +60,35 @@ class Pipeline:
 
     def predict_detailed(self, query: QueryInput) -> PipelineRunResult:
         return self.strategy.predict_detailed(query)
+
+
+def predict_gripper_force(
+    cfg: Config,
+    experiment: int | str,
+    gripper: Gripper | str,
+    train_records: list[ExperienceRecord],
+    query: QueryInput,
+) -> ForcePrediction:
+    """Run one experiment for one gripper and return its typed force result.
+
+    Retrieval-backed experiments still require their fold-local training records;
+    this convenience wrapper only scopes the existing pipeline to a single output.
+    """
+    if isinstance(experiment, bool):
+        raise ValueError("experiment must be an integer ID or an 'eN' string")
+    experiment_id = f"e{experiment}" if isinstance(experiment, int) else experiment.lower()
+    selected_gripper = Gripper(gripper)
+    scoped = cfg.model_copy(deep=True)
+    scoped.prediction.active_grippers = (selected_gripper,)
+    selection = Pipeline(scoped, experiment_id).fit(train_records).predict(query)
+    prediction = selection.candidate_predictions[selected_gripper.value]
+    return ForcePrediction(
+        experiment_id=experiment_id,
+        gripper=selected_gripper,
+        feasible=prediction.feasible,
+        force_n=prediction.predicted_normal_force_n if prediction.feasible else None,
+        prediction=prediction,
+    )
 
 
 def query_input_from_object(records: list[ExperienceRecord], cfg: Config) -> QueryInput:
