@@ -9,7 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .config import Config
+from .config import EXPERIMENT_IDS, Config
 from .contracts import (
     ExperienceRecord,
     Gripper,
@@ -19,11 +19,9 @@ from .contracts import (
 )
 from .evaluation import EvalRow, compute_metrics
 
-PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4", "e5", "e6")
-LEGACY_GRIPPERS = ("gecko", "silicone")
+PRIMARY_EXPERIMENTS = EXPERIMENT_IDS
 EXPERIMENT_STYLES = {
     "e1": {"color": "#0072B2", "marker": "o"},
-    "e2": {"color": "#E69F00", "marker": "s"},
     "e3": {"color": "#009E73", "marker": "^"},
     "e4": {"color": "#CC79A7", "marker": "D"},
     "e5": {"color": "#D55E00", "marker": "v"},
@@ -33,21 +31,20 @@ ERROR_ZERO_TOLERANCE_N = 1e-9
 
 
 def present_experiments(artifacts: dict[str, dict]) -> tuple[str, ...]:
-    """Experiments actually present in a bundle, in canonical E1→E6 order.
+    """Experiments actually present in a bundle, in canonical active order.
 
-    Suites may run any subset (e.g. E1–E5), so comparison and figure helpers
-    iterate the experiments that are present rather than assuming all six.
+    Suites may run any subset, so comparison and figure helpers iterate the
+    experiments that are present rather than assuming all active conditions.
     """
     return tuple(name for name in PRIMARY_EXPERIMENTS if artifacts.get(name) is not None)
 
 
 def artifact_grippers(artifact: dict) -> tuple[str, ...]:
-    """Read target provenance, defaulting historical artifacts to paired."""
-    metadata = artifact.get("metadata", artifact)
-    names = metadata.get("active_grippers")
-    if not names and artifact.get("rows"):
-        names = artifact["rows"][0].get("active_grippers")
-    return tuple(names or LEGACY_GRIPPERS)
+    """Read the required active-gripper provenance from a current artifact."""
+    names = artifact.get("metadata", {}).get("active_grippers")
+    if not names:
+        raise ValueError("artifact is missing active_grippers provenance")
+    return tuple(names)
 
 
 def common_intersection_artifacts(
@@ -221,9 +218,11 @@ def _target_grippers(artifacts: dict[str, dict]) -> tuple[str, ...]:
     """Return the shared active-gripper contract for a comparison."""
     available = [artifact for artifact in artifacts.values() if artifact is not None]
     target_sets = {artifact_grippers(artifact) for artifact in available}
+    if not target_sets:
+        raise ValueError("suite comparison requires at least one artifact")
     if len(target_sets) > 1:
         raise ValueError("suite comparison requires identical active grippers")
-    return next(iter(target_sets), LEGACY_GRIPPERS)
+    return next(iter(target_sets))
 
 
 def _suite_gripper_points(
@@ -322,7 +321,7 @@ def suite_force_by_object_figure(
     artifacts: dict[str, dict],
     image_root: str | Path | None = None,
 ):  # noqa: ANN201
-    """Overlay E1–E6 force predictions on one object plot per active gripper."""
+    """Overlay experiment force predictions on one object plot per active gripper."""
     present = present_experiments(artifacts)
     grippers, point_sets = _suite_point_sets(artifacts)
     resolved_image_root = Path(image_root) if image_root is not None else None
@@ -395,7 +394,7 @@ def suite_percentage_error_figure(
     artifacts: dict[str, dict],
     image_root: str | Path | None = None,
 ):  # noqa: ANN201
-    """Overlay signed E1–E6 percentage errors per active gripper and object."""
+    """Overlay signed experiment percentage errors per active gripper and object."""
     present = present_experiments(artifacts)
     grippers, point_sets = _suite_point_sets(artifacts)
     resolved_image_root = Path(image_root) if image_root is not None else None
@@ -573,6 +572,16 @@ def calibration_figure(artifacts: dict[str, dict]):  # noqa: ANN201
         squeeze=False,
     )
     colors = {"gecko": "#147a4a", "silicone": "#b45f19"}
+    calibration_values = [
+        float(value)
+        for row in long_rows
+        for value in (row["true_force_n"], row["predicted_force_n"])
+        if value is not None
+    ]
+    axis_limit = max(
+        1.0,
+        math.ceil(max(calibration_values, default=1.0) * 1.15 * 2) / 2,
+    )
     for row_index, gripper in enumerate(grippers):
         for column_index, experiment in enumerate(present):
             axis = axes[row_index][column_index]
@@ -601,14 +610,19 @@ def calibration_figure(artifacts: dict[str, dict]):  # noqa: ANN201
                 f"RMSE {metrics.get('rmse', float('nan')):.3f} N | n={metrics.get('n', 0)}",
                 fontsize=9,
             )
-            axis.set_xlim(0, 8)
-            axis.set_ylim(0, 8)
+            axis.set_xlim(0, axis_limit)
+            axis.set_ylim(0, axis_limit)
             axis.grid(alpha=0.18)
             if row_index == len(grippers) - 1:
                 axis.set_xlabel("Ground-truth force (N)")
             if column_index == 0:
                 axis.set_ylabel("Predicted force (N)")
-    figure.suptitle("E1–E6 force calibration by gripper", fontsize=14)
+    experiment_label = (
+        present[0].upper()
+        if len(present) == 1
+        else f"{present[0].upper()}–{present[-1].upper()}"
+    )
+    figure.suptitle(f"{experiment_label} force calibration by gripper", fontsize=14)
     figure.tight_layout()
     return figure
 

@@ -12,6 +12,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from .artifacts import (
+    backend_provenance,
+    load_experience_pool,
+    pipeline_result_from_dict,
+    pipeline_result_to_dict,
+    prompt_provenance,
+    source_sha256,
+)
 from .config import EXPERIMENT_DEFINITION_VERSION, Config
 from .contracts import Gripper, SelectionResult, group_by_object
 from .datasets import get_dataset
@@ -22,17 +30,9 @@ from .experiments import (
     evaluation_truth_eligibility,
     experiment_eligibility,
 )
-from .expforce import (
-    backend_provenance,
-    load_experience_pool,
-    pipeline_result_from_dict,
-    pipeline_result_to_dict,
-    prompt_provenance,
-    source_sha256,
-)
 from .pipeline import Pipeline, QueryInput
 
-BENCHMARK_SCHEMA_VERSION = 10
+BENCHMARK_SCHEMA_VERSION = 11
 PREDICTION_ARTIFACT_TYPE = "benchmark_prediction_batch"
 EVALUATION_ARTIFACT_TYPE = "benchmark_evaluation"
 
@@ -137,7 +137,7 @@ def _batch_config(cfg: Config, batch: BenchmarkPredictionBatch) -> Config:
 
 
 def benchmark_scope(cfg: Config, experiment: str) -> BenchmarkScope:
-    """Resolve the CSV-defined holdout, with legacy leave-one-out fallback."""
+    """Resolve a CSV holdout or an all-object leave-one-out benchmark."""
     experiment_id = experiment.lower()
     dataset = get_dataset(cfg, cfg.dataset_id)
     eligibility = experiment_eligibility(dataset, cfg, experiment_id)
@@ -237,7 +237,9 @@ def generate_benchmark_predictions(
         image = cv2.imread(str(image_path))
         image_digest = _image_sha256(image_path, item.image.sha256)
         semantic_description = (
-            item.description.value.description if item.description is not None else None
+            item.description.value.retrieval_description
+            if item.description is not None
+            else None
         )
         query_snapshot = {
             "object_id": object_id,

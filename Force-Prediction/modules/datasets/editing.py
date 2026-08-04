@@ -7,9 +7,9 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 from ..config import Config
-from ..expforce import ExpForceRow, load_rows, save_rows
 from .catalog import get_dataset
 from .models import Dataset, DatasetObjectMeasurements, PreparationStage, StageStatus
+from .paired_csv import PairedCsvRow, load_rows, save_rows
 from .storage import (
     build_dataset_experiences,
     load_manifest,
@@ -40,8 +40,8 @@ class DatasetObjectEdit(BaseModel):
                 raise ValueError(f"clear {gripper} force unless its status is feasible")
         return self
 
-    def source_row(self, original: ExpForceRow) -> ExpForceRow:
-        unchecked = ExpForceRow.model_construct(
+    def source_row(self, original: PairedCsvRow) -> PairedCsvRow:
+        unchecked = PairedCsvRow.model_construct(
             object_name=original.object_name,
             image_name=original.image_name,
             image_name_2=original.image_name_2,
@@ -49,7 +49,6 @@ class DatasetObjectEdit(BaseModel):
             split=self.split or original.split,
             mass_g=self.mass_g,
             roughness_index=self.roughness_index,
-            legacy_roughness_class=original.legacy_roughness_class,
             projected_contact_fraction=self.projected_contact_fraction,
             silicone_force_n=self.silicone_force_n,
             silicone_feasible=self.silicone_feasible,
@@ -57,7 +56,7 @@ class DatasetObjectEdit(BaseModel):
             gecko_feasible=self.gecko_feasible,
             favored_gripper=None,
         )
-        return ExpForceRow(
+        return PairedCsvRow(
             object_name=original.object_name,
             image_name=original.image_name,
             image_name_2=original.image_name_2,
@@ -65,7 +64,6 @@ class DatasetObjectEdit(BaseModel):
             split=self.split or original.split,
             mass_g=self.mass_g,
             roughness_index=self.roughness_index,
-            legacy_roughness_class=original.legacy_roughness_class,
             projected_contact_fraction=self.projected_contact_fraction,
             silicone_force_n=self.silicone_force_n,
             silicone_feasible=self.silicone_feasible,
@@ -86,7 +84,7 @@ def update_dataset_object(
         raise KeyError(f"unknown object ID {object_id!r}")
     _validate_edit(cfg, edit)
 
-    if dataset.adapter == "expforce_paired_csv":
+    if dataset.adapter == "paired_csv":
         rows = load_rows(cfg)
         positions = [index for index, row in enumerate(rows) if row.object_id == object_id]
         if len(positions) != 1:
@@ -146,7 +144,7 @@ def add_dataset_condition(
     condition_id: str | None = None,
 ) -> tuple[Dataset, str]:
     """Atomically append one independently measured condition to a CSV surface."""
-    if dataset.adapter != "expforce_paired_csv":
+    if dataset.adapter != "paired_csv":
         raise ValueError("additional conditions currently require a paired CSV dataset")
     _validate_edit(cfg, edit, require_enabled_measurements=True)
     rows = load_rows(cfg)
@@ -187,7 +185,7 @@ def delete_dataset_condition(
     object_id: str,
 ) -> Dataset:
     """Atomically delete an added condition; physical-surface baselines are immutable."""
-    if dataset.adapter != "expforce_paired_csv":
+    if dataset.adapter != "paired_csv":
         raise ValueError("condition deletion currently requires a paired CSV dataset")
     item = dataset.objects.get(object_id)
     if item is None:
@@ -200,16 +198,6 @@ def delete_dataset_condition(
         raise ValueError(f"expected exactly one source row for {object_id!r}")
     save_rows(dataset.paths.root / "dataset.csv", retained)
     return _rebuild(cfg, dataset.dataset_id)
-
-
-def update_csv_dataset_object(
-    cfg: Config,
-    dataset: Dataset,
-    object_id: str,
-    edit: DatasetObjectEdit,
-) -> Dataset:
-    """Backward-compatible alias for the adapter-neutral update operation."""
-    return update_dataset_object(cfg, dataset, object_id, edit)
 
 
 def _refresh_manifest(dataset: Dataset) -> None:
@@ -233,14 +221,6 @@ def _validate_edit(
     *,
     require_enabled_measurements: bool = False,
 ) -> None:
-    for gripper, force in (
-        ("silicone", edit.silicone_force_n),
-        ("gecko", edit.gecko_force_n),
-    ):
-        if force is not None and force > cfg.force.limit_n:
-            raise ValueError(
-                f"{gripper} force cannot exceed the {cfg.force.limit_n:g} N hardware limit"
-            )
     if not require_enabled_measurements:
         return
     if edit.mass_g is None:
@@ -253,7 +233,7 @@ def _validate_edit(
         )
 
 
-def _next_condition_id(rows: list[ExpForceRow]) -> str:
+def _next_condition_id(rows: list[PairedCsvRow]) -> str:
     used = {row.condition_id for row in rows}
     prior_numbers = [
         int(row.condition_id.removeprefix("condition_"))

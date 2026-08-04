@@ -57,12 +57,11 @@ def main() -> None:
     (
         selector_col,
         roughness_col,
-        roughness_mode_col,
         contact_col,
         gecko_col,
         silicone_col,
     ) = st.columns(
-        [0.25, 0.16, 0.19, 0.20, 0.10, 0.10]
+        [0.28, 0.21, 0.21, 0.15, 0.15]
     )
     with selector_col:
         selected = st.selectbox(
@@ -80,30 +79,9 @@ def main() -> None:
         st.session_state["predict_gecko_force"] = Gripper.GECKO in defaults
         st.session_state["predict_silicone_force"] = Gripper.SILICONE in defaults
     with roughness_col:
-        st.caption("Sensor subsets are fixed by experiment (E4-E6).")
-        use_roughness = True
-    with roughness_mode_col:
-        roughness_representation = st.selectbox(
-            "Roughness sent to VLM",
-            ["continuous", "binary"],
-            index=(
-                1
-                if base_cfg.inputs.roughness_representation == "binary"
-                else 0
-            ),
-            format_func=lambda value: (
-                "Smooth/Rough (test)" if value == "binary" else "Continuous index"
-            ),
-            key="roughness_representation",
-            on_change=clear_run_state,
-            help=(
-                "This switch applies to E2. E5 and E6 always receive the continuous "
-                "roughness index so the ablation remains fixed."
-            ),
-        )
+        st.caption("Continuous roughness is used only by E5 and E6.")
     with contact_col:
-        st.caption("Projected contact is used only by E2 and E6.")
-        use_projected_contact = True
+        st.caption("Projected contact is used only by E6.")
     selectable = set(selected_dataset.selectable_grippers())
     if Gripper.GECKO not in selectable:
         st.session_state["predict_gecko_force"] = False
@@ -133,9 +111,8 @@ def main() -> None:
             ),
             help="Use silicone as an active force-prediction candidate.",
         )
-    base_cfg.inputs.use_roughness = use_roughness
-    base_cfg.inputs.roughness_representation = roughness_representation
-    base_cfg.inputs.use_projected_contact = use_projected_contact
+    base_cfg.inputs.use_roughness = True
+    base_cfg.inputs.use_projected_contact = True
     base_cfg.prediction.active_grippers = tuple(
         gripper
         for gripper, enabled in (

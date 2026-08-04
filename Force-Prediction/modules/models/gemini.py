@@ -56,14 +56,13 @@ class GeminiClient:
     def __init__(self, cfg: Config) -> None:
         self.cfg = cfg
         cache_root = cfg.path("cache")
-        legacy_root = cfg.root / "data/cache" if cfg.dataset_id == "expforce" else None
         self.generation_cache = (
-            DiskCache(cache_root / "generation", legacy_root=legacy_root)
+            DiskCache(cache_root / "generation")
             if cfg.models.cache
             else None
         )
         self.embedding_cache = (
-            DiskCache(cache_root / "embeddings", legacy_root=legacy_root)
+            DiskCache(cache_root / "embeddings")
             if cfg.models.cache
             else None
         )
@@ -72,7 +71,7 @@ class GeminiClient:
 
     def cache_stats(self) -> dict[str, Any]:
         caches = [cache for cache in (self.generation_cache, self.embedding_cache) if cache]
-        keys = ("hits", "misses", "writes", "read_errors", "legacy_hits")
+        keys = ("hits", "misses", "writes", "read_errors")
         return {
             "enabled": bool(caches),
             **{

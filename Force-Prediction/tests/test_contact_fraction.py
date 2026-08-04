@@ -159,11 +159,11 @@ def test_numerical_invariants_and_resampling_stability():
 
 
 @pytest.mark.parametrize(
-    ("name", "legacy_fraction", "maximum_new_fraction"),
+    ("name", "previous_model_fraction", "maximum_new_fraction"),
     [("water_bottle", 1.0, 0.95), ("test_3d_print", 0.823, 0.60)],
 )
 def test_saved_capture_regressions_are_side_only_and_radius_monotone(
-    name: str, legacy_fraction: float, maximum_new_fraction: float
+    name: str, previous_model_fraction: float, maximum_new_fraction: float
 ):
     points = _load_fixture_outline(name)
     estimates = [
@@ -180,7 +180,7 @@ def test_saved_capture_regressions_are_side_only_and_radius_monotone(
     ]
     fractions = [estimate.combined_contact_fraction for estimate in estimates]
     assert fractions[0] >= fractions[1] >= fractions[2]
-    assert fractions[1] < legacy_fraction
+    assert fractions[1] < previous_model_fraction
     assert fractions[1] < maximum_new_fraction
     for estimate in estimates:
         _assert_all_green_points_are_side_facing(estimate)

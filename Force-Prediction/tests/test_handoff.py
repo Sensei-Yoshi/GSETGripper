@@ -91,7 +91,7 @@ def test_rejects_object_wider_than_the_jaws():
 
 def _contact(**overrides) -> ContactFractionArtifact:
     values = {
-        "summary_path": "data/expforce/objects/banana/contact_fraction/summary.json",
+        "summary_path": "data/fixture/objects/banana/contact_fraction/summary.json",
         "schema_version": 2,
         "object_height_mm": 84.2,
         "object_width_mm": 61.0,
@@ -107,10 +107,10 @@ def _contact(**overrides) -> ContactFractionArtifact:
 
 def _object(contact: ContactFractionArtifact | None = None) -> DatasetObject:
     return DatasetObject(
-        dataset_id="expforce",
+        dataset_id="fixture",
         object_id="banana",
         name="Banana",
-        image=ImageArtifact(path="data/expforce/objects/banana/image.png"),
+        image=ImageArtifact(path="data/fixture/objects/banana/image.png"),
         contact_fraction=contact if contact is not None else _contact(),
     )
 
@@ -145,10 +145,10 @@ def test_from_prediction_rejects_missing_force():
 
 def test_from_prediction_rejects_missing_contact_data():
     obj = DatasetObject(
-        dataset_id="expforce",
+        dataset_id="fixture",
         object_id="banana",
         name="Banana",
-        image=ImageArtifact(path="data/expforce/objects/banana/image.png"),
+        image=ImageArtifact(path="data/fixture/objects/banana/image.png"),
     )
     with pytest.raises(
         ValueError,

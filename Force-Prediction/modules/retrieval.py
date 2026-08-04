@@ -26,7 +26,7 @@ from .contracts import (
 )
 from .models.gemini import get_client
 
-RankingFeature = Literal["semantic", "mass", "roughness", "contact"]
+RankingFeature = Literal["semantic", "mass", "roughness"]
 MeasurementField = Literal[
     "mass_g",
     "roughness_index",
@@ -78,20 +78,12 @@ def get_embedding_provider(cfg: Config) -> EmbeddingProvider:
 # --------------------------------------------------------------------------- #
 # Embedding text + similarity terms
 # --------------------------------------------------------------------------- #
-def build_embedding_text(
-    description: str,
-    mass_g: float | None = None,
-    roughness_index: float | None = None,
-    contact: float | None = None,
-    cfg: Config | None = None,
-) -> str:
+def build_embedding_text(description: str) -> str:
     """Return semantic-only text for the vector embedding.
 
-    The optional legacy arguments are accepted so older scripts keep working.
     Measured properties are scored explicitly below; including them in the vector
     as well would make the dashboard's retrieval weights impossible to interpret.
     """
-    del mass_g, roughness_index, contact, cfg
     return description.strip()
 
 
@@ -111,16 +103,10 @@ def s_roughness(r_q: float, r_i: float, cfg: Config) -> float:
     return math.exp(-abs(r_q - r_i) / cfg.roughness.characteristic_scale)
 
 
-def s_contact(a_q: float, a_i: float, sigma: float) -> float:
-    return math.exp(-abs(a_q - a_i) / sigma)
-
-
 def default_ranking_features(cfg: Config) -> tuple[RankingFeature, ...]:
     features: list[RankingFeature] = ["semantic", "mass"]
     if cfg.inputs.use_roughness:
         features.append("roughness")
-    if cfg.inputs.use_projected_contact:
-        features.append("contact")
     return tuple(features)
 
 
@@ -134,7 +120,6 @@ def normalized_weights(
         "semantic": raw.semantic if "semantic" in active else 0.0,
         "mass": raw.mass if "mass" in active else 0.0,
         "roughness": raw.roughness if "roughness" in active else 0.0,
-        "contact": raw.contact if "contact" in active else 0.0,
     }
     total = sum(values.values())
     if total <= 0:
@@ -155,11 +140,9 @@ class SimilarityBreakdown(BaseModel):
     semantic: float = Field(ge=-1.0, le=1.0)
     mass: float | None = Field(default=None, ge=0.0, le=1.0)
     roughness: float | None = Field(default=None, ge=0.0, le=1.0)
-    contact: float | None = Field(default=None, ge=0.0, le=1.0)
     semantic_contribution: float
     mass_contribution: float | None = None
     roughness_contribution: float | None = None
-    contact_contribution: float | None = None
     total: float
 
 
@@ -276,10 +259,7 @@ class ExperienceIndex:
             rec = obj.gecko or obj.silicone
             if rec is None:
                 continue
-            text = build_embedding_text(
-                rec.semantic_description, rec.mass_g, rec.roughness_index,
-                rec.projected_contact_fraction, self.cfg,
-            )
+            text = build_embedding_text(rec.semantic_description)
             self.surface_vectors[surface_id] = self.provider.embed(text)
         return self
 
@@ -315,45 +295,26 @@ class ExperienceIndex:
             roughness = s_roughness(
                 query.roughness_index, rec.roughness_index, self.cfg
             )
-        contact = None
-        if "contact" in active:
-            if (
-                query.projected_contact_fraction is None
-                or rec.projected_contact_fraction is None
-            ):
-                raise ValueError("hybrid retrieval requires enabled contact values")
-            contact = s_contact(
-                query.projected_contact_fraction,
-                rec.projected_contact_fraction,
-                self.cfg.retrieval.sigma_contact,
-            )
         roughness_contribution = (
             w["roughness"] * roughness if roughness is not None else None
         )
-        contact_contribution = w["contact"] * contact if contact is not None else None
         return SimilarityBreakdown(
             mode=mode,
             semantic=semantic,
             mass=mass,
             roughness=roughness,
-            contact=contact,
             semantic_contribution=w["semantic"] * semantic,
             mass_contribution=w["mass"] * mass if mass is not None else None,
             roughness_contribution=roughness_contribution,
-            contact_contribution=contact_contribution,
             total=(
                 w["semantic"] * semantic
                 + (w["mass"] * mass if mass is not None else 0.0)
                 + (roughness_contribution or 0.0)
-                + (contact_contribution or 0.0)
             ),
         )
 
     def embed_query(self, query: Query) -> np.ndarray:
-        text = build_embedding_text(
-            query.semantic_description, query.mass_g, query.roughness_index,
-            query.projected_contact_fraction, self.cfg,
-        )
+        text = build_embedding_text(query.semantic_description)
         return self.provider.embed(text, is_query=True)
 
     def retrieve_objects(

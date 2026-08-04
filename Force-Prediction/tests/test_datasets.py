@@ -64,27 +64,36 @@ def test_catalog_discovers_direct_data_folders_and_excludes_artifacts(tmp_path) 
     )
 
 
-def test_legacy_roughness_class_is_not_converted_to_an_index(tmp_path) -> None:
+def test_experience_counts_exclude_feasibility_only_outcomes(
+    tmp_path, monkeypatch
+) -> None:
     cfg = _config_at(tmp_path)
-    root = tmp_path / "data/Legacy"
+    root = tmp_path / "data/Partial"
     root.mkdir(parents=True)
     (root / "dataset.csv").write_text(
-        "Object,Image,Mass_g,roughness_class,projected_contact_fraction,"
-        "silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible,"
-        "favored_gripper\nCup,cup.png,100,4,0.7,1.4,True,1.1,True,gecko\n",
+        "Object,Image,Mass_g,roughness_index,projected_contact_fraction,"
+        "silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible\n"
+        "Cup,cup.png,100,2,0.7,,True,1.1,True\n",
         encoding="utf-8",
     )
+    (root / "cup.png").write_bytes(base64.b64decode(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
+        "AScY42YAAAAASUVORK5CYII="
+    ))
+    monkeypatch.setattr(
+        "modules.datasets.preparation.describe",
+        lambda _image, _cfg: Description(retrieval_description="Test cup"),
+    )
 
-    dataset = get_dataset(cfg, "Legacy")
-    item = dataset.objects["cup"]
+    dataset = get_dataset(cfg, "Partial")
+    assert dataset.summary()["experience_rows"] == 1
 
-    assert item.roughness_index is None
-    assert item.legacy_roughness_class == 4
-    run_cfg = dataset.runtime_config(cfg)
-    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == ()
-    assert "roughness index not recorded" in experiment_eligibility(
-        dataset, run_cfg, "e2"
-    ).query_reasons("cup")
+    result = prepare_dataset_stages(
+        cfg,
+        dataset,
+        [PreparationStage.EXPERIENCES],
+    )
+    assert result["experience_rows"] == 1
 
 
 def test_single_gripper_dataset_capabilities_and_eligibility(tmp_path) -> None:
@@ -220,11 +229,6 @@ def test_experiment_eligibility_uses_only_enabled_inputs(tmp_path) -> None:
         "complete",
         "mass_only",
     )
-    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == ("complete",)
-
-    run_cfg.inputs.use_roughness = False
-    run_cfg.inputs.use_projected_contact = False
-    assert experiment_eligibility(dataset, run_cfg, "e2").query_ids == ("complete",)
     assert experiment_eligibility(dataset, run_cfg, "e4").query_ids == (
         "complete",
         "mass_only",
@@ -539,18 +543,12 @@ def test_embedding_stage_adds_description_prerequisite_and_uses_gemini_metadata(
     assert not (tmp_path / "data/cache/Photos/experiences.jsonl").exists()
 
 
-def test_dataset_cache_namespaces_are_isolated_with_expforce_legacy_readthrough(
-    tmp_path,
-) -> None:
-    legacy = DiskCache(tmp_path / "data/cache")
+def test_dataset_cache_namespaces_are_isolated(tmp_path) -> None:
+    first = DiskCache(tmp_path / "data/cache/First/embeddings")
     key = DiskCache.key("embed", "model", 3, "text", None)
-    legacy.put(key, [1.0, 2.0, 3.0])
-
-    expforce = DiskCache(tmp_path / "data/cache/expforce/embeddings", legacy_root=legacy.root)
+    first.put(key, [1.0, 2.0, 3.0])
     other = DiskCache(tmp_path / "data/cache/Photos/embeddings")
 
-    assert expforce.get(key) == [1.0, 2.0, 3.0]
-    assert expforce.stats()["legacy_hits"] == 1
-    assert (expforce.root / f"{key}.json").is_file()
-    assert (legacy.root / f"{key}.json").is_file()
+    assert first.get(key) == [1.0, 2.0, 3.0]
+    assert (first.root / f"{key}.json").is_file()
     assert other.get(key) is None

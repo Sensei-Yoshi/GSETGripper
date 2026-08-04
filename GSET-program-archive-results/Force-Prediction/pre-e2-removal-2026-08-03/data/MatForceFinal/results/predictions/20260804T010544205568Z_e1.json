@@ -1,0 +1,1340 @@
+{
+  "schema_version": 10,
+  "artifact_type": "benchmark_prediction_batch",
+  "metadata": {
+    "batch_id": "20260804T010544205568Z_e1",
+    "dataset_id": "MatForceFinal",
+    "created_at": "2026-08-04T01:05:44.205568+00:00",
+    "experiment": "e1",
+    "experiment_method": "vision_vlm",
+    "experiment_definition_version": 11,
+    "experiment_definition": {
+      "method": "vision_vlm",
+      "prompt": "e1"
+    },
+    "backend": {
+      "force": "gemini_single_generation",
+      "semantic_embedding": null
+    },
+    "generation_source_sha256": "3d3ebd3a2003b5d46eb3e9bc8893b8789f1e55ac87724a354cb0c71010385a50",
+    "generation_input_sha256": "5d6f1ef61507eaef596e3c951d304083aab2b92cda2e95f632e3ceb999d8f2c0",
+    "evaluation_protocol": "fixed_train_test_holdout",
+    "prediction_protocol": "CSV-defined fixed train/test holdout",
+    "split_sha256": "cb1188d96b22f835a60dd3c35e733c9d88d687172d684d1a74af0223e3469149",
+    "train_ids": [
+      "500g_weight",
+      "apple",
+      "banana",
+      "beaker",
+      "beaker__condition_2",
+      "big_stone",
+      "book",
+      "caprisun",
+      "cetaphil",
+      "creatine",
+      "creatine__condition_2",
+      "foam_roller",
+      "headphones_case",
+      "ketchup",
+      "large_cardboard_box",
+      "large_cardboard_box__condition_2",
+      "leather_sunglasses_case",
+      "lock",
+      "lunch_box",
+      "metal_water_bottle",
+      "multimeter",
+      "orange",
+      "pretzel_bag",
+      "red_bull",
+      "smooth_screw_box",
+      "soda_can",
+      "soldering_iron_box",
+      "sponge",
+      "toilet_paper",
+      "wallet_1",
+      "wallet_2",
+      "wooden_block"
+    ],
+    "test_ids": [
+      "avacado",
+      "camera_cardboard_box",
+      "clay_bowl",
+      "computer",
+      "large_hand_sanitizer",
+      "mold_release_spray_box",
+      "poker_box",
+      "rough_tile",
+      "small_book",
+      "soap_bottle",
+      "very_smooth_tile"
+    ],
+    "query_count": 11,
+    "eligible_query_ids": [
+      "avacado",
+      "camera_cardboard_box",
+      "clay_bowl",
+      "computer",
+      "large_hand_sanitizer",
+      "mold_release_spray_box",
+      "poker_box",
+      "rough_tile",
+      "small_book",
+      "soap_bottle",
+      "very_smooth_tile"
+    ],
+    "reference_ids": [],
+    "skipped_queries": {},
+    "model": "gemini-flash-lite-latest",
+    "embedding_model": "gemini-embedding-2-preview",
+    "embedding_dim": 1536,
+    "inputs": {
+      "use_roughness": false,
+      "use_projected_contact": false,
+      "roughness_representation": "continuous"
+    },
+    "effective_inputs": [
+      "object_image",
+      "gripper_context"
+    ],
+    "roughness_measurement": {
+      "metric_name": "high_frequency_scattering_index",
+      "units": "unitless_index",
+      "higher_is_rougher": true,
+      "characteristic_scale": 500.0,
+      "binary_threshold": 1340.0
+    },
+    "active_grippers": [
+      "silicone"
+    ],
+    "generation_mode": "single",
+    "retrieval": {
+      "k": 5,
+      "conditions_per_surface": 3,
+      "weights": {
+        "semantic": 0.4,
+        "mass": 0.25,
+        "roughness": 0.2,
+        "contact": 0.15
+      },
+      "sigma_mass": 0.7,
+      "sigma_contact": 0.25,
+      "embedding": {
+        "model": "gemini-embedding-2-preview",
+        "dim": 1536
+      },
+      "ranking_features": [],
+      "visible_condition_fields": [],
+      "condition_policy": null
+    },
+    "retrieval_mode": null,
+    "prediction_prompts": {
+      "system": "You are a robotics model for grasp-material selection and pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. Return your best continuous,\nnonnegative estimate without imposing an 8 N analytical ceiling; measured experiences\nand benchmark predictions above 8 N remain valid.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, roughness evidence, and projected contact fraction are authoritative. Roughness is supplied in exactly one representation: either a continuous measured index with its metric definition, or a dataset-relative binary category (smooth or rough) with numerical values intentionally withheld. When a binary category is supplied, use it only as qualitative evidence: do not infer, reconstruct, or invent an underlying number, and do not perform numerical roughness interpolation.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\nIf a contact area fraction is given, you can likely assume the orientation in which the gripper grasped the object if necessary as well.\nAssume all objects are grasped in the most optimal direction to maximize surface area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nConditions nested under one retrieved surface are repeated experiments on the same physical object, not independent neighbors. Use the supplied comparison_to_baseline metadata to identify exactly which measured factors changed. Do not blindly average sibling-condition forces. Prefer the condition most comparable to the query. A one-field change may support a directional within-object relationship; when multiple fields changed, treat their effects jointly and do not attribute the force difference to one factor alone. Greater projected contact by itself must not justify a greater required normal force. Do not infer a universal contact coefficient from the supplied condition sweeps.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+      "instruction_key": "e1",
+      "instruction": "E1 ZERO-SHOT VISION-ONLY CONDITION.\nFrom the object image and requested gripper embodiment context, estimate the minimum\nstationary-finger normal force for each requested candidate. No authoritative mass,\nroughness, projected contact measurement, physics estimate, or retrieved experience\nis available. Reason from visible scale, material, condition, and geometry and state\nuncertainty because those judgments are necessarily rough visual approximations.\nDo not invent physical constants or claim to run calibrated physics.\n",
+      "target_instruction_key": "single",
+      "target_instruction": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n"
+    },
+    "prompt_context": {
+      "bundle_file": "prompts.yaml",
+      "bundle_sha256": "78cd0cb1e49bff334a7855d3dc937b725a80c49475c21807f7c60635bca3979c",
+      "experiment_instructions": {
+        "e1": "E1 ZERO-SHOT VISION-ONLY CONDITION.\nFrom the object image and requested gripper embodiment context, estimate the minimum\nstationary-finger normal force for each requested candidate. No authoritative mass,\nroughness, projected contact measurement, physics estimate, or retrieved experience\nis available. Reason from visible scale, material, condition, and geometry and state\nuncertainty because those judgments are necessarily rough visual approximations.\nDo not invent physical constants or claim to run calibrated physics.\n",
+        "e2": "E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, and supplied authoritative\nmeasurements: mass, roughness, and projected contact fraction.\nNo retrieved experience or physics estimate is available. Do not infer hidden\nfriction or adhesion constants.\n",
+        "e3": "E3 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.\nUse the object image, fixed gripper embodiment context, and the ranked semantic\nexperience list to predict the requested force or forces. Neighbors were selected only by cosine\nsimilarity between semantic contact-region descriptions and provide outcomes for\nthe requested candidate or candidates. No authoritative query or neighbor mass, roughness, projected\ncontact, hybrid physical score, or physics estimate is available. Do not imply that\nany omitted sensor value was measured or used.",
+        "e4": "E4 SEMANTIC AND MASS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, and one object list ranked using semantic similarity and mass only to estimate the requested force or forces. Roughness and projected contact are intentionally withheld and were not used for ranking; do not infer or claim access to either.\nExplain how the retrieved outcomes and mass similarity support the estimates. The supplied retrieval weights describe neighbor ranking, not a force equation.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E4; therefore any included variant changes mass and no hidden roughness or projected-contact measurement.\nNo calibrated physics estimate is available; do not invent one.\n",
+        "e5": "E5 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass and continuous roughness index, and one object list ranked using semantic, mass, and continuous-roughness similarity. Projected contact is intentionally withheld and was not used for ranking; do not infer or claim access to it.\nExplain how retrieved outcomes plus mass and roughness differences support the estimates. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E5. Projected-contact-only and mixed visible-plus-hidden-contact variants are excluded; never infer contact from the remaining conditions.\n",
+        "e6": "E6 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, continuous roughness index, and projected contact fraction, plus one object list ranked using semantic, mass, and continuous-roughness similarity only.\nProjected contact is intentionally excluded from cross-object surface ranking. It is supplied as query evidence and within-surface condition evidence only. Treat projected contact fraction as a dimensionless contact proxy, not literal physical area. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nReason in two explicit stages and show both in your trace.\nSTAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at full, optimal contact, anchoring only to retrieved BASELINE conditions and their semantic material, mass, and continuous roughness. Projected contact fraction is confounded across different objects (a low-contact neighbor may need low force and a full-contact neighbor may need high force), so it was deliberately kept out of ranking: do NOT use the query contact fraction to pick, weight, match, or discount cross-object neighbors, and do NOT prefer a neighbor because its contact fraction resembles the query. Roughness and material remain the dominant drivers of this baseline; do not let contact override them. Prefer the baselines that bracket the query by mass and align on roughness and material, and do not dilute the estimate by averaging in poorly matched heavier or lighter neighbors.\nSTAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for the query contact fraction using ONLY within-surface controlled variants via comparison_to_baseline. Each variant reports force_deltas: the signed change in a gripper's force from that surface's own baseline to the variant. Apply those as relative adjustments scaled to the query; never import a variant's absolute force as a cross-object anchor, and never treat variants as separate neighbors or average their absolute forces. The contact effect is monotonic non-decreasing as contact falls: reducing contact never lowers the required force below the Stage 1 baseline, and a query contact fraction at or near 1.0 warrants no upward contact adjustment.\n"
+      },
+      "target_instructions": {
+        "single": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n",
+        "joint": "JOINT-CANDIDATE OUTPUT CONDITION.\nPredict both requested grippers, compare their force and feasibility estimates, and\nreturn an explicit recommendation with the comparison evidence required by the schema.\n"
+      },
+      "prediction": {
+        "system": "You are a robotics model for grasp-material selection and pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. Return your best continuous,\nnonnegative estimate without imposing an 8 N analytical ceiling; measured experiences\nand benchmark predictions above 8 N remain valid.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, roughness evidence, and projected contact fraction are authoritative. Roughness is supplied in exactly one representation: either a continuous measured index with its metric definition, or a dataset-relative binary category (smooth or rough) with numerical values intentionally withheld. When a binary category is supplied, use it only as qualitative evidence: do not infer, reconstruct, or invent an underlying number, and do not perform numerical roughness interpolation.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\nIf a contact area fraction is given, you can likely assume the orientation in which the gripper grasped the object if necessary as well.\nAssume all objects are grasped in the most optimal direction to maximize surface area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nConditions nested under one retrieved surface are repeated experiments on the same physical object, not independent neighbors. Use the supplied comparison_to_baseline metadata to identify exactly which measured factors changed. Do not blindly average sibling-condition forces. Prefer the condition most comparable to the query. A one-field change may support a directional within-object relationship; when multiple fields changed, treat their effects jointly and do not attribute the force difference to one factor alone. Greater projected contact by itself must not justify a greater required normal force. Do not infer a universal contact coefficient from the supplied condition sweeps.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+        "instruction_key": "e1",
+        "instruction": "E1 ZERO-SHOT VISION-ONLY CONDITION.\nFrom the object image and requested gripper embodiment context, estimate the minimum\nstationary-finger normal force for each requested candidate. No authoritative mass,\nroughness, projected contact measurement, physics estimate, or retrieved experience\nis available. Reason from visible scale, material, condition, and geometry and state\nuncertainty because those judgments are necessarily rough visual approximations.\nDo not invent physical constants or claim to run calibrated physics.\n",
+        "target_instruction_key": "single",
+        "target_instruction": "SINGLE-CANDIDATE OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n"
+      },
+      "descriptor": {
+        "system": "You create material-interface records for a robotic grasp-experience retrieval\nsystem.\n\nThe photographed object surface is deliberately positioned so that the visible\nprimary surface is the exact surface contacted by the gripper pads. Treat this\ndataset convention as authoritative and analyze only visible evidence from that\nsurface. Do not infer a different grasp pose or contact region.\n\nThe retrieval_description will be converted into a text embedding and used to\nretrieve surfaces with similar pad-to-material interfaces. Keep it concise and\ndiscriminating.\n\nDescribe only properties of the material that actually touches the pads: the\nsubstrate; any coating, label, wrapper, sleeve, or finish covering it; relevant\nvisible texture, porosity, or apparent compliance; and visible condition such as\nclean, dry, dusty, wet, oily, worn, or unknown. If the material, coating, or\ncondition is ambiguous, state that uncertainty rather than inventing it.\n\nDo not mention object identity, branding, color, size, shape, pose, grasp\norientation, curvature, contact region, local geometry, edges, openings, or overall\nsurface area. Do not recommend a gripper, predict force, infer a force label, or\nrestate measured mass, measured roughness index, or projected contact fraction.\n",
+        "instruction": "Inspect the photographed pad-contact surface and return the requested structured\nJSON with:\n- the material actually touching the pads, distinguishing the substrate from any\n  label, wrapper, coating, sleeve, finish, or exposed contents;\n- the visible material and surface condition;\n- whether the material properties are clearly visible;\n- uncertainty limited to material, coating, finish, or condition identification;\n- a single concise retrieval_description sentence containing only the most\n  discriminating pad-to-material interface properties.\n\nUse this retrieval_description format:\n\"[Contact material or substrate] with [coating or finish if present] and [visible\nmaterial condition or interface property].\"\n\nGood retrieval_description examples:\n1. \"Clean, dry glass contact surface with a smooth nonporous finish and no visible\n   coating or contamination.\"\n2. \"Dry woven textile contact surface with a compliant fibrous texture and no\n   visible moisture or loose debris.\"\n3. \"Clean, dry paperboard contact surface with a thin matte printed coating over a\n   rigid fibrous substrate.\"\n\nDo not mention the object name or type, branding, color, shape, size, curvature,\npose, grasp orientation, contact region, local geometry, edges, openings, contact\narea, mass, measured roughness, or projected contact fraction. Do not choose gecko\nor silicone and do not estimate force. Return only JSON matching the supplied\nschema.\n"
+      },
+      "embodiments": {
+        "silicone": {
+          "description": "Parallel-jaw gripper with two opposing, rigid fingers. One finger is stationary, while the other translates laterally toward it to close around an object positioned between them. Each finger carries an inward-facing, non-adhesive, high-friction silicone pad of 4.2 inches in length mounted on a rigid backing. The fingers and backing do not flex or conform to the object, although the silicone surface may deform locally at the contact interface. Holding capacity arises mainly from normal force, friction, and the silicone pad\u2019s viscoelastic interaction with the surface. The silicone pads are effective on rough, irregular, or interrupted surfaces, but performance still decreases when the contact area is small, the object is highly curved or misaligned, or the surface is wet, oily, or contaminated."
+        }
+      }
+    }
+  },
+  "rows": [
+    {
+      "object_id": "avacado",
+      "surface_id": "avacado",
+      "condition_id": "baseline",
+      "object_name": "Avacado",
+      "image_path": "data/MatForceFinal/avacado.jpeg",
+      "image_sha256": "90786816e47407e042fa0fa147a3806fd61ce4cc0e26e3fb6a5349bba79fd6dc",
+      "mass_g": 157.55,
+      "roughness_index": 2415.65,
+      "projected_contact_fraction": 0.1,
+      "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "avocado skin (peel)",
+              "visible_surface_condition": "rough, pebbled, and slightly irregular",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "visual estimate of avocado scale and mass (approximately 150 to 200 grams)",
+                "pebbled, rough texture of the avocado skin providing good friction properties for the silicone pad",
+                "ellipsoidal geometry allowing a stable parallel-jaw grasp"
+              ],
+              "calculation_summary": "Estimated object weight W ~ 1.8 N based on visual scale. Assuming a conservative coefficient of friction mu ~ 0.5 for silicone on pebbled organic skin, minimum normal force for vertical lift with a two-finger parallel jaw gripper is F_n = W / (2 * mu) = 1.8 / (2 * 0.5) = 1.8 N, adjusted up to 3.5 N to account for gravitational safety factor, slight curvature, and slip prevention.",
+              "assumptions_and_uncertainty": [
+                "Exact object mass is unmeasured and estimated purely from visual appearance.",
+                "Friction coefficient between high-friction silicone and avocado skin is assumed based on qualitative surface condition.",
+                "Uncertainty exists regarding the exact firmness and surface compliance of the specific avocado."
+              ],
+              "reasoning_trace": "The visual input shows a standard-sized avocado resting on a surface. The silicone gripper embodiment description specifies high-friction silicone pads effective on rough or irregular surfaces. The pebbled texture of the avocado skin offers a favorable tactile profile for the high-friction silicone pads, supporting high compatibility. Given an estimated mass of roughly 150-200g, a normal force of 3.5 N provides a secure, non-slip grasp under standard parallel-jaw lifting conditions without crushing the produce."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+        "object_id": "avacado",
+        "surface_id": "avacado",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "camera_cardboard_box",
+      "surface_id": "camera_cardboard_box",
+      "condition_id": "baseline",
+      "object_name": "Camera Cardboard Box",
+      "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+      "image_sha256": "3e353710f8a3077c21e9ace671d33500c26947691c4da1fafd3d7e3651dce996",
+      "mass_g": 871.93,
+      "roughness_index": 804.32,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 5.2,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 5.2,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "Cardboard",
+              "visible_surface_condition": "Dry, slightly textured, matte",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 5.2,
+              "evidence_used": [
+                "Object is a rectangular cardboard box of moderate visual size.",
+                "Surface is matte and dry, highly compatible with high-friction silicone pads.",
+                "Parallel-jaw gripper geometry allows for secure opposition across the parallel faces of the box."
+              ],
+              "calculation_summary": "Estimated required force based on an assumed nominal object weight for a cardboard box of this visible scale (~0.5 kg to 1.0 kg) and standard friction coefficient for silicone on cardboard (~0.5 to 0.7): F_normal = (Weight / (2 * mu_est)) * safety_factor ~ (7.0 N / (2 * 0.6)) * 1.3 \u2248 5.2 N.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass measurement was provided, so weight is visually estimated.",
+                "Friction coefficient between the silicone pad and cardboard is assumed based on typical pairings.",
+                "Uncertainty remains regarding exact payload inside the box."
+              ],
+              "reasoning_trace": "The visual inspection reveals a standard cardboard box with matte, dry, textured surfaces that provide high friction for the silicone gripper embodiment. Given the approximate size and height of the box, we can assume a moderate mass typical of packaged goods. Using standard friction principles for parallel-jaw silicone pads grasping opposing flat faces, a moderate normal force is sufficient to prevent slip without crushing the box. Thus, a continuous estimate of 5.2 N is reasonable under zero-shot visual conditions."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+        "object_id": "camera_cardboard_box",
+        "surface_id": "camera_cardboard_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 5.2,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "clay_bowl",
+      "surface_id": "clay_bowl",
+      "condition_id": "baseline",
+      "object_name": "Clay Bowl",
+      "image_path": "data/MatForceFinal/clay_bowl.jpg",
+      "image_sha256": "de1b845b4662fb46b27d674cefb9e02353ea1578cb272aaf90617b6a5e707d13",
+      "mass_g": 286.71,
+      "roughness_index": 1847.68,
+      "projected_contact_fraction": 0.4166666667,
+      "semantic_description": "Rigid mineral substrate with a painted ceramic-like coating and dry, slightly textured surface finish.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "painted ceramic or clay",
+              "visible_surface_condition": "slightly irregular, matte, painted surface",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "Small painted clay or ceramic cup object",
+                "Silicone parallel-jaw gripper embodiment",
+                "Visible surface texture and curvature from image"
+              ],
+              "calculation_summary": "Estimated force based on object scale (~0.2-0.3 kg expected mass range for small ceramic cup), standard gravity, and a conservative friction coefficient approximation for silicone on matte ceramic/paint yielding F_n = mg / (2 * mu). Assuming mu approx 0.5 to 0.6, F_n is approximately 3.5 N.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass measurement was provided, so mass is visually estimated.",
+                "Friction coefficient between silicone and painted clay surface is assumed based on typical material properties.",
+                "Visual approximation introduces uncertainty in weight and contact geometry."
+              ],
+              "reasoning_trace": "The silicone gripper features high-friction pads well-suited for rigid, matte objects like the painted clay cup shown in the image. The object's modest size suggests a relatively light weight requiring moderate normal force to prevent slip during a vertical lift. Using standard parallel-jaw gripping mechanics, a continuous stationary-finger normal force of 3.5 N balances the estimated gravitational load safely without excessive crushing force."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Rigid mineral substrate with a painted ceramic-like coating and dry, slightly textured surface finish.",
+        "object_id": "clay_bowl",
+        "surface_id": "clay_bowl",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "computer",
+      "surface_id": "computer",
+      "condition_id": "baseline",
+      "object_name": "Computer",
+      "image_path": "data/MatForceFinal/computer.jpg",
+      "image_sha256": "db0ce50667da5e4af3cba486a44020b020f4014be09a62fe9e71eca9abbc5172",
+      "mass_g": 1550.0,
+      "roughness_index": 780.1,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry metal contact surface with a smooth anodized finish and no visible moisture or loose debris.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 12.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 12.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "Anodized aluminum or smooth metallic housing",
+              "visible_surface_condition": "Smooth, clean, matte finish with flat parallel sides",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 12.5,
+              "evidence_used": [
+                "Object is a large electronic device (laptop/tablet) with flat, smooth, parallel metallic exterior surfaces",
+                "Estimated weight and size of the device require a moderate normal force to prevent slip against silicone pads",
+                "Silicone gripper embodiment provides high-friction non-adhesive contact suitable for smooth rigid plates"
+              ],
+              "calculation_summary": "Estimated required force based on approximate object mass (~1.5 kg to 2.0 kg) handled vertically: F_n = (m * g) / (2 * mu), assuming a moderate friction coefficient mu approx 0.4 to 0.5 for silicone on smooth anodized aluminum, yielding ~12.5 N stationary-finger normal force.",
+              "assumptions_and_uncertainty": [
+                "Exact mass and center of mass of the device are visually estimated",
+                "Friction coefficient between silicone and the device's metallic finish is assumed based on typical material pairings",
+                "Grasp is assumed to be centered securely across the flat parallel faces"
+              ],
+              "reasoning_trace": "The query object is a large, flat electronic device with smooth metallic casing. The silicone gripper features high-friction pads that interface well with flat rigid surfaces. Given the estimated weight and smooth surface texture, a moderate normal force is necessary to overcome gravity and prevent slip without exceeding safe payload thresholds. Visual approximation sets the normal force at 12.5 N."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry metal contact surface with a smooth anodized finish and no visible moisture or loose debris.",
+        "object_id": "computer",
+        "surface_id": "computer",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 12.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "large_hand_sanitizer",
+      "surface_id": "large_hand_sanitizer",
+      "condition_id": "baseline",
+      "object_name": "Large hand sanitizer",
+      "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+      "image_sha256": "1cc772e5cf5b3f015189c37c0030f044352a8625cb0acc79a733b04b146b99ac",
+      "mass_g": 836.04,
+      "roughness_index": 958.71,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "smooth rigid plastic (PET/HDPE bottle)",
+              "visible_surface_condition": "clean, smooth, cylindrical body with slight curvature",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "Visual appearance of a standard 1000 mL (33.8 fl oz) plastic hand sanitizer pump bottle",
+                "Smooth rigid plastic cylindrical container body allowing good parallel-jaw contact",
+                "Estimated total mass of approximately 1.0 kg to 1.1 kg including contents",
+                "High-friction silicone pad characteristics on rigid parallel-jaw fingers"
+              ],
+              "calculation_summary": "Estimated required normal force F_n = (Mass * Gravity) / (2 * mu), assuming object mass ~1.05 kg, gravitational acceleration ~9.81 m/s^2, and an estimated silicone-to-plastic static friction coefficient mu ~ 1.5. F_n = (1.05 * 9.81) / (2 * 1.5) = 10.3 / 3.0 ~ 3.43 N, rounded to 3.5 N for safety margin.",
+              "assumptions_and_uncertainty": [
+                "Object mass is visually estimated from bottle scale as approximately 1 kg",
+                "Friction coefficient is approximated based on standard silicone-plastic pairs without direct slip testing",
+                "Uncertainty exists regarding exact dynamic load shifts if liquid sloshes during lift"
+              ],
+              "reasoning_trace": "The visual input shows a large pump bottle of hand sanitizer with a smooth plastic cylindrical body. The silicone gripper is well-suited for this geometry because the parallel flat-ish contact areas provide sufficient friction against smooth plastic. Given an estimated full bottle mass of roughly 1.0 kg, standard friction calculations dictate that a normal force of around 3.5 N is adequate to prevent slip against gravity under standard parallel-jaw closure without excessive crushing of the plastic container."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "object_id": "large_hand_sanitizer",
+        "surface_id": "large_hand_sanitizer",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "mold_release_spray_box",
+      "surface_id": "mold_release_spray_box",
+      "condition_id": "baseline",
+      "object_name": "Mold Release Spray Box",
+      "image_path": "data/MatForceFinal/mold release spray box.jpeg",
+      "image_sha256": "10cd9349430ae72aac6bcf9805e3fa6cb6608ebd98650ed5522f9f6b31cf9a4f",
+      "mass_g": 156.15,
+      "roughness_index": 1123.76,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "cardboard box with paper/matte finish",
+              "visible_surface_condition": "smooth, clean, dry, rectangular prism",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "Object image showing a small rectangular cardboard box labeled 'Mold Release Spray'",
+                "Label indicates volume of 120ml/4oz, implying a light object weight",
+                "Silicone pad high-friction and rigid backing context"
+              ],
+              "calculation_summary": "Estimated object mass ~0.15 kg based on 120ml volume and cardboard packaging. Required normal force estimated as F_n = (m * g) / (2 * mu) with estimated friction coefficient mu ~ 0.5, yielding approximately 1.5 to 3.5 N depending on grasp security.",
+              "assumptions_and_uncertainty": [
+                "Exact object mass is unmeasured and visually estimated from container size.",
+                "Friction coefficient between silicone and matte cardboard is assumed to be moderate-to-high (~0.5).",
+                "Visual approximation introduces uncertainty in weight and center of mass."
+              ],
+              "reasoning_trace": "The object is a small rectangular paperboard box containing mold release spray (120ml/4oz), visually indicating a light package weighing well under 200 grams. The parallel-jaw silicone gripper is well-suited for flat, smooth cardboard surfaces, offering high friction and secure contact. To securely lift a light object of this geometry without slip using a two-finger friction grip, a modest stationary-finger normal force of 3.5 N is sufficient."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+        "object_id": "mold_release_spray_box",
+        "surface_id": "mold_release_spray_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "poker_box",
+      "surface_id": "poker_box",
+      "condition_id": "baseline",
+      "object_name": "Poker Box",
+      "image_path": "data/MatForceFinal/poker_box.jpg",
+      "image_sha256": "841d51dcb398cba9b5dad091c1ccd89eea54bbf85c5e99cd2fb4a41e763a93ee",
+      "mass_g": 457.69,
+      "roughness_index": 800.2,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 4.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 4.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "cardboard",
+              "visible_surface_condition": "smooth printed finish",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 4.5,
+              "evidence_used": [
+                "cardboard packaging for poker chips",
+                "parallel-jaw silicone gripper embodiment",
+                "flat, parallel sides of the box providing good contact area"
+              ],
+              "calculation_summary": "Estimated base gripping force for a moderately weighted small cardboard box (~0.3-0.5 kg) using high-friction silicone pads: F = weight / (2 * mu). Assuming an effective friction coefficient around 0.5-0.6 and a safety factor for smooth cardboard, resulting in roughly 4.5 N normal force.",
+              "assumptions_and_uncertainty": [
+                "Exact object mass is unmeasured and visually estimated from object size.",
+                "Surface friction coefficient is assumed based on standard dry cardboard-silicone interaction.",
+                "Visual approximation introduces uncertainty in weight and center of mass."
+              ],
+              "reasoning_trace": "The query object is a small cardboard box containing poker chips. The silicone gripper features high-friction pads well-suited to grip dry cardboard surfaces. Given the flat rectangular geometry of the box, optimal parallel-jaw contact can be achieved across a sufficient surface area. Without authoritative mass measurements, the required force is estimated visually based on standard object scale and typical weight for a box of poker chips, yielding a predicted stationary-finger normal force of 4.5 N to securely lift and hold the object against gravity."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+        "object_id": "poker_box",
+        "surface_id": "poker_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 4.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "rough_tile",
+      "surface_id": "rough_tile",
+      "condition_id": "baseline",
+      "object_name": "Rough Tile",
+      "image_path": "data/MatForceFinal/rough_tile.jpg",
+      "image_sha256": "75c2b235a9adb7857d13db6611a0f5aaae21da37a6316b27702850c3fbe8c0e0",
+      "mass_g": 178.52,
+      "roughness_index": 1992.71,
+      "projected_contact_fraction": 0.5952380952,
+      "semantic_description": "Rigid ceramic substrate with a patterned decorative glazed finish and dry, clean surface condition.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 4.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 4.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "terracotta ceramic with patterned decorative glaze/texture",
+              "visible_surface_condition": "rough and irregular with texture relief",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 4.5,
+              "evidence_used": [
+                "Visual appearance of a small terracotta ceramic tile or sherd",
+                "Rough and textured surface pattern with white decorative lines",
+                "Small object scale relative to standard grippers",
+                "Silicone gripper embodiment description emphasizing high friction on rough or irregular surfaces"
+              ],
+              "calculation_summary": "F_normal = W_estimated / (2 * mu_effective), where estimated object mass is approximately 0.08 kg giving an approximate weight of 0.78 N. Accounting for conservative frictional engagement and secure zero-shot margin on a rigid sherd, F_normal is set to 4.5 N.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass is available; mass is visually estimated from scale.",
+                "Friction coefficient between silicone and terracotta is assumed based on typical pairings.",
+                "Uncertainty exists regarding exact center of mass and precise grasp contact orientation."
+              ],
+              "reasoning_trace": "The visual input shows a small, relatively flat, rough-textured terracotta ceramic sherd resting on a surface. The silicone gripper features high-friction pads that excel on rough, ceramic, or irregular surfaces. Because the object is small and relatively light, a moderate normal force is sufficient to secure a stable grip against gravity without slipping. Combining the visual assessment of scale and material with the silicone gripper's high compatibility yields a predicted normal force of 4.5 N."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Rigid ceramic substrate with a patterned decorative glazed finish and dry, clean surface condition.",
+        "object_id": "rough_tile",
+        "surface_id": "rough_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 4.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "small_book",
+      "surface_id": "small_book",
+      "condition_id": "baseline",
+      "object_name": "Small Book",
+      "image_path": "data/MatForceFinal/small_book.jpg",
+      "image_sha256": "62f5a0b4483b8c9ab4edf1686f4a58d751271084aa481e0238193415e751625c",
+      "mass_g": 118.4,
+      "roughness_index": 1532.23,
+      "projected_contact_fraction": 0.880952381,
+      "semantic_description": "Clean, dry leather contact surface with a textured embossed finish over a rigid substrate and no visible moisture or loose debris.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "wood and leather",
+              "visible_surface_condition": "dry, textured with embossed leather and carved wood",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "Small decorative wooden and leather-bound book/box object visible on a flat surface",
+                "High-friction silicone pad properties suited for wood and leather textures",
+                "Estimated object mass and scale based on visual proportions"
+              ],
+              "calculation_summary": "Estimated object weight approximately 0.3 kg. Using an approximate friction coefficient for silicone on wood/leather around 0.6, the required normal force to prevent slip during a vertical lift is calculated as F_n = (mass * gravity) / (2 * mu), yielding approximately 2.45 N, scaled up to 3.5 N for safe grip margin under zero-shot visual assumptions.",
+              "assumptions_and_uncertainty": [
+                "Exact object mass is unmeasured and visually estimated",
+                "Friction coefficient between silicone and the object's surface is assumed based on material type",
+                "No authoritative mass or sensor measurements are available"
+              ],
+              "reasoning_trace": "The object is a small decorative book or box featuring wood and leather materials with some embossed texture. The silicone gripper embodiment provides high-friction contact which is well-suited for gripping wood and leather without requiring adhesive. Based on visual scale, the object appears lightweight (around 0.3 kg). Applying a standard friction-based estimation model with an assumed friction coefficient of 0.6 yields a baseline normal force, which is adjusted upwards to 3.5 N to account for visual estimation uncertainties and ensure secure grasp stability."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry leather contact surface with a textured embossed finish over a rigid substrate and no visible moisture or loose debris.",
+        "object_id": "small_book",
+        "surface_id": "small_book",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "soap_bottle",
+      "surface_id": "soap_bottle",
+      "condition_id": "baseline",
+      "object_name": "Soap Bottle",
+      "image_path": "data/MatForceFinal/soap_bottle.jpg",
+      "image_sha256": "c14f003defb99d065b60f161664f330c7f613b426d45fccc484ce81a5916de3c",
+      "mass_g": 236.11,
+      "roughness_index": 736.99,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry rigid plastic contact surface with a smooth semi-gloss finish and no visible contamination.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 4.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 4.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "smooth rigid plastic (HDPE/PP bottle with smooth label)",
+              "visible_surface_condition": "clean, dry, smooth curved surface",
+              "compatibility": "high",
+              "feasible": true,
+              "predicted_normal_force_n": 4.5,
+              "evidence_used": [
+                "Object image showing a medium-sized plastic personal care bottle (approx 250-300ml scale)",
+                "Smooth, rigid plastic body with good geometry for parallel-jaw grasping",
+                "Silicone gripper embodiment properties: high-friction silicone pads providing secure friction grip on smooth plastic surfaces"
+              ],
+              "calculation_summary": "Estimated object mass ~0.3 kg based on visual scale. Using standard friction model for silicone-on-plastic: F_normal = (Mass * g) / (2 * mu), assuming effective friction coefficient mu approx 0.6 to 0.7, yielding ~2.2 to 2.5 N minimum theoretical force, scaled up to 4.5 N to account for curvature, stability against tilt, and zero-shot visual uncertainty.",
+              "assumptions_and_uncertainty": [
+                "Exact object mass is unmeasured and visually estimated from container scale.",
+                "Surface is assumed clean and dry as visible in the image.",
+                "Grasp is assumed to be applied across the wide flat sides of the bottle for optimal contact area."
+              ],
+              "reasoning_trace": "The query image presents a standard personal care plastic bottle of moderate size and weight. The active gripper is a parallel-jaw silicone pad embodiment, which exhibits high friction and compatibility with smooth plastic surfaces. Without authoritative mass or friction coefficients, visual scale suggests a weight around 3 N. To securely lift the object against gravity with standard safety margins for parallel-jaw friction grips on curved bottles, a normal force of 4.5 N is estimated."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth semi-gloss finish and no visible contamination.",
+        "object_id": "soap_bottle",
+        "surface_id": "soap_bottle",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 4.5,
+      "pred_silicone_feasible": true
+    },
+    {
+      "object_id": "very_smooth_tile",
+      "surface_id": "very_smooth_tile",
+      "condition_id": "baseline",
+      "object_name": "Very Smooth Tile",
+      "image_path": "data/MatForceFinal/very_smooth_tile.jpg",
+      "image_sha256": "620a7195ae010d4041096b222cca186ec509443e1c19b155284b64ae070990bf",
+      "mass_g": 178.52,
+      "roughness_index": 730.45,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry ceramic contact surface with a glazed finish and smooth nonporous texture over a rigid substrate.",
+      "active_grippers": [
+        "silicone"
+      ],
+      "generation_mode": "single",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": null,
+      "recommendation_agrees_with_selector": null,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 11,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "Ceramic or tile shard with a textured matte finish and a visible dark body/backing.",
+              "visible_surface_condition": "Dry, slightly irregular flat fragment with non-smooth matte texture.",
+              "compatibility": "medium",
+              "feasible": true,
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "Visual appearance of a relatively small ceramic/tile shard on a table",
+                "Estimated small mass and moderate surface friction based on visual texture",
+                "Silicone gripper embodiment context highlighting high friction and effectiveness on non-smooth or irregular surfaces"
+              ],
+              "calculation_summary": "Estimated object mass roughly 0.05 kg based on visible scale. Using a nominal friction coefficient around 0.5 for silicone on ceramic, F_normal = (mass * gravity) / (2 * mu) = (0.05 * 9.81) / (2 * 0.5) approx 0.49 N, scaled up empirically to 3.5 N to account for grasp stability, irregular fragment geometry, and grip security under zero-shot uncertainty.",
+              "assumptions_and_uncertainty": [
+                "Object mass is visually estimated as no authoritative mass is given.",
+                "Friction coefficient is assumed based on material type without direct measurement.",
+                "Uncertainty exists regarding exact center of mass and optimal grasp points due to the irregular shape."
+              ],
+              "reasoning_trace": "The query image displays a small ceramic or tile shard resting on a flat surface. The silicone gripper features high-friction pads that work well on matte, textured surfaces like ceramic fragments. Given the small visual size and estimated light weight, a moderate normal force is sufficient to lift the object securely without crushing it. Accounting for the irregular geometry and lack of authoritative measurements, a conservative yet realistic estimate of 3.5 N is predicted for stable stationary-finger lifting."
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": null,
+          "model_comparison_evidence": [],
+          "model_recommendation_summary": null,
+          "recommendation_agrees_with_selector": null
+        },
+        "semantic_description": "Clean, dry ceramic contact surface with a glazed finish and smooth nonporous texture over a rigid substrate.",
+        "object_id": "very_smooth_tile",
+        "surface_id": "very_smooth_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "silicone"
+        ],
+        "generation_mode": "single",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true
+    }
+  ]
+}

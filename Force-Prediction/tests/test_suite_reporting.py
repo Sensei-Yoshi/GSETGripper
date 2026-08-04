@@ -22,7 +22,6 @@ from modules.reporting import (
     suite_force_by_object_figure,
     suite_percentage_error_figure,
 )
-from modules.suites import run_suite
 
 
 def _artifact(offset: float) -> dict:
@@ -32,6 +31,10 @@ def _artifact(offset: float) -> dict:
         "overall": {"n": 4, "mae": offset, "rmse": offset, "medae": offset},
     }
     return {
+        "metadata": {
+            "active_grippers": ["gecko", "silicone"],
+            "generation_mode": "joint",
+        },
         "metrics": {
             "force": force,
             "selection": {
@@ -116,11 +119,6 @@ def test_prompt_bundle_round_trip(tmp_path):
     assert set(loaded.embodiments) == {"gecko", "silicone"}
 
 
-def test_legacy_suite_is_read_only():
-    with pytest.raises(ValueError, match="Legacy suites are read-only"):
-        run_suite(load_config(), {"schema_version": 5})
-
-
 def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:
     artifacts = {
         experiment: _artifact(index / 10)
@@ -139,7 +137,7 @@ def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:
 
 
 def test_reporting_handles_experiment_subset(tmp_path):
-    subset = ("e1", "e2", "e3", "e4", "e5")
+    subset = ("e1", "e3", "e4", "e5")
     artifacts = {
         experiment: _artifact(index / 10)
         for index, experiment in enumerate(subset, start=1)
@@ -162,17 +160,17 @@ def test_reporting_handles_experiment_subset(tmp_path):
     )
 
 
-def test_calibration_export_has_twelve_panels_and_no_identity_lines(tmp_path):
+def test_calibration_export_has_ten_panels_and_no_identity_lines(tmp_path):
     artifacts = {
         experiment: _artifact(index / 10)
         for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
     }
     figure = calibration_figure(artifacts)
 
-    assert len(figure.axes) == 12
+    assert len(figure.axes) == 10
     assert all(not axis.lines for axis in figure.axes)
-    assert len(comparison_rows(artifacts)) == 24
-    assert len(metrics_rows(artifacts)) == 6
+    assert len(comparison_rows(artifacts)) == 20
+    assert len(metrics_rows(artifacts)) == 5
 
     exports = export_comparison(artifacts, tmp_path / "exports")
     assert set(exports) == {
@@ -189,7 +187,7 @@ def test_calibration_export_has_twelve_panels_and_no_identity_lines(tmp_path):
     assert all((tmp_path / "exports" / path.split("/")[-1]).is_file() for path in exports.values())
 
 
-def test_single_gripper_calibration_has_six_panels():
+def test_single_gripper_calibration_has_five_panels():
     artifacts = {
         experiment: _single_artifact(index / 10)
         for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
@@ -197,11 +195,24 @@ def test_single_gripper_calibration_has_six_panels():
 
     figure = calibration_figure(artifacts)
 
-    assert len(figure.axes) == 6
-    assert len(comparison_rows(artifacts)) == 12
+    assert len(figure.axes) == 5
+    assert len(comparison_rows(artifacts)) == 10
     assert all(
         row["active_grippers"] == "silicone" for row in metrics_rows(artifacts)
     )
+
+
+def test_calibration_axes_expand_beyond_physical_hardware_guard():
+    artifact = _single_artifact(0.1)
+    artifact["rows"][0]["true_silicone_force_n"] = 10.506
+    artifact["rows"][0]["pred_silicone_force_n"] = 15.2
+
+    figure = calibration_figure({"e1": artifact})
+    axis = figure.axes[0]
+
+    assert axis.get_xlim()[1] >= 15.2
+    assert axis.get_ylim()[1] >= 15.2
+    assert figure._suptitle.get_text() == "E1 force calibration by gripper"
 
 
 def test_individual_calibration_uses_one_panel_per_active_gripper():

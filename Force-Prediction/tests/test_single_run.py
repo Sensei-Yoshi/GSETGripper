@@ -46,7 +46,7 @@ def test_single_run_non_retrieval_experiments_preserve_query_exclusion() -> None
 
     training = _single_run_training_records(
         records,
-        experiment="e2",
+        experiment="e1",
         query_object_id="query",
         query_surface_id="query",
         reference_ids=(),

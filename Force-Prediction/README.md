@@ -3,21 +3,21 @@
 Given an unseen object, estimate the continuous minimum stationary-finger normal force
 for the globally selected TPU–Gecko and/or TPU–silicone candidates. Paired runs then
 select the lowest-force feasible option.
-The command range is continuous from `0` to `8 N`; predictions are never rounded to a
-collection grid.
+Benchmark force estimates are continuous, nonnegative, and have no analytical upper cap;
+predictions are never rounded to a collection grid. The physical rig retains its separate
+8 N handoff/collection safety guard.
 
-The active research suite has six explicit VLM ablation methods:
+The active research suite has five explicit VLM ablation methods with stable IDs:
 
 | ID | Method |
 |---|---|
 | E1 | Vision-only zero-shot VLM response |
-| E2 | Image + measured-input VLM response |
 | E3 | Semantic-only experiential retrieval + VLM response |
 | E4 | Semantic + mass retrieval + VLM response |
 | E5 | E4 + continuous roughness |
 | E6 | E5-ranked surfaces + projected-contact condition evidence |
 
-Single-candidate runs use a direct per-gripper response. Paired E1–E6 runs also return an
+Single-candidate runs use a direct per-gripper response. Paired runs also return an
 explicit model recommendation, but Python's lowest-feasible-force rule remains authoritative.
 
 ## Quickstart
@@ -34,7 +34,6 @@ python scripts/check_hardware.py
 python scripts/check_perception.py path/to/object.png
 python scripts/check_retrieval.py --confirm-gemini-cost
 python scripts/check_physics.py
-python scripts/check_prediction.py path/to/object.png
 python scripts/check_pipeline.py path/to/object.png --confirm-gemini-cost
 ```
 
@@ -55,7 +54,7 @@ as query and controlled same-surface condition evidence. The global Gecko/silico
 direct per-gripper response or one paired structured response.
 
 Benchmarks use two explicit stages and the dataset CSV's `split=train/test` assignment.
-**Run predictions** saves immutable, truth-free E1–E6 prediction batches for query-ready test
+**Run predictions** saves immutable, truth-free prediction batches for query-ready test
 objects; E3–E6 use only train rows as references. **Evaluate & generate plots** later joins a
 saved batch to the currently available force labels, evaluates the labeled subset without model
 calls, and versions JSON, CSV, PNG, and SVG results. Detailed prediction/evaluation histories and
@@ -72,7 +71,7 @@ streamlit run app.py
 
 Edit the fixed written gripper descriptions and all prompt text in `prompts.yaml` or the
 **Prompts & Embodiments** tab. No gripper images are sent to the VLM. The **Runs Viewer** creates and
-resumes saved E1–E6 suites, compares the two grippers in separate panels, inspects
+resumes saved five-condition suites, compares the two grippers in separate panels, inspects
 provenance, and exports PNG, SVG, and CSV results. The **Data Viewer** shows the selected
 dataset's images, optional measurements/outcomes, descriptions, and embedding status. For a
 dataset, its object editor auto-saves nullable measurement/outcome corrections, recalculates
@@ -109,24 +108,16 @@ force labels. Disabled
 terms receive zero retrieval weight and the remaining weights are renormalized. E1 and E3
 exclude physical fields by construction.
 
-The **Roughness sent to VLM** control supports an experimental binary mode for E2. It
-derives `smooth` below 1340 and `rough` at or above 1340, then withholds the raw index,
-continuous roughness similarity, and threshold from Gemini. E5 and E6 remain continuous by
-definition so cross-run ablations stay comparable.
-
 The force pipeline uses the recorded continuous `roughness_index` from the LED measurement
 system; larger values mean rougher surfaces. It is separate from the Marigold appearance and
 topography artifacts. Retrieval compares two indices with an exponential distance kernel whose
-`characteristic_scale` is configured in `config.yaml`. The binary VLM class is derived at
-request time and does not replace the stored measurement. Legacy 1–5 classes remain visible for
-provenance but are never converted into or substituted for the numerical index.
+`characteristic_scale` is configured in `config.yaml`.
 
 Use `scripts/prepare_dataset.py --dataset <folder> --stages <stage...>` to run only
 `descriptions`, `embeddings`, or `experiences`. Prerequisites are automatic, but downstream
 stages are opt-in. For example, the MatForce command above makes only Gemini descriptions;
 they appear in Data Viewer immediately on the next rerun. Gemini calls are content-hash cached
-under `data/cache/<dataset>/{generation,embeddings}` and resumable. The legacy flat files in
-`data/cache` remain readable as Exp-Force entries. See
+under `data/cache/<dataset>/{generation,embeddings}` and resumable. See
 [`docs/streamlit-architecture.md`](docs/streamlit-architecture.md) for the full contract.
 
 ## Experiment runner
@@ -136,7 +127,7 @@ python scripts/run_experiment.py --exp e6 --confirm-gemini-cost
 python scripts/run_experiment.py --all --confirm-gemini-cost
 ```
 
-E1–E6 use Gemini generation and E3–E6 use Gemini embeddings. Cached identical requests
+All five conditions use Gemini generation and E3–E6 use Gemini embeddings. Cached identical requests
 make no new call.
 
 ## Data collection
@@ -148,7 +139,7 @@ python -m modules.collect --dataset collected --port /dev/cu.usbmodemXXXX --conf
 
 Mock collection simulates hardware but still uses Gemini for object descriptions. The
 coarse/fine staircase controls ground-truth search resolution only. It does not limit
-the precision of predictions or hardware commands. See
+the precision or range of benchmark predictions. See
 [`docs/data_collection_sop.md`](docs/data_collection_sop.md).
 
 ## Code map
@@ -159,15 +150,16 @@ the precision of predictions or hardware commands. See
 | `modules/experiments/` | Canonical per-experiment strategies plus shared helpers |
 | `modules/pipeline.py` | Thin shared `fit`/`predict` facade |
 | `modules/contracts.py` | Records, joint predictions, and selection contracts |
-| `modules/prediction.py` | Joint VLM request, force clamp, and selector |
+| `modules/prediction.py` | Joint VLM request, nonnegative force normalization, and selector |
 | `modules/retrieval.py` | Paired-object embeddings and hybrid retrieval |
 | `modules/physics.py` | Reduced-order equations, bounded calibration, solver |
 | `modules/evaluation.py` | Grouped splits and force/selection/recommendation metrics |
 | `modules/datasets/` | Dataset catalog, object/artifact models, storage, and preparation stages |
-| `modules/cache.py` | Dataset-isolated response caches plus Exp-Force legacy read-through |
-| `modules/expforce.py` | Synthetic fixture preparation and saved single-run provenance |
+| `modules/cache.py` | Dataset-isolated response caches |
+| `modules/artifacts.py` | Current run serialization and provenance |
+| `modules/datasets/paired_csv.py` | Generic paired-CSV loading and experience conversion |
 | `modules/benchmarking.py` | Immutable prediction batches and versioned truth evaluation |
-| `modules/suites.py` / `reporting.py` | Two-stage E1–E6 suites and paper-ready comparisons |
+| `modules/suites.py` / `reporting.py` | Two-stage experiment suites and paper-ready comparisons |
 | `modules/models/` | Gemini, background-removal, and Marigold model adapters |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 

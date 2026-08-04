@@ -1,11 +1,10 @@
-"""Canonical catalog and factory for the six experiment strategies."""
+"""Canonical catalog and factory for the active experiment strategies."""
 
 from __future__ import annotations
 
 from ..config import EXPERIMENT_IDS, Config, ExperimentMethod
 from ..retrieval import RetrievalMode
 from .e1 import E1Strategy
-from .e2 import E2Strategy
 from .e3 import E3Strategy
 from .e4 import E4Strategy
 from .e5 import E5Strategy
@@ -19,16 +18,6 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         "Vision-only zero-shot",
         "Object image and fixed gripper context; no sensors or experiences.",
         1,
-    ),
-    "e2": ExperimentSpec(
-        "e2",
-        ExperimentMethod.MEASURED_VLM,
-        "Measured-input zero-shot",
-        "E1 plus authoritative mass, roughness, and projected contact.",
-        1,
-        uses_measurements=True,
-        uses_roughness=True,
-        uses_projected_contact=True,
     ),
     "e3": ExperimentSpec(
         "e3",
@@ -57,7 +46,6 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         1,
         uses_measurements=True,
         uses_roughness=True,
-        roughness_representation="continuous",
         retrieval_mode=RetrievalMode.HYBRID,
         ranking_features=("semantic", "mass", "roughness"),
         visible_condition_fields=("mass_g", "roughness_index"),
@@ -71,7 +59,6 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         uses_measurements=True,
         uses_roughness=True,
         uses_projected_contact=True,
-        roughness_representation="continuous",
         retrieval_mode=RetrievalMode.HYBRID,
         ranking_features=("semantic", "mass", "roughness"),
         visible_condition_fields=(
@@ -87,7 +74,6 @@ if tuple(EXPERIMENT_CATALOG) != EXPERIMENT_IDS:
 
 STRATEGY_TYPES: dict[str, type[ExperimentStrategy]] = {
     "e1": E1Strategy,
-    "e2": E2Strategy,
     "e3": E3Strategy,
     "e4": E4Strategy,
     "e5": E5Strategy,

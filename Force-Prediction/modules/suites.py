@@ -1,4 +1,4 @@
-"""Resumable two-stage E1–E6 prediction and evaluation suites."""
+"""Resumable two-stage prediction and evaluation suites."""
 
 from __future__ import annotations
 
@@ -8,6 +8,7 @@ from collections.abc import Callable, Iterable
 from datetime import UTC, datetime
 from pathlib import Path
 
+from .artifacts import prompt_provenance
 from .benchmarking import (
     BenchmarkEvaluation,
     BenchmarkPredictionBatch,
@@ -18,18 +19,22 @@ from .benchmarking import (
     load_prediction_batch,
     save_prediction_batch,
 )
-from .config import EXPERIMENT_DEFINITION_VERSION, Config, prompt_bundle_sha256
+from .config import (
+    EXPERIMENT_DEFINITION_VERSION,
+    EXPERIMENT_IDS,
+    Config,
+    prompt_bundle_sha256,
+)
 from .datasets.storage import write_json_atomic
 from .experiments import EXPERIMENT_CATALOG, experiment_eligibility
-from .expforce import prompt_provenance
 from .reporting import (
     common_intersection_artifacts,
     export_comparison,
 )
 
-PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4", "e5", "e6")
-SUITE_SCHEMA_VERSION = 11
-SUITE_REPORTING_VERSION = 2
+PRIMARY_EXPERIMENTS = EXPERIMENT_IDS
+SUITE_SCHEMA_VERSION = 12
+SUITE_REPORTING_VERSION = 4
 
 
 def normalize_suite_experiments(
@@ -49,8 +54,8 @@ def normalize_suite_experiments(
 
 
 def suite_experiments(manifest: dict) -> tuple[str, ...]:
-    """The experiments a manifest runs, tolerant of legacy manifests without the field."""
-    return normalize_suite_experiments(manifest.get("experiments"))
+    """Return the canonically ordered experiments declared by a suite manifest."""
+    return normalize_suite_experiments(manifest["experiments"])
 
 
 def _definition_snapshot(cfg: Config, experiments: tuple[str, ...]) -> dict:
@@ -159,6 +164,8 @@ def list_suites(cfg: Config) -> list[dict]:
             manifest = load_suite(path)
         except (OSError, json.JSONDecodeError):
             continue
+        if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
+            continue
         manifest["manifest_path"] = str(path)
         manifests.append(manifest)
     return manifests
@@ -167,8 +174,7 @@ def list_suites(cfg: Config) -> list[dict]:
 def _validate_resumable(cfg: Config, manifest: dict) -> None:
     if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
         raise ValueError(
-            f"Legacy suites are read-only; start a schema-v{SUITE_SCHEMA_VERSION} "
-            "suite for two-stage execution"
+            f"unsupported suite schema; expected schema-v{SUITE_SCHEMA_VERSION}"
         )
     current = _definition_snapshot(cfg, suite_experiments(manifest))
     if _snapshot_hash(current) != manifest["definition_snapshot_sha256"]:
@@ -279,16 +285,6 @@ def run_suite_predictions(
     return manifest
 
 
-def run_suite(
-    cfg: Config,
-    manifest: dict | None = None,
-    *,
-    progress: Callable[[str, int, int, str], None] | None = None,
-) -> dict:
-    """Compatibility alias for callers migrating to ``run_suite_predictions``."""
-    return run_suite_predictions(cfg, manifest, progress=progress)
-
-
 def suite_prediction_batches(
     cfg: Config,
     manifest: dict,
@@ -316,7 +312,7 @@ def _suite_evaluation_signature(
 def evaluate_suite(cfg: Config, manifest: dict) -> dict:
     """Evaluate every generated suite batch against one current truth state."""
     if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
-        raise ValueError("Legacy suites are read-only and cannot be reevaluated")
+        raise ValueError(f"unsupported suite schema; expected {SUITE_SCHEMA_VERSION}")
     batches = suite_prediction_batches(cfg, manifest)
     evaluations: dict[str, BenchmarkEvaluation] = {}
     paths_by_experiment: dict[str, dict[str, str]] = {}
@@ -403,26 +399,3 @@ def suite_evaluation_artifacts(
         if path.is_file():
             artifacts[experiment] = load_benchmark_evaluation(path).to_artifact()
     return artifacts
-
-
-def suite_benchmarks(cfg: Config, manifest: dict) -> dict[str, dict]:
-    """Compatibility reader: latest v9 evaluations or saved v8 benchmark artifacts."""
-    if manifest.get("schema_version") == SUITE_SCHEMA_VERSION:
-        return suite_evaluation_artifacts(cfg, manifest)
-    artifacts: dict[str, dict] = {}
-    for experiment in PRIMARY_EXPERIMENTS:
-        relative = manifest.get("runs", {}).get(experiment, {}).get("json_path")
-        if not relative:
-            continue
-        path = cfg.root / relative
-        if path.is_file():
-            artifacts[experiment] = json.loads(path.read_text(encoding="utf-8"))
-    return artifacts
-
-
-def update_suite_exports(cfg: Config, manifest: dict, exports: dict[str, str]) -> dict:
-    """Compatibility helper for manually exported legacy suite comparisons."""
-    manifest["exports"] = exports
-    manifest["updated_at"] = datetime.now(UTC).isoformat()
-    write_json_atomic(suite_manifest_path(cfg, manifest["suite_id"]), manifest)
-    return manifest

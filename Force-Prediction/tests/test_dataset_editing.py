@@ -15,10 +15,9 @@ from modules.datasets import (
     delete_dataset_condition,
     get_dataset,
     prepare_dataset_stages,
-    update_csv_dataset_object,
     update_dataset_object,
 )
-from modules.expforce import load_rows
+from modules.datasets.paired_csv import load_rows
 from modules.perception import Description
 
 
@@ -100,7 +99,7 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
     checkpoint_path.write_text(json.dumps(checkpoint))
     dataset = get_dataset(cfg, "Physical")
 
-    refreshed = update_csv_dataset_object(
+    refreshed = update_dataset_object(
         cfg,
         dataset,
         "test_cup",
@@ -147,6 +146,36 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
     assert manifest["stages"]["experiences"]["status"] == "complete"
 
 
+def test_csv_edit_accepts_force_above_physical_hardware_guard(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Physical"
+    _write_source(root)
+    dataset = get_dataset(cfg, "Physical")
+
+    refreshed = update_dataset_object(
+        cfg,
+        dataset,
+        "test_cup",
+        DatasetObjectEdit(
+            mass_g=100,
+            roughness_index=2,
+            projected_contact_fraction=0.5,
+            silicone_force_n=10.506,
+            silicone_feasible=True,
+            gecko_force_n=1.0,
+            gecko_feasible=True,
+        ),
+    )
+
+    row = load_rows(cfg)[0]
+    assert row.silicone_force_n == 10.506
+    assert row.silicone_feasible is True
+    assert row.favored_gripper == "gecko"
+    silicone = refreshed.objects["test_cup"].gripper_outcomes[Gripper.SILICONE]
+    assert silicone.complete
+    assert silicone.min_force_n == 10.506
+
+
 def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcomes(
     tmp_path,
 ) -> None:
@@ -179,7 +208,7 @@ def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcom
 
     measurement_path = image.parent / "measurements.json"
     persisted = json.loads(measurement_path.read_text())
-    assert persisted["schema_version"] == 2
+    assert persisted["schema_version"] == 3
     assert persisted["split"] == "test"
     assert persisted["mass_g"] is None
     assert refreshed.objects["cup"].split == "test"

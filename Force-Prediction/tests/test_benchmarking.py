@@ -78,7 +78,7 @@ def test_image_only_e1_generates_then_evaluates_partial_truth_without_model_call
 
     prediction_paths = save_prediction_batch(cfg, batch)
     prediction_artifact = json.loads(prediction_paths[0].read_text(encoding="utf-8"))
-    assert prediction_artifact["schema_version"] == 10
+    assert prediction_artifact["schema_version"] == 11
     assert prediction_artifact["artifact_type"] == "benchmark_prediction_batch"
     calls_after_generation = (client.generation_calls, client.embedding_calls)
     dataset = update_dataset_object(cfg, dataset, "one", _complete_edit(1))
@@ -99,7 +99,7 @@ def test_image_only_e1_generates_then_evaluates_partial_truth_without_model_call
     assert set(paths) == {"json", "csv", "png", "svg"}
     assert all(path.is_file() for path in paths.values())
     evaluation_artifact = json.loads(paths["json"].read_text(encoding="utf-8"))
-    assert evaluation_artifact["schema_version"] == 10
+    assert evaluation_artifact["schema_version"] == 11
     assert evaluation_artifact["artifact_type"] == "benchmark_evaluation"
     assert (client.generation_calls, client.embedding_calls) == calls_after_generation
 
@@ -127,7 +127,6 @@ def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
 ) -> None:
     object_ids = ("train_a", "train_b", "test_a", "test_b")
     cfg, dataset = _image_only_config(tmp_path, object_ids)
-    cfg.inputs.roughness_representation = "binary"
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     for index, object_id in enumerate(object_ids, start=1):
         split = "train" if object_id.startswith("train") else "test"
@@ -149,8 +148,7 @@ def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
     assert batch.metadata["test_ids"] == ["test_a", "test_b"]
     assert batch.metadata["reference_ids"] == ["train_a", "train_b"]
     assert batch.metadata["evaluation_protocol"] == "fixed_train_test_holdout"
-    assert batch.metadata["inputs"]["roughness_representation"] == "binary"
-    assert batch.metadata["roughness_measurement"]["binary_threshold"] == 1340.0
+    assert batch.metadata["roughness_measurement"]["higher_is_rougher"] is True
     assert all(row["roughness_index"] is not None for row in batch.rows)
     assert all(
         {
@@ -180,9 +178,9 @@ def test_suite_runs_only_the_selected_experiment_subset(tmp_path, monkeypatch) -
     assert suite_experiments(manifest) == ("e1", "e3", "e5")
 
     manifest = run_suite_predictions(cfg, manifest)
-    # E1 is image-only and runs immediately; E2/E4/E6 are never touched.
+    # E1 is image-only and runs immediately; unselected experiments are never touched.
     assert manifest["runs"]["e1"]["status"] == "completed"
-    assert "e2" not in manifest["runs"]
+    assert "e4" not in manifest["runs"]
     assert "e6" not in manifest["runs"]
 
 
@@ -200,7 +198,7 @@ def test_suite_generates_e1_early_then_resumes_other_experiments(
     assert manifest["runs"]["e1"]["status"] == "completed"
     assert {
         manifest["runs"][name]["status"]
-        for name in ("e2", "e3", "e4", "e5", "e6")
+        for name in ("e3", "e4", "e5", "e6")
     } == {
         "waiting"
     }
@@ -224,7 +222,7 @@ def test_suite_generates_e1_early_then_resumes_other_experiments(
     artifacts = suite_evaluation_artifacts(cfg, manifest)
 
     assert manifest["status"] == "evaluated"
-    assert set(artifacts) == {"e1", "e2", "e3", "e4", "e5", "e6"}
+    assert set(artifacts) == {"e1", "e3", "e4", "e5", "e6"}
     assert manifest["evaluations"][-1]["common_object_ids"] == ["one", "two"]
     assert set(manifest["evaluations"][-1]["exports"]) == {
         "png",

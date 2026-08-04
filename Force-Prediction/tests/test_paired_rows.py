@@ -3,13 +3,13 @@ from __future__ import annotations
 import numpy as np
 import pytest
 
+from modules.artifacts import pipeline_result_from_dict, pipeline_result_to_dict
 from modules.config import EXPERIMENT_IDS, load_config
 from modules.contracts import (
     Gripper,
     JointGripperPrediction,
     PerGripperPrediction,
 )
-from modules.expforce import pipeline_result_from_dict, pipeline_result_to_dict
 from modules.hardware import fabricate_records
 from modules.pipeline import Pipeline, query_input_from_object
 from modules.retrieval import ExperienceIndex, RetrievalMode
@@ -38,7 +38,7 @@ def test_every_experiment_runs_with_explicit_gemini_fake_and_continuous_forces(
 
     assert set(result.candidate_predictions) == {"gecko", "silicone"}
     assert all(
-        cfg.force.min_n <= prediction.predicted_normal_force_n <= cfg.force.limit_n
+        cfg.force.min_n <= prediction.predicted_normal_force_n
         for prediction in result.candidate_predictions.values()
     )
 
@@ -259,10 +259,10 @@ def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
         for payload in payloads
     )
     assert e4_payload["retrieval_config"]["normalized_weights"]["roughness"] == 0
-    assert e4_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
+    assert "contact" not in e4_payload["retrieval_config"]["normalized_weights"]
     assert e5_payload["retrieval_config"]["normalized_weights"]["roughness"] > 0
-    assert e5_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
-    assert e6_payload["retrieval_config"]["normalized_weights"]["contact"] == 0
+    assert "contact" not in e5_payload["retrieval_config"]["normalized_weights"]
+    assert "contact" not in e6_payload["retrieval_config"]["normalized_weights"]
     assert e5_payload["retrieval_config"]["ranking_features"] == [
         "semantic",
         "mass",
@@ -304,9 +304,8 @@ def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
     assert set(retrieval_table["condition_role"]) == {"baseline"}
 
 
-def test_e5_forces_continuous_roughness_and_withholds_contact(monkeypatch):
+def test_e5_uses_continuous_roughness_and_withholds_contact(monkeypatch):
     cfg = load_config().model_copy(deep=True)
-    cfg.inputs.roughness_representation = "binary"
     cfg.inputs.use_projected_contact = True
     records = fabricate_records(cfg, 12)
     held = records[0].object_id
@@ -345,18 +344,16 @@ def test_e5_forces_continuous_roughness_and_withholds_contact(monkeypatch):
     )
 
     assert "roughness_index" in captured["query"]
-    assert "roughness_category" not in captured["query"]
     assert "projected_contact_fraction" not in captured["query"]
     assert captured["roughness_measurement"]["metric_name"] == (
         cfg.roughness.metric_name
     )
     weights = captured["retrieval_config"]["normalized_weights"]
     assert weights["roughness"] > 0
-    assert weights["contact"] == 0
+    assert "contact" not in weights
     for surface in captured["retrieved_objects"]:
         for condition in surface["conditions"]:
             assert "roughness_index" in condition
-            assert "roughness_category" not in condition
             assert "projected_contact_fraction" not in condition
             similarity = condition["similarity"]
             assert similarity["roughness"] is not None
@@ -419,7 +416,7 @@ def test_e4_fixed_profile_removes_roughness_and_contact(monkeypatch):
     )
     weights = captured["extra"]["retrieval_config"]["normalized_weights"]
     assert weights["roughness"] == 0
-    assert weights["contact"] == 0
+    assert "contact" not in weights
     assert captured["extra"]["retrieval_config"]["k"] == cfg.retrieval.k
 
 
@@ -486,7 +483,6 @@ def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
     )
     monkeypatch.setattr("modules.retrieval.s_mass", sensors_must_not_score)
     monkeypatch.setattr("modules.retrieval.s_roughness", sensors_must_not_score)
-    monkeypatch.setattr("modules.retrieval.s_contact", sensors_must_not_score)
 
     detailed = Pipeline(cfg, "e3").fit(train).predict_detailed(
         _query_with_image(test, cfg)
@@ -509,7 +505,6 @@ def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
         "roughness",
         "contact",
         "sigma_mass",
-        "sigma_contact",
         "normalized_weights",
     }
     assert all(not (set(item) & forbidden) for item in captured["retrieved_objects"])

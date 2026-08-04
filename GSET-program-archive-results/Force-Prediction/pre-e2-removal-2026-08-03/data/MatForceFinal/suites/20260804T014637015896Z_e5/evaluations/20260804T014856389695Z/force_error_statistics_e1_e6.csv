@@ -1,0 +1,2 @@
+experiment,scope,n,mae_n,rmse_n,residual_std_n,overprediction_count,underprediction_count,exact_prediction_count,average_overprediction_n,average_underprediction_n
+E5,Silicone,11,1.385,2.1005918862852138,2.202276751661582,6,5,0,1.2163333333333333,1.5874

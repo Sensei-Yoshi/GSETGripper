@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
-from pydantic import BaseModel, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from .contracts import Gripper
 
@@ -61,9 +61,10 @@ class CollectionConfig(BaseModel):
 
 
 class InputsConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     use_roughness: bool = True
     use_projected_contact: bool = True
-    roughness_representation: Literal["continuous", "binary"] = "continuous"
 
 
 class PredictionConfig(BaseModel):
@@ -98,11 +99,12 @@ class GeometryConfig(BaseModel):
 class RoughnessConfig(BaseModel):
     """Definition of the recorded continuous roughness measurement."""
 
+    model_config = ConfigDict(extra="forbid")
+
     metric_name: str = Field(min_length=1)
     units: str = Field(min_length=1)
     higher_is_rougher: bool = True
     characteristic_scale: float = Field(gt=0, allow_inf_nan=False)
-    binary_threshold: float = Field(default=1340.0, ge=0, allow_inf_nan=False)
 
     @model_validator(mode="after")
     def _validate_direction(self) -> RoughnessConfig:
@@ -114,10 +116,11 @@ class RoughnessConfig(BaseModel):
 
 
 class RetrievalWeights(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     semantic: float = Field(ge=0)
     mass: float = Field(ge=0)
     roughness: float = Field(ge=0)
-    contact: float = Field(ge=0)
 
 
 class EmbeddingConfig(BaseModel):
@@ -126,11 +129,12 @@ class EmbeddingConfig(BaseModel):
 
 
 class RetrievalConfig(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     k: int = Field(gt=0)
     conditions_per_surface: int = Field(default=3, gt=0, le=3)
     weights: RetrievalWeights
     sigma_mass: float = Field(gt=0)
-    sigma_contact: float = Field(gt=0)
     embedding: EmbeddingConfig
 
 
@@ -202,13 +206,12 @@ class ExperimentMethod(StrEnum):
     """Supported estimators; each maps to one explicit strategy implementation."""
 
     VISION_VLM = "vision_vlm"
-    MEASURED_VLM = "measured_vlm"
     SEMANTIC_RETRIEVAL_VLM = "semantic_retrieval_vlm"
     HYBRID_RETRIEVAL_VLM = "hybrid_retrieval_vlm"
 
 
-EXPERIMENT_IDS = ("e1", "e2", "e3", "e4", "e5", "e6")
-EXPERIMENT_DEFINITION_VERSION = 11
+EXPERIMENT_IDS = ("e1", "e3", "e4", "e5", "e6")
+EXPERIMENT_DEFINITION_VERSION = 12
 
 
 class ExperimentConfig(BaseModel):
@@ -234,7 +237,7 @@ class Config(BaseModel):
     prompts_file: str = "prompts.yaml"
     experiments: dict[str, ExperimentConfig]
     # Runtime dataset selection. It is intentionally not a config.yaml tunable.
-    dataset_id: str = "expforce"
+    dataset_id: str = "MatForceFinal"
 
     # Resolved at load time so callers get absolute paths regardless of cwd.
     root: Path = REPO_ROOT
@@ -246,7 +249,6 @@ class Config(BaseModel):
 
         vlm_methods = {
             ExperimentMethod.VISION_VLM,
-            ExperimentMethod.MEASURED_VLM,
             ExperimentMethod.SEMANTIC_RETRIEVAL_VLM,
             ExperimentMethod.HYBRID_RETRIEVAL_VLM,
         }
@@ -289,7 +291,7 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
     if "dry_run" in raw.get("models", {}):
         raise ValueError(
             "models.dry_run is no longer supported; Gemini is the production backend "
-            "for descriptions, embeddings, and E1-E6 prediction"
+            "for descriptions, embeddings, and active experiment prediction"
         )
     if "provider" in raw.get("retrieval", {}).get("embedding", {}):
         raise ValueError(

@@ -1,20 +1,19 @@
 # Experiment Protocol
 
-The active implementation contains E1–E6. Every condition runs through
+The active implementation contains five conditions with stable IDs. Every condition runs through
 `Pipeline(cfg, experiment_id)`. Partially populated datasets use per-experiment eligibility;
 cross-experiment reporting uses the common eligible object intersection.
 
 ## Primary ablation suite
 
-All six VLM conditions receive the query-object image plus fixed written embodiment
+All five VLM conditions receive the query-object image plus fixed written embodiment
 descriptions for the globally active Gecko and/or silicone candidates. These descriptions
 define the hardware being predicted and are not object-specific measurements.
 
 | ID | Object-specific evidence | Retrieval score | Research question |
 |---|---|---|---|
 | **E1** | Object image only | None | How accurately can the VLM predict the active grippers zero-shot? |
-| **E2** | Image + mass + roughness + projected contact | None | What is the isolated benefit of measured physical inputs without retrieval? |
-| **E3** | Image + semantic descriptor + active-gripper outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval modeled after Exp-Force? |
+| **E3** | Image + semantic descriptor + active-gripper outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval? |
 | **E4** | E3 + mass | Semantic + mass | What does mass-conditioned retrieval add? |
 | **E5** | E4 + continuous roughness | Semantic + mass + roughness | What is the incremental value of measured roughness? |
 | **E6** | E5-ranked experiences + projected contact fraction | Semantic + mass + roughness | What is the incremental value of contact as query and controlled-condition evidence? |
@@ -40,7 +39,6 @@ cannot quietly leak sensor terms into E3.
 
 This is the right role for E3 because it creates clean comparisons:
 
-- E2 minus E1 estimates the contribution of measured sensor/context variables.
 - E3 minus E1 estimates the contribution of semantic experiential retrieval.
 - E4 minus E3 estimates the contribution of mass-conditioned retrieval.
 - E5 minus E4 estimates the incremental contribution of continuous roughness.
@@ -56,13 +54,13 @@ expected ordering as a premise.
 E4–E6 use the same grouped-surface representation as E3. Their surface score draws
 nested subsets from the configured hybrid terms:
 
-`S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough + w_a S_contact`.
+`S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough`.
 
 E4 enables semantic and mass terms. E5 and E6 both add continuous roughness to surface
 ranking, so they retrieve identical physical surfaces for the same query and pool. E6 exposes
 projected contact only as query and controlled same-surface condition evidence. Disabled
 ranking terms receive zero weight and the remaining terms are renormalized. E5 and E6 always
-use the continuous roughness index, even if the separate E2 control is set to binary.
+use the continuous roughness index.
 
 The VLM receives the normalized weights and kernel scales so it can understand why a
 neighbor was ranked highly. These values are ranking provenance, not physical coefficients
@@ -77,8 +75,9 @@ change an experiment-hidden measurement are excluded. None receives a physics pr
 ## Evaluation and reporting
 
 The force convention is stationary-finger load-cell normal force, never doubled. Model
-outputs are continuous from `0` to `8 N`; ground-truth search resolution does not quantize
-predictions. Report force MAE, RMSE, median absolute error, threshold accuracy,
+outputs are continuous, nonnegative, and uncapped for benchmark evaluation; ground-truth
+search resolution does not quantize predictions. The rig retains a separate physical safety
+guard. Report force MAE, RMSE, median absolute error, threshold accuracy,
 feasibility metrics, selection accuracy, infeasible-pick rate, and regret.
 
 Benchmark generation is deliberately truth-free. It persists each query input, prediction,
@@ -88,10 +87,10 @@ grippers and writes a version under `results/evaluations/<batch_id>/`; unchanged
 the existing version. This lets image-only E1 batches be generated before physical trials.
 The source CSV's `split` column defines the canonical holdout: only `test` rows are predicted
 and scored, while E3–E6 may retrieve only from `train` rows. All sibling conditions of one
-physical surface must share the same split. Legacy datasets without test rows retain the
+physical surface must share the same split. Datasets without test rows retain the
 leave-one-surface-out fallback.
 
-The saved E1–E6 suite produces separate Gecko and silicone calibration panels, one panel
+The saved five-condition suite produces separate Gecko and silicone calibration panels, one panel
 per experiment, plus CSV metric and prediction exports. The panels show ground truth on
 the horizontal axis and prediction on the vertical axis without an identity line.
 Per-object prediction tables support the proposed ground-truth-versus-prediction analysis.
@@ -101,4 +100,4 @@ grasp trials replace them.
 Run a Gemini-backed condition with
 `python scripts/run_experiment.py --exp e3 --confirm-gemini-cost`, run all active
 conditions with `python scripts/run_experiment.py --all --confirm-gemini-cost`, or
-create/resume an E1–E6 suite from the Streamlit **Runs Viewer**.
+create or resume a suite from the Streamlit **Runs Viewer**.

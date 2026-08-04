@@ -60,13 +60,15 @@ Every force value uses one convention:
 - newtons;
 - normal force measured behind the stationary gripper finger;
 - never doubled and never summed across both fingers;
-- continuous command range from `0` through `8.0 N`;
+- nonnegative, continuous dataset labels and benchmark predictions with no analytical upper cap;
+- a separate physical rig command/collection safety range from `0` through `8.0 N`;
 - no model-output rounding or snapping;
 - nominal successful hold of `3.0 s` after a `50 mm` lift.
 
-The hardware accepts arbitrary continuous commands inside this range. The collection
+The hardware accepts arbitrary continuous commands inside its guarded range. The collection
 staircase has separate coarse and fine steps because ground-truth search needs a practical
-experimental resolution. Those steps do not constrain later predictions or commands.
+experimental resolution. Neither the collection staircase nor the hardware guard caps stored
+experience labels or offline benchmark predictions.
 
 A feasible record stores the measured minimum successful force. An infeasible record stores
 `min_force_n: null` and the force limit at which it failed. A failure at `8 N` must never be
@@ -88,8 +90,8 @@ The shared query contains:
 - optional prepared semantic contact-region description.
 
 Measured values are authoritative when an experiment exposes them. E1 and E3 intentionally
-hide all measurements from the force-prediction VLM. E2 exposes all three measurements,
-E4 exposes mass, E5 adds continuous roughness, and E6 adds projected contact. E3 may use
+hide all measurements from the force-prediction VLM. E4 exposes mass, E5 adds continuous
+roughness, and E6 adds projected contact. E3 may use
 an image-derived semantic descriptor, but no numeric sensor field may enter its ranking or
 retrieved payload.
 
@@ -115,8 +117,8 @@ f_contact = max(0.05, f_geometric) for an antipodal grasp; otherwise 0
 It assumes constant pad width, which cancels from the ratio, and reports no
 absolute mm² area. Contact must be contiguous, within 30 degrees of the jaw
 direction, and conformable under a default 20 mm minimum bend radius. This
-geometric estimator is not yet wired into E1–E6 and must not be confused with
-the current 65 mm `projected_contact_fraction` input.
+geometric estimator can populate E6's `projected_contact_fraction` evidence through
+the dataset preparation workflow.
 
 ### Contact-fraction mathematics
 
@@ -177,9 +179,8 @@ fixtures.
 For Python entry points, returned fields, schema-v2 JSON/CSV paths, and safe
 integration examples, see [`contact-fraction-integration.md`](contact-fraction-integration.md).
 
-Streamlit displays fixed sensor profiles for E4–E6. The roughness representation control
-applies only to E2; its binary mode derives `smooth` below 1340 and `rough` otherwise. E5 and
-E6 always use continuous roughness so their ranking and VLM evidence remain definition-locked.
+Streamlit displays fixed sensor profiles for E4–E6. E5 and E6 always use continuous
+roughness so their ranking and VLM evidence remain definition-locked.
 
 Curvature, seams, ridges, porosity, coatings, contamination, and local contact visibility
 currently enter through the semantic descriptor rather than separate numeric columns.
@@ -220,14 +221,14 @@ the independently measured mass/roughness/contact/outcome tuple, and condition-l
 Marigold diagnostics, but never authoritative condition measurements. `ObjectRecord` pairs
 the two active-gripper rows for one condition.
 
-The active synthetic source is:
+The active paired source is:
 
 ```text
-data/expforce/dataset.csv
+data/MatForceFinal/dataset.csv
 ```
 
-It contains 129 objects and converts to 258 experience rows. Every current object has one
-strict winning gripper. Preparation never mutates the source CSV; generated descriptors,
+It currently contains 44 condition rows across 40 physical surfaces. Preparation never
+mutates the source CSV; generated descriptors,
 embeddings, experience rows, runs, and benchmarks live in separate paths. Researchers can
 make explicit validated corrections in the Data Viewer. Those saves atomically update the
 mass, roughness index, projected contact, force, and feasibility CSV fields, recalculate the
@@ -273,12 +274,11 @@ Exact in-memory search is sufficient for the current corpus, so no vector databa
 
 ## 7. Active experiment suite
 
-The active IDs are E1 through E6 and form the VLM ablation suite.
+The active stable IDs are E1, E3, E4, E5, and E6.
 
 | ID | Method | Force-generation calls | Meaning |
 |---|---|---:|---|
 | E1 | `vision_vlm` | 1 | Object-image zero-shot prediction |
-| E2 | `measured_vlm` | 1 | E1 plus authoritative physical measurements |
 | E3 | `semantic_retrieval_vlm` | 1 | Semantic-cosine experiential retrieval, without sensor inputs |
 | E4 | `hybrid_retrieval_vlm` | 1 | Semantic + mass retrieval |
 | E5 | `hybrid_retrieval_vlm` | 1 | E4 + continuous roughness |
@@ -288,7 +288,7 @@ The active IDs are E1 through E6 and form the VLM ablation suite.
 may need descriptor or embedding calls when semantic data is not already cached. Those
 preparation calls are distinct from force generation.
 
-Live E1–E6 calls receive the query-object image and fixed written descriptions of the
+Live calls receive the query-object image and fixed written descriptions of the
 globally active gripper embodiments. One target uses `PerGripperPrediction`; two targets
 use one `JointGripperPrediction`. No gripper images are sent.
 
@@ -297,12 +297,6 @@ use one `JointGripperPrediction`. No gripper images are sent.
 E1 sends no object-specific mass, roughness, contact, retrieved examples, or physics
 estimate. Its structured response covers only the active candidates; paired runs also
 return `recommended_gripper`.
-
-### E2: measured-input zero-shot
-
-E2 uses the same response contract and adds authoritative mass, roughness, and projected
-contact. It sends no retrieved examples and no physics estimate. E2 minus E1
-therefore isolates the value of measured physical inputs.
 
 ### E3: semantic-only experience-conditioned VLM
 
@@ -313,7 +307,7 @@ observations; condition names and measurement fields are omitted.
 
 E3 sends no query or neighbor mass, roughness, projected contact, hybrid score components,
 or physics estimate. This hard boundary models semantic experiential retrieval in the
-style of Exp-Force and makes E3 minus E1 an interpretable estimate of semantic experience
+current experience corpus and makes E3 minus E1 an interpretable estimate of semantic experience
 value.
 
 ### E4–E6: nested semantic and sensor-fusion experience-conditioned VLM
@@ -332,7 +326,7 @@ is an empirical hypothesis rather than an assumed result.
 
 ## 8. Target-aware VLM response and authoritative selection
 
-With one active gripper, E1–E6 use `PerGripperPrediction` directly. With both active,
+With one active gripper, all conditions use `PerGripperPrediction` directly. With both active,
 they use `JointGripperPrediction`:
 
 ```text
@@ -346,7 +340,8 @@ recommendation_summary: auditable comparison and recommendation
 Each per-gripper prediction includes compatibility, feasibility, continuous force, visible
 surface properties, evidence used, an explicit calculation summary, assumptions and
 uncertainty, and a detailed auditable rationale. The implementation rebinds each nested
-candidate to the correct gripper and continuously clamps force to the configured range.
+candidate to the correct gripper and normalizes force to a nonnegative value without an
+analytical upper cap.
 
 For paired runs, `SelectionResult` stores both the authoritative Python choice and the raw
 model recommendation, plus `recommendation_agrees_with_selector`. This supports direct evaluation
@@ -378,17 +373,15 @@ S(q, i) =
     w_sem     * cos(e_q, e_i)
   + w_mass    * exp(-|ln(m_q) - ln(m_i)| / sigma_mass)
   + w_rough   * exp(-|r_q - r_i| / roughness_characteristic_scale)
-  + w_contact * exp(-|a_q - a_i| / sigma_contact)
 ```
 
 Current configured defaults are:
 
 | Parameter | Value |
 |---|---:|
-| semantic weight | 0.40 |
+| semantic weight | 0.50 |
 | mass weight | 0.25 |
 | roughness weight | 0.20 |
-| contact weight | 0.15 |
 | mass sigma | 0.70 |
 | contact sigma | 0.25 |
 | `k` | 5 objects |
@@ -408,18 +401,19 @@ The package is organized by concern, with one module per experiment strategy:
 | `config.yaml` | Numerical tunables and explicit experiment methods |
 | `prompts.yaml` | Editable prompts and fixed written embodiment descriptions |
 | `modules/config.py` | Typed loading and fail-fast validation |
-| `modules/experiments/` | Shared strategy helper, eligibility, catalog, and E1–E6 modules |
+| `modules/experiments/` | Shared strategy helper, eligibility, catalog, and active strategy modules |
 | `modules/pipeline.py` | Thin shared fit/predict facade |
 | `modules/contracts.py` | Experience, query, joint prediction, and selection models |
-| `modules/prediction.py` | Joint VLM request, clamp, selector |
+| `modules/prediction.py` | Joint VLM request, nonnegative force normalization, selector |
 | `modules/retrieval.py` | Semantic-only and hybrid paired-object retrieval |
 | `modules/physics.py` | Equations, calibration, and minimum-force solve |
 | `modules/evaluation.py` | Grouped splits and metrics |
 | `modules/datasets/` | Dataset catalog, object/artifact models, storage, and stage runner |
-| `modules/cache.py` | Dataset-scoped API caches and Exp-Force legacy read-through |
-| `modules/expforce.py` | Fixture preparation and saved single-run provenance |
+| `modules/cache.py` | Dataset-scoped API caches |
+| `modules/artifacts.py` | Current saved-run serialization and provenance |
+| `modules/datasets/paired_csv.py` | Generic paired-CSV adapter and experience conversion |
 | `modules/benchmarking.py` | Truth-free prediction batches and versioned evaluations |
-| `modules/suites.py` | Definition-locked, resumable two-stage E1–E6 suites |
+| `modules/suites.py` | Definition-locked, resumable two-stage experiment suites |
 | `modules/reporting.py` | Comparison tables, panels, and paper exports |
 | `app.py` / `streamlit_app/` | Stable Streamlit entrypoint and modular tab implementation |
 
@@ -437,7 +431,7 @@ detailed = pipe.predict_detailed(query)
 `Pipeline` validates the experiment ID and delegates. It does not decode boolean toggle
 combinations. Resource loading is method-specific:
 
-- E1/E2: no descriptor, embedding, or retrieval fit;
+- E1: no descriptor, embedding, or retrieval fit;
 - E3: descriptor as needed, embedding provider, semantic-only object index, target-aware VLM;
 - E4–E6: descriptor as needed, embedding provider, profile-scoped hybrid object index,
   target-aware VLM.
@@ -452,7 +446,6 @@ The experiment section is explicit:
 ```yaml
 experiments:
   e1: {method: vision_vlm, prompt: e1}
-  e2: {method: measured_vlm, prompt: e2}
   e3: {method: semantic_retrieval_vlm, prompt: e3}
   e4: {method: hybrid_retrieval_vlm, prompt: e4}
   e5: {method: hybrid_retrieval_vlm, prompt: e5}
@@ -464,7 +457,6 @@ The active force-prediction instructions are:
 ```text
 prompts.prediction_system
 prompts.experiments.e1
-prompts.experiments.e2
 prompts.experiments.e3
 prompts.experiments.e4
 prompts.experiments.e5
@@ -473,7 +465,7 @@ prompts.experiments.e6
 
 These instructions and the `gecko`/`silicone` written embodiment descriptions live in
 `prompts.yaml`; `config.yaml` references that file. Configuration validation
-requires exactly the six active IDs, a valid prompt for every method, and no unused
+requires exactly the five active IDs, a valid prompt for every method, and no unused
 experiment prompt. Researcher tunables such as force range, collection steps, retrieval
 `k`, weights, sigmas, and models must not be shadowed by hidden script constants.
 
@@ -487,10 +479,10 @@ The application provides:
 
 - a global **Dataset** selector, populated from direct folders under `data/`, that controls
   every dataset-dependent tab and path;
-- **Single Run:** known leave-one-out or custom query with E1–E6 eligibility;
+- **Single Run:** known leave-one-out or custom query with per-condition eligibility;
 - **Benchmark:** immutable prediction generation plus later partial-truth evaluation;
 - **Runs Viewer:** versioned benchmark results with a per-object Single Run-style inspector,
-  resumable E1–E6 suite comparison, saved single-run inspection, provenance, separate gripper
+  resumable experiment suite comparison, saved single-run inspection, provenance, separate gripper
   panels, and PNG/SVG/CSV exports;
 - **Data Viewer:** active-dataset images, train/test membership, optional measurements/outcomes,
   descriptions, embedding status, and an auto-saving editor for split and nullable measurements
@@ -516,7 +508,7 @@ score it against the unchanged source label; it displays a delta from the origin
 
 Each experiment generates predictions for every query-ready test object. Evaluation can happen
 later and scores only test rows with complete required truth. E3–E6 retrieval references come
-only from train rows, and E1–E6 cross-condition reporting uses the common evaluated object
+only from train rows, and cross-condition reporting uses the common evaluated object
 intersection.
 
 Metrics include:
@@ -525,15 +517,15 @@ Metrics include:
 - feasibility precision and recall per gripper;
 - deterministic selection accuracy and infeasible-pick rate;
 - mean, median, and worst selection regret;
-- raw VLM recommendation accuracy and agreement with the selector for E1–E6.
+- raw VLM recommendation accuracy and agreement with the selector.
 
 Regret is the true force of the selected gripper minus the true force of the oracle gripper.
 It distinguishes a small force penalty from a materially poor selection.
 
-## 14. Persistence, schema versions, and legacy artifacts
+## 14. Persistence and schema versions
 
-Single-run artifacts use schema version 9. Two-stage benchmark and suite artifacts use schema
-version 10. A prediction batch records:
+Single-run artifacts use schema version 10. Benchmark artifacts use schema version 11,
+suite manifests use schema version 12, and suite reporting uses version 4. A prediction batch records:
 
 - experiment ID;
 - stable `experiment_method`;
@@ -549,7 +541,7 @@ Evaluation artifacts record the prediction batch ID, current truth snapshot hash
 metrics, evaluated rows, and JSON/CSV/PNG/SVG exports. Repeating an unchanged truth snapshot
 reuses its evaluation; corrected truth creates a new version. Suite manifests lock prompts,
 experiment definitions, model IDs, retrieval settings, inputs, and active grippers while
-excluding mutable truth. They checkpoint each prediction batch so E1 can finish before E2–E6
+excluding mutable truth. They checkpoint each prediction batch so E1 can finish before E3–E6
 become data-ready.
 
 In Runs Viewer, selecting a benchmark batch exposes an **Object Inspector** dropdown containing
@@ -559,16 +551,8 @@ Its truth and error display come only from the selected evaluation version; unev
 remain fully inspectable but are explicitly unscored. Image hashes warn when a saved path is
 missing or now points to changed bytes.
 
-Historical files are never rewritten or deleted. Before definition version 3, E5 meant the
-paired-retrieval VLM method and E4 meant calibrated physics. The inspector infers their old
-method from saved toggles and labels them, for example:
-
-```text
-Legacy E5 — paired retrieval VLM
-Legacy E4 — calibrated physics
-```
-
-This prevents retired experiment IDs from being misread as active E1–E6 conditions.
+Historical files are immutable under `GSET-program-archive-results` and are never discovered
+or loaded by the application.
 
 ## 15. Cache behavior
 
@@ -582,9 +566,7 @@ data/cache/<dataset>/embeddings/<content-key>.json
 
 Cache keys include the relevant model, prompt, JSON schema, payload, query image, embedding
 dimension, and text. Identical requests within one dataset reuse responses; changes create
-new keys. Existing flat `data/cache/*.json` files are treated as Exp-Force entries. A legacy
-hit is copied into the Exp-Force namespace without rewriting or deleting the original. Writes
-use temporary files followed by atomic replacement.
+new keys. Writes use temporary files followed by atomic replacement.
 
 Reference descriptor checkpoints are separate from API cache entries, so quota-interrupted
 preparation can resume. Credentials are loaded from environment or local `.env` and are not
@@ -594,19 +576,19 @@ written to artifacts.
 
 Network-isolated verification with explicit Gemini test fakes must cover:
 
-- only E1–E6 accepted;
-- one single- or joint-target force-generation call for E1–E6;
+- only the five stable active IDs are accepted;
+- one single- or joint-target force-generation call for every active condition;
 - E1 payload contains no measurements or retrieval;
-- E2 payload contains measurements but no retrieval or physics;
+- requests for removed IDs fail as unknown;
 - E3 ranks by semantic cosine only and exposes no query/neighbor sensor or physical-score
   terms;
 - E4–E6 use configured `k`, exclude the query, retrieve once, and call jointly once;
 - E4 uses only mass, E5 adds continuous roughness, and E6 retains E5 surface ranking while
   adding projected contact to query and controlled-condition VLM evidence;
 - E1/E3 run without physical measurements while measured conditions report missing inputs;
-- continuous force clamps and infeasibility behavior;
+- nonnegative uncapped benchmark forces and infeasibility behavior;
 - selector authority and recommendation disagreement metrics;
-- schema-v10 truth-free batches, versioned partial evaluations, resumable suites, and legacy read-only compatibility;
+- schema-v11 truth-free batches, versioned partial evaluations, and schema-v12 resumable suites;
 - comparison panels contain no identity line and export PNG, SVG, and CSV;
 - cache reuse, grouped splits, and full benchmark execution through fake Gemini interfaces.
 
@@ -623,7 +605,7 @@ Real collection should:
    environment, pad ID, and trials;
 4. assign and freeze the CSV train/test split before tuning;
 5. fit retrieval weights inside training folds only;
-6. compare E1–E6 on their common eligible object intersection;
+6. compare the active conditions on their common eligible object intersection;
 7. report uncertainty, subgroup behavior, feasibility errors, force error, selection, and
    regret;
 8. preserve exact model, prompt, source, and configuration provenance.
@@ -644,7 +626,7 @@ From `GSETGripper/Force-Prediction`:
 ../../env/bin/python scripts/run_experiment.py --all --confirm-gemini-cost
 ../../env/bin/python scripts/prepare_dataset.py --list
 ../../env/bin/python scripts/prepare_dataset.py --dataset MatForce --stages descriptions --confirm-gemini-cost
-../../env/bin/python scripts/prepare_dataset.py --dataset expforce --stages descriptions embeddings experiences --confirm-gemini-cost
+../../env/bin/python scripts/prepare_dataset.py --dataset MatForceFinal --stages descriptions embeddings experiences --confirm-gemini-cost
 ../../env/bin/python -m streamlit run app.py
 ../../env/bin/python -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
 ```
@@ -657,15 +639,13 @@ From `GSETGripper/Force-Prediction`:
 4. Keep source data separate from generated artifacts.
 5. Keep prompts and embodiment context in `prompts.yaml`; keep numerical tunables and
    experiment methods in `config.yaml`.
-6. Keep E1 image-only and E2 retrieval/physics-free.
+6. Keep E1 image-only.
 7. Keep E3 semantic-only: no measured query/neighbor fields or hybrid physical terms.
-8. Keep E4–E6 as nested semantic/mass/roughness/contact retrieval ablations with one force
-   response and no physics input.
+8. Keep E4–E6 as nested semantic/mass/roughness evidence ablations; E6 may expose projected
+   contact conditions but must not use contact for cross-object ranking.
 9. Keep Python selection authoritative and score model recommendation separately.
-10. Persist stable method/version/prompt/embodiment provenance and preserve legacy
-   artifacts read-only.
+10. Persist stable method/version/prompt/embodiment provenance.
 11. Keep unit tests independent of hardware, credentials, and network access through explicit fakes.
-12. Treat current viewer results as synthetic pipeline validation only.
-13. Scope all dataset-dependent artifacts and caches to the active dataset; do not hard-code
-    new workflows to `data/expforce`.
+12. Treat current viewer results as pipeline validation only.
+13. Scope all dataset-dependent artifacts and caches to the active dataset.
 14. Update tests and this document whenever experiment behavior or contracts change.

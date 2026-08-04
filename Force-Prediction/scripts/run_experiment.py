@@ -77,7 +77,7 @@ def main() -> int:
     names = EXPERIMENT_IDS if args.all else [args.exp]
     if not args.confirm_gemini_cost:
         raise SystemExit(
-            "E1–E6 evaluation requires --confirm-gemini-cost"
+            "active experiment evaluation requires --confirm-gemini-cost"
         )
     records = load_experiences(cfg.path("experiences"))
     if not records:

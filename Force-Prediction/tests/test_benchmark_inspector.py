@@ -7,12 +7,12 @@ import hashlib
 from PIL import Image
 from streamlit.testing.v1 import AppTest
 
+from modules.artifacts import pipeline_result_to_dict
 from modules.benchmarking import BenchmarkEvaluation, BenchmarkPredictionBatch
 from modules.config import load_config
 from modules.contracts import Gripper, PerGripperPrediction, SelectionResult
 from modules.datasets import get_dataset
 from modules.experiments import PipelineRunResult
-from modules.expforce import pipeline_result_to_dict
 from streamlit_app.benchmark_inspector import (
     benchmark_image_state,
     benchmark_object_options,
@@ -31,12 +31,6 @@ def _render_batch(context, batch):  # noqa: ANN001, ANN201
     from streamlit_app.tabs.runs_viewer import _render_prediction_batch
 
     _render_prediction_batch(context, batch)
-
-
-def _render_legacy(artifact):  # noqa: ANN001, ANN201
-    from streamlit_app.tabs.runs_viewer import _render_legacy_benchmark
-
-    _render_legacy_benchmark(artifact)
 
 
 def _write_test_image(path) -> str:  # noqa: ANN001
@@ -344,23 +338,3 @@ def test_prediction_batch_view_contains_object_inspector_subtab(tmp_path) -> Non
     ]
     assert any(item.label == "Benchmark object" for item in app.selectbox)
 
-
-def test_legacy_benchmark_remains_read_only_and_inspectable(tmp_path) -> None:
-    artifact_path = tmp_path / "legacy.json"
-    artifact = {
-        "artifact_path": artifact_path,
-        "metadata": {
-            "created_at": "2025-01-01T00:00:00+00:00",
-            "experiment": "e4",
-            "experiment_method": "legacy_method",
-            "dry_run": True,
-        },
-        "metrics": {"force": {"mae": 1.0}},
-        "rows": [{"object_id": "legacy_object", "predicted_force_n": 2.0}],
-    }
-
-    app = AppTest.from_function(_render_legacy, args=(artifact,)).run(timeout=10)
-
-    assert list(app.exception) == []
-    assert any("read-only" in item.value for item in app.warning)
-    assert len(app.dataframe) == 1

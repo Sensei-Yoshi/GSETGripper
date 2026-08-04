@@ -50,20 +50,18 @@ prompts:
     \ and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\n\
     All force values are in newtons and refer exclusively to the normal force measured\n\
     by the load cell mounted behind the stationary gripper finger. Do not double the\n\
-    force and do not convert it into a summed two-finger force. The controller accepts\n\
-    continuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE\
-    \ GRIPPERS\nThe request supplies fixed written descriptions for the requested\
-    \ gripper embodiment\nor embodiments. Predict only those requested candidates\
-    \ and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied\
-    \ active embodiment descriptions to reason about contact mechanics,\nvisible material,\
-    \ surface condition, and local geometry. Do not assume an inactive\ngripper is\
-    \ available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\n\
-    Any supplied mass, roughness evidence, and projected contact fraction are authoritative.\
-    \ Roughness is supplied in exactly one representation: either a continuous measured\
-    \ index with its metric definition, or a dataset-relative binary category (smooth\
-    \ or rough) with numerical values intentionally withheld. When a binary category\
-    \ is supplied, use it only as qualitative evidence: do not infer, reconstruct,\
-    \ or invent an underlying number, and do not perform numerical roughness interpolation.\n\
+    force and do not convert it into a summed two-finger force. Return your best continuous,\n\
+    nonnegative estimate without imposing an 8 N analytical ceiling; measured experiences\n\
+    and benchmark predictions above 8 N remain valid.\n\nAVAILABLE GRIPPERS\nThe request\
+    \ supplies fixed written descriptions for the requested gripper embodiment\nor\
+    \ embodiments. Predict only those requested candidates and apply their context\n\
+    consistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions\
+    \ to reason about contact mechanics,\nvisible material, surface condition, and\
+    \ local geometry. Do not assume an inactive\ngripper is available, and do not\
+    \ infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass,\
+    \ continuous roughness index, and projected contact fraction are authoritative.\
+    \ Use the roughness index with its supplied metric definition and do not invent\
+    \ an unreported measurement.\n\
     If an experiment intentionally omits them, state uncertainty rather than pretending\n\
     they were measured.\nIf a contact area fraction is given, you can likely assume\
     \ the orientation in which the gripper grasped the object if necessary as well.\n\
@@ -76,14 +74,14 @@ prompts:
     \ supplied comparison_to_baseline metadata to identify exactly which measured\
     \ factors changed. Do not blindly average sibling-condition forces. Prefer the\
     \ condition most comparable to the query. A one-field change may support a directional\
-    \ within-object relationship; when multiple fields changed, treat their effects jointly\
-    \ and do not attribute the force difference to one factor alone. Greater projected\
-    \ contact by itself must not justify a greater required normal force. Do not infer\
-    \ a universal contact coefficient from the supplied condition sweeps.\nUse only\
-    \ comparison fields actually present in the request. If no experiences are\nsupplied,\
-    \ do not imply that retrieval evidence was used.\n\
-    \nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence\
-    \ supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients.\
+    \ within-object relationship; when multiple fields changed, treat their effects\
+    \ jointly and do not attribute the force difference to one factor alone. Greater\
+    \ projected contact by itself must not justify a greater required normal force.\
+    \ Do not infer a universal contact coefficient from the supplied condition sweeps.\n\
+    Use only comparison fields actually present in the request. If no experiences\
+    \ are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE\
+    \ JUSTIFICATION\nUse quantitative checks when the available evidence supports\
+    \ them. Do not invent\ncalibrated friction, adhesion, or contact coefficients.\
     \ Object weight may be used as\na sanity check, but it is not itself the required\
     \ gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied\
     \ schema. For each requested gripper,\nrecord every material piece of supplied\
@@ -132,17 +130,6 @@ prompts:
       Do not invent physical constants or claim to run calibrated physics.
 
       '
-    e2: 'E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.
-
-      Use the object image, fixed gripper embodiment context, and supplied authoritative
-
-      measurements: mass, roughness, and projected contact fraction.
-
-      No retrieved experience or physics estimate is available. Do not infer hidden
-
-      friction or adhesion constants.
-
-      '
     e3: 'E3 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.
 
       Use the object image, fixed gripper embodiment context, and the ranked semantic
@@ -164,9 +151,10 @@ prompts:
 
       Use the object image, fixed gripper embodiment context, supplied authoritative
 
-      mass, and one object list ranked using semantic similarity and mass only to estimate
-      the requested force or forces. Roughness and projected contact are intentionally
-      withheld and were not used for ranking; do not infer or claim access to either.
+      mass, and one object list ranked using semantic similarity and mass only to
+      estimate the requested force or forces. Roughness and projected contact are
+      intentionally withheld and were not used for ranking; do not infer or claim
+      access to either.
 
       Explain how the retrieved outcomes and mass similarity support the estimates.
       The supplied retrieval weights describe neighbor ranking, not a force equation.
@@ -192,8 +180,8 @@ prompts:
 
       A retrieved surface includes its baseline and only controlled sibling conditions
       whose recorded changes are fully visible in E5. Projected-contact-only and mixed
-      visible-plus-hidden-contact variants are excluded; never infer contact from the
-      remaining conditions.
+      visible-plus-hidden-contact variants are excluded; never infer contact from
+      the remaining conditions.
 
       '
     e6: 'E6 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.
@@ -206,32 +194,35 @@ prompts:
       Projected contact is intentionally excluded from cross-object surface ranking.
       It is supplied as query evidence and within-surface condition evidence only.
       Treat projected contact fraction as a dimensionless contact proxy, not literal
-      physical area. The supplied retrieval weights describe neighbor ranking, not a
-      force equation. No calibrated physics estimate is available; do not invent one.
+      physical area. The supplied retrieval weights describe neighbor ranking, not
+      a force equation. No calibrated physics estimate is available; do not invent
+      one.
 
       Reason in two explicit stages and show both in your trace.
 
-      STAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at full,
-      optimal contact, anchoring only to retrieved BASELINE conditions and their
-      semantic material, mass, and continuous roughness. Projected contact fraction is
-      confounded across different objects (a low-contact neighbor may need low force and
-      a full-contact neighbor may need high force), so it was deliberately kept out of
-      ranking: do NOT use the query contact fraction to pick, weight, match, or discount
-      cross-object neighbors, and do NOT prefer a neighbor because its contact fraction
-      resembles the query. Roughness and material remain the dominant drivers of this
-      baseline; do not let contact override them. Prefer the baselines that bracket the
-      query by mass and align on roughness and material, and do not dilute the estimate
-      by averaging in poorly matched heavier or lighter neighbors.
+      STAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at
+      full, optimal contact, anchoring only to retrieved BASELINE conditions and their
+      semantic material, mass, and continuous roughness. Projected contact fraction
+      is confounded across different objects (a low-contact neighbor may need low
+      force and a full-contact neighbor may need high force), so it was deliberately
+      kept out of ranking: do NOT use the query contact fraction to pick, weight,
+      match, or discount cross-object neighbors, and do NOT prefer a neighbor because
+      its contact fraction resembles the query. Roughness and material remain the
+      dominant drivers of this baseline; do not let contact override them. Prefer
+      the baselines that bracket the query by mass and align on roughness and material,
+      and do not dilute the estimate by averaging in poorly matched heavier or lighter
+      neighbors.
 
-      STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for the
-      query contact fraction using ONLY within-surface controlled variants via
-      comparison_to_baseline. Each variant reports force_deltas: the signed change in a
-      gripper''s force from that surface''s own baseline to the variant. Apply those as
-      relative adjustments scaled to the query; never import a variant''s absolute force
-      as a cross-object anchor, and never treat variants as separate neighbors or average
-      their absolute forces. The contact effect is monotonic non-decreasing as contact
-      falls: reducing contact never lowers the required force below the Stage 1 baseline,
-      and a query contact fraction at or near 1.0 warrants no upward contact adjustment.
+      STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for
+      the query contact fraction using ONLY within-surface controlled variants via
+      comparison_to_baseline. Each variant reports force_deltas: the signed change
+      in a gripper''s force from that surface''s own baseline to the variant. Apply
+      those as relative adjustments scaled to the query; never import a variant''s
+      absolute force as a cross-object anchor, and never treat variants as separate
+      neighbors or average their absolute forces. The contact effect is monotonic
+      non-decreasing as contact falls: reducing contact never lowers the required
+      force below the Stage 1 baseline, and a query contact fraction at or near 1.0
+      warrants no upward contact adjustment.
 
       '
   target_instructions:
@@ -282,3 +273,5 @@ embodiments:
       with the surface. The silicone pads are effective on rough, irregular, or interrupted
       surfaces, but performance still decreases when the contact area is small, the
       object is highly curved or misaligned, or the surface is wet, oily, or contaminated.
+      Overall, as roughness increases, the necessary normal force to grasp the object
+      decreases.

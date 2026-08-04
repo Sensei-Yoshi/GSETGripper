@@ -9,6 +9,7 @@ import pytest
 import streamlit
 from streamlit.testing.v1 import AppTest
 
+from modules.config import EXPERIMENT_IDS
 from streamlit_app.tabs.registry import TAB_SPECS
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -49,7 +50,6 @@ def test_default_app_structure_matches_research_lab() -> None:
     selectbox_labels = [item.label for item in app.selectbox]
     for label in (
         "Dataset",
-        "Roughness sent to VLM",
         "Dataset object",
         "Experiment profile",
         "Experiment",
@@ -57,6 +57,11 @@ def test_default_app_structure_matches_research_lab() -> None:
         "Saved suite",
     ):
         assert label in selectbox_labels
+    for label in ("Experiment profile", "Experiment"):
+        selector = next(item for item in app.selectbox if item.label == label)
+        assert tuple(option.split()[0].lower() for option in selector.options) == (
+            EXPERIMENT_IDS
+        )
     assert "Benchmark name" in [item.label for item in app.text_input]
     benchmark_button = next(item for item in app.button if item.label == "Run selected")
     assert benchmark_button.disabled is True
@@ -87,7 +92,6 @@ def test_default_app_structure_matches_research_lab() -> None:
     )
     expected_state = {
         "active_dataset_id",
-            "roughness_representation",
         "predict_gecko_force",
         "predict_silicone_force",
         "benchmark_experiment",
@@ -120,7 +124,6 @@ def test_default_app_structure_matches_research_lab() -> None:
         "prompt_descriptor_system",
         "prompt_descriptor_instruction",
         "prompt_instruction_e1",
-        "prompt_instruction_e2",
         "prompt_instruction_e3",
             "prompt_instruction_e4",
             "prompt_instruction_e5",
@@ -140,18 +143,10 @@ def test_default_app_structure_matches_research_lab() -> None:
     assert any("Benchmark split · Train:" in item.value for item in app.caption)
 
 
-def test_binary_roughness_mode_is_an_explicit_session_control() -> None:
+def test_removed_roughness_mode_control_is_absent() -> None:
     app = AppTest.from_file(PROJECT_ROOT / "app.py").run(timeout=30)
-    control = next(
-        item for item in app.selectbox if item.label == "Roughness sent to VLM"
-    )
-
-    assert control.value == "continuous"
-    control.set_value("binary")
-    app.run(timeout=30)
-
     assert list(app.exception) == []
-    assert app.session_state["roughness_representation"] == "binary"
+    assert all(item.label != "Roughness sent to VLM" for item in app.selectbox)
 
 
 def test_global_gripper_controls_require_at_least_one_target() -> None:
@@ -227,8 +222,6 @@ def test_global_dataset_selector_switches_every_tab_to_image_only_dataset() -> N
 
     image_only_dataset = None
     for dataset_id in app.selectbox[0].options:
-        if dataset_id == "expforce":
-            continue
         app.selectbox[0].set_value(dataset_id)
         app.run(timeout=30)
         if any("objects · image folder" in item.value for item in app.caption):

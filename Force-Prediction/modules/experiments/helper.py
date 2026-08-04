@@ -43,7 +43,6 @@ class ExperimentSpec:
     uses_measurements: bool = False
     uses_roughness: bool = False
     uses_projected_contact: bool = False
-    roughness_representation: Literal["continuous", "binary"] | None = None
     retrieval_mode: RetrievalMode | None = None
     ranking_features: tuple[RankingFeature, ...] = ()
     visible_condition_fields: tuple[MeasurementField, ...] = ()
@@ -53,8 +52,6 @@ class ExperimentSpec:
         scoped = cfg.model_copy(deep=True)
         scoped.inputs.use_roughness = self.uses_roughness
         scoped.inputs.use_projected_contact = self.uses_projected_contact
-        if self.roughness_representation is not None:
-            scoped.inputs.roughness_representation = self.roughness_representation
         return scoped
 
 
@@ -124,7 +121,9 @@ class ExperimentStrategy(ABC):
     def _query(self, query_input: QueryInput, *, needs_description: bool) -> Query:
         description = query_input.semantic_description
         if needs_description and not (description or "").strip():
-            description = describe(query_input.image_bgr, self.cfg).description
+            description = describe(
+                query_input.image_bgr, self.cfg
+            ).retrieval_description
         return Query(
             object_id=query_input.object_id,
             surface_id=query_input.surface_id,
@@ -255,32 +254,22 @@ class ExperimentStrategy(ABC):
         )
 
 
-class JointVLMExperiment(ExperimentStrategy):
-    """Shared E1/E2 behavior with explicit per-ID subclasses."""
-
-    include_measured = False
+class VisionOnlyExperiment(ExperimentStrategy):
+    """Image-only zero-shot experiment lifecycle used by E1."""
 
     def fit(self, train_records: list[ExperienceRecord]) -> None:
         del train_records
 
     def predict_detailed(self, query_input: QueryInput) -> PipelineRunResult:
-        if self.include_measured:
-            self._validate_measured_query(query_input)
         query = self._query(query_input, needs_description=False)
         selection = self._predict_and_select(
             query,
             query_input.image_bgr,
             [],
-            include_measured=self.include_measured,
+            include_measured=False,
             include_retrieval=False,
         )
         inputs: tuple[str, ...] = ("object_image", "gripper_context")
-        if self.include_measured:
-            inputs += ("mass",)
-            if self.cfg.inputs.use_roughness:
-                inputs += ("roughness",)
-            if self.cfg.inputs.use_projected_contact:
-                inputs += ("projected_contact",)
         return self._result(
             selection=selection,
             description=query.semantic_description,

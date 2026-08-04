@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import streamlit as st
 
-from modules.expforce import load_saved_runs
+from modules.artifacts import load_saved_runs
 from streamlit_app.context import AppContext
 
 
@@ -22,12 +22,6 @@ def render(context: AppContext) -> None:
     stats[2].metric("Saved benchmark files", len(results))
     stats[3].metric("Saved single runs", len(runs))
     st.code(str(cache_dir), language=None)
-    if context.dataset.dataset_id == "expforce":
-        legacy = list((base_cfg.root / "data/cache").glob("*.json"))
-        st.caption(
-            f"Legacy flat Exp-Force cache: {len(legacy)} entries. Hits are copied into the "
-            "dataset namespace; originals are preserved."
-        )
     if "single_result" in st.session_state:
         detailed = st.session_state["single_result"][0]
         st.subheader("Latest run telemetry")

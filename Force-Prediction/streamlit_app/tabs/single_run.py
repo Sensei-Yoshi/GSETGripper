@@ -6,17 +6,16 @@ import cv2
 import numpy as np
 import streamlit as st
 
+from modules.artifacts import (
+    load_experience_pool,
+    save_pipeline_run,
+)
 from modules.config import EXPERIMENT_IDS, Config
 from modules.contracts import ExperienceRecord, group_by_object
 from modules.datasets import DatasetObject
 from modules.experiments import EXPERIMENT_CATALOG, experiment_eligibility
-from modules.expforce import (
-    load_experience_pool,
-    save_pipeline_run,
-)
 from modules.pipeline import Pipeline, QueryInput
 from modules.retrieval import RankingFeature, normalized_weights
-from modules.roughness_representation import binary_roughness_category
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import (
     format_experiment,
@@ -33,9 +32,7 @@ def _run_config(
     semantic: float,
     mass: float,
     roughness: float,
-    contact: float,
     sigma_mass: float,
-    sigma_contact: float,
     validate_hybrid_weights: bool,
     ranking_features: tuple[RankingFeature, ...] | None,
 ) -> Config:
@@ -43,9 +40,7 @@ def _run_config(
     cfg.retrieval.weights.semantic = semantic
     cfg.retrieval.weights.mass = mass
     cfg.retrieval.weights.roughness = roughness
-    cfg.retrieval.weights.contact = contact
     cfg.retrieval.sigma_mass = sigma_mass
-    cfg.retrieval.sigma_contact = sigma_contact
     if validate_hybrid_weights:
         normalized_weights(cfg, ranking_features)
     return cfg
@@ -138,7 +133,6 @@ def render(context: AppContext) -> None:
         uses_hybrid_retrieval = (
             experiment_spec.retrieval_mode is not None and experiment != "e3"
         )
-        contact_ranks_surfaces = "contact" in experiment_spec.ranking_features
         eligibility = experiment_eligibility(context.dataset, base_cfg, experiment)
         query_reasons = eligibility.query_reasons(object_id)
         if query_reasons:
@@ -169,20 +163,6 @@ def render(context: AppContext) -> None:
             disabled=not uses_roughness,
             help="Continuous sensor value; larger values indicate rougher surfaces.",
         )
-        if (
-            uses_roughness
-            and experiment_spec.scoped_config(base_cfg).inputs.roughness_representation
-            == "binary"
-            and roughness is not None
-        ):
-            st.caption(
-                "Gemini receives only: **"
-                + binary_roughness_category(
-                    float(roughness),
-                    base_cfg.roughness.binary_threshold,
-                )
-                + "**. The numerical index remains internal to retrieval."
-            )
         contact = st.number_input(
             "Projected contact fraction",
             min_value=0.0,
@@ -231,27 +211,10 @@ def render(context: AppContext) -> None:
                 float(base_cfg.retrieval.weights.roughness), 0.05,
                 disabled=not uses_hybrid_retrieval or not uses_roughness,
             )
-            configured_contact_w = st.slider(
-                "Contact weight", 0.0, 1.0,
-                float(base_cfg.retrieval.weights.contact), 0.05,
-                disabled=(
-                    not uses_hybrid_retrieval or not contact_ranks_surfaces
-                ),
-            )
-            contact_w = (
-                configured_contact_w if contact_ranks_surfaces else 0.0
-            )
             sigma_mass = st.slider(
                 "Mass sigma", 0.1, 3.0,
                 float(base_cfg.retrieval.sigma_mass), 0.1,
                 disabled=not uses_hybrid_retrieval,
-            )
-            sigma_contact = st.slider(
-                "Contact sigma", 0.05, 1.0,
-                float(base_cfg.retrieval.sigma_contact), 0.05,
-                disabled=(
-                    not uses_hybrid_retrieval or not contact_ranks_surfaces
-                ),
             )
             st.caption(f"Neighbor count comes from config.yaml: k = {base_cfg.retrieval.k}.")
 
@@ -268,9 +231,7 @@ def render(context: AppContext) -> None:
             semantic=semantic_w,
             mass=mass_w,
             roughness=(roughness_w if uses_roughness else 0.0),
-            contact=contact_w,
             sigma_mass=sigma_mass,
-            sigma_contact=sigma_contact,
             validate_hybrid_weights=uses_hybrid_retrieval,
             ranking_features=experiment_spec.ranking_features or None,
         )
@@ -306,7 +267,7 @@ def render(context: AppContext) -> None:
             reference_ids=eligibility.reference_ids,
         )
         prepared_text = (
-            dataset_object.description.value.description
+            dataset_object.description.value.retrieval_description
             if dataset_object.description is not None
             else None
         )

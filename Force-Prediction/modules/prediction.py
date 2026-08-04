@@ -1,6 +1,6 @@
 """Shared VLM force estimation and the authoritative deterministic selector.
 
-E1 through E6 use one joint VLM response for both grippers. Python always makes the final
+E1 and E3–E6 use one joint VLM response for both grippers. Python always makes the final
 feasible minimum-force selection and records agreement with the VLM's explicit
 recommendation.
 """
@@ -28,7 +28,6 @@ from .retrieval import (
     default_ranking_features,
     normalized_weights,
 )
-from .roughness_representation import binary_roughness_category
 
 GRIPPERS = (Gripper.GECKO, Gripper.SILICONE)
 
@@ -36,14 +35,15 @@ GRIPPERS = (Gripper.GECKO, Gripper.SILICONE)
 def _force_constraints(cfg: Config) -> dict:
     return {
         "minimum_n": cfg.force.min_n,
-        "maximum_n": cfg.force.limit_n,
+        "maximum_n": None,
         "continuous_command": True,
+        "benchmark_force_is_uncapped": True,
     }
 
 
 def clamp_force(force: float, cfg: Config) -> float:
-    """Keep a continuous force estimate within the hardware command range."""
-    return min(cfg.force.limit_n, max(cfg.force.min_n, float(force)))
+    """Keep a continuous benchmark estimate nonnegative without an upper cap."""
+    return max(cfg.force.min_n, float(force))
 
 
 def _query_payload(query: Query, cfg: Config, *, include_measured: bool) -> dict:
@@ -55,13 +55,7 @@ def _query_payload(query: Query, cfg: Config, *, include_measured: bool) -> dict
         if cfg.inputs.use_roughness:
             if query.roughness_index is None:
                 raise ValueError("enabled measured roughness requires a query value")
-            if cfg.inputs.roughness_representation == "binary":
-                payload["roughness_category"] = binary_roughness_category(
-                    query.roughness_index,
-                    cfg.roughness.binary_threshold,
-                )
-            else:
-                payload["roughness_index"] = query.roughness_index
+            payload["roughness_index"] = query.roughness_index
         if cfg.inputs.use_projected_contact:
             payload["projected_contact_fraction"] = query.projected_contact_fraction
     return payload
@@ -96,20 +90,12 @@ def _generation_payload(
         "force_constraints": _force_constraints(cfg),
     }
     if include_measured and cfg.inputs.use_roughness:
-        if cfg.inputs.roughness_representation == "binary":
-            payload["roughness_measurement"] = {
-                "representation": "binary_category",
-                "categories": ["smooth", "rough"],
-                "scope": "relative_to_this_dataset",
-                "numeric_values_withheld": True,
-            }
-        else:
-            payload["roughness_measurement"] = {
-                "metric_name": cfg.roughness.metric_name,
-                "units": cfg.roughness.units,
-                "higher_is_rougher": cfg.roughness.higher_is_rougher,
-                "characteristic_scale": cfg.roughness.characteristic_scale,
-            }
+        payload["roughness_measurement"] = {
+            "metric_name": cfg.roughness.metric_name,
+            "units": cfg.roughness.units,
+            "higher_is_rougher": cfg.roughness.higher_is_rougher,
+            "characteristic_scale": cfg.roughness.characteristic_scale,
+        }
     if not include_retrieval:
         return payload
 
@@ -127,16 +113,6 @@ def _generation_payload(
             "k": cfg.retrieval.k,
             "score": "cosine_semantic_embedding_only",
         }
-    elif cfg.inputs.roughness_representation == "binary" and cfg.inputs.use_roughness:
-        payload["retrieval_config"] = {
-            "mode": mode.value,
-            "k": cfg.retrieval.k,
-            "vlm_roughness_representation": "binary_category",
-            "ranking_note": (
-                "Neighbors were ranked upstream with the configured hybrid retrieval. "
-                "Continuous roughness values are intentionally withheld; do not infer them."
-            ),
-        }
     else:
         active_ranking_features = (
             ranking_features or default_ranking_features(cfg)
@@ -148,19 +124,13 @@ def _generation_payload(
             "visible_condition_fields": list(visible_condition_fields),
             "condition_policy": "baseline_plus_visible_controlled_variants",
             "conditions_per_surface": cfg.retrieval.conditions_per_surface,
-            "projected_contact_used_for_surface_ranking": (
-                "contact" in active_ranking_features
-            ),
+            "projected_contact_used_for_surface_ranking": False,
             "normalized_weights": normalized_weights(
                 cfg, active_ranking_features
             ),
             "sigma_mass": cfg.retrieval.sigma_mass,
             "roughness_characteristic_scale": cfg.roughness.characteristic_scale,
         }
-        if "contact" in active_ranking_features:
-            payload["retrieval_config"]["sigma_contact"] = (
-                cfg.retrieval.sigma_contact
-            )
     return payload
 
 
@@ -208,25 +178,6 @@ def _group_retrieved_surfaces(
                 # baseline's absolute value the model can spuriously match against.
                 if item.condition_role == "baseline":
                     raw.pop("projected_contact_fraction", None)
-                if (
-                    cfg.inputs.use_roughness
-                    and cfg.inputs.roughness_representation == "binary"
-                ):
-                    if item.roughness_index is None:
-                        raise ValueError(
-                            "binary VLM roughness requires a retrieved roughness index"
-                        )
-                    raw.pop("roughness_index", None)
-                    raw.pop("score", None)
-                    raw["roughness_category"] = binary_roughness_category(
-                        item.roughness_index,
-                        cfg.roughness.binary_threshold,
-                    )
-                    similarity = raw.get("similarity")
-                    if isinstance(similarity, dict):
-                        similarity.pop("roughness", None)
-                        similarity.pop("roughness_contribution", None)
-                        similarity.pop("total", None)
             condition_payloads.append(raw)
         surface = {
             "schema_version": 3,
@@ -236,11 +187,7 @@ def _group_retrieved_surfaces(
             "semantic_similarity": best.similarity.semantic,
             "conditions": condition_payloads,
         }
-        if not (
-            cfg.inputs.use_roughness
-            and cfg.inputs.roughness_representation == "binary"
-        ):
-            surface["score"] = surface_score
+        surface["score"] = surface_score
         # Compatibility summary for existing result viewers. The nested conditions
         # remain authoritative and contain all retained sibling observations.
         best_payload = condition_payloads[0]

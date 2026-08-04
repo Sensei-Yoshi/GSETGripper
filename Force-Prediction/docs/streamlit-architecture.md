@@ -6,7 +6,7 @@ The research lab remains available through the original command:
 streamlit run app.py
 ```
 
-`app.py` is intentionally only a compatibility entrypoint. The application code lives in
+`app.py` is intentionally only a stable entrypoint. The application code lives in
 the import-safe `streamlit_app` package; do not create a top-level package named `streamlit`,
 because that can shadow the installed framework.
 
@@ -42,13 +42,13 @@ used by the camera and background-removal model preserve this rule.
 | `streamlit_app/tabs/registry.py` | Ordered `TabSpec` declarations and the tab-renderer contract. |
 | `streamlit_app/tabs/*.py` | One renderer per visible top-level tab, plus private tab-specific helpers. |
 | `modules/datasets/` | Folder discovery, dataset/object contracts, artifact loading, and stage-selectable preparation. |
-| `modules/cache.py` | Dataset-scoped JSON cache with read-through for the legacy flat Exp-Force cache. |
+| `modules/cache.py` | Dataset-scoped JSON response cache. |
 | `modules/models/` | Lazy Gemini, background-removal, and Marigold adapters. |
 
 The **Benchmark** tab owns the two actions: immutable prediction generation and later
 truth evaluation. The **Runs Viewer** owns saved single runs, prediction/evaluation histories,
 a Single Run-style object inspector for every prediction in a selected benchmark batch, and
-resumable two-stage E1–E6 suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
+resumable two-stage experiment suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
 auto-saving measurement and partial outcome labels. CSV sources remain authoritative; image
 folders use `objects/<object_id>/measurements.json`. Each save is atomic, recalculates any
 complete derived label, and refreshes completed experience records. Names, images,
@@ -77,7 +77,7 @@ def render(context: AppContext) -> None:
 Use `context.config`, `context.dataset`, `context.rows`, and `context.summary` instead of
 independently calling `load_config`, `load_rows`, or `validation_summary`. This keeps all tabs
 on the same active-dataset snapshot during a rerun. Dataset-dependent output paths must come
-from `context.dataset.paths` or the runtime `context.config`, never a fixed `data/expforce`
+from `context.dataset.paths` or the runtime `context.config`, never a fixed dataset
 constant.
 
 ## Dataset contract and global selection
@@ -130,17 +130,13 @@ results remain historical and are not rewritten; their source fingerprint mismat
 by inspectors.
 
 Benchmarking uses the source CSV's fixed train/test holdout. It generates predictions only
-for query-ready test rows, and E3–E6 may retrieve only from eligible train rows. If a legacy
+for query-ready test rows, and E3–E6 may retrieve only from eligible train rows. If a
 dataset has no test rows, the existing leave-one-surface-out behavior remains available.
 
 `roughness_index` is the nonnegative numerical output recorded from the LED measurement
 system, with larger values indicating rougher surfaces. It is intentionally distinct from
-the image-derived Marigold `roughness` artifact. Schema-v1 measurements and CSV rows that
-contain only `roughness_class` are loaded as legacy provenance; no class-to-index conversion
-is performed, so roughness-enabled E2/E5/E6 remain ineligible until a real index is recorded.
-The global **Roughness sent to VLM** control can derive an experimental binary class at the
-1340 threshold for E2. E5/E6 remain continuous by definition. The chosen mode and threshold
-are persisted with runs, prediction batches, and suite snapshots.
+the image-derived Marigold `roughness` artifact. E5 and E6 always use this continuous value;
+datasets without it remain ineligible for those conditions.
 
 ## Adding a tab
 
@@ -192,7 +188,7 @@ kept in an optional expander rather than serving as the primary detail view.
 - `app.py` remains runnable from the project root.
 - Only the shell calls `st.set_page_config`, and it does so before visible UI rendering.
 - The Dataset selector remains above the tabs and applies to every dataset-dependent tab.
-- Existing tab order, widget keys, and stored payload shapes are compatibility-sensitive.
+- Existing tab order and current widget keys are interface-sensitive.
 - Session-state keys and stored payload shapes are shared across Single Run, Runs Viewer,
   and Cache Status; changes require coordinated migration and tests.
 - Contact Fraction keeps its cached camera/model resources and lazy optional-dependency

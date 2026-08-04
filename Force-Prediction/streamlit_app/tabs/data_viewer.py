@@ -9,6 +9,11 @@ import cv2
 import numpy as np
 import streamlit as st
 
+from modules.artifacts import (
+    load_experience_pool,
+    load_saved_runs,
+    pipeline_result_from_dict,
+)
 from modules.contracts import Gripper, group_by_object
 from modules.datasets import (
     DatasetObject,
@@ -16,11 +21,6 @@ from modules.datasets import (
     add_dataset_condition,
     delete_dataset_condition,
     update_dataset_object,
-)
-from modules.expforce import (
-    load_experience_pool,
-    load_saved_runs,
-    pipeline_result_from_dict,
 )
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import render_prediction
@@ -194,7 +194,6 @@ def _card_editor(
                 st.number_input(
                     "Minimum force (N)",
                     min_value=0.001,
-                    max_value=float(context.config.force.limit_n),
                     value=(
                         float(outcome.min_force_n)
                         if outcome is not None and outcome.min_force_n is not None
@@ -236,7 +235,11 @@ def _card_editor(
 
 @st.dialog("Add measurement condition")
 def _add_condition_dialog(context: AppContext, baseline: DatasetObject) -> None:
-    descriptor = baseline.description.value.description if baseline.description else "Not prepared"
+    descriptor = (
+        baseline.description.value.retrieval_description
+        if baseline.description
+        else "Not prepared"
+    )
     embedding = baseline.embedding.status if baseline.embedding else "pending"
     st.info(
         f"Inherited read-only artifacts: {Path(baseline.image.path).name}; "
@@ -283,7 +286,6 @@ def _add_condition_dialog(context: AppContext, baseline: DatasetObject) -> None:
                 force = st.number_input(
                     f"{gripper.value.title()} minimum force (N)",
                     min_value=0.001,
-                    max_value=float(context.config.force.limit_n),
                     value=None,
                     disabled=status is not True,
                 )
@@ -346,7 +348,7 @@ def _description_catalog(context: AppContext) -> None:
         searchable = " ".join(
             (
                 row.name,
-                description.description if description else "",
+                description.retrieval_description if description else "",
                 description.contact_material if description else "",
                 description.visible_surface_condition if description else "",
             )
@@ -438,15 +440,10 @@ def _description_catalog(context: AppContext) -> None:
                 if st.button(
                     "+ Add condition",
                     key=f"add_condition_{context.dataset.dataset_id}_{surface_id}",
-                    disabled=context.dataset.adapter != "expforce_paired_csv",
+                    disabled=context.dataset.adapter != "paired_csv",
                 ):
                     _add_condition_dialog(context, row)
 
-                if row.roughness_index is None and row.legacy_roughness_class is not None:
-                    st.warning(
-                        f"Legacy roughness class {row.legacy_roughness_class} is preserved "
-                        "for provenance but is not used as a numerical roughness index."
-                    )
                 if row.roughness is not None:
                     st.caption(
                         f"Marigold roughness: mean {row.roughness.mean:.3f}, "
@@ -469,7 +466,7 @@ def _description_catalog(context: AppContext) -> None:
                     f"Embedding {embedding.status if embedding else 'pending'} | "
                     f"{embedding.model if embedding and embedding.model else 'not generated'}"
                 )
-                st.write(descriptor.description)
+                st.write(descriptor.retrieval_description)
                 st.markdown(
                     f"**Contact material:** {descriptor.contact_material}  \n"
                     f"**Surface condition:** "
@@ -518,12 +515,11 @@ def pipeline_run_inspector(context: AppContext) -> None:
             f"{query['mass_g']:.1f} g" if query.get("mass_g") is not None else "Not recorded",
         )
         sensor_cols = st.columns(2)
-        if query.get("roughness_index") is not None:
-            roughness_display = f"{query['roughness_index']:g}"
-        elif query.get("roughness_class") is not None:
-            roughness_display = f"Legacy class {query['roughness_class']}"
-        else:
-            roughness_display = "Not recorded"
+        roughness_display = (
+            f"{query['roughness_index']:g}"
+            if query.get("roughness_index") is not None
+            else "Not recorded"
+        )
         sensor_cols[0].metric("Roughness index", roughness_display)
         sensor_cols[1].metric(
             "Contact",
@@ -534,8 +530,8 @@ def pipeline_run_inspector(context: AppContext) -> None:
         st.subheader("Run configuration")
         st.write(f"**Experiment:** {run['experiment_display_name']}")
         st.write(
-            f"**Method/version:** {run.get('experiment_method', 'legacy')} / "
-            f"{run.get('experiment_definition_version', 'legacy')}"
+            f"**Method/version:** {run['experiment_method']} / "
+            f"{run['experiment_definition_version']}"
         )
         st.write(f"**Backend:** {run['backend_label']}")
         st.write(f"**VLM:** {run['models']['vlm']}")
@@ -552,15 +548,7 @@ def pipeline_run_inspector(context: AppContext) -> None:
                 retrieval.get("use_projected_contact", True),
             )
             st.write(f"Roughness enabled: {saved_inputs.get('use_roughness', True)}")
-            st.write(
-                "VLM roughness representation: "
-                + saved_inputs.get("roughness_representation", "continuous")
-            )
-            if saved_inputs.get("roughness_representation") == "binary":
-                st.write(
-                    "Saved smooth/rough threshold: "
-                    f"{run.get('roughness_measurement', {}).get('binary_threshold', 1340):g}"
-                )
+            st.write("VLM roughness representation: continuous index")
             st.write(f"Projected contact enabled: {contact_enabled}")
             st.write(f"Saved run top k: {retrieval['k']}")
             if retrieval["k"] != base_cfg.retrieval.k:
@@ -570,7 +558,6 @@ def pipeline_run_inspector(context: AppContext) -> None:
                     f"k={base_cfg.retrieval.k}. New runs use the current value."
                 )
             st.write(f"Mass sigma: {retrieval['sigma_mass']}")
-            st.write(f"Contact sigma: {retrieval['sigma_contact']}")
             st.json(retrieval["weights"], expanded=True)
         with st.expander("Experiment definition"):
             st.json(

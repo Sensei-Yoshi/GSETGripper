@@ -5,7 +5,6 @@ from .editing import (
     DatasetObjectEdit,
     add_dataset_condition,
     delete_dataset_condition,
-    update_csv_dataset_object,
     update_dataset_object,
 )
 from .models import (
@@ -46,6 +45,5 @@ __all__ = [
     "load_dataset",
     "load_dataset_experiences",
     "prepare_dataset_stages",
-    "update_csv_dataset_object",
     "update_dataset_object",
 ]

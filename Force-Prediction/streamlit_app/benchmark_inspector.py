@@ -9,12 +9,11 @@ from typing import Literal
 
 import streamlit as st
 
+from modules.artifacts import pipeline_result_from_dict
 from modules.benchmarking import BenchmarkEvaluation, BenchmarkPredictionBatch
 from modules.config import Config
 from modules.contracts import ExperienceRecord, Gripper, ObjectRecord
-from modules.expforce import pipeline_result_from_dict
 from modules.pipeline import PipelineRunResult
-from modules.roughness_representation import binary_roughness_category
 from streamlit_app.prediction_ui import render_prediction
 
 
@@ -219,18 +218,6 @@ def _render_query_panel(
         if row.get("roughness_index") is not None
         else "Not recorded",
     )
-    roughness_mode = metadata.get("inputs", {}).get(
-        "roughness_representation", "continuous"
-    )
-    if roughness_mode == "binary" and row.get("roughness_index") is not None:
-        st.caption(
-            "Gemini received only the saved binary class: **"
-            + binary_roughness_category(
-                float(row["roughness_index"]),
-                inspection.config.roughness.binary_threshold,
-            )
-            + "**. The index above remained internal."
-        )
     sensors[1].metric(
         "Contact",
         f"{row['projected_contact_fraction']:.3f}"

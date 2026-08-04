@@ -94,11 +94,6 @@ def paired_retrieval_table(result: PipelineRunResult) -> pd.DataFrame:
                     roughness=sim.roughness,
                     roughness_index=item.roughness_index,
                 )
-            if sim.contact is not None:
-                row.update(
-                    contact=sim.contact,
-                    contact_fraction=item.projected_contact_fraction,
-                )
         rows.append(row)
     return pd.DataFrame(rows)
 
@@ -118,8 +113,6 @@ def render_formula(
         terms.append(r"w_m e^{-|\ln m_q-\ln m_i|/\sigma_m}")
     if "roughness" in active:
         terms.append(r"w_r e^{-|r_q-r_i|/s_r}")
-    if "contact" in active:
-        terms.append(r"w_a e^{-|a_q-a_i|/\sigma_a}")
     st.latex(r"S_i=" + "+".join(terms))
     st.caption(
         "Normalized weights: "

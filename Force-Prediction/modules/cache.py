@@ -1,4 +1,4 @@
-"""Dataset-scoped content-addressed JSON cache with legacy read-through."""
+"""Dataset-scoped content-addressed JSON cache."""
 
 from __future__ import annotations
 
@@ -12,15 +12,13 @@ from typing import Any
 class DiskCache:
     VERSION = "v2"
 
-    def __init__(self, root: Path, *, legacy_root: Path | None = None) -> None:
+    def __init__(self, root: Path) -> None:
         self.root = root
-        self.legacy_root = legacy_root if legacy_root != root else None
         self.root.mkdir(parents=True, exist_ok=True)
         self.hits = 0
         self.misses = 0
         self.writes = 0
         self.read_errors = 0
-        self.legacy_hits = 0
 
     @staticmethod
     def key(*parts: Any) -> str:
@@ -34,14 +32,6 @@ class DiskCache:
         if value is not None:
             self.hits += 1
             return value
-        legacy = self.legacy_root / f"{key}.json" if self.legacy_root else None
-        if legacy is not None:
-            value = self._read(legacy)
-            if value is not None:
-                self.hits += 1
-                self.legacy_hits += 1
-                self._write(self.root / f"{key}.json", value)
-                return value
         self.misses += 1
         return None
 
@@ -73,5 +63,4 @@ class DiskCache:
             "misses": self.misses,
             "writes": self.writes,
             "read_errors": self.read_errors,
-            "legacy_hits": self.legacy_hits,
         }

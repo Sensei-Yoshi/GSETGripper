@@ -26,12 +26,14 @@ def test_picks_lowest_feasible():
     assert r.desired_gripper == "gecko" and r.predicted_normal_force_n == 1.25
 
 
-def test_force_clamping_preserves_continuous_values():
+def test_force_normalization_preserves_continuous_values_without_upper_cap():
     cfg = load_config()
 
     assert clamp_force(1.01, cfg) == 1.01
     assert clamp_force(1.234567, cfg) == 1.234567
-    assert clamp_force(9.0, cfg) == 8.0
+    assert clamp_force(9.0, cfg) == 9.0
+    assert clamp_force(10.506, cfg) == 10.506
+    assert clamp_force(-1.0, cfg) == cfg.force.min_n
 
 
 def test_skips_infeasible_even_if_lower():

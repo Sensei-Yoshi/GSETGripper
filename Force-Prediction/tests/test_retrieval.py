@@ -6,7 +6,7 @@ import pytest
 
 from modules.config import load_config
 from modules.contracts import Gripper, Query
-from modules.expforce import load_rows, to_experiences
+from modules.datasets.paired_csv import load_rows, to_experiences
 from modules.hardware import fabricate_records
 from modules.prediction import _generation_payload
 from modules.retrieval import (
@@ -14,7 +14,6 @@ from modules.retrieval import (
     RetrievalMode,
     build_embedding_text,
     normalized_weights,
-    s_contact,
     s_mass,
     s_roughness,
 )
@@ -26,7 +25,6 @@ CFG = load_config()
 def test_similarity_bounds():
     assert s_mass(100, 100, CFG.retrieval.sigma_mass) == 1.0
     assert 0 <= s_mass(100, 900, CFG.retrieval.sigma_mass) <= 1
-    assert s_contact(0.5, 0.5, CFG.retrieval.sigma_contact) == 1.0
     scale = CFG.roughness.characteristic_scale
     assert s_roughness(347.82, 347.82, CFG) == 1.0
     assert s_roughness(0.0, scale, CFG) == pytest.approx(math.exp(-1.0))
@@ -34,9 +32,7 @@ def test_similarity_bounds():
 
 
 def test_embedding_text_is_semantic_only():
-    first = build_embedding_text("smooth glass cup", 100, 1, 0.9, CFG)
-    second = build_embedding_text("smooth glass cup", 900, 5, 0.2, CFG)
-    assert first == second == "smooth glass cup"
+    assert build_embedding_text("smooth glass cup") == "smooth glass cup"
 
 
 def test_weights_normalize_and_breakdown_sums_to_score():
@@ -55,7 +51,6 @@ def test_weights_normalize_and_breakdown_sums_to_score():
         result.similarity.semantic_contribution
         + result.similarity.mass_contribution
         + result.similarity.roughness_contribution
-        + result.similarity.contact_contribution
     )
     assert abs(result.score - contributions) < 1e-9
     assert result.rank == 1
@@ -235,7 +230,7 @@ def test_visibility_aware_conditions_exclude_hidden_and_mixed_changes():
     assert displayed_e5[0].surface_score > max(item.score for item in displayed_e5)
 
 
-def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants(monkeypatch):
+def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants():
     cfg = load_config().model_copy(deep=True)
     cfg.retrieval.k = 5
     cfg.retrieval.conditions_per_surface = 3
@@ -276,12 +271,6 @@ def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants(monkeypatch):
         visible_condition_fields=("mass_g", "roughness_index"),
     )
 
-    monkeypatch.setattr(
-        "modules.retrieval.s_contact",
-        lambda *_args, **_kwargs: (_ for _ in ()).throw(
-            AssertionError("E6 must not evaluate contact similarity")
-        ),
-    )
     e6 = index.retrieve_objects(
         query,
         query_vec,
@@ -343,9 +332,12 @@ def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants(monkeypatch):
         ),
     )
     retrieval_config = payload["retrieval_config"]
-    assert retrieval_config["normalized_weights"]["contact"] == 0
+    assert set(retrieval_config["normalized_weights"]) == {
+        "semantic",
+        "mass",
+        "roughness",
+    }
     assert retrieval_config["projected_contact_used_for_surface_ranking"] is False
-    assert "sigma_contact" not in retrieval_config
     surface_payload = next(
         item
         for item in payload["retrieved_objects"]
@@ -418,7 +410,7 @@ def test_matforce_contact_sweeps_are_e6_evidence_but_not_e5_neighbors():
     assert ranked_surfaces(e5) == ranked_surfaces(e6)
     for surface_id, expected_delta in {
         "large_cardboard_box": -0.5,
-        "creatine": -0.95,
+        "creatine": -0.9,
         "beaker": -0.6,
     }.items():
         assert [

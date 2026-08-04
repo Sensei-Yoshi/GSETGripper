@@ -21,7 +21,7 @@ def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--dataset",
-        help="Folder name directly under data/ (defaults to expforce when present).",
+        help="Folder name directly under data/ (defaults to the configured dataset).",
     )
     parser.add_argument(
         "--stages",
@@ -60,7 +60,9 @@ def main() -> int:
         raise SystemExit(f"No dataset folders found under {cfg.root / 'data'}")
 
     by_id = {dataset.dataset_id: dataset for dataset in catalog}
-    dataset_id = args.dataset or ("expforce" if "expforce" in by_id else catalog[0].dataset_id)
+    dataset_id = args.dataset or (
+        cfg.dataset_id if cfg.dataset_id in by_id else catalog[0].dataset_id
+    )
     if dataset_id not in by_id:
         available = ", ".join(by_id)
         raise SystemExit(f"Unknown dataset {dataset_id!r}. Available datasets: {available}")

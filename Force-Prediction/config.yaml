@@ -3,7 +3,7 @@
 #
 # Everything a researcher would want to sweep lives here: retrieval weights,
 # physics bounds, force limits, model IDs, and the EXPERIMENT definitions
-# (E1–E6 as explicit methods). Editable prompts and fixed gripper embodiment
+# (E1 and E3–E6 as explicit methods). Editable prompts and fixed gripper embodiment
 # context live in prompts.yaml. No tunable is hard-coded in Python.
 #
 # Loaded and validated by modules/config.py into typed objects.
@@ -18,12 +18,14 @@ paths:
   cache: data/cache
 
 # --- Force conventions (single source of truth) ------------------------------
-# NOTE: this resolves the 5 N vs 8 N inconsistency in project-context.md.
 # All force values are the normal force read by the load cell behind the
 # STATIONARY finger, in newtons. Never doubled, never summed across fingers.
 force:
-  limit_n: 8.0          # hardware safe limit; failure at this => infeasible
-  min_n: 0.0            # controller accepts continuous commands from 0 to limit_n
+  # Physical rig/collection safety guard only. Dataset labels, benchmark predictions,
+  # and evaluation are not capped by this value; hardware handoff still rejects unsafe
+  # commands above it.
+  limit_n: 8.0
+  min_n: 0.0            # benchmark predictions are continuous and nonnegative
   hold_seconds: 3.0     # required successful-lift hold time
   lift_height_mm: 50.0
   gravity: 9.81
@@ -41,9 +43,6 @@ collection:
 inputs:
   # Defaults for direct low-level calls. Named experiments apply fixed profiles.
   use_roughness: true
-  # "binary" is an experimental VLM representation. Retrieval still uses the
-  # continuous index, but Gemini receives only smooth/rough categories.
-  roughness_representation: continuous
   use_projected_contact: true
 
 # --- Requested gripper outputs ----------------------------------------------
@@ -71,8 +70,6 @@ roughness:
   # Approximate median pairwise gap in the current MatForceFinal measurements.
   # Recalibrate as coverage grows. Retrieval always remains continuous.
   characteristic_scale: 500.0
-  # Dataset-relative split used only by the experimental binary VLM payload.
-  binary_threshold: 1340.0
 
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
@@ -82,9 +79,7 @@ retrieval:
     semantic: 0.40
     mass: 0.25
     roughness: 0.20
-    contact: 0.15       # retained for configurable retrieval; E6 surface ranking excludes it
   sigma_mass: 0.7       # scale for exp(-|log m_q - log m_i| / sigma) ; log-grams
-  sigma_contact: 0.25   # scale for exp(-|a_q - a_i| / sigma)
   embedding:
     model: gemini-embedding-2-preview
     dim: 1536                 # Matryoshka truncation (<= 3072)
@@ -140,7 +135,6 @@ prompts_file: prompts.yaml
 # =============================================================================
 experiments:
   e1: {method: vision_vlm, prompt: e1}
-  e2: {method: measured_vlm, prompt: e2}
   e3: {method: semantic_retrieval_vlm, prompt: e3}
   e4: {method: hybrid_retrieval_vlm, prompt: e4}
   e5: {method: hybrid_retrieval_vlm, prompt: e5}

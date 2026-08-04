@@ -105,7 +105,7 @@ def main() -> int:
     # (1) Image description via the real descriptor path (image in, JSON out).
     desc = describe(img, cfg)
     print("── describe() ─────────────────────────────────────────────")
-    print(f"  description: {desc.description}")
+    print(f"  description: {desc.retrieval_description}")
     print(f"  material   : {desc.visible_surface_material}")
     print(f"  condition  : {desc.visible_surface_condition}\n")
 
@@ -114,7 +114,7 @@ def main() -> int:
     query = Query(
         object_id="probe", image_path=image_path, mass_g=420.0,
         roughness_index=2, projected_contact_fraction=0.83,
-        semantic_description=desc.description,
+        semantic_description=desc.retrieval_description,
     )
     prediction = vlm_predict_joint(
         cfg,

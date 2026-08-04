@@ -1,0 +1,12 @@
+experiment,experiment_id,object_id,gripper,true_force_n,predicted_force_n,true_feasible,predicted_feasible,signed_error_n,absolute_error_n,signed_percentage_error,true_favored,predicted_gripper,selection_correct,regret_n
+E5,e5,avacado,silicone,0.85,1.912,True,True,1.0619999999999998,1.0619999999999998,124.94117647058823,,silicone,,
+E5,e5,camera_cardboard_box,silicone,4.272,5.76,True,True,1.4879999999999995,1.4879999999999995,34.83146067415729,,silicone,,
+E5,e5,clay_bowl,silicone,1.25,1.54,True,True,0.29000000000000004,0.29000000000000004,23.200000000000003,,silicone,,
+E5,e5,computer,silicone,10.506,4.5,True,True,-6.006,6.006,-57.167332952598514,,silicone,,
+E5,e5,large_hand_sanitizer,silicone,3.2,5.45,True,True,2.25,2.25,70.3125,,silicone,,
+E5,e5,mold_release_spray_box,silicone,0.886,1.92,True,True,1.0339999999999998,1.0339999999999998,116.70428893905189,,silicone,,
+E5,e5,poker_box,silicone,1.976,3.15,True,True,1.174,1.174,59.41295546558704,,silicone,,
+E5,e5,rough_tile,silicone,1.484,1.48,True,True,-0.0040000000000000036,0.0040000000000000036,-0.2695417789757415,,silicone,,
+E5,e5,small_book,silicone,0.986,0.45,True,True,-0.536,0.536,-54.361054766734284,,silicone,,
+E5,e5,soap_bottle,silicone,3.166,2.1,True,True,-1.0659999999999998,1.0659999999999998,-33.67024636765634,,silicone,,
+E5,e5,very_smooth_tile,silicone,1.925,1.6,True,True,-0.32499999999999996,0.32499999999999996,-16.88311688311688,,silicone,,

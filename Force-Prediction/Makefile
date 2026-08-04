@@ -1,4 +1,4 @@
-.PHONY: setup lint typecheck test collect run viewer prepare-viewer all clean
+.PHONY: setup lint typecheck test collect run viewer all clean
 
 PY ?= python
 
@@ -6,7 +6,7 @@ setup:
 	$(PY) -m pip install -e ".[dev]"
 
 lint:
-	ruff check modules scripts tests
+	ruff check modules scripts streamlit_app tests
 
 typecheck:
 	mypy modules
@@ -18,16 +18,13 @@ test:
 collect:
 	$(PY) -m modules.collect --mock --dataset mock --n 40 --confirm-gemini-cost
 
-# All active E1-E4 experiments use Gemini generation and/or embeddings.
-E ?= e4
+# Active experiments retain the stable IDs E1, E3, E4, E5, and E6.
+E ?= e6
 run:
 	$(PY) scripts/run_experiment.py --exp $(E) --confirm-gemini-cost
 
 run-all:
 	$(PY) scripts/run_experiment.py --all --confirm-gemini-cost --out results.json
-
-prepare-viewer:
-	$(PY) scripts/prepare_expforce_viewer.py --confirm-gemini-cost
 
 viewer:
 	$(PY) -m streamlit run app.py
@@ -38,4 +35,4 @@ smoke: collect run-all
 all: lint typecheck test
 
 clean:
-	rm -rf data/cache/mock data/mock results.json
+	rm -rf data/cache/mock data/mock/results data/mock/runs data/mock/run_images data/mock/suites results.json

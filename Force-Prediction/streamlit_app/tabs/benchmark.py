@@ -22,15 +22,11 @@ from streamlit_app.prediction_ui import format_experiment
 
 def _batch_label(batch: BenchmarkPredictionBatch) -> str:
     targets = "+".join(batch.metadata["active_grippers"])
-    roughness_mode = batch.metadata.get("inputs", {}).get(
-        "roughness_representation", "continuous"
-    )
     protocol = batch.metadata.get(
         "evaluation_protocol", "leave_one_surface_out"
     ).replace("_", " ")
     return (
-        f"{batch.display_name} | {protocol} | {roughness_mode} roughness | "
-        f"{targets} | "
+        f"{batch.display_name} | {protocol} | {targets} | "
         f"{len(batch.rows)} predictions"
     )
 
@@ -90,13 +86,8 @@ def render(context: AppContext) -> None:
             on_change=clear_benchmark_summary,
         )
         scope = benchmark_scope(cfg, experiment)
-        if experiment in {"e2", "e5", "e6"}:
-            mode_label = (
-                "Smooth/Rough only (experimental)"
-                if experiment == "e2" and cfg.inputs.roughness_representation == "binary"
-                else "Continuous index (baseline)"
-            )
-            st.caption(f"VLM roughness evidence: **{mode_label}**")
+        if experiment in {"e5", "e6"}:
+            st.caption("VLM roughness evidence: **Continuous index**")
         if scope.test_ids:
             st.caption(
                 f"Fixed holdout: {len(scope.train_ids)} train · {len(scope.test_ids)} test · "
@@ -105,7 +96,7 @@ def render(context: AppContext) -> None:
         else:
             st.caption(
                 f"No test rows are assigned. {len(scope.query_ids)} objects are available "
-                "for the legacy leave-one-surface-out benchmark."
+                "for the leave-one-surface-out benchmark."
             )
         if scope.skipped_queries:
             with st.expander("Generation exclusions"):
@@ -113,7 +104,7 @@ def render(context: AppContext) -> None:
 
         benchmark_name = st.text_input(
             "Benchmark name",
-            placeholder="e.g. Binary roughness trial 2",
+            placeholder="e.g. E5 continuous roughness trial 2",
             help="Required. This name identifies the saved benchmark in the viewers.",
             key="benchmark_display_name",
         )

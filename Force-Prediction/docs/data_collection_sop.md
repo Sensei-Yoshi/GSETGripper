@@ -27,7 +27,8 @@ dataset, physics, prompts, predictions, and metrics.
 `collect.py` currently brackets the minimum in **1.0 N** steps, then refines in
 **0.01 N** steps within the bracketing interval. These values are configured
 under `collection` in `config.yaml`. They describe measurement resolution only:
-the controller and all model predictions remain continuous from `0` to `8 N`.
+the physical controller remains continuous from `0` to its configured safety limit. Offline
+dataset labels and benchmark predictions are nonnegative and are not capped by that limit.
 
 ## Hold constant (and document)
 Finger geometry, pad area, object orientation, grasp height, closing speed, force

@@ -95,16 +95,13 @@ class GripperOutcome(BaseModel):
 class DatasetObjectMeasurements(BaseModel):
     """Nullable, incrementally editable object measurements and outcome labels."""
 
-    schema_version: int = 2
+    schema_version: int = 3
     object_id: str
     surface_id: str | None = None
     condition_id: str = "baseline"
     split: Literal["train", "test", "surface_validation"] = "train"
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
-    # Kept only so schema-v1 files remain inspectable. It is never used as an
-    # input and is not converted to the numerical index.
-    legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     gecko_feasible: bool | None = None
     gecko_force_n: float | None = Field(default=None, gt=0)
@@ -136,7 +133,6 @@ class DatasetObject(BaseModel):
     image_2: ImageArtifact | None = None
     mass_g: float | None = Field(default=None, gt=0)
     roughness_index: float | None = Field(default=None, ge=0, allow_inf_nan=False)
-    legacy_roughness_class: int | None = Field(default=None, ge=1, le=5)
     projected_contact_fraction: float | None = Field(default=None, ge=0, le=1)
     contact_fraction: ContactFractionArtifact | None = None
     description: DescriptionArtifact | None = None
@@ -164,7 +160,6 @@ class DatasetCapabilities(BaseModel):
     has_embeddings: bool = False
     has_roughness: bool = False
     has_measurements: bool = False
-    legacy_roughness_class_count: int = 0
     has_paired_labels: bool = False
     complete_gecko_labels: int = 0
     complete_silicone_labels: int = 0
@@ -179,7 +174,6 @@ class DatasetPaths(BaseModel):
     root: Path
     objects: Path
     image_root: Path
-    descriptors: Path
     preparation_manifest: Path
     experiences: Path
     splits: Path
@@ -290,7 +284,11 @@ class Dataset(BaseModel):
             "second_images": len(
                 {item.path for item in self.second_images.values()}
             ),
-            "experience_rows": sum(len(item.gripper_outcomes) for item in self.objects.values()),
+            "experience_rows": sum(
+                outcome.complete
+                for item in self.objects.values()
+                for outcome in item.gripper_outcomes.values()
+            ),
             "source_sha256": self.source_fingerprint,
             "roughness_index": {
                 "count": len(roughness_values),
@@ -335,10 +333,10 @@ class PreparationManifest(BaseModel):
 
 
 class PreparedObjectCheckpoint(BaseModel):
-    """Dataset-neutral superset of the historical Exp-Force descriptor checkpoint."""
+    """Dataset-neutral descriptor and embedding preparation checkpoint."""
 
     schema_version: int = 3
-    dataset_id: str = "expforce"
+    dataset_id: str = "MatForceFinal"
     object_id: str
     object_name: str
     image_name: str

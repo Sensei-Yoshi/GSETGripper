@@ -18,7 +18,6 @@ from modules.hardware import (
     RoughnessSource,
     make_mock_bench,
 )
-from modules.roughness_representation import binary_roughness_category
 
 CFG = load_config()
 
@@ -66,14 +65,6 @@ def test_roughness_config_requires_a_positive_scale_and_increasing_direction():
             higher_is_rougher=False,
             characteristic_scale=250,
         )
-
-
-def test_binary_roughness_category_uses_1340_boundary():
-    threshold = CFG.roughness.binary_threshold
-
-    assert threshold == 1340.0
-    assert binary_roughness_category(1339.99, threshold) == "smooth"
-    assert binary_roughness_category(1340.0, threshold) == "rough"
 
 
 def test_group_and_oracle():

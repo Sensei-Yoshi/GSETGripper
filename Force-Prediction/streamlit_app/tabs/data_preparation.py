@@ -69,12 +69,6 @@ def render(context: AppContext) -> None:
         )
         + ". Higher values indicate rougher surfaces."
     )
-    if dataset.capabilities.legacy_roughness_class_count:
-        st.warning(
-            f"{dataset.capabilities.legacy_roughness_class_count} objects contain only "
-            "legacy roughness classes. Record numerical indices before using roughness "
-            "in E2 or E4-E6 as defined by each fixed input profile."
-        )
     distributions = [
         {"dimension": "Favored gripper", "category": category, "count": count}
         for category, count in summary["favored_counts"].items()

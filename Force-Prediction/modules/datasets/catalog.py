@@ -59,7 +59,6 @@ def dataset_paths(cfg: Config, dataset_id: str, image_root: Path | None = None) 
             if objects.is_dir()
             else (root / "images" if (root / "images").is_dir() else root)
         ),
-        descriptors=root / "descriptors",
         preparation_manifest=root / "preparation_manifest.json",
         experiences=cache / "experiences.jsonl",
         splits=root / "splits.json",
@@ -85,7 +84,7 @@ def discover_datasets(cfg: Config, data_root: Path | None = None) -> list[Datase
     return datasets
 
 
-def get_dataset(cfg: Config, dataset_id: str = "expforce") -> Dataset:
+def get_dataset(cfg: Config, dataset_id: str = "MatForceFinal") -> Dataset:
     path = cfg.root / "data" / dataset_id
     if not path.is_dir():
         raise KeyError(f"dataset folder {path} does not exist")
@@ -94,14 +93,14 @@ def get_dataset(cfg: Config, dataset_id: str = "expforce") -> Dataset:
 
 def load_dataset(cfg: Config, root: Path) -> Dataset:
     if (root / "dataset.csv").is_file():
-        dataset = _load_expforce(cfg, root)
+        dataset = _load_paired_csv(cfg, root)
     else:
         dataset = _load_image_folder(cfg, root)
     return attach_checkpoints(dataset)
 
 
-def _load_expforce(cfg: Config, root: Path) -> Dataset:
-    from ..expforce import load_rows
+def _load_paired_csv(cfg: Config, root: Path) -> Dataset:
+    from .paired_csv import load_rows
 
     dataset_cfg = cfg.model_copy(deep=True)
     dataset_cfg.dataset_id = root.name
@@ -128,12 +127,6 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
                 path=relative,
                 sha256=_file_hash(image_path),
                 available=image_path.is_file(),
-                remote_url=(
-                    "https://raw.githubusercontent.com/expforcesubmission/"
-                    f"Exp-Force-Website/main/images/{row.image_name}"
-                )
-                if root.name == "expforce"
-                else None,
             ),
             image_2=(
                 ImageArtifact(
@@ -146,7 +139,6 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
             ),
             mass_g=row.mass_g,
             roughness_index=row.roughness_index,
-            legacy_roughness_class=row.legacy_roughness_class,
             projected_contact_fraction=row.projected_contact_fraction,
             gripper_outcomes=_outcomes(
                 row.gecko_feasible,
@@ -168,7 +160,7 @@ def _load_expforce(cfg: Config, root: Path) -> Dataset:
     return Dataset(
         dataset_id=root.name,
         display_name=root.name,
-        adapter="expforce_paired_csv",
+        adapter="paired_csv",
         paths=paths,
         source_fingerprint=_file_hash(root / "dataset.csv") or "",
         objects=objects,
@@ -278,9 +270,6 @@ def _attach_manual_measurements(
         return
     try:
         payload = json.loads(path.read_text(encoding="utf-8"))
-        if int(payload.get("schema_version", 1)) < 2:
-            payload["legacy_roughness_class"] = payload.get("roughness_class")
-            payload.pop("roughness_class", None)
         values = DatasetObjectMeasurements.model_validate(payload)
     except (OSError, ValueError):
         return
@@ -289,7 +278,6 @@ def _attach_manual_measurements(
     item.mass_g = values.mass_g
     item.split = values.split
     item.roughness_index = values.roughness_index
-    item.legacy_roughness_class = values.legacy_roughness_class
     if values.projected_contact_fraction is not None:
         item.projected_contact_fraction = values.projected_contact_fraction
     item.gripper_outcomes = _outcomes(
@@ -345,9 +333,6 @@ def _capabilities(
             and item.roughness_index is not None
             and item.projected_contact_fraction is not None
             for item in values
-        ),
-        legacy_roughness_class_count=sum(
-            item.legacy_roughness_class is not None for item in values
         ),
         has_paired_labels=bool(values) and len(complete_pairs) == len(values),
         complete_gecko_labels=complete_gecko_labels,

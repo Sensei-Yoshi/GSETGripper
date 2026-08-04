@@ -138,7 +138,9 @@ def prepare_dataset_stages(
                     embedding_checkpoint = checkpoints.get(item.object_id)
                     if embedding_checkpoint is None:
                         continue
-                    text = build_embedding_text(embedding_checkpoint.descriptor.description)
+                    text = build_embedding_text(
+                        embedding_checkpoint.descriptor.retrieval_description
+                    )
                     descriptor_hash = sha256_bytes(text.encode("utf-8"))
                     reusable = (
                         embedding_checkpoint.embedding_status == "ready"
@@ -230,7 +232,7 @@ def prepare_dataset_stages(
         status.updated_at = datetime.now(UTC).isoformat()
         save_manifest(dataset, manifest)
 
-    return _legacy_manifest_view(dataset, manifest)
+    return _manifest_summary(dataset, manifest)
 
 
 def _prepare_description(
@@ -540,7 +542,7 @@ def _surface_items(dataset: Dataset) -> list[DatasetObject]:
     return list(by_surface.values())
 
 
-def _legacy_manifest_view(dataset: Dataset, manifest: PreparationManifest) -> dict:
+def _manifest_summary(dataset: Dataset, manifest: PreparationManifest) -> dict:
     descriptions = manifest.stages.get(PreparationStage.DESCRIPTIONS.value, StageStatus())
     embeddings = manifest.stages.get(PreparationStage.EMBEDDINGS.value, StageStatus())
     roughness = manifest.stages.get(PreparationStage.ROUGHNESS.value, StageStatus())
@@ -551,7 +553,11 @@ def _legacy_manifest_view(dataset: Dataset, manifest: PreparationManifest) -> di
         **manifest.model_dump(mode="json"),
         "status": "failed" if failed else "complete",
         "objects": len(dataset.objects),
-        "experience_rows": sum(len(item.gripper_outcomes) for item in dataset.objects.values()),
+        "experience_rows": sum(
+            outcome.complete
+            for item in dataset.objects.values()
+            for outcome in item.gripper_outcomes.values()
+        ),
         "descriptors_completed": descriptions.completed,
         "embeddings_completed": embeddings.completed,
         "roughness_completed": roughness.completed,

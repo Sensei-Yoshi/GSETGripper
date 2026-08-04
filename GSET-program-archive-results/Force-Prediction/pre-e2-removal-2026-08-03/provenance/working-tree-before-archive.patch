@@ -1,0 +1,778 @@
+diff --git a/Force-Prediction/CLAUDE.md b/Force-Prediction/CLAUDE.md
+index 66ae402..9310261 100644
+--- a/Force-Prediction/CLAUDE.md
++++ b/Force-Prediction/CLAUDE.md
+@@ -41,8 +41,9 @@ scored separately.
+ ## Locked conventions
+ 
+ - Force means stationary-finger load-cell normal force in newtons; never double it.
+-- Hardware and predictions are continuous from `0` through `8 N`; never snap predictions
+-  to the collection staircase.
++- Benchmark predictions are continuous and nonnegative with no analytical upper cap; never
++  snap predictions to the collection staircase. The physical rig retains its separate 8 N
++  handoff/collection safety guard.
+ - `retrieval.k` in `config.yaml` is the default used by E3/E4 and the UI.
+ - `surface_id` identifies a physical contact surface; `condition_id` identifies one
+   independently measured condition; baseline `object_id` values remain unchanged.
+@@ -68,7 +69,7 @@ scored separately.
+ | `experiments/` | Strategy catalog, shared helper, and per-ID implementations |
+ | `pipeline.py` | Public facade and object-to-query adapter |
+ | `contracts.py` | Experience, query, joint prediction, selection models |
+-| `prediction.py` | Single/joint force requests, continuous clamp, selector |
++| `prediction.py` | Single/joint force requests, nonnegative normalization, selector |
+ | `retrieval.py` | Embedding providers and E3 semantic/E4 hybrid retrieval |
+ | `physics.py` | Mock-hardware analytical equations and calibration diagnostics |
+ | `evaluation.py` | Surface-grouped cross-validation splits and metrics |
+diff --git a/Force-Prediction/README.md b/Force-Prediction/README.md
+index 638ecbf..4fd2879 100644
+--- a/Force-Prediction/README.md
++++ b/Force-Prediction/README.md
+@@ -3,8 +3,9 @@
+ Given an unseen object, estimate the continuous minimum stationary-finger normal force
+ for the globally selected TPU–Gecko and/or TPU–silicone candidates. Paired runs then
+ select the lowest-force feasible option.
+-The command range is continuous from `0` to `8 N`; predictions are never rounded to a
+-collection grid.
++Benchmark force estimates are continuous, nonnegative, and have no analytical upper cap;
++predictions are never rounded to a collection grid. The physical rig retains its separate
++8 N handoff/collection safety guard.
+ 
+ The active research suite has six explicit VLM ablation methods:
+ 
+@@ -148,7 +149,7 @@ python -m modules.collect --dataset collected --port /dev/cu.usbmodemXXXX --conf
+ 
+ Mock collection simulates hardware but still uses Gemini for object descriptions. The
+ coarse/fine staircase controls ground-truth search resolution only. It does not limit
+-the precision of predictions or hardware commands. See
++the precision or range of benchmark predictions. See
+ [`docs/data_collection_sop.md`](docs/data_collection_sop.md).
+ 
+ ## Code map
+@@ -159,7 +160,7 @@ the precision of predictions or hardware commands. See
+ | `modules/experiments/` | Canonical per-experiment strategies plus shared helpers |
+ | `modules/pipeline.py` | Thin shared `fit`/`predict` facade |
+ | `modules/contracts.py` | Records, joint predictions, and selection contracts |
+-| `modules/prediction.py` | Joint VLM request, force clamp, and selector |
++| `modules/prediction.py` | Joint VLM request, nonnegative force normalization, and selector |
+ | `modules/retrieval.py` | Paired-object embeddings and hybrid retrieval |
+ | `modules/physics.py` | Reduced-order equations, bounded calibration, solver |
+ | `modules/evaluation.py` | Grouped splits and force/selection/recommendation metrics |
+diff --git a/Force-Prediction/config.yaml b/Force-Prediction/config.yaml
+index e1c1f2f..4c42b7f 100644
+--- a/Force-Prediction/config.yaml
++++ b/Force-Prediction/config.yaml
+@@ -18,12 +18,14 @@ paths:
+   cache: data/cache
+ 
+ # --- Force conventions (single source of truth) ------------------------------
+-# NOTE: this resolves the 5 N vs 8 N inconsistency in project-context.md.
+ # All force values are the normal force read by the load cell behind the
+ # STATIONARY finger, in newtons. Never doubled, never summed across fingers.
+ force:
+-  limit_n: 8.0          # hardware safe limit; failure at this => infeasible
+-  min_n: 0.0            # controller accepts continuous commands from 0 to limit_n
++  # Physical rig/collection safety guard only. Dataset labels, benchmark predictions,
++  # and evaluation are not capped by this value; hardware handoff still rejects unsafe
++  # commands above it.
++  limit_n: 8.0
++  min_n: 0.0            # benchmark predictions are continuous and nonnegative
+   hold_seconds: 3.0     # required successful-lift hold time
+   lift_height_mm: 50.0
+   gravity: 9.81
+diff --git a/Force-Prediction/data/MatForceFinal/dataset.csv b/Force-Prediction/data/MatForceFinal/dataset.csv
+index 84fd612..86335cf 100644
+--- a/Force-Prediction/data/MatForceFinal/dataset.csv
++++ b/Force-Prediction/data/MatForceFinal/dataset.csv
+@@ -1,45 +1,45 @@
+-Object,Image,split,condition_id,Mass_g,roughness_index,projected_contact_fraction,silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible,favored_gripper
+-Beaker,beaker.jpg,test,baseline,351.24,1106.84,0.85,,,0.76,True,
+-Lock,lock.jpg,train,baseline,158.66,1185.41,0.1428571429,,,0.55,True,
+-500g Weight,500g_weight.jpg,train,baseline,500.0,1129.82,0.5952380952,,,1.03,True,
+-Apple,apple.jpg,train,baseline,159.44,562.94,0.119047619,,,0.41,True,
+-Banana,banana.jpg,train,baseline,202.6,1072.02,0.2619047619,,,2.523,True,
+-Metal Water Bottle,metal water bottle.jpg,train,baseline,551.01,892.99,1.0,,,1.32,True,
+-Leather Sunglasses Case,leather sunglasses case.jpg,train,baseline,179.9,2014.79,0.5476190476,,,1.906,True,
+-Soldering Iron Box,Soldering Iron Box.jpg,train,baseline,3500.0,852.5,0.7619047619,,,6.2,True,
+-Lunch Box,Lunch Box.jpg,train,baseline,627.68,1737.81,1.0,,,5.863,True,
+-Big Stone,big_stone.jpg,train,baseline,278.8,2048.83,0.8333333333,,,4.623,True,
+-Ketchup,ketchup.jpg,train,baseline,293.77,705.18,0.1547619048,,,0.24,True,
+-Foam Roller,Foam Roller.jpg,train,baseline,153.38,1353.18,0.4761904762,,,0.723,True,
+-Pretzel Bag,pretzel_bag.jpg,train,baseline,31.97,997.94,0.4166666667,,,0.05,True,
+-Orange,orange.jpg,train,baseline,154.17,1068.18,0.1,,,0.38,True,
+-Headphones Case,Headphones Case.jpg,train,baseline,218.15,1610.85,1.0,,,3.01,True,
+-Camera Cardboard Box,camera_cardboard_box.jpg,test,baseline,871.93,804.32,1.0,,,6.22,True,
+-Wallet 1,Wallet 1.jpg,train,baseline,139.66,1596.55,1.0,,,2.013,True,
+-Wooden Block,wooden block.jpg,train,baseline,403.41,557.48,1.0,,,1.32,True,
+-Cetaphil,cetaphil.jpg,train,baseline,403.68,797.68,0.8333333333,,,1.923,True,
+-Wallet 2,wallet 2.jpg,train,baseline,85.62,1623.1,0.75,,,0.75,True,
+-Multimeter,multimeter.jpeg,train,baseline,289.32,463.64,0.2619047619,,,2.505,True,
+-CapriSun,caprisun.jpeg,train,baseline,186.01,557.2,0.2976190476,,,0.417,True,
+-Red Bull,red_bull.jpg,train,baseline,332.86,1121.62,1.0,,,1.746,True,
+-Soda Can,soda_can.jpg,train,baseline,321.71,954.75,0.9047619048,,,1.816,True,
+-Book,book.jpg,train,baseline,540.59,646.42,1.0,,,2.68,True,
+-Sponge,sponge.jpeg,train,baseline,3.15,2073.07,0.5952380952,,,0.231,True,
+-Toilet Paper,Toilet Paper.jpg,train,baseline,117.92,1068.17,1.0,,,1.112,True,
+-Clay Bowl,clay_bowl.jpg,test,baseline,286.71,1847.68,0.4166666667,,,3.63,True,
+-Small Book,small_book.jpg,test,baseline,118.4,1532.23,0.880952381,,,1.03,True,
+-Avacado,avacado.jpeg,test,baseline,157.55,2415.65,0.1,,,1.24,True,
+-Large Cardboard Box,large_cardboard_box.jpg,train,baseline,671.94,810.34,1.0,,,4.54,True,
+-Very Smooth Tile,very_smooth_tile.jpg,test,baseline,178.52,730.45,1.0,,,0.25,True,
+-Rough Tile,rough_tile.jpg,test,baseline,178.52,1992.71,0.5952380952,,,2.459,True,
+-Soap Bottle,soap_bottle.jpg,test,baseline,236.11,736.99,1.0,,,0.303,True,
+-Smooth Screw Box,smooth_screw_box.jpg,train,baseline,819.27,791.89,1.0,,,1.3,True,
+-Mold Release Spray Box,mold release spray box.jpeg,test,baseline,156.15,1123.76,1.0,,,0.42,True,
+-Large hand sanitizer,large_hand_sanitizer_sa_1.jpeg,test,baseline,836.04,958.71,1.0,,,1.3,True,
+-Large Cardboard Box,large_cardboard_box.jpg,train,condition_2,671.94,810.34,0.5,,,6.154,True,
+-Poker Box,poker_box.jpg,test,baseline,457.69,800.2,1.0,,,2.07,True,
+-Creatine,creatine.jpg,train,baseline,381.0,823.15,1.0,,,2.327,True,
+-Creatine,creatine.jpg,train,condition_2,381.0,823.15,0.5,,,3.961,True,
+-Beaker,beaker.jpg,test,condition_2,351.24,1106.84,0.25,,,4.19,True,
+-Computer,computer.jpg,test,baseline,1550.0,780.1,1.0,,,2.5,True,
+-Large hand sanitizer,large_hand_sanitizer_sa_1.jpeg,surface_validation,condition_2,836.04,958.71,0.48,,,2.1,True,
++Object,Image,split,condition_id,Mass_g,roughness_index,projected_contact_fraction,silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible,favored_gripper
++Beaker,beaker.jpg,train,baseline,351.24,1106.84,0.85,,True,0.76,True,
++Lock,lock.jpg,train,baseline,158.66,1185.41,0.1428571429,1.935,True,0.55,True,gecko
++500g Weight,500g_weight.jpg,train,baseline,500.0,1129.82,0.5952380952,4.983,True,1.03,True,gecko
++Apple,apple.jpg,train,baseline,159.44,562.94,0.119047619,1.002,True,0.41,True,gecko
++Banana,banana.jpg,train,baseline,202.6,1072.02,0.2619047619,2.785,True,2.523,True,gecko
++Metal Water Bottle,metal water bottle.jpg,train,baseline,551.01,892.99,1.0,3.554,True,1.32,True,gecko
++Leather Sunglasses Case,leather sunglasses case.jpg,train,baseline,179.9,2014.79,0.5476190476,1.507,True,1.906,True,silicone
++Soldering Iron Box,Soldering Iron Box.jpg,train,baseline,3500.0,852.5,0.7619047619,7.4,True,6.2,True,gecko
++Lunch Box,Lunch Box.jpg,train,baseline,627.68,1737.81,1.0,,True,5.863,True,
++Big Stone,big_stone.jpg,train,baseline,278.8,2048.83,0.8333333333,1.468,True,4.623,True,silicone
++Ketchup,ketchup.jpg,train,baseline,293.77,705.18,0.1547619048,1.6,True,0.24,True,gecko
++Foam Roller,Foam Roller.jpg,train,baseline,153.38,1353.18,0.4761904762,0.25,True,0.723,True,silicone
++Pretzel Bag,pretzel_bag.jpg,train,baseline,31.97,997.94,0.4166666667,0.306,True,0.05,True,gecko
++Orange,orange.jpg,train,baseline,154.17,1068.18,0.1,1.912,True,0.38,True,gecko
++Headphones Case,Headphones Case.jpg,train,baseline,218.15,1610.85,1.0,1.985,True,3.01,True,silicone
++Camera Cardboard Box,camera_cardboard_box.jpg,test,baseline,871.93,804.32,1.0,4.272,True,6.22,True,silicone
++Wallet 1,Wallet 1.jpg,train,baseline,139.66,1596.55,1.0,0.713,True,2.013,True,silicone
++Wooden Block,wooden block.jpg,train,baseline,403.41,557.48,1.0,2.074,True,1.32,True,gecko
++Cetaphil,cetaphil.jpg,train,baseline,403.68,797.68,0.8333333333,3.533,True,1.923,True,gecko
++Wallet 2,wallet 2.jpg,train,baseline,85.62,1623.1,0.75,0.359,True,0.75,True,silicone
++Multimeter,multimeter.jpeg,train,baseline,289.32,463.64,0.2619047619,3.323,True,2.505,True,gecko
++CapriSun,caprisun.jpeg,train,baseline,186.01,557.2,0.2976190476,1.831,True,0.417,True,gecko
++Red Bull,red_bull.jpg,train,baseline,332.86,1121.62,1.0,5.631,True,1.746,True,gecko
++Soda Can,soda_can.jpg,train,baseline,321.71,954.75,0.9047619048,5.42,True,1.816,True,gecko
++Book,book.jpg,train,baseline,540.59,646.42,1.0,3.159,True,2.68,True,gecko
++Sponge,sponge.jpeg,train,baseline,3.15,2073.07,0.5952380952,0.025,True,0.231,True,silicone
++Toilet Paper,Toilet Paper.jpg,train,baseline,117.92,1068.17,1.0,3.368,True,1.112,True,gecko
++Clay Bowl,clay_bowl.jpg,test,baseline,286.71,1847.68,0.4166666667,1.25,True,3.63,True,silicone
++Small Book,small_book.jpg,test,baseline,118.4,1532.23,0.880952381,0.986,True,1.03,True,silicone
++Avacado,avacado.jpeg,test,baseline,157.55,2415.65,0.1,0.85,True,1.24,True,silicone
++Large Cardboard Box,large_cardboard_box.jpg,train,baseline,671.94,810.34,1.0,3.1,True,4.54,True,silicone
++Very Smooth Tile,very_smooth_tile.jpg,test,baseline,178.52,730.45,1.0,1.925,True,0.25,True,gecko
++Rough Tile,rough_tile.jpg,test,baseline,178.52,1992.71,0.5952380952,1.484,True,2.459,True,silicone
++Soap Bottle,soap_bottle.jpg,test,baseline,236.11,736.99,1.0,3.166,True,0.303,True,gecko
++Smooth Screw Box,smooth_screw_box.jpg,train,baseline,819.27,791.89,1.0,5.324,True,1.3,True,gecko
++Mold Release Spray Box,mold release spray box.jpeg,test,baseline,156.15,1123.76,1.0,0.886,True,0.42,True,gecko
++Large hand sanitizer,large_hand_sanitizer_sa_1.jpeg,test,baseline,836.04,958.71,1.0,3.2,True,1.3,True,gecko
++Large Cardboard Box,large_cardboard_box.jpg,train,condition_2,671.94,810.34,0.5,3.1,True,6.154,True,silicone
++Poker Box,poker_box.jpg,test,baseline,457.69,800.2,1.0,1.976,True,2.07,True,silicone
++Creatine,creatine.jpg,train,baseline,381.0,823.15,1.0,4.887,True,2.327,True,gecko
++Creatine,creatine.jpg,train,condition_2,381.0,823.15,0.1,,True,3.961,True,
++Beaker,beaker.jpg,train,condition_2,351.24,1106.84,0.25,,True,4.19,True,
++Computer,computer.jpg,test,baseline,1550.0,780.1,1.0,10.506,True,2.5,True,gecko
++Large hand sanitizer,large_hand_sanitizer_sa_1.jpeg,surface_validation,condition_2,836.04,958.71,0.48,,True,2.1,True,
+diff --git a/Force-Prediction/data/MatForceFinal/preparation_manifest.json b/Force-Prediction/data/MatForceFinal/preparation_manifest.json
+index 719d039..67f0835 100644
+--- a/Force-Prediction/data/MatForceFinal/preparation_manifest.json
++++ b/Force-Prediction/data/MatForceFinal/preparation_manifest.json
+@@ -1,33 +1,25 @@
+ {
+   "schema_version": 4,
+   "dataset_id": "MatForceFinal",
+-  "source_fingerprint": "f661edaf85fa770f5173a68d78bda844d47480cceb61d191b961bb62337a868f",
+-  "created_at": "2026-07-30T20:48:57.829067+00:00",
+-  "updated_at": "2026-07-31T03:13:35.099375+00:00",
++  "source_fingerprint": "3d3ebd3a2003b5d46eb3e9bc8893b8789f1e55ac87724a354cb0c71010385a50",
++  "created_at": "2026-08-04T01:03:45.739590+00:00",
++  "updated_at": "2026-08-04T01:03:45.845462+00:00",
+   "stages": {
+     "index": {
+       "status": "complete",
+-      "completed": 41,
+-      "total": 41,
++      "completed": 40,
++      "total": 40,
+       "failed_object": null,
+       "error": null,
+-      "updated_at": "2026-07-30T20:48:57.852724+00:00"
++      "updated_at": "2026-08-04T01:03:45.743093+00:00"
+     },
+     "descriptions": {
+       "status": "complete",
+-      "completed": 41,
+-      "total": 41,
++      "completed": 40,
++      "total": 40,
+       "failed_object": null,
+       "error": null,
+-      "updated_at": "2026-07-30T20:48:58.517251+00:00"
+-    },
+-    "embeddings": {
+-      "status": "complete",
+-      "completed": 41,
+-      "total": 41,
+-      "failed_object": null,
+-      "error": null,
+-      "updated_at": "2026-07-30T20:48:58.852567+00:00"
++      "updated_at": "2026-08-04T01:03:45.841211+00:00"
+     },
+     "experiences": {
+       "status": "complete",
+@@ -35,7 +27,7 @@
+       "total": 44,
+       "failed_object": null,
+       "error": null,
+-      "updated_at": "2026-07-31T03:13:35.099360+00:00"
++      "updated_at": "2026-08-04T01:03:45.845435+00:00"
+     }
+   },
+   "missing_images": [],
+@@ -76,7 +68,6 @@
+     "soap_bottle",
+     "smooth_screw_box",
+     "mold_release_spray_box",
+-    "plastic_resistor_box",
+     "large_hand_sanitizer",
+     "poker_box",
+     "creatine",
+diff --git a/Force-Prediction/docs/data_collection_sop.md b/Force-Prediction/docs/data_collection_sop.md
+index 6d85213..a04e84b 100644
+--- a/Force-Prediction/docs/data_collection_sop.md
++++ b/Force-Prediction/docs/data_collection_sop.md
+@@ -27,7 +27,8 @@ dataset, physics, prompts, predictions, and metrics.
+ `collect.py` currently brackets the minimum in **1.0 N** steps, then refines in
+ **0.01 N** steps within the bracketing interval. These values are configured
+ under `collection` in `config.yaml`. They describe measurement resolution only:
+-the controller and all model predictions remain continuous from `0` to `8 N`.
++the physical controller remains continuous from `0` to its configured safety limit. Offline
++dataset labels and benchmark predictions are nonnegative and are not capped by that limit.
+ 
+ ## Hold constant (and document)
+ Finger geometry, pad area, object orientation, grasp height, closing speed, force
+diff --git a/Force-Prediction/docs/experiments.md b/Force-Prediction/docs/experiments.md
+index 268895b..4825821 100644
+--- a/Force-Prediction/docs/experiments.md
++++ b/Force-Prediction/docs/experiments.md
+@@ -77,8 +77,9 @@ change an experiment-hidden measurement are excluded. None receives a physics pr
+ ## Evaluation and reporting
+ 
+ The force convention is stationary-finger load-cell normal force, never doubled. Model
+-outputs are continuous from `0` to `8 N`; ground-truth search resolution does not quantize
+-predictions. Report force MAE, RMSE, median absolute error, threshold accuracy,
++outputs are continuous, nonnegative, and uncapped for benchmark evaluation; ground-truth
++search resolution does not quantize predictions. The rig retains a separate physical safety
++guard. Report force MAE, RMSE, median absolute error, threshold accuracy,
+ feasibility metrics, selection accuracy, infeasible-pick rate, and regret.
+ 
+ Benchmark generation is deliberately truth-free. It persists each query input, prediction,
+diff --git a/Force-Prediction/docs/project-context.md b/Force-Prediction/docs/project-context.md
+index 30a475c..b40ab55 100644
+--- a/Force-Prediction/docs/project-context.md
++++ b/Force-Prediction/docs/project-context.md
+@@ -60,13 +60,15 @@ Every force value uses one convention:
+ - newtons;
+ - normal force measured behind the stationary gripper finger;
+ - never doubled and never summed across both fingers;
+-- continuous command range from `0` through `8.0 N`;
++- nonnegative, continuous dataset labels and benchmark predictions with no analytical upper cap;
++- a separate physical rig command/collection safety range from `0` through `8.0 N`;
+ - no model-output rounding or snapping;
+ - nominal successful hold of `3.0 s` after a `50 mm` lift.
+ 
+-The hardware accepts arbitrary continuous commands inside this range. The collection
++The hardware accepts arbitrary continuous commands inside its guarded range. The collection
+ staircase has separate coarse and fine steps because ground-truth search needs a practical
+-experimental resolution. Those steps do not constrain later predictions or commands.
++experimental resolution. Neither the collection staircase nor the hardware guard caps stored
++experience labels or offline benchmark predictions.
+ 
+ A feasible record stores the measured minimum successful force. An infeasible record stores
+ `min_force_n: null` and the force limit at which it failed. A failure at `8 N` must never be
+@@ -346,7 +348,8 @@ recommendation_summary: auditable comparison and recommendation
+ Each per-gripper prediction includes compatibility, feasibility, continuous force, visible
+ surface properties, evidence used, an explicit calculation summary, assumptions and
+ uncertainty, and a detailed auditable rationale. The implementation rebinds each nested
+-candidate to the correct gripper and continuously clamps force to the configured range.
++candidate to the correct gripper and normalizes force to a nonnegative value without an
++analytical upper cap.
+ 
+ For paired runs, `SelectionResult` stores both the authoritative Python choice and the raw
+ model recommendation, plus `recommendation_agrees_with_selector`. This supports direct evaluation
+@@ -411,7 +414,7 @@ The package is organized by concern, with one module per experiment strategy:
+ | `modules/experiments/` | Shared strategy helper, eligibility, catalog, and E1–E6 modules |
+ | `modules/pipeline.py` | Thin shared fit/predict facade |
+ | `modules/contracts.py` | Experience, query, joint prediction, and selection models |
+-| `modules/prediction.py` | Joint VLM request, clamp, selector |
++| `modules/prediction.py` | Joint VLM request, nonnegative force normalization, selector |
+ | `modules/retrieval.py` | Semantic-only and hybrid paired-object retrieval |
+ | `modules/physics.py` | Equations, calibration, and minimum-force solve |
+ | `modules/evaluation.py` | Grouped splits and metrics |
+@@ -604,7 +607,7 @@ Network-isolated verification with explicit Gemini test fakes must cover:
+ - E4 uses only mass, E5 adds continuous roughness, and E6 retains E5 surface ranking while
+   adding projected contact to query and controlled-condition VLM evidence;
+ - E1/E3 run without physical measurements while measured conditions report missing inputs;
+-- continuous force clamps and infeasibility behavior;
++- nonnegative uncapped benchmark forces and infeasibility behavior;
+ - selector authority and recommendation disagreement metrics;
+ - schema-v10 truth-free batches, versioned partial evaluations, resumable suites, and legacy read-only compatibility;
+ - comparison panels contain no identity line and export PNG, SVG, and CSV;
+diff --git a/Force-Prediction/modules/datasets/editing.py b/Force-Prediction/modules/datasets/editing.py
+index c6f2579..515e383 100644
+--- a/Force-Prediction/modules/datasets/editing.py
++++ b/Force-Prediction/modules/datasets/editing.py
+@@ -233,14 +233,6 @@ def _validate_edit(
+     *,
+     require_enabled_measurements: bool = False,
+ ) -> None:
+-    for gripper, force in (
+-        ("silicone", edit.silicone_force_n),
+-        ("gecko", edit.gecko_force_n),
+-    ):
+-        if force is not None and force > cfg.force.limit_n:
+-            raise ValueError(
+-                f"{gripper} force cannot exceed the {cfg.force.limit_n:g} N hardware limit"
+-            )
+     if not require_enabled_measurements:
+         return
+     if edit.mass_g is None:
+diff --git a/Force-Prediction/modules/datasets/models.py b/Force-Prediction/modules/datasets/models.py
+index f237ce1..779a1ed 100644
+--- a/Force-Prediction/modules/datasets/models.py
++++ b/Force-Prediction/modules/datasets/models.py
+@@ -290,7 +290,11 @@ class Dataset(BaseModel):
+             "second_images": len(
+                 {item.path for item in self.second_images.values()}
+             ),
+-            "experience_rows": sum(len(item.gripper_outcomes) for item in self.objects.values()),
++            "experience_rows": sum(
++                outcome.complete
++                for item in self.objects.values()
++                for outcome in item.gripper_outcomes.values()
++            ),
+             "source_sha256": self.source_fingerprint,
+             "roughness_index": {
+                 "count": len(roughness_values),
+diff --git a/Force-Prediction/modules/datasets/preparation.py b/Force-Prediction/modules/datasets/preparation.py
+index 19057ae..fb6d668 100644
+--- a/Force-Prediction/modules/datasets/preparation.py
++++ b/Force-Prediction/modules/datasets/preparation.py
+@@ -551,7 +551,11 @@ def _legacy_manifest_view(dataset: Dataset, manifest: PreparationManifest) -> di
+         **manifest.model_dump(mode="json"),
+         "status": "failed" if failed else "complete",
+         "objects": len(dataset.objects),
+-        "experience_rows": sum(len(item.gripper_outcomes) for item in dataset.objects.values()),
++        "experience_rows": sum(
++            outcome.complete
++            for item in dataset.objects.values()
++            for outcome in item.gripper_outcomes.values()
++        ),
+         "descriptors_completed": descriptions.completed,
+         "embeddings_completed": embeddings.completed,
+         "roughness_completed": roughness.completed,
+diff --git a/Force-Prediction/modules/prediction.py b/Force-Prediction/modules/prediction.py
+index 04df574..101a99f 100644
+--- a/Force-Prediction/modules/prediction.py
++++ b/Force-Prediction/modules/prediction.py
+@@ -36,14 +36,15 @@ GRIPPERS = (Gripper.GECKO, Gripper.SILICONE)
+ def _force_constraints(cfg: Config) -> dict:
+     return {
+         "minimum_n": cfg.force.min_n,
+-        "maximum_n": cfg.force.limit_n,
++        "maximum_n": None,
+         "continuous_command": True,
++        "benchmark_force_is_uncapped": True,
+     }
+ 
+ 
+ def clamp_force(force: float, cfg: Config) -> float:
+-    """Keep a continuous force estimate within the hardware command range."""
+-    return min(cfg.force.limit_n, max(cfg.force.min_n, float(force)))
++    """Keep a continuous benchmark estimate nonnegative without an upper cap."""
++    return max(cfg.force.min_n, float(force))
+ 
+ 
+ def _query_payload(query: Query, cfg: Config, *, include_measured: bool) -> dict:
+diff --git a/Force-Prediction/modules/reporting.py b/Force-Prediction/modules/reporting.py
+index 27ac733..8e09d94 100644
+--- a/Force-Prediction/modules/reporting.py
++++ b/Force-Prediction/modules/reporting.py
+@@ -573,6 +573,16 @@ def calibration_figure(artifacts: dict[str, dict]):  # noqa: ANN201
+         squeeze=False,
+     )
+     colors = {"gecko": "#147a4a", "silicone": "#b45f19"}
++    calibration_values = [
++        float(value)
++        for row in long_rows
++        for value in (row["true_force_n"], row["predicted_force_n"])
++        if value is not None
++    ]
++    axis_limit = max(
++        1.0,
++        math.ceil(max(calibration_values, default=1.0) * 1.15 * 2) / 2,
++    )
+     for row_index, gripper in enumerate(grippers):
+         for column_index, experiment in enumerate(present):
+             axis = axes[row_index][column_index]
+@@ -601,14 +611,19 @@ def calibration_figure(artifacts: dict[str, dict]):  # noqa: ANN201
+                 f"RMSE {metrics.get('rmse', float('nan')):.3f} N | n={metrics.get('n', 0)}",
+                 fontsize=9,
+             )
+-            axis.set_xlim(0, 8)
+-            axis.set_ylim(0, 8)
++            axis.set_xlim(0, axis_limit)
++            axis.set_ylim(0, axis_limit)
+             axis.grid(alpha=0.18)
+             if row_index == len(grippers) - 1:
+                 axis.set_xlabel("Ground-truth force (N)")
+             if column_index == 0:
+                 axis.set_ylabel("Predicted force (N)")
+-    figure.suptitle("E1–E6 force calibration by gripper", fontsize=14)
++    experiment_label = (
++        present[0].upper()
++        if len(present) == 1
++        else f"{present[0].upper()}–{present[-1].upper()}"
++    )
++    figure.suptitle(f"{experiment_label} force calibration by gripper", fontsize=14)
+     figure.tight_layout()
+     return figure
+ 
+diff --git a/Force-Prediction/modules/suites.py b/Force-Prediction/modules/suites.py
+index 605370f..c59a307 100644
+--- a/Force-Prediction/modules/suites.py
++++ b/Force-Prediction/modules/suites.py
+@@ -29,7 +29,7 @@ from .reporting import (
+ 
+ PRIMARY_EXPERIMENTS = ("e1", "e2", "e3", "e4", "e5", "e6")
+ SUITE_SCHEMA_VERSION = 11
+-SUITE_REPORTING_VERSION = 2
++SUITE_REPORTING_VERSION = 3
+ 
+ 
+ def normalize_suite_experiments(
+diff --git a/Force-Prediction/prompts.yaml b/Force-Prediction/prompts.yaml
+index 3b32066..b970ca8 100644
+--- a/Force-Prediction/prompts.yaml
++++ b/Force-Prediction/prompts.yaml
+@@ -50,18 +50,19 @@ prompts:
+     \ and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\n\
+     All force values are in newtons and refer exclusively to the normal force measured\n\
+     by the load cell mounted behind the stationary gripper finger. Do not double the\n\
+-    force and do not convert it into a summed two-finger force. The controller accepts\n\
+-    continuous commands from 0 to 8 N. Return your best continuous estimate.\n\nAVAILABLE\
+-    \ GRIPPERS\nThe request supplies fixed written descriptions for the requested\
+-    \ gripper embodiment\nor embodiments. Predict only those requested candidates\
+-    \ and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied\
+-    \ active embodiment descriptions to reason about contact mechanics,\nvisible material,\
+-    \ surface condition, and local geometry. Do not assume an inactive\ngripper is\
+-    \ available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\n\
+-    Any supplied mass, roughness evidence, and projected contact fraction are authoritative.\
+-    \ Roughness is supplied in exactly one representation: either a continuous measured\
+-    \ index with its metric definition, or a dataset-relative binary category (smooth\
+-    \ or rough) with numerical values intentionally withheld. When a binary category\
++    force and do not convert it into a summed two-finger force. Return your best continuous,\n\
++    nonnegative estimate without imposing an 8 N analytical ceiling; measured experiences\n\
++    and benchmark predictions above 8 N remain valid.\n\nAVAILABLE GRIPPERS\nThe request\
++    \ supplies fixed written descriptions for the requested gripper embodiment\nor\
++    \ embodiments. Predict only those requested candidates and apply their context\n\
++    consistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions\
++    \ to reason about contact mechanics,\nvisible material, surface condition, and\
++    \ local geometry. Do not assume an inactive\ngripper is available, and do not\
++    \ infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass,\
++    \ roughness evidence, and projected contact fraction are authoritative. Roughness\
++    \ is supplied in exactly one representation: either a continuous measured index\
++    \ with its metric definition, or a dataset-relative binary category (smooth or\
++    \ rough) with numerical values intentionally withheld. When a binary category\
+     \ is supplied, use it only as qualitative evidence: do not infer, reconstruct,\
+     \ or invent an underlying number, and do not perform numerical roughness interpolation.\n\
+     If an experiment intentionally omits them, state uncertainty rather than pretending\n\
+@@ -76,14 +77,14 @@ prompts:
+     \ supplied comparison_to_baseline metadata to identify exactly which measured\
+     \ factors changed. Do not blindly average sibling-condition forces. Prefer the\
+     \ condition most comparable to the query. A one-field change may support a directional\
+-    \ within-object relationship; when multiple fields changed, treat their effects jointly\
+-    \ and do not attribute the force difference to one factor alone. Greater projected\
+-    \ contact by itself must not justify a greater required normal force. Do not infer\
+-    \ a universal contact coefficient from the supplied condition sweeps.\nUse only\
+-    \ comparison fields actually present in the request. If no experiences are\nsupplied,\
+-    \ do not imply that retrieval evidence was used.\n\
+-    \nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence\
+-    \ supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients.\
++    \ within-object relationship; when multiple fields changed, treat their effects\
++    \ jointly and do not attribute the force difference to one factor alone. Greater\
++    \ projected contact by itself must not justify a greater required normal force.\
++    \ Do not infer a universal contact coefficient from the supplied condition sweeps.\n\
++    Use only comparison fields actually present in the request. If no experiences\
++    \ are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE\
++    \ JUSTIFICATION\nUse quantitative checks when the available evidence supports\
++    \ them. Do not invent\ncalibrated friction, adhesion, or contact coefficients.\
+     \ Object weight may be used as\na sanity check, but it is not itself the required\
+     \ gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied\
+     \ schema. For each requested gripper,\nrecord every material piece of supplied\
+@@ -164,9 +165,10 @@ prompts:
+ 
+       Use the object image, fixed gripper embodiment context, supplied authoritative
+ 
+-      mass, and one object list ranked using semantic similarity and mass only to estimate
+-      the requested force or forces. Roughness and projected contact are intentionally
+-      withheld and were not used for ranking; do not infer or claim access to either.
++      mass, and one object list ranked using semantic similarity and mass only to
++      estimate the requested force or forces. Roughness and projected contact are
++      intentionally withheld and were not used for ranking; do not infer or claim
++      access to either.
+ 
+       Explain how the retrieved outcomes and mass similarity support the estimates.
+       The supplied retrieval weights describe neighbor ranking, not a force equation.
+@@ -192,8 +194,8 @@ prompts:
+ 
+       A retrieved surface includes its baseline and only controlled sibling conditions
+       whose recorded changes are fully visible in E5. Projected-contact-only and mixed
+-      visible-plus-hidden-contact variants are excluded; never infer contact from the
+-      remaining conditions.
++      visible-plus-hidden-contact variants are excluded; never infer contact from
++      the remaining conditions.
+ 
+       '
+     e6: 'E6 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.
+@@ -206,32 +208,35 @@ prompts:
+       Projected contact is intentionally excluded from cross-object surface ranking.
+       It is supplied as query evidence and within-surface condition evidence only.
+       Treat projected contact fraction as a dimensionless contact proxy, not literal
+-      physical area. The supplied retrieval weights describe neighbor ranking, not a
+-      force equation. No calibrated physics estimate is available; do not invent one.
++      physical area. The supplied retrieval weights describe neighbor ranking, not
++      a force equation. No calibrated physics estimate is available; do not invent
++      one.
+ 
+       Reason in two explicit stages and show both in your trace.
+ 
+-      STAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at full,
+-      optimal contact, anchoring only to retrieved BASELINE conditions and their
+-      semantic material, mass, and continuous roughness. Projected contact fraction is
+-      confounded across different objects (a low-contact neighbor may need low force and
+-      a full-contact neighbor may need high force), so it was deliberately kept out of
+-      ranking: do NOT use the query contact fraction to pick, weight, match, or discount
+-      cross-object neighbors, and do NOT prefer a neighbor because its contact fraction
+-      resembles the query. Roughness and material remain the dominant drivers of this
+-      baseline; do not let contact override them. Prefer the baselines that bracket the
+-      query by mass and align on roughness and material, and do not dilute the estimate
+-      by averaging in poorly matched heavier or lighter neighbors.
+-
+-      STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for the
+-      query contact fraction using ONLY within-surface controlled variants via
+-      comparison_to_baseline. Each variant reports force_deltas: the signed change in a
+-      gripper''s force from that surface''s own baseline to the variant. Apply those as
+-      relative adjustments scaled to the query; never import a variant''s absolute force
+-      as a cross-object anchor, and never treat variants as separate neighbors or average
+-      their absolute forces. The contact effect is monotonic non-decreasing as contact
+-      falls: reducing contact never lowers the required force below the Stage 1 baseline,
+-      and a query contact fraction at or near 1.0 warrants no upward contact adjustment.
++      STAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at
++      full, optimal contact, anchoring only to retrieved BASELINE conditions and their
++      semantic material, mass, and continuous roughness. Projected contact fraction
++      is confounded across different objects (a low-contact neighbor may need low
++      force and a full-contact neighbor may need high force), so it was deliberately
++      kept out of ranking: do NOT use the query contact fraction to pick, weight,
++      match, or discount cross-object neighbors, and do NOT prefer a neighbor because
++      its contact fraction resembles the query. Roughness and material remain the
++      dominant drivers of this baseline; do not let contact override them. Prefer
++      the baselines that bracket the query by mass and align on roughness and material,
++      and do not dilute the estimate by averaging in poorly matched heavier or lighter
++      neighbors.
++
++      STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for
++      the query contact fraction using ONLY within-surface controlled variants via
++      comparison_to_baseline. Each variant reports force_deltas: the signed change
++      in a gripper''s force from that surface''s own baseline to the variant. Apply
++      those as relative adjustments scaled to the query; never import a variant''s
++      absolute force as a cross-object anchor, and never treat variants as separate
++      neighbors or average their absolute forces. The contact effect is monotonic
++      non-decreasing as contact falls: reducing contact never lowers the required
++      force below the Stage 1 baseline, and a query contact fraction at or near 1.0
++      warrants no upward contact adjustment.
+ 
+       '
+   target_instructions:
+@@ -282,3 +287,5 @@ embodiments:
+       with the surface. The silicone pads are effective on rough, irregular, or interrupted
+       surfaces, but performance still decreases when the contact area is small, the
+       object is highly curved or misaligned, or the surface is wet, oily, or contaminated.
++      Overall, as roughness increases, the necessary normal force to grasp the object
++      decreases.
+diff --git a/Force-Prediction/streamlit_app/tabs/data_viewer.py b/Force-Prediction/streamlit_app/tabs/data_viewer.py
+index 1375a4e..8bd520d 100644
+--- a/Force-Prediction/streamlit_app/tabs/data_viewer.py
++++ b/Force-Prediction/streamlit_app/tabs/data_viewer.py
+@@ -194,7 +194,6 @@ def _card_editor(
+                 st.number_input(
+                     "Minimum force (N)",
+                     min_value=0.001,
+-                    max_value=float(context.config.force.limit_n),
+                     value=(
+                         float(outcome.min_force_n)
+                         if outcome is not None and outcome.min_force_n is not None
+@@ -283,7 +282,6 @@ def _add_condition_dialog(context: AppContext, baseline: DatasetObject) -> None:
+                 force = st.number_input(
+                     f"{gripper.value.title()} minimum force (N)",
+                     min_value=0.001,
+-                    max_value=float(context.config.force.limit_n),
+                     value=None,
+                     disabled=status is not True,
+                 )
+diff --git a/Force-Prediction/tests/test_dataset_editing.py b/Force-Prediction/tests/test_dataset_editing.py
+index 46bed0e..c6b49c8 100644
+--- a/Force-Prediction/tests/test_dataset_editing.py
++++ b/Force-Prediction/tests/test_dataset_editing.py
+@@ -147,6 +147,36 @@ def test_csv_object_edit_refreshes_measurements_and_experiences_only(
+     assert manifest["stages"]["experiences"]["status"] == "complete"
+ 
+ 
++def test_csv_edit_accepts_force_above_physical_hardware_guard(tmp_path) -> None:
++    cfg = _config_at(tmp_path)
++    root = tmp_path / "data/Physical"
++    _write_source(root)
++    dataset = get_dataset(cfg, "Physical")
++
++    refreshed = update_dataset_object(
++        cfg,
++        dataset,
++        "test_cup",
++        DatasetObjectEdit(
++            mass_g=100,
++            roughness_index=2,
++            projected_contact_fraction=0.5,
++            silicone_force_n=10.506,
++            silicone_feasible=True,
++            gecko_force_n=1.0,
++            gecko_feasible=True,
++        ),
++    )
++
++    row = load_rows(cfg)[0]
++    assert row.silicone_force_n == 10.506
++    assert row.silicone_feasible is True
++    assert row.favored_gripper == "gecko"
++    silicone = refreshed.objects["test_cup"].gripper_outcomes[Gripper.SILICONE]
++    assert silicone.complete
++    assert silicone.min_force_n == 10.506
++
++
+ def test_image_folder_partial_edit_is_persisted_and_builds_only_completed_outcomes(
+     tmp_path,
+ ) -> None:
+diff --git a/Force-Prediction/tests/test_datasets.py b/Force-Prediction/tests/test_datasets.py
+index eb3b645..725416c 100644
+--- a/Force-Prediction/tests/test_datasets.py
++++ b/Force-Prediction/tests/test_datasets.py
+@@ -87,6 +87,38 @@ def test_legacy_roughness_class_is_not_converted_to_an_index(tmp_path) -> None:
+     ).query_reasons("cup")
+ 
+ 
++def test_experience_counts_exclude_feasibility_only_outcomes(
++    tmp_path, monkeypatch
++) -> None:
++    cfg = _config_at(tmp_path)
++    root = tmp_path / "data/Partial"
++    root.mkdir(parents=True)
++    (root / "dataset.csv").write_text(
++        "Object,Image,Mass_g,roughness_index,projected_contact_fraction,"
++        "silicone_force_n,silicone_feasible,gecko_force_n,gecko_feasible\n"
++        "Cup,cup.png,100,2,0.7,,True,1.1,True\n",
++        encoding="utf-8",
++    )
++    (root / "cup.png").write_bytes(base64.b64decode(
++        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUB"
++        "AScY42YAAAAASUVORK5CYII="
++    ))
++    monkeypatch.setattr(
++        "modules.datasets.preparation.describe",
++        lambda _image, _cfg: Description(retrieval_description="Test cup"),
++    )
++
++    dataset = get_dataset(cfg, "Partial")
++    assert dataset.summary()["experience_rows"] == 1
++
++    result = prepare_dataset_stages(
++        cfg,
++        dataset,
++        [PreparationStage.EXPERIENCES],
++    )
++    assert result["experience_rows"] == 1
++
++
+ def test_single_gripper_dataset_capabilities_and_eligibility(tmp_path) -> None:
+     cfg = _config_at(tmp_path)
+     root = tmp_path / "data/GeckoOnly/objects"
+diff --git a/Force-Prediction/tests/test_paired_rows.py b/Force-Prediction/tests/test_paired_rows.py
+index ee0e188..9f4c5c3 100644
+--- a/Force-Prediction/tests/test_paired_rows.py
++++ b/Force-Prediction/tests/test_paired_rows.py
+@@ -38,7 +38,7 @@ def test_every_experiment_runs_with_explicit_gemini_fake_and_continuous_forces(
+ 
+     assert set(result.candidate_predictions) == {"gecko", "silicone"}
+     assert all(
+-        cfg.force.min_n <= prediction.predicted_normal_force_n <= cfg.force.limit_n
++        cfg.force.min_n <= prediction.predicted_normal_force_n
+         for prediction in result.candidate_predictions.values()
+     )
+ 
+diff --git a/Force-Prediction/tests/test_retrieval.py b/Force-Prediction/tests/test_retrieval.py
+index 7d9825f..bba1e2b 100644
+--- a/Force-Prediction/tests/test_retrieval.py
++++ b/Force-Prediction/tests/test_retrieval.py
+@@ -418,7 +418,7 @@ def test_matforce_contact_sweeps_are_e6_evidence_but_not_e5_neighbors():
+     assert ranked_surfaces(e5) == ranked_surfaces(e6)
+     for surface_id, expected_delta in {
+         "large_cardboard_box": -0.5,
+-        "creatine": -0.95,
++        "creatine": -0.9,
+         "beaker": -0.6,
+     }.items():
+         assert [
+diff --git a/Force-Prediction/tests/test_selector.py b/Force-Prediction/tests/test_selector.py
+index 1472df2..a04f04b 100644
+--- a/Force-Prediction/tests/test_selector.py
++++ b/Force-Prediction/tests/test_selector.py
+@@ -26,12 +26,14 @@ def test_picks_lowest_feasible():
+     assert r.desired_gripper == "gecko" and r.predicted_normal_force_n == 1.25
+ 
+ 
+-def test_force_clamping_preserves_continuous_values():
++def test_force_normalization_preserves_continuous_values_without_upper_cap():
+     cfg = load_config()
+ 
+     assert clamp_force(1.01, cfg) == 1.01
+     assert clamp_force(1.234567, cfg) == 1.234567
+-    assert clamp_force(9.0, cfg) == 8.0
++    assert clamp_force(9.0, cfg) == 9.0
++    assert clamp_force(10.506, cfg) == 10.506
++    assert clamp_force(-1.0, cfg) == cfg.force.min_n
+ 
+ 
+ def test_skips_infeasible_even_if_lower():
+diff --git a/Force-Prediction/tests/test_suite_reporting.py b/Force-Prediction/tests/test_suite_reporting.py
+index fd4985b..754e178 100644
+--- a/Force-Prediction/tests/test_suite_reporting.py
++++ b/Force-Prediction/tests/test_suite_reporting.py
+@@ -204,6 +204,19 @@ def test_single_gripper_calibration_has_six_panels():
+     )
+ 
+ 
++def test_calibration_axes_expand_beyond_physical_hardware_guard():
++    artifact = _single_artifact(0.1)
++    artifact["rows"][0]["true_silicone_force_n"] = 10.506
++    artifact["rows"][0]["pred_silicone_force_n"] = 15.2
++
++    figure = calibration_figure({"e1": artifact})
++    axis = figure.axes[0]
++
++    assert axis.get_xlim()[1] >= 15.2
++    assert axis.get_ylim()[1] >= 15.2
++    assert figure._suptitle.get_text() == "E1 force calibration by gripper"
++
++
+ def test_individual_calibration_uses_one_panel_per_active_gripper():
+     paired = _artifact(0.1)
+     paired["metadata"] = {"active_grippers": ["gecko", "silicone"], "experiment": "e1"}

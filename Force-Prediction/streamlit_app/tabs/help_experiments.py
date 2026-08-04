@@ -32,7 +32,7 @@ def render(context: AppContext) -> None:
 6. Click **Run pipeline**. Single-target runs show force and feasibility; paired runs also
    compare candidates and select the lowest-force feasible gripper.
 7. Use **Benchmark** to save truth-free predictions and evaluate them later without model
-   calls. Use **Runs Viewer** for versioned results, a resumable E1–E6 comparison, and
+   calls. Use **Runs Viewer** for versioned results, a resumable five-condition comparison, and
    saved-run inspection. Use **Data Viewer** for the experience catalog and
    **Cache Status** to confirm that repeated Gemini requests are being reused.
         """
@@ -41,7 +41,6 @@ def render(context: AppContext) -> None:
     st.header("Experiment definitions")
     uses = {
         "e1": "Image + target-aware VLM",
-        "e2": "Image + sensors + target-aware VLM",
         "e3": "Image + semantic-only retrieval + target-aware VLM",
         "e4": "Semantic + mass retrieval + target-aware VLM",
         "e5": "E4 + continuous roughness",
@@ -59,8 +58,8 @@ def render(context: AppContext) -> None:
     )
     st.dataframe(experiments, hide_index=True, width="stretch")
     st.caption(
-        "Primary comparisons: E1 vs E2 tests sensors without experience; E1 vs E3 tests "
-        "semantic experience without sensors; E4-E6 isolate the incremental value of "
+        "Primary comparisons: E1 vs E3 tests semantic experience; E3-E6 isolate the "
+        "incremental value of "
         "mass, roughness, and projected contact."
     )
 
@@ -139,7 +138,7 @@ refresh visual descriptions and reference embeddings.
             },
             {
                 "Section": "Runs Viewer",
-                "Purpose": "Inspect prediction/evaluation history and run two-stage E1–E6 suites.",
+                "Purpose": "Inspect prediction/evaluation history and run two-stage experiment suites.",
             },
             {
                 "Section": "Data Viewer",

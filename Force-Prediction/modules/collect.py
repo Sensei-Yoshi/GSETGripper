@@ -238,7 +238,7 @@ def collect_mock(cfg: Config, n: int, coarse: float, fine: float) -> None:
             raise OSError(f"could not write {image_path}")
         image_rel = str(image_path.relative_to(cfg.root))
         contact = obj.projected_contact_fraction
-        description = describe(rgb, cfg).description
+        description = describe(rgb, cfg).retrieval_description
         mass_g = devices.mass.read_g()
         roughness = devices.roughness.read_index()
 
@@ -322,7 +322,7 @@ def collect_real(cfg: Config, coarse: float, fine: float, port: str | None) -> N
                     raise RuntimeError(
                         "contact model found no feasible antipodal grasp; reposition the object"
                     )
-                description = describe(rgb, cfg).description
+                description = describe(rgb, cfg).retrieval_description
                 staged_object.replace(objects_root / object_id)
         except Exception as exc:  # operator can reposition and retry safely
             print(f"Contact analysis failed for {object_id}: {exc}")

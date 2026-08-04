@@ -35,15 +35,11 @@ def checkpoint_path(dataset: Dataset, object_id: str) -> Path:
 
 def load_checkpoints(dataset: Dataset) -> dict[str, PreparedObjectCheckpoint]:
     output: dict[str, PreparedObjectCheckpoint] = {}
-    canonical = sorted(dataset.paths.objects.glob("*/descriptor.json"))
-    legacy = sorted(dataset.paths.descriptors.glob("*.json"))
-    for path in [*canonical, *legacy]:
+    for path in sorted(dataset.paths.objects.glob("*/descriptor.json")):
         try:
             item = PreparedObjectCheckpoint.model_validate_json(path.read_text())
         except (OSError, ValueError):
             continue
-        if item.dataset_id == "expforce" and dataset.dataset_id != "expforce":
-            item.dataset_id = dataset.dataset_id
         output[item.object_id] = item
     return output
 
@@ -118,7 +114,11 @@ def dataset_experience_records(
     """Build the current completed records without mutating the dataset cache."""
     records: list[ExperienceRecord] = []
     for item in dataset.objects.values():
-        description = item.description.value.description if item.description else item.name
+        description = (
+            item.description.value.retrieval_description
+            if item.description
+            else item.name
+        )
         contact = item.contact_fraction
         for gripper, outcome in item.gripper_outcomes.items():
             if not outcome.complete or outcome.feasible is None:

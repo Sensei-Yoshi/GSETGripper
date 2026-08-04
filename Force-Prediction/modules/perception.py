@@ -17,12 +17,6 @@ class Description(BaseModel):
     contact_patch_visibility: str = "unknown"
     uncertainty: str = "unknown"
 
-    @property
-    def description(self) -> str:
-        """Backward-compatible semantic text consumed by retrieval."""
-        return self.retrieval_description
-
-
 def describe(image_bgr: np.ndarray | None, cfg: Config) -> Description:
     """Visual-semantic description of an object for the grasping database."""
     if image_bgr is None:

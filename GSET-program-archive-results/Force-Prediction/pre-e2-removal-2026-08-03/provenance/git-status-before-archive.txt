@@ -1,0 +1,95 @@
+ M Force-Prediction/CLAUDE.md
+ M Force-Prediction/README.md
+ M Force-Prediction/config.yaml
+ M Force-Prediction/data/MatForceFinal/dataset.csv
+ M Force-Prediction/data/MatForceFinal/preparation_manifest.json
+ M Force-Prediction/docs/data_collection_sop.md
+ M Force-Prediction/docs/experiments.md
+ M Force-Prediction/docs/project-context.md
+ M Force-Prediction/modules/datasets/editing.py
+ M Force-Prediction/modules/datasets/models.py
+ M Force-Prediction/modules/datasets/preparation.py
+ M Force-Prediction/modules/prediction.py
+ M Force-Prediction/modules/reporting.py
+ M Force-Prediction/modules/suites.py
+ M Force-Prediction/prompts.yaml
+ M Force-Prediction/streamlit_app/tabs/data_viewer.py
+ M Force-Prediction/tests/test_dataset_editing.py
+ M Force-Prediction/tests/test_datasets.py
+ M Force-Prediction/tests/test_paired_rows.py
+ M Force-Prediction/tests/test_retrieval.py
+ M Force-Prediction/tests/test_selector.py
+ M Force-Prediction/tests/test_suite_reporting.py
+?? Force-Prediction/data/MatForceFinal/results/evaluations/20260804T010544205568Z_e1/
+?? Force-Prediction/data/MatForceFinal/results/evaluations/20260804T010814402113Z_e2/
+?? Force-Prediction/data/MatForceFinal/results/evaluations/20260804T011024886348Z_e3/
+?? Force-Prediction/data/MatForceFinal/results/evaluations/20260804T011246228175Z_e4/
+?? Force-Prediction/data/MatForceFinal/results/evaluations/20260804T014637660231Z_e5/
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T010544205568Z_e1.csv
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T010544205568Z_e1.json
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T010814402113Z_e2.csv
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T010814402113Z_e2.json
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T011024886348Z_e3.csv
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T011024886348Z_e3.json
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T011246228175Z_e4.csv
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T011246228175Z_e4.json
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T014637660231Z_e5.csv
+?? Force-Prediction/data/MatForceFinal/results/predictions/20260804T014637660231Z_e5.json
+?? Force-Prediction/data/MatForceFinal/suites/20260804T010543726577Z_e1_e2_e3_e4/
+?? Force-Prediction/data/MatForceFinal/suites/20260804T014637015896Z_e5/
+?? Force-Prediction/data/cache/embeddings/ca035cec0aeef6a0057805376c17742c8920c3f628bb956392e1056eaa0084f1.json
+?? Force-Prediction/data/cache/generation/02031f022ba6f9686014878d47504fdcddc8c7efaad58eab0deedd143e8c2912.json
+?? Force-Prediction/data/cache/generation/05354f2aa98ab6d7791a820e3fb50411ba554390d7b2cc32cb5599e204e217a9.json
+?? Force-Prediction/data/cache/generation/0f037f4cd63e23dd02a66dca4ab58a7f9886cf74867a95ce228d99cfb603c2f7.json
+?? Force-Prediction/data/cache/generation/100e396d1a0e45452fef721a362bae7dbd011c0b2edd333ff8e744bd0bdabe0c.json
+?? Force-Prediction/data/cache/generation/115a3408f3036d78c2b5585b0811eb0cf5a9793f586d5b14d6098a5ad3747eea.json
+?? Force-Prediction/data/cache/generation/12084a256610b608b1e484bb6322bf3b1d431d3cc1253bc09310ee92da251a1c.json
+?? Force-Prediction/data/cache/generation/20295acd4593e70ad11d21064d23fbb9db5978ba769c2a960000724c35d2d584.json
+?? Force-Prediction/data/cache/generation/2079172573611baba554963c206b15dd860fda3e59fed6e7fea87a6bb64f0c21.json
+?? Force-Prediction/data/cache/generation/20e3c51d6cb6440c3ae36bd5d49db9f24b1221f3ad1ebb54570000106db3c4d4.json
+?? Force-Prediction/data/cache/generation/211de8efc7a6ce7235615b8777eb005570914f1d1d680fa253eab99fcc74e814.json
+?? Force-Prediction/data/cache/generation/2293e0af93b42613a22abe80d39526076171ec7c0f18c21cd2a6b0f9807c257c.json
+?? Force-Prediction/data/cache/generation/239342ac92dcc26ef81db0dbb3337bd2ee56011ad00451610d21bfb41705f728.json
+?? Force-Prediction/data/cache/generation/28ee1deaa5d824323ce2d885b5926e29268588f935ba163cad57e2586703dfc6.json
+?? Force-Prediction/data/cache/generation/3022d2f70cd48400844dc49c3244ba5ebf5e9337ebbfb6ebaacce604ab80990b.json
+?? Force-Prediction/data/cache/generation/334f782a6dd8b8d9ad71875062068fd0ba79e223f2e13bf7fb00539ce9cf615c.json
+?? Force-Prediction/data/cache/generation/36f85eb47133a25ffe792bc93d07e568dbb2cda37d671f4d92dd79d1046f8b56.json
+?? Force-Prediction/data/cache/generation/3c9ed2c99836724919696fd9043db7c814c3a46bb6cc2664f23242872e60a004.json
+?? Force-Prediction/data/cache/generation/4164fc71d683583dfe309845e183a5a74900bee0001241e239ffc63bd1953ff6.json
+?? Force-Prediction/data/cache/generation/4aa52db94a53054fe54c5ec2633662af080476e56e0926b8f5c2591f2c6e3026.json
+?? Force-Prediction/data/cache/generation/4b624b8421d88945f7fc9a5852f79b51177e68f04dd8c714ce86a852bbabfc59.json
+?? Force-Prediction/data/cache/generation/56e9e752c4e68eea9e3d57655763f714970d14b1b47df70b8ed0a162f70fcd26.json
+?? Force-Prediction/data/cache/generation/580b0bc43286d46aeab6aeab3bfc161664f9931e5970fa61ef8a5e9ea45bcc76.json
+?? Force-Prediction/data/cache/generation/586f33425712f07c57d6eb1b73c2f20493c246f8ed9321ac1d9bcd53b11be7aa.json
+?? Force-Prediction/data/cache/generation/69efd608d9b3c314ee4b3ed21cac9ea731deed6f8b942e7eb3aab93e1e017d9b.json
+?? Force-Prediction/data/cache/generation/6f2eac5dc7350104ae82c5ba2d5c7ee21d10e61573ae0a533c90b215acdb56b1.json
+?? Force-Prediction/data/cache/generation/76e0d8f2a554299c1b96ee27b09a1e61b89f4bb89a285c3603e95a2cdb3fa8c1.json
+?? Force-Prediction/data/cache/generation/7d80dcaed4bc8f6fb4ebfed9e395afbe9b4a9c9383847c7714c0937f1e10f1a9.json
+?? Force-Prediction/data/cache/generation/8869c8293b4561296713d5ce76f9232605cbac416941ef8957c925f63b0a46c2.json
+?? Force-Prediction/data/cache/generation/8885f9f8fcfc68dbbf53d1e98c255b9bdcb99dd309385cb4d66d51c27be05ece.json
+?? Force-Prediction/data/cache/generation/8c17b2cf6f46c4f8a02c276daea4812821056d93e3f0f15662418bf6110639c4.json
+?? Force-Prediction/data/cache/generation/8ef5adda0a7f799f8158acae6d7c6c510cf007dd8ed0e7ebd9dffbcdf3e8b156.json
+?? Force-Prediction/data/cache/generation/91a5795b077f1951da5e4522ec4c594f6194c8e414219bb3c2338fd3151d3835.json
+?? Force-Prediction/data/cache/generation/9ceaae920695924fb290f52a2f162fac80a2cd6d71f705d74fea35ae170a0f87.json
+?? Force-Prediction/data/cache/generation/9e3618b91577af3294d09a05f40a53aafe29d2ccceaa667002015aa159b9f05e.json
+?? Force-Prediction/data/cache/generation/9e5b0bb98dd698c0c0242b4619cd370091b8ff6d8bdd0b14dee11e6a4f47dfc9.json
+?? Force-Prediction/data/cache/generation/b38515efab7fe6a1c36acf593eed2969fc19fbf60819c3dc0ffb57679474f4a3.json
+?? Force-Prediction/data/cache/generation/b43763bd5ea26cabc91eda3ee7f64aa85611548d2216bdfd11f639e896c2188d.json
+?? Force-Prediction/data/cache/generation/b6c9a188066e1029739a98955ff77f39ce84ddf0c427ab400e2af9f010e1cf74.json
+?? Force-Prediction/data/cache/generation/bca17ccdbc6d7f160e1f16d58f11815bf2c56c7c3aa81a5163cf76863058e621.json
+?? Force-Prediction/data/cache/generation/c1a71d415dac1a748893f0f827dcf6294492a86224e743f290a0481902db6d0b.json
+?? Force-Prediction/data/cache/generation/c2bae8f694a37a8c469b604fba0eb49d0b3a1c7d876afb0d13a4501324a00c11.json
+?? Force-Prediction/data/cache/generation/c60f7835c7b42355c98d34d4c5bb85d9c33ae13ac834924fa51d325f1cc764ca.json
+?? Force-Prediction/data/cache/generation/c92fde010990da246e5cf1b8b18d12c1d02c415d92b68ea5403380296ec3be9c.json
+?? Force-Prediction/data/cache/generation/d037a33e168398310c76dff732f1d5c2b92cbd68cc619da31df6d13b93898757.json
+?? Force-Prediction/data/cache/generation/d2491435efd4ca333512daefb27a86d486a0ecbeb7c21bef563f2ea283792841.json
+?? Force-Prediction/data/cache/generation/d307c177c16552ea2ae335768f657d7ef734b15913eade15816a3ebe392de2f1.json
+?? Force-Prediction/data/cache/generation/e5ce09e4574716cd54018e56ff89098e64192e723550e8177ff4f24b3023e6e8.json
+?? Force-Prediction/data/cache/generation/eb93bcd99223756d2b340e5fe58e94d605a53a7c127bc869f3ab0268d22638eb.json
+?? Force-Prediction/data/cache/generation/f0771c3d96be7db0122bf0bff001ec48314eff68d9b845d04fbd3cfa903b8f72.json
+?? Force-Prediction/data/cache/generation/f3c4caa5f78d7e566005636a414c5a056586909d3bddc9fe01449ec21e3014d9.json
+?? Force-Prediction/data/cache/generation/f6834b332eb31971db107b7751bca1a2d63254da8e44065b6bdf69294c124a5c.json
+?? Force-Prediction/data/cache/generation/f7102dd3fdd497a93a51fc66dcfd0e8525ed533ce8d2a7faff4f8071c18d40f8.json
+?? Force-Prediction/data/cache/generation/f9bd774bf5b288476e5b641a4ccf3492e79d47774672896a0649aa6c566117c5.json
+?? Force-Prediction/data/cache/generation/fa14402657d956f0088459b84cf3c4ca0d14f14eda0dff543ddf8640c16e5f2f.json
+?? Force-Prediction/data/cache/generation/fcf3f8ac7059f6e73658317d6e56af67b69a2ebc5b1837d4323abee131ed5971.json

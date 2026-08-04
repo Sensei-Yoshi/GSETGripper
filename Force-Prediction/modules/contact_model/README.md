@@ -15,7 +15,7 @@ is assumed to be available wherever longitudinal contact exists, so width
 cancels from the ratio.
 
 Newly collected physical objects use this estimator as the authoritative
-contact input for E1–E6. Historical synthetic fixtures are not reanalyzed.
+contact input for E6. Historical results are not reanalyzed.
 For the stable Python fields, JSON schema, and examples for other code,
 see [`docs/contact-fraction-integration.md`](../../docs/contact-fraction-integration.md).
 
