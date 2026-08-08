@@ -27,6 +27,7 @@ from modules.suites import (
     PRIMARY_EXPERIMENTS,
     create_suite,
     evaluate_suite,
+    is_legacy_suite,
     list_suites,
     load_suite,
     run_suite_predictions,
@@ -242,12 +243,12 @@ def _suite_comparison(context: AppContext) -> None:
         chosen = st.multiselect(
             "Experiments to run",
             list(PRIMARY_EXPERIMENTS),
-            default=["e1", "e3", "e4", "e5"],
+            default=["e1", "e2", "e3", "e4"],
             format_func=str.upper,
             key="suite_experiment_choice",
             help=(
-                "Surface-area E6 is optional. The current test set has no held-out "
-                "contact-varied objects, so it cannot separate E6 from E5."
+                "Surface-area E5 is optional. The current test set has no held-out "
+                "contact-varied objects, so it cannot separate E5 from E4."
             ),
         )
         active_experiments = tuple(
@@ -255,6 +256,13 @@ def _suite_comparison(context: AppContext) -> None:
         )
     else:
         active_experiments = suite_experiments(selected)
+
+    legacy_suite = selected is not None and is_legacy_suite(selected)
+    if legacy_suite:
+        st.info(
+            "This definition-v12 suite is displayed with its E3-E6 IDs translated to "
+            "E2-E5. It remains immutable; start a new suite to run the contiguous IDs."
+        )
 
     pending_counts: dict[str, int] = {}
     for experiment in active_experiments:
@@ -264,7 +272,7 @@ def _suite_comparison(context: AppContext) -> None:
         )
         pending_counts[experiment] = (
             0
-            if completed
+            if completed or legacy_suite
             else len(experiment_eligibility(context.dataset, cfg, experiment).query_ids)
         )
     call_count = sum(pending_counts.values())
@@ -280,6 +288,7 @@ def _suite_comparison(context: AppContext) -> None:
             not confirmed
             or call_count == 0
             or not active_experiments
+            or legacy_suite
         ),
         key="run_primary_suite",
         width="stretch",
@@ -310,14 +319,14 @@ def _suite_comparison(context: AppContext) -> None:
         st.success("Currently ready suite predictions were saved.")
 
     can_evaluate = False
-    if selected is not None:
+    if selected is not None and not legacy_suite:
         can_evaluate = any(
             evaluation_readiness(cfg, batch).eligible_ids
             for batch in suite_prediction_batches(cfg, selected).values()
         )
     evaluate_clicked = action_columns[1].button(
         "Evaluate suite & generate comparison",
-        disabled=not can_evaluate,
+        disabled=not can_evaluate or legacy_suite,
         key="evaluate_primary_suite",
         width="stretch",
     )
@@ -372,7 +381,7 @@ def _suite_comparison(context: AppContext) -> None:
 def _batch_label(batch: BenchmarkPredictionBatch) -> str:
     targets = "+".join(batch.metadata["active_grippers"])
     return (
-        f"{batch.display_name} | {batch.metadata['experiment'].upper()} | "
+        f"{batch.display_name} | {batch.experiment_id.upper()} | "
         f"{targets} | {len(batch.rows)} rows"
     )
 
@@ -448,7 +457,7 @@ def _render_prediction_batch(
         st.write(f"**Benchmark name:** {batch.display_name}")
         st.write(f"**Prediction batch:** `{batch.batch_id}`")
         st.write(
-            f"**Experiment/method:** {batch.metadata['experiment'].upper()} / "
+            f"**Experiment/method:** {batch.experiment_id.upper()} / "
             f"{batch.metadata['experiment_method']}"
         )
         st.write(f"**Predictions:** {len(batch.rows)}")

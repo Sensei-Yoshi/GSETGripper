@@ -136,12 +136,12 @@ results remain historical and are not rewritten; their source fingerprint mismat
 by inspectors.
 
 Benchmarking uses the source CSV's fixed train/test holdout. It generates predictions only
-for query-ready test rows, and E3–E6 may retrieve only from eligible train rows. If a
+for query-ready test rows, and E2–E5 may retrieve only from eligible train rows. If a
 dataset has no test rows, the existing leave-one-surface-out behavior remains available.
 
 `roughness_index` is the nonnegative numerical output recorded from the LED measurement
 system, with larger values indicating rougher surfaces. It is intentionally distinct from
-the image-derived Marigold `roughness` artifact. E5 and E6 always use this continuous value;
+the image-derived Marigold `roughness` artifact. E4 and E5 always use this continuous value;
 datasets without it remain ineligible for those conditions.
 
 Single Run owns the optional physical serial side effect. Its serial checkbox is off by

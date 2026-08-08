@@ -6,15 +6,15 @@ select the lowest-force feasible option.
 Benchmark force estimates are continuous, nonnegative, and have no analytical upper cap;
 the optional physical serial path retains a separate 8 N actuation safety guard.
 
-The active research suite has five explicit VLM ablation methods with stable IDs:
+The active research suite has five explicit VLM ablation methods with contiguous IDs:
 
 | ID | Method |
 |---|---|
 | E1 | Vision-only zero-shot VLM response |
-| E3 | Semantic-only experiential retrieval + VLM response |
-| E4 | Semantic + mass retrieval + VLM response |
-| E5 | E4 + continuous roughness |
-| E6 | E5-ranked surfaces + projected-contact condition evidence |
+| E2 | Semantic-only experiential retrieval + VLM response |
+| E3 | Semantic + mass retrieval + VLM response |
+| E4 | E3 + continuous roughness |
+| E5 | E4-ranked surfaces + projected-contact condition evidence |
 
 Single-candidate runs use a direct per-gripper response. Paired runs also return an
 explicit model recommendation, but Python's lowest-feasible-force rule remains authoritative.
@@ -45,8 +45,8 @@ surface/contact estimation. Partial datasets can run any experiment whose object
 inputs and reference outcomes are ready; they no longer wait for dataset-wide completion.
 
 Known-object runs are leave-one-object-out and custom queries use the entire eligible
-experience pool. E3 retrieves by semantic cosine similarity only. E4 adds mass to ranking,
-E5 adds continuous roughness. E6 keeps E5's surface ranking and adds projected contact
+experience pool. E2 retrieves by semantic cosine similarity only. E3 adds mass to ranking,
+E4 adds continuous roughness. E5 keeps E4's surface ranking and adds projected contact
 as query and controlled same-surface condition evidence. The global Gecko/silicone checkboxes request either one
 direct per-gripper response or one paired structured response.
 
@@ -58,7 +58,7 @@ force-seek/lift firmware; prepare the rig before enabling it.
 
 Benchmarks use two explicit stages and the dataset CSV's `split=train/test` assignment.
 **Run predictions** saves immutable, truth-free prediction batches for query-ready test
-objects; E3–E6 use only train rows as references. **Evaluate & generate plots** later joins a
+objects; E2–E5 use only train rows as references. **Evaluate & generate plots** later joins a
 saved batch to the currently available force labels, evaluates the labeled subset without model
 calls, and versions JSON, CSV, PNG, and SVG results. Detailed prediction/evaluation histories and
 suite comparisons live in **Runs Viewer**. Its benchmark **Object Inspector** dropdown opens any
@@ -104,11 +104,11 @@ python scripts/analyze_topography.py --dataset Matforcedata --objects lechee ora
 The reported topographic score is an uncalibrated monocular-image proxy. Preserve its raw angular
 statistics and calibrate it against measured slip or friction before using it as a physical value.
 
-E4–E6 are fixed nested ablations. E4 exposes mass, E5 adds continuous roughness, and E6 adds
-projected contact as VLM evidence without using it for cross-object surface ranking. E4/E5
+E3–E5 are fixed nested ablations. E3 exposes mass, E4 adds continuous roughness, and E5 adds
+projected contact as VLM evidence without using it for cross-object surface ranking. E3/E4
 condition variants are visibility-filtered so hidden measurements cannot explain conflicting
 force labels. Disabled
-terms receive zero retrieval weight and the remaining weights are renormalized. E1 and E3
+terms receive zero retrieval weight and the remaining weights are renormalized. E1 and E2
 exclude physical fields by construction.
 
 The force pipeline uses the recorded continuous `roughness_index` from the LED measurement
@@ -126,11 +126,11 @@ under `data/cache/<dataset>/{generation,embeddings}` and resumable. See
 ## Experiment runner
 
 ```bash
-python scripts/run_experiment.py --exp e6 --confirm-gemini-cost
+python scripts/run_experiment.py --exp e5 --confirm-gemini-cost
 python scripts/run_experiment.py --all --confirm-gemini-cost
 ```
 
-All five conditions use Gemini generation and E3–E6 use Gemini embeddings. Cached identical requests
+All five conditions use Gemini generation and E2–E5 use Gemini embeddings. Cached identical requests
 make no new call.
 
 ## Code map

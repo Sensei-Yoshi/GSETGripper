@@ -199,14 +199,14 @@ def test_visibility_aware_conditions_exclude_hidden_and_mixed_changes():
     )
     query_vec = index.embed_query(query)
 
-    e4 = index.retrieve_objects(
+    e3 = index.retrieve_objects(
         query,
         query_vec,
         mode=RetrievalMode.HYBRID,
         ranking_features=("semantic", "mass"),
         visible_condition_fields=("mass_g",),
     )
-    e5 = index.retrieve_objects(
+    e4 = index.retrieve_objects(
         query,
         query_vec,
         mode=RetrievalMode.HYBRID,
@@ -215,22 +215,22 @@ def test_visibility_aware_conditions_exclude_hidden_and_mixed_changes():
     )
 
     assert {
-        item.condition_id for item in e4 if item.surface_id == surface_id
+        item.condition_id for item in e3 if item.surface_id == surface_id
     } == {"baseline", "condition_2"}
     assert {
-        item.condition_id for item in e5 if item.surface_id == surface_id
+        item.condition_id for item in e4 if item.surface_id == surface_id
     } == {"baseline", "condition_2", "condition_3"}
     assert all(
         item.condition_id not in {"condition_4", "condition_5", "condition_6"}
-        for item in e5
+        for item in e4
         if item.surface_id == surface_id
     )
-    displayed_e5 = [item for item in e5 if item.surface_id == surface_id]
-    assert displayed_e5[0].surface_score is not None
-    assert displayed_e5[0].surface_score > max(item.score for item in displayed_e5)
+    displayed_e4 = [item for item in e4 if item.surface_id == surface_id]
+    assert displayed_e4[0].surface_score is not None
+    assert displayed_e4[0].surface_score > max(item.score for item in displayed_e4)
 
 
-def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants():
+def test_e5_uses_e4_surface_ranking_and_exposes_contact_variants():
     cfg = load_config().model_copy(deep=True)
     cfg.retrieval.k = 5
     cfg.retrieval.conditions_per_surface = 3
@@ -264,14 +264,14 @@ def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants():
     )
     query_vec = index.embed_query(query)
     ranking_features = ("semantic", "mass", "roughness")
-    e5 = index.retrieve_objects(
+    e4 = index.retrieve_objects(
         query,
         query_vec,
         ranking_features=ranking_features,
         visible_condition_fields=("mass_g", "roughness_index"),
     )
 
-    e6 = index.retrieve_objects(
+    e5 = index.retrieve_objects(
         query,
         query_vec,
         ranking_features=ranking_features,
@@ -289,8 +289,8 @@ def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants():
             if item.condition_rank == 1
         ]
 
-    assert ranked_surfaces(e5) == ranked_surfaces(e6)
-    surface_conditions = [item for item in e6 if item.surface_id == surface_id]
+    assert ranked_surfaces(e4) == ranked_surfaces(e5)
+    surface_conditions = [item for item in e5 if item.surface_id == surface_id]
     assert [item.condition_id for item in surface_conditions] == [
         "baseline",
         "condition_2",
@@ -319,7 +319,7 @@ def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants():
     payload = _generation_payload(
         cfg,
         query,
-        e6,
+        e5,
         active_grippers=(Gripper.GECKO,),
         include_measured=True,
         include_retrieval=True,
@@ -356,13 +356,13 @@ def test_e6_uses_e5_surface_ranking_and_exposes_contact_variants():
         "gecko_min_force_delta_n"
         in surface_payload["conditions"][1]["comparison_to_baseline"]["force_deltas"]
     )
-    # A neighbor baseline's absolute contact is the cross-object confound E6 excludes;
+    # A neighbor baseline's absolute contact is the cross-object confound E5 excludes;
     # it is suppressed while the within-surface variant keeps its contact evidence.
     assert "projected_contact_fraction" not in surface_payload["conditions"][0]
     assert "projected_contact_fraction" in surface_payload["conditions"][1]
 
 
-def test_matforce_contact_sweeps_are_e6_evidence_but_not_e5_neighbors():
+def test_matforce_contact_sweeps_are_e5_evidence_but_not_e4_neighbors():
     cfg = load_config().model_copy(deep=True)
     cfg.dataset_id = "MatForceFinal"
     cfg.retrieval.k = 100
@@ -387,13 +387,13 @@ def test_matforce_contact_sweeps_are_e6_evidence_but_not_e5_neighbors():
     )
     query_vec = index.embed_query(query)
     ranking_features = ("semantic", "mass", "roughness")
-    e5 = index.retrieve_objects(
+    e4 = index.retrieve_objects(
         query,
         query_vec,
         ranking_features=ranking_features,
         visible_condition_fields=("mass_g", "roughness_index"),
     )
-    e6 = index.retrieve_objects(
+    e5 = index.retrieve_objects(
         query,
         query_vec,
         ranking_features=ranking_features,
@@ -407,21 +407,21 @@ def test_matforce_contact_sweeps_are_e6_evidence_but_not_e5_neighbors():
     def ranked_surfaces(items):
         return [item.surface_id for item in items if item.condition_rank == 1]
 
-    assert ranked_surfaces(e5) == ranked_surfaces(e6)
+    assert ranked_surfaces(e4) == ranked_surfaces(e5)
     for surface_id, expected_delta in {
         "large_cardboard_box": -0.5,
         "creatine": -0.9,
         "beaker": -0.6,
     }.items():
         assert [
-            item.condition_id for item in e5 if item.surface_id == surface_id
+            item.condition_id for item in e4 if item.surface_id == surface_id
         ] == ["baseline"]
-        e6_conditions = [item for item in e6 if item.surface_id == surface_id]
-        assert [item.condition_id for item in e6_conditions] == [
+        e5_conditions = [item for item in e5 if item.surface_id == surface_id]
+        assert [item.condition_id for item in e5_conditions] == [
             "baseline",
             "condition_2",
         ]
-        comparison = e6_conditions[1].comparison_to_baseline
+        comparison = e5_conditions[1].comparison_to_baseline
         assert comparison is not None
         assert comparison.changed_fields == ("projected_contact_fraction",)
         assert comparison.deltas["projected_contact_fraction"] == pytest.approx(
@@ -474,7 +474,7 @@ def test_multiple_conditions_require_a_baseline():
         )
 
 
-def test_e3_grouped_payload_hides_condition_identity_and_physical_fields():
+def test_e2_grouped_payload_hides_condition_identity_and_physical_fields():
     cfg = load_config().model_copy(deep=True)
     records = fabricate_records(cfg, 3)
     first_id = records[0].object_id

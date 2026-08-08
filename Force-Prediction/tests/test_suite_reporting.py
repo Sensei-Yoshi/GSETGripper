@@ -124,7 +124,7 @@ def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:
         experiment: _artifact(index / 10)
         for index, experiment in enumerate(EXPERIMENT_IDS, start=1)
     }
-    artifacts["e6"]["rows"] = artifacts["e6"]["rows"][:1]
+    artifacts["e5"]["rows"] = artifacts["e5"]["rows"][:1]
 
     comparable, object_ids = common_intersection_artifacts(artifacts, load_config())
 
@@ -137,7 +137,7 @@ def test_common_intersection_recomputes_metrics_on_shared_objects() -> None:
 
 
 def test_reporting_handles_experiment_subset(tmp_path):
-    subset = ("e1", "e3", "e4", "e5")
+    subset = ("e1", "e2", "e3", "e4")
     artifacts = {
         experiment: _artifact(index / 10)
         for index, experiment in enumerate(subset, start=1)
@@ -227,7 +227,7 @@ def test_individual_calibration_uses_one_panel_per_active_gripper():
 
 def test_individual_benchmark_plot_orders_objects_and_adds_images(tmp_path):
     artifact = _single_artifact(0.25)
-    artifact["metadata"]["experiment"] = "e3"
+    artifact["metadata"]["experiment"] = "e2"
     artifact["rows"].reverse()
     for index, row in enumerate(artifact["rows"]):
         image_path = tmp_path / f"object_{index}.png"

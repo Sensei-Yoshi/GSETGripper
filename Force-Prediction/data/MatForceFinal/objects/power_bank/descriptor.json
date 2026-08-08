@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "power_bank",
+  "object_name": "Power Bank",
+  "image_name": "image.jpg",
+  "image_path": "data/MatForceFinal/objects/power_bank/image.jpg",
+  "image_sha256": "e99e461ef02c194e573278a3d4d899cd5248b0a18c83958079c5957f847175a3",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
+  "descriptor": {
+    "retrieval_description": "Clean, dry polymer contact surface with a smooth matte finish and no visible moisture or loose debris.",
+    "contact_material": "polymer",
+    "visible_surface_material": "polymer substrate with a matte finish",
+    "visible_surface_condition": "clean, dry, and smooth",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "f268c928374d9dd267aa0d925ffd06943bbed6f3cf98f8d66589107e278f1b2a",
+  "embedding_cache_key": "b6f93be1fdf8d799570735028e9f2edd6eb54e08986d39c804b51b61a338ec99",
+  "embedding_sha256": "2c38093df5c48e445c957ab56c47cefab46436df6c01736890390ef3133019c2",
+  "updated_at": "2026-08-08T01:00:37.538021+00:00"
+}

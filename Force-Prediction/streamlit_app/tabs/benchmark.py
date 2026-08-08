@@ -86,7 +86,7 @@ def render(context: AppContext) -> None:
             on_change=clear_benchmark_summary,
         )
         scope = benchmark_scope(cfg, experiment)
-        if experiment in {"e5", "e6"}:
+        if experiment in {"e4", "e5"}:
             st.caption("VLM roughness evidence: **Continuous index**")
         if scope.test_ids:
             st.caption(
@@ -104,7 +104,7 @@ def render(context: AppContext) -> None:
 
         benchmark_name = st.text_input(
             "Benchmark name",
-            placeholder="e.g. E5 continuous roughness trial 2",
+            placeholder="e.g. E4 continuous roughness trial 2",
             help="Required. This name identifies the saved benchmark in the viewers.",
             key="benchmark_display_name",
         )

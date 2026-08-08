@@ -130,8 +130,8 @@ def render_semantic_formula() -> None:
         '<div class="formula"><b>Semantic-only similarity</b></div>',
         unsafe_allow_html=True,
     )
-    st.latex(r"S_{E3}(q,i)=\cos(e_q,e_i)")
-    st.caption("Mass, roughness, and projected contact do not enter E3 retrieval.")
+    st.latex(r"S_{E2}(q,i)=\cos(e_q,e_i)")
+    st.caption("Mass, roughness, and projected contact do not enter E2 retrieval.")
 
 
 def render_prediction(
@@ -174,7 +174,7 @@ def render_prediction(
             if result.model_recommended_gripper is not None
             else "Not applicable",
         )
-    active_experiment = experiment or st.session_state.get("last_experiment", "e6")
+    active_experiment = experiment or st.session_state.get("last_experiment", "e5")
     metric_cols[3].metric("Experiment", format_experiment(active_experiment))
 
     if result.recommendation_agrees_with_selector is False:

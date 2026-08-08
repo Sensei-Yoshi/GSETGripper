@@ -1,6 +1,6 @@
 """Shared VLM force estimation and the authoritative deterministic selector.
 
-E1 and E3–E6 use one joint VLM response for both grippers. Python always makes the final
+E1–E5 use one joint VLM response for both grippers. Python always makes the final
 feasible minimum-force selection and records agreement with the VLM's explicit
 recommendation.
 """
@@ -172,7 +172,7 @@ def _group_retrieved_surfaces(
                 raw.pop("image_path", None)
                 # Projected contact is a within-surface control, not a cross-object
                 # feature: a neighbor baseline's absolute contact fraction is the
-                # confounded cross-object signal E6 deliberately excludes. Expose it
+                # confounded cross-object signal E5 deliberately excludes. Expose it
                 # only on the query and as within-surface variant deltas
                 # (comparison_to_baseline + force_deltas), never as a neighbor
                 # baseline's absolute value the model can spuriously match against.

@@ -1,4 +1,4 @@
-"""E4: semantic-and-mass paired experiential retrieval."""
+"""E4: E3 plus continuous roughness evidence."""
 
 from ..retrieval import RetrievalMode
 from .helper import RetrievalVLMExperiment

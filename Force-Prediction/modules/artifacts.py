@@ -16,6 +16,7 @@ from .config import (
 from .contracts import ExperienceRecord, Gripper, SelectionResult, load_experiences
 from .datasets import get_dataset
 from .datasets.storage import dataset_experience_records
+from .experiment_ids import resolve_experiment_id
 from .experiments import EXPERIMENT_CATALOG, experiment_display_name
 from .pipeline import PipelineRunResult
 from .retrieval import RetrievedObjectExperience
@@ -102,8 +103,12 @@ def pipeline_result_to_dict(detailed: PipelineRunResult) -> dict:
 def pipeline_result_from_dict(payload: dict) -> PipelineRunResult:
     selection = SelectionResult.model_validate(payload["selection"])
     active_grippers = tuple(payload["active_grippers"])
+    experiment_id = resolve_experiment_id(
+        payload["experiment_id"],
+        payload.get("experiment_definition_version"),
+    )
     return PipelineRunResult(
-        experiment_id=payload["experiment_id"],
+        experiment_id=experiment_id,
         experiment_method=payload["experiment_method"],
         experiment_definition_version=payload["experiment_definition_version"],
         selection=selection,
@@ -281,6 +286,10 @@ def load_saved_runs(cfg: Config) -> list[dict]:
         if run.get("schema_version") != PIPELINE_RUN_SCHEMA_VERSION:
             continue
         run["artifact_path"] = str(path)
+        run["active_experiment"] = resolve_experiment_id(
+            str(run["experiment"]),
+            run.get("experiment_definition_version"),
+        )
         run["experiment_display_name"] = saved_run_experiment_label(run)
         run["backend_label"] = artifact_backend_label(run)
         runs.append(run)
@@ -288,7 +297,17 @@ def load_saved_runs(cfg: Config) -> list[dict]:
 
 
 def saved_run_experiment_label(run: dict) -> str:
-    experiment = str(run["experiment"]).lower()
+    stored_experiment = str(run["experiment"]).lower()
+    experiment = str(
+        run.get("active_experiment")
+        or resolve_experiment_id(
+            stored_experiment,
+            run.get("experiment_definition_version"),
+        )
+    )
     if experiment not in EXPERIMENT_CATALOG:
         raise KeyError(f"unknown experiment {experiment!r}")
-    return experiment_display_name(experiment)
+    label = experiment_display_name(experiment)
+    if experiment != stored_experiment:
+        return f"{label} (legacy v12 ID {stored_experiment.upper()})"
+    return label

@@ -25,38 +25,38 @@ from modules.perception import Description
 from modules.prediction import vlm_predict_joint
 from tests.fakes import FakeEmbeddingProvider, install_gemini_fakes
 
-REMOVED_EXPERIMENT_ID = "e" + str(2)
+UNKNOWN_EXPERIMENT_ID = "e6"
 
 
-def test_config_and_catalog_expose_only_stable_active_experiments() -> None:
+def test_config_and_catalog_expose_contiguous_active_experiments() -> None:
     cfg = load_config()
 
-    assert EXPERIMENT_IDS == ("e1", "e3", "e4", "e5", "e6")
+    assert EXPERIMENT_IDS == ("e1", "e2", "e3", "e4", "e5")
     assert tuple(cfg.experiments) == EXPERIMENT_IDS
     assert tuple(EXPERIMENT_CATALOG) == EXPERIMENT_IDS
     assert cfg.experiment("e1").method is ExperimentMethod.VISION_VLM
-    assert cfg.experiment("e3").method is ExperimentMethod.SEMANTIC_RETRIEVAL_VLM
-    for experiment in ("e4", "e5", "e6"):
+    assert cfg.experiment("e2").method is ExperimentMethod.SEMANTIC_RETRIEVAL_VLM
+    for experiment in ("e3", "e4", "e5"):
         assert cfg.experiment(experiment).method is ExperimentMethod.HYBRID_RETRIEVAL_VLM
     with pytest.raises(KeyError, match="unknown experiment"):
-        cfg.experiment(REMOVED_EXPERIMENT_ID)
+        cfg.experiment(UNKNOWN_EXPERIMENT_ID)
     with pytest.raises(KeyError, match="unknown experiment"):
-        create_strategy(cfg, REMOVED_EXPERIMENT_ID)
+        create_strategy(cfg, UNKNOWN_EXPERIMENT_ID)
 
 
 def test_active_experiment_evidence_ladder_is_exact() -> None:
-    e1, e3, e4, e5, e6 = (EXPERIMENT_CATALOG[name] for name in EXPERIMENT_IDS)
+    e1, e2, e3, e4, e5 = (EXPERIMENT_CATALOG[name] for name in EXPERIMENT_IDS)
 
     assert not e1.uses_measurements and e1.retrieval_mode is None
-    assert not e3.uses_measurements and e3.retrieval_mode.value == "semantic_only"
-    assert e4.visible_condition_fields == ("mass_g",)
-    assert e5.visible_condition_fields == ("mass_g", "roughness_index")
-    assert e6.visible_condition_fields == (
+    assert not e2.uses_measurements and e2.retrieval_mode.value == "semantic_only"
+    assert e3.visible_condition_fields == ("mass_g",)
+    assert e4.visible_condition_fields == ("mass_g", "roughness_index")
+    assert e5.visible_condition_fields == (
         "mass_g",
         "roughness_index",
         "projected_contact_fraction",
     )
-    assert e6.ranking_features == ("semantic", "mass", "roughness")
+    assert e5.ranking_features == ("semantic", "mass", "roughness")
 
 
 def test_prediction_config_requires_nonempty_unique_stable_gripper_order() -> None:
@@ -98,11 +98,11 @@ def test_backend_provenance_exposes_only_active_paths() -> None:
         "force": "gemini_joint_generation",
         "semantic_embedding": None,
     }
-    assert backend_provenance(cfg, "e6")["semantic_embedding"] == (
+    assert backend_provenance(cfg, "e5")["semantic_embedding"] == (
         cfg.retrieval.embedding.model
     )
     with pytest.raises(KeyError, match="unknown experiment"):
-        backend_provenance(cfg, REMOVED_EXPERIMENT_ID)
+        backend_provenance(cfg, UNKNOWN_EXPERIMENT_ID)
     assert artifact_backend_label({"backend": {"force": "gemini_joint_generation"}}) == (
         "gemini_joint_generation"
     )

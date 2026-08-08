@@ -122,7 +122,7 @@ def render(context: AppContext) -> None:
         key="prepare_experiences",
         help=(
             "Builds one reference record per completed gripper outcome. Physical fields may "
-            "remain blank for E3."
+            "remain blank for E2."
         ),
     )
     if not dataset.capabilities.can_build_experiences:

@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Council Verdict: Gripper Force Call Architecture</title>
+  <style>
+    :root { --ink:#172033; --muted:#627086; --line:#dce3ed; --blue:#315efb; --pale:#f5f8ff; --green:#16845b; }
+    * { box-sizing:border-box; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; color:var(--ink); background:#f4f6f9; line-height:1.55; }
+    main { max-width:980px; margin:36px auto; padding:0 20px 60px; }
+    .hero,.card,details { background:white; border:1px solid var(--line); border-radius:14px; box-shadow:0 5px 20px rgba(23,32,51,.05); }
+    .hero { padding:34px; border-top:5px solid var(--blue); }
+    h1 { margin:0 0 8px; font-size:32px; line-height:1.2; }
+    h2 { margin:0 0 12px; font-size:21px; }
+    h3 { margin:0 0 8px; font-size:17px; }
+    p { margin:8px 0 14px; }
+    .eyebrow { color:var(--blue); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+    .question { color:var(--muted); font-size:17px; }
+    .verdict { margin-top:22px; padding:20px; background:var(--pale); border-left:4px solid var(--blue); border-radius:8px; font-size:19px; font-weight:650; }
+    .grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; margin-top:18px; }
+    .card { padding:22px; }
+    .wide { grid-column:1/-1; }
+    ul { margin:8px 0 0; padding-left:22px; }
+    .alignment { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:14px; }
+    .advisor { padding:14px 8px; text-align:center; border-radius:10px; color:#0d6545; background:#eaf8f2; border:1px solid #bfe9d7; font-weight:700; font-size:13px; }
+    details { margin-top:12px; padding:0 20px; }
+    summary { cursor:pointer; padding:17px 0; font-weight:700; }
+    details p { color:#344055; }
+    code { background:#eef2f7; padding:2px 5px; border-radius:4px; }
+    footer { text-align:center; color:var(--muted); margin-top:28px; font-size:13px; }
+    @media (max-width:720px) { .grid { grid-template-columns:1fr; } .alignment { grid-template-columns:1fr; } .wide { grid-column:auto; } }
+  </style>
+</head>
+<body>
+<main>
+  <section class="hero">
+    <div class="eyebrow">LLM Council Verdict</div>
+    <h1>Separate estimation from gripper selection</h1>
+    <p class="question">Should Gecko and silicone forces come from one non-comparative joint VLM call, or two isolated calls when Python makes the final choice?</p>
+    <div class="verdict">Use two isolated per-gripper calls, execute them concurrently, and keep all comparison and selection logic in deterministic Python.</div>
+  </section>
+
+  <section class="grid">
+    <article class="card">
+      <h2>Why</h2>
+      <p>Removing recommendation fields does not remove contextual coupling. A joint prompt still exposes each estimate to the other embodiment, evidence set, and output slot.</p>
+      <p>Temperature zero improves repeatability; it does not guarantee noninterference.</p>
+    </article>
+    <article class="card">
+      <h2>Implementation contract</h2>
+      <ul>
+        <li>One canonical per-gripper prompt and schema.</li>
+        <li>Only one embodiment and its evidence per call.</li>
+        <li>No winner, recommendation, comparison, or competition framing.</li>
+        <li>Parallel calls with independent cache, retry, and timeout.</li>
+      </ul>
+    </article>
+    <article class="card wide">
+      <h2>Agreement map</h2>
+      <p>All five independent advisors reached the same architectural conclusion.</p>
+      <div class="alignment">
+        <div class="advisor">Contrarian<br>Separate</div>
+        <div class="advisor">First Principles<br>Separate</div>
+        <div class="advisor">Expansionist<br>Separate</div>
+        <div class="advisor">Outsider<br>Separate</div>
+        <div class="advisor">Executor<br>Separate</div>
+      </div>
+    </article>
+    <article class="card">
+      <h2>Deterministic selector</h2>
+      <ul>
+        <li>Reject infeasible results.</li>
+        <li>Select the lower calibrated force.</li>
+        <li>Use an explicit numerical tie tolerance.</li>
+        <li>Return <code>neither_feasible</code> or <code>incomplete</code> explicitly.</li>
+      </ul>
+    </article>
+    <article class="card">
+      <h2>First action</h2>
+      <p>Create a noninterference regression test: for frozen image and evidence, Gecko's request and result must be unchanged by whether silicone is enabled, and vice versa.</p>
+    </article>
+  </section>
+
+  <h2 style="margin-top:30px">Chairman's synthesis</h2>
+  <details open><summary>Where the council agrees</summary><p>Two isolated calls are the scientifically cleaner default. The VLM returns force and feasibility only; Python remains the sole selector. Parallel execution and independent caching reduce the latency and recomputation penalty.</p></details>
+  <details><summary>Where the council clashes</summary><p>The only disagreement is whether a joint call could later be accepted after an equivalence-bounded ablation. The final verdict keeps joint mode only as an explicitly labeled experiment, not as the primary scientific pipeline.</p></details>
+  <details><summary>Blind spots caught in peer review</summary><p>Isolation gives noninterference, not automatic validity. Both calls still share model and dataset biases. Freeze the model, prompt, schema, image preprocessing, retrieval index, evidence order, units, physical force definition, retries, and selector version. Validate each gripper against held-out ground truth and never silently select from one successful call if the other failed.</p></details>
+
+  <h2 style="margin-top:30px">Advisor views</h2>
+  <details><summary>The Contrarian</summary><p>A joint call remains structurally coupled even without comparison wording. The extra call cost is justified to remove an avoidable scientific confound.</p></details>
+  <details><summary>The First Principles Thinker</summary><p>The estimand is per-gripper absolute force. Use matched isolated calls, per-gripper calibration, and a fully specified Python policy for ties and failures.</p></details>
+  <details><summary>The Expansionist</summary><p>Separate calls create a cleaner production system and a useful ablation surface. Preserve exact provenance and quantify joint-versus-separated drift.</p></details>
+  <details><summary>The Outsider</summary><p>The hidden requirement is invariance: enabling silicone must not change Gecko's prediction. Avoid even implicit competition framing.</p></details>
+  <details><summary>The Executor</summary><p>Build one canonical function, invoke it twice concurrently, and isolate caching, retries, and failures per gripper.</p></details>
+
+  <details><summary>Peer-review highlights</summary><p>Reviewers emphasized correlated model errors, held-out calibration, frozen retrieval evidence, precise force definitions, provider version drift, timeouts, retry symmetry, and an explicit incomplete state.</p></details>
+
+  <footer>Generated 2026-08-07 23:01:55 America/New_York · Counciled: joint versus isolated VLM force estimation</footer>
+</main>
+</body>
+</html>

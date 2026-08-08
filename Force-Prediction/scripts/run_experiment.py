@@ -1,6 +1,6 @@
 """Run one (or all) experiments under frozen GroupKFold splits and print metrics.
 
-    python scripts/run_experiment.py --exp e6
+    python scripts/run_experiment.py --exp e5
     python scripts/run_experiment.py --all
 
 Leak-safe by construction: the pipeline is re-fit on each fold's training objects
@@ -59,7 +59,7 @@ def run_experiment(name: str, records, cfg, folds) -> dict:
 
 def parse_args() -> argparse.Namespace:
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--exp", choices=EXPERIMENT_IDS, default="e6", help="Experiment ID.")
+    p.add_argument("--exp", choices=EXPERIMENT_IDS, default="e5", help="Experiment ID.")
     p.add_argument("--all", action="store_true", help="Run every experiment.")
     p.add_argument(
         "--confirm-gemini-cost",

@@ -35,7 +35,7 @@ def test_single_run_retrieval_uses_only_eligible_non_sibling_references() -> Non
 
     training = _single_run_training_records(
         records,
-        experiment="e4",
+        experiment="e3",
         query_object_id="shared",
         query_surface_id="shared",
         reference_ids=("shared", "shared__condition_2", "train_other"),

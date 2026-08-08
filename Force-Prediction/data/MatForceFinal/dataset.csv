@@ -43,8 +43,17 @@ Creatine,creatine.jpg,train,condition_2,381.0,823.15,0.1,,True,3.961,True,
 Beaker,beaker.jpg,train,condition_2,351.24,1106.84,0.25,,True,4.19,True,
 Computer,computer.jpg,test,baseline,1550.0,780.1,1.0,10.506,True,2.5,True,gecko
 Large hand sanitizer,large_hand_sanitizer_sa_1.jpeg,surface_validation,condition_2,836.04,958.71,0.48,,True,2.1,True,
-Bambu Lab Kit,objects/bambu_lab_kit/image.jpg,train,baseline,,,,,,,True,
-Chinese bible,objects/chinese_bible/image.jpg,train,baseline,,,,,,,True,
+Red Hot Sauce,objects/red_hot_sauce/image.jpg,test,baseline,1470.0,861.4,0.880952381,9.4,True,1.9,True,gecko
+Red Hot Sauce,objects/red_hot_sauce/image.jpg,surface_validation,condition_2,1470.0,861.4,0.4761904762,9.8,True,3.4,True,gecko
+Red Hot Sauce,objects/red_hot_sauce/image.jpg,surface_validation,condition_3,1470.0,861.4,0.3273809524,10.1,True,5.1,True,gecko
+Red Hot Sauce,objects/red_hot_sauce/image.jpg,surface_validation,condition_4,1470.0,861.4,0.7142857143,9.65,True,2.4,True,gecko
+Chinese bible,objects/chinese_bible/image.jpg,test,baseline,1270.0,1620.1,1.0,5.5,True,5.6,True,silicone
+Chinese bible,objects/chinese_bible/image.jpg,surface_validation,condition_2,1270.0,1620.1,0.4761904762,5.9,True,6.2,True,silicone
+Chinese bible,objects/chinese_bible/image.jpg,surface_validation,condition_3,1270.0,1620.1,0.2380952381,6.1,True,6.8,True,silicone
+Chinese bible,objects/chinese_bible/image.jpg,surface_validation,condition_4,1270.0,1620.1,0.7142857143,5.8,True,5.7,True,gecko
 Fancy Driver,objects/fancy_driver/image.jpg,train,baseline,,,,,,,,
-Speaker,objects/speaker/image.jpg,train,baseline,,,,,,,,
+Speaker,objects/speaker/image.jpg,train,baseline,560.0,1951.2,0.9523809524,3.9,True,3.8,True,gecko
+Speaker,objects/speaker/image.jpg,train,condition_2,560.0,1951.2,0.4761904762,3.65,True,4.3,True,silicone
+Speaker,objects/speaker/image.jpg,train,condition_3,560.0,1951.2,0.7142857143,3.75,True,3.9,True,silicone
+Speaker,objects/speaker/image.jpg,train,condition_4,560.0,1951.2,0.2380952381,3.7,True,4.6,True,silicone
 Power Bank,objects/power_bank/image.jpg,train,baseline,,,,,,,True,

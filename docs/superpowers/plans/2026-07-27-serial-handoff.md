@@ -692,7 +692,7 @@ git commit -m "feat: add SerialGraspSender and block real ports in tests"
 
 - `python -m pytest` passes from `Force-Prediction/`.
 - `python -m ruff check .` is clean.
-- `GraspCommand.from_prediction(obj, Pipeline(cfg, "e4").fit(train).predict(q), cfg).serialize()` returns four lines, or raises a `ValueError` naming the missing piece.
+- `GraspCommand.from_prediction(obj, Pipeline(cfg, "e3").fit(train).predict(q), cfg).serialize()` returns four lines, or raises a `ValueError` naming the missing piece.
 - No test opens a serial port.
 
 ## Known blockers beyond this plan

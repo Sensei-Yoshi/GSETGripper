@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "chinese_bible",
+  "object_name": "Chinese bible",
+  "image_name": "image.jpg",
+  "image_path": "data/MatForceFinal/objects/chinese_bible/image.jpg",
+  "image_sha256": "35c0badc3d3ce47f821bba4db2a6757b9e7055a2c6a159f72b9bfda4e59c839d",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
+  "descriptor": {
+    "retrieval_description": "Clean, dry synthetic leather contact surface with a textured grain finish and no visible moisture or loose debris.",
+    "contact_material": "synthetic leather",
+    "visible_surface_material": "synthetic leather with textured grain",
+    "visible_surface_condition": "clean, dry, and undamaged",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "a458c47b8f488132b207ca33ab90122159a03a251a5def573d4f44bb8322269e",
+  "embedding_cache_key": "2680bb2601a86fa3810c65a44277879e5440c22c743a9b4ad92e9bceceff0b9f",
+  "embedding_sha256": "cda597254fe914c35516690311da56ef407caa7e7fa72d2da07397d213fff71d",
+  "updated_at": "2026-08-08T01:00:36.682065+00:00"
+}

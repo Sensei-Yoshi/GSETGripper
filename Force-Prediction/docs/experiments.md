@@ -13,53 +13,53 @@ define the hardware being predicted and are not object-specific measurements.
 | ID | Object-specific evidence | Retrieval score | Research question |
 |---|---|---|---|
 | **E1** | Object image only | None | How accurately can the VLM predict the active grippers zero-shot? |
-| **E3** | Image + semantic descriptor + active-gripper outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval? |
-| **E4** | E3 + mass | Semantic + mass | What does mass-conditioned retrieval add? |
-| **E5** | E4 + continuous roughness | Semantic + mass + roughness | What is the incremental value of measured roughness? |
-| **E6** | E5-ranked experiences + projected contact fraction | Semantic + mass + roughness | What is the incremental value of contact as query and controlled-condition evidence? |
+| **E2** | Image + semantic descriptor + active-gripper outcomes | Semantic cosine only | What is the isolated benefit of experience retrieval? |
+| **E3** | E2 + mass | Semantic + mass | What does mass-conditioned retrieval add? |
+| **E4** | E3 + continuous roughness | Semantic + mass + roughness | What is the incremental value of measured roughness? |
+| **E5** | E4-ranked experiences + projected contact fraction | Semantic + mass + roughness | What is the incremental value of contact as query and controlled-condition evidence? |
 
 One selected gripper produces one `PerGripperPrediction`; both selected grippers produce
 one joint response and an explicit recommendation. Python remains authoritative. Selection,
 regret, and recommendation metrics apply only to paired runs.
 
-## E3: strictly semantic experience retrieval
+## E2: strictly semantic experience retrieval
 
-E3 is the semantic-only retrieval ablation. It generates or reuses the query's visible
+E2 is the semantic-only retrieval ablation. It generates or reuses the query's visible
 contact-region description, embeds that text, and ranks training objects using only
 
 `S(q, i) = cosine(e_q, e_i)`.
 
-The embedding contains semantic contact-interface text only. E3 does not use query or
+The embedding contains semantic contact-interface text only. E2 does not use query or
 neighbor mass, roughness, or projected contact fraction in ranking or in the VLM payload.
 Retrieval ranks distinct physical surfaces. Each surface exposes its semantic description
 once, followed by up to `retrieval.conditions_per_surface` active-gripper observations with
 no condition names or physical measurements. It receives no hybrid
 score components. Tests enforce this boundary so later refactors
-cannot quietly leak sensor terms into E3.
+cannot quietly leak sensor terms into E2.
 
-This is the right role for E3 because it creates clean comparisons:
+This is the right role for E2 because it creates clean comparisons:
 
-- E3 minus E1 estimates the contribution of semantic experiential retrieval.
-- E4 minus E3 estimates the contribution of mass-conditioned retrieval.
-- E5 minus E4 estimates the incremental contribution of continuous roughness.
-- E6 minus E5 estimates the incremental contribution of projected contact without changing the retrieved surface set.
+- E2 minus E1 estimates the contribution of semantic experiential retrieval.
+- E3 minus E2 estimates the contribution of mass-conditioned retrieval.
+- E4 minus E3 estimates the incremental contribution of continuous roughness.
+- E5 minus E4 estimates the incremental contribution of projected contact without changing the retrieved surface set.
 
-E6 having the lowest error is a hypothesis, not a guaranteed result. Sensor noise,
+E5 having the lowest error is a hypothesis, not a guaranteed result. Sensor noise,
 retrieval mismatch, prompt sensitivity, or a small experience set can make fusion worse.
 The paper should report the measured differences and uncertainty rather than treating the
 expected ordering as a premise.
 
-## E4–E6: nested semantic and sensor-fusion retrieval
+## E3–E5: nested semantic and sensor-fusion retrieval
 
-E4–E6 use the same grouped-surface representation as E3. Their surface score draws
+E3–E5 use the same grouped-surface representation as E2. Their surface score draws
 nested subsets from the configured hybrid terms:
 
 `S(q, i) = w_s S_sem + w_m S_mass + w_r S_rough`.
 
-E4 enables semantic and mass terms. E5 and E6 both add continuous roughness to surface
-ranking, so they retrieve identical physical surfaces for the same query and pool. E6 exposes
+E3 enables semantic and mass terms. E4 and E5 both add continuous roughness to surface
+ranking, so they retrieve identical physical surfaces for the same query and pool. E5 exposes
 projected contact only as query and controlled same-surface condition evidence. Disabled
-ranking terms receive zero weight and the remaining terms are renormalized. E5 and E6 always
+ranking terms receive zero weight and the remaining terms are renormalized. E4 and E5 always
 use the continuous roughness index.
 
 The VLM receives the normalized weights and kernel scales so it can understand why a
@@ -68,8 +68,8 @@ and not a force equation. The retrieval score only ranks candidates; it never co
 force. Force evidence comes from the paired
 observed outcomes attached to those conditions. A surface is ranked by its best eligible
 condition; the top `retrieval.k` distinct surfaces are retained. Each surface then contributes
-its baseline and at most two controlled variants. E4 admits only mass changes, E5 admits only
-mass/roughness changes, and E6 admits mass/roughness/contact changes. Conditions that also
+its baseline and at most two controlled variants. E3 admits only mass changes, E4 admits only
+mass/roughness changes, and E5 admits mass/roughness/contact changes. Conditions that also
 change an experiment-hidden measurement are excluded. None receives a physics prediction.
 
 ## Evaluation and reporting
@@ -86,7 +86,7 @@ retrieved evidence, target set, and model/prompt provenance under
 grippers and writes a version under `results/evaluations/<batch_id>/`; unchanged truth reuses
 the existing version. This lets image-only E1 batches be generated before physical trials.
 The source CSV's `split` column defines the canonical holdout: only `test` rows are predicted
-and scored, while E3–E6 may retrieve only from `train` rows. All sibling conditions of one
+and scored, while E2–E5 may retrieve only from `train` rows. All sibling conditions of one
 physical surface must share the same split. Datasets without test rows retain the
 leave-one-surface-out fallback.
 
@@ -98,6 +98,6 @@ Treat fixture-based results as synthetic pipeline validation until real standard
 grasp trials replace them.
 
 Run a Gemini-backed condition with
-`python scripts/run_experiment.py --exp e3 --confirm-gemini-cost`, run all active
+`python scripts/run_experiment.py --exp e2 --confirm-gemini-cost`, run all active
 conditions with `python scripts/run_experiment.py --all --confirm-gemini-cost`, or
 create or resume a suite from the Streamlit **Runs Viewer**.

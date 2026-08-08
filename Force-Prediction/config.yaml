@@ -3,7 +3,7 @@
 #
 # Everything a researcher would want to sweep lives here: retrieval weights,
 # force limits, model IDs, and the EXPERIMENT definitions
-# (E1 and E3–E6 as explicit methods). Editable prompts and fixed gripper embodiment
+# (E1–E5 as explicit methods). Editable prompts and fixed gripper embodiment
 # context live in prompts.yaml. No tunable is hard-coded in Python.
 #
 # Loaded and validated by modules/config.py into typed objects.
@@ -61,7 +61,7 @@ roughness:
 
 # --- Retrieval ---------------------------------------------------------------
 retrieval:
-  k: 5                  # distinct physical-surface neighbors for E3-E6
+  k: 5                  # distinct physical-surface neighbors for E2-E5
   conditions_per_surface: 3  # total cap including the baseline condition
   weights:              # available hybrid terms; each experiment declares its ranking subset
     semantic: 0.40
@@ -97,7 +97,7 @@ prompts_file: prompts.yaml
 # =============================================================================
 experiments:
   e1: {method: vision_vlm, prompt: e1}
-  e3: {method: semantic_retrieval_vlm, prompt: e3}
+  e2: {method: semantic_retrieval_vlm, prompt: e2}
+  e3: {method: hybrid_retrieval_vlm, prompt: e3}
   e4: {method: hybrid_retrieval_vlm, prompt: e4}
   e5: {method: hybrid_retrieval_vlm, prompt: e5}
-  e6: {method: hybrid_retrieval_vlm, prompt: e6}

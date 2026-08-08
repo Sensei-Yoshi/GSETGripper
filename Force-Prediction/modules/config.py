@@ -175,8 +175,8 @@ class ExperimentMethod(StrEnum):
     HYBRID_RETRIEVAL_VLM = "hybrid_retrieval_vlm"
 
 
-EXPERIMENT_IDS = ("e1", "e3", "e4", "e5", "e6")
-EXPERIMENT_DEFINITION_VERSION = 12
+EXPERIMENT_IDS = ("e1", "e2", "e3", "e4", "e5")
+EXPERIMENT_DEFINITION_VERSION = 13
 
 
 class ExperimentConfig(BaseModel):

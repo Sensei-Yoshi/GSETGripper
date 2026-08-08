@@ -1,4 +1,4 @@
-"""Stage check: the full Gemini-backed paired-retrieval VLM pipeline (E6).
+"""Stage check: the full Gemini-backed paired-retrieval VLM pipeline (E5).
 
 Prints each per-gripper prediction and the final deterministic selection.
 
@@ -41,7 +41,7 @@ def main() -> int:
     query = query_input_from_object(test, cfg)
     query.image_bgr = image
 
-    pipe = Pipeline(cfg, "e6").fit(train)
+    pipe = Pipeline(cfg, "e5").fit(train)
     result = pipe.predict(query)
 
     print(f"held-out object: {held_out}")

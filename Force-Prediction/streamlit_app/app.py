@@ -79,9 +79,9 @@ def main() -> None:
         st.session_state["predict_gecko_force"] = Gripper.GECKO in defaults
         st.session_state["predict_silicone_force"] = Gripper.SILICONE in defaults
     with roughness_col:
-        st.caption("Continuous roughness is used only by E5 and E6.")
+        st.caption("Continuous roughness is used only by E4 and E5.")
     with contact_col:
-        st.caption("Projected contact is used only by E6.")
+        st.caption("Projected contact is used only by E5.")
     selectable = set(selected_dataset.selectable_grippers())
     if Gripper.GECKO not in selectable:
         st.session_state["predict_gecko_force"] = False

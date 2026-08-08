@@ -20,7 +20,7 @@ experience-conditioned VLM prediction.
 - `config.yaml` owns numerical tunables and method assignments; `prompts.yaml` owns
   editable prompts and the two fixed written gripper embodiment descriptions.
 - `experiments/` is the readable canonical map with one strategy module per active method.
-- `pipeline.py` owns the public facade: `Pipeline(cfg, "e4").fit(train).predict(query)`
+- `pipeline.py` owns the public facade: `Pipeline(cfg, "e3").fit(train).predict(query)`
   and `predict_gripper_force(...)` for a typed single-gripper result.
 - `contracts.py` owns shared Pydantic data shapes; do not create ad-hoc response dicts.
 - Every learned resource is fit inside the current object-grouped training fold.
@@ -32,10 +32,10 @@ experience-conditioned VLM prediction.
 | ID | Method |
 |---|---|
 | E1 | Image-only zero-shot VLM response for the active grippers |
-| E3 | Semantic-cosine experiential retrieval + VLM response |
-| E4 | Semantic + mass retrieval + VLM response |
-| E5 | E4 + continuous roughness |
-| E6 | E5-ranked surfaces + projected-contact condition evidence |
+| E2 | Semantic-cosine experiential retrieval + VLM response |
+| E3 | Semantic + mass retrieval + VLM response |
+| E4 | E3 + continuous roughness |
+| E5 | E4-ranked surfaces + projected-contact condition evidence |
 
 One active gripper uses `PerGripperPrediction`; both use one `JointGripperPrediction`.
 Python always makes the final feasible choice; paired VLM recommendation is stored and
@@ -46,22 +46,22 @@ scored separately.
 - Force means stationary-finger load-cell normal force in newtons; never double it.
 - Benchmark predictions are continuous and nonnegative with no analytical upper cap. The
   optional physical serial path retains its separate 8 N actuation safety guard.
-- `retrieval.k` in `config.yaml` is the default used by E3–E6 and the UI.
+- `retrieval.k` in `config.yaml` is the default used by E2–E5 and the UI.
 - `surface_id` identifies a physical contact surface; `condition_id` identifies one
   independently measured condition; baseline `object_id` values remain unchanged.
 - Gecko/silicone rows are paired by condition-level `object_id`. The source CSV's
   `split` column defines the canonical train/test holdout, and every sibling condition
   of one `surface_id` must remain on the same side.
-- E3–E6 rank `retrieval.k` distinct surfaces and retain up to
+- E2–E5 rank `retrieval.k` distinct surfaces and retain up to
   `retrieval.conditions_per_surface` condition observations from each.
 - Embeddings contain the semantic contact-region description only. Mass, roughness, and
   projected contact remain explicit measured evidence where enabled by the fixed profile.
-- E3 ranking and its VLM payload must contain no query/neighbor mass, roughness, contact,
+- E2 ranking and its VLM payload must contain no query/neighbor mass, roughness, contact,
   or physical-score components.
 - Live calls receive the query-object image and fixed written descriptions of only
   the active gripper embodiments; gripper images are not sent.
-- E1/E3 never require physical measurements. E4 requires mass, E5 adds continuous
-  roughness, and E6 adds projected contact evidence without contact-based neighbor ranking.
+- E1/E2 never require physical measurements. E3 requires mass, E4 adds continuous
+  roughness, and E5 adds projected contact evidence without contact-based neighbor ranking.
 
 ## Module map
 
@@ -72,7 +72,7 @@ scored separately.
 | `pipeline.py` | Public facade, force helper, and object-to-query adapter |
 | `contracts.py` | Experience, query, joint prediction, selection models |
 | `prediction.py` | Single/joint force requests, nonnegative normalization, selector |
-| `retrieval.py` | Semantic and hybrid retrieval for E3–E6 |
+| `retrieval.py` | Semantic and hybrid retrieval for E2–E5 |
 | `serial_output.py` | Optional selected-gripper force actuation over serial |
 | `evaluation.py` | Surface-grouped cross-validation splits and metrics |
 | `datasets/` | Dataset discovery, aggregate/object contracts, artifact storage, preparation stages |

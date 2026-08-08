@@ -1,4 +1,4 @@
-"""Stage check: full E6-style hybrid paired-object retrieval with Gemini embeddings."""
+"""Stage check: full E5-style hybrid paired-object retrieval with Gemini embeddings."""
 
 from __future__ import annotations
 

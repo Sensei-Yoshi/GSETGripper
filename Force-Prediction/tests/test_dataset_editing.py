@@ -431,3 +431,65 @@ def test_condition_requirements_follow_enabled_measurement_modes(tmp_path) -> No
         DatasetObjectEdit(mass_g=120, roughness_index=3),
     )
     assert dataset.objects[object_id].projected_contact_fraction is None
+
+
+def test_surface_validation_split_is_condition_specific(tmp_path) -> None:
+    cfg = _config_at(tmp_path)
+    root = tmp_path / "data/Physical"
+    _write_source(root)
+    dataset = get_dataset(cfg, "Physical")
+    dataset, condition_id = add_dataset_condition(
+        cfg,
+        dataset,
+        "test_cup",
+        DatasetObjectEdit(
+            mass_g=120,
+            roughness_index=3,
+            projected_contact_fraction=0.6,
+        ),
+    )
+
+    dataset = update_dataset_object(
+        cfg,
+        dataset,
+        condition_id,
+        DatasetObjectEdit(
+            split="surface_validation",
+            mass_g=120,
+            roughness_index=3,
+            projected_contact_fraction=0.6,
+        ),
+    )
+    assert dataset.objects["test_cup"].split == "train"
+    assert dataset.objects[condition_id].split == "surface_validation"
+
+    dataset = update_dataset_object(
+        cfg,
+        dataset,
+        "test_cup",
+        DatasetObjectEdit(
+            split="test",
+            mass_g=100,
+            roughness_index=2,
+            projected_contact_fraction=0.5,
+            silicone_force_n=1.5,
+            silicone_feasible=True,
+            gecko_force_n=1.0,
+            gecko_feasible=True,
+        ),
+    )
+    assert dataset.objects["test_cup"].split == "test"
+    assert dataset.objects[condition_id].split == "surface_validation"
+
+    dataset = update_dataset_object(
+        cfg,
+        dataset,
+        condition_id,
+        DatasetObjectEdit(
+            split="train",
+            mass_g=120,
+            roughness_index=3,
+            projected_contact_fraction=0.6,
+        ),
+    )
+    assert {item.split for item in dataset.objects.values()} == {"train"}

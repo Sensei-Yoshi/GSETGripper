@@ -1,6 +1,6 @@
 """Grouped physical-surface retrieval over semantics and measurement conditions.
 
-E3 ranks by semantic cosine only; E4-E6 use nested subsets of the configured hybrid score. All return
+E2 ranks by semantic cosine only; E3-E5 use nested subsets of the configured hybrid score. All return
 the available gripper labels for every neighbor; request payloads expose only active ones.
 Exact search is appropriate for this dataset (<1k objects), so no vector database
 is required. The hybrid score is only a neighbor-ranking heuristic: it never

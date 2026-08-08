@@ -67,7 +67,7 @@ def test_every_experiment_supports_one_active_gripper(
     assert client.generation_calls == 1
 
 
-def test_single_silicone_e4_uses_per_gripper_schema_and_filtered_payload(monkeypatch):
+def test_single_silicone_e3_uses_per_gripper_schema_and_filtered_payload(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.prediction.active_grippers = (Gripper.SILICONE,)
     records = fabricate_records(cfg, 16)
@@ -95,7 +95,7 @@ def test_single_silicone_e4_uses_per_gripper_schema_and_filtered_payload(monkeyp
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
-    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+    detailed = Pipeline(cfg, "e3").fit(train).predict_detailed(
         _query_with_image(test, cfg)
     )
 
@@ -111,7 +111,7 @@ def test_single_silicone_e4_uses_per_gripper_schema_and_filtered_payload(monkeyp
     assert prediction.predicted_normal_force_n == 1.125
 
 
-def test_e4_detailed_result_contains_one_shared_top_k_list(monkeypatch):
+def test_e3_detailed_result_contains_one_shared_top_k_list(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
     records = fabricate_records(cfg, 30)
@@ -119,11 +119,11 @@ def test_e4_detailed_result_contains_one_shared_top_k_list(monkeypatch):
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
-    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+    detailed = Pipeline(cfg, "e3").fit(train).predict_detailed(
         _query_with_image(test, cfg)
     )
 
-    assert detailed.experiment_id == "e4"
+    assert detailed.experiment_id == "e3"
     assert detailed.experiment_method == "hybrid_retrieval_vlm"
     assert len(detailed.retrieved_objects) == cfg.retrieval.k
     assert len({item.object_id for item in detailed.retrieved_objects}) == cfg.retrieval.k
@@ -132,7 +132,7 @@ def test_e4_detailed_result_contains_one_shared_top_k_list(monkeypatch):
     assert all(item.silicone_min_force_n is not None for item in detailed.retrieved_objects)
 
 
-def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
+def test_e3_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
@@ -181,14 +181,14 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     )
     monkeypatch.setattr(ExperienceIndex, "retrieve_objects", counted_retrieve)
 
-    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
+    detailed = Pipeline(cfg, "e3").fit(train).predict_detailed(
         _query_with_image(test, cfg)
     )
 
     assert client.generation_calls == 1
     assert retrieval_calls == 1
     assert captured["schema"] is JointGripperPrediction
-    assert captured["instruction"].startswith(cfg.prompts.experiments["e4"].strip())
+    assert captured["instruction"].startswith(cfg.prompts.experiments["e3"].strip())
     assert cfg.prompts.target_instructions["joint"].strip() in captured["instruction"]
     paired_payload = captured["extra"]["retrieved_objects"]
     assert len(paired_payload) == cfg.retrieval.k
@@ -201,7 +201,7 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
     assert detailed.selection.recommendation_agrees_with_selector is False
 
 
-def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
+def test_e3_e4_e5_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
@@ -237,54 +237,54 @@ def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
     )
     results = {
         experiment: Pipeline(cfg, experiment).fit(train).predict_detailed(query)
-        for experiment in ("e4", "e5", "e6")
+        for experiment in ("e3", "e4", "e5")
     }
 
     assert len(payloads) == 3
-    e4_payload, e5_payload, e6_payload = payloads
-    assert set(e4_payload["query"]) == {"mass_g"}
-    assert set(e5_payload["query"]) == {"mass_g", "roughness_index"}
-    assert set(e6_payload["query"]) == {
+    e3_payload, e4_payload, e5_payload = payloads
+    assert set(e3_payload["query"]) == {"mass_g"}
+    assert set(e4_payload["query"]) == {"mass_g", "roughness_index"}
+    assert set(e5_payload["query"]) == {
         "mass_g",
         "roughness_index",
         "projected_contact_fraction",
     }
-    assert "roughness_measurement" not in e4_payload
-    assert "roughness_measurement" in e5_payload
-    assert e5_payload["roughness_measurement"] == e6_payload["roughness_measurement"]
+    assert "roughness_measurement" not in e3_payload
+    assert "roughness_measurement" in e4_payload
+    assert e4_payload["roughness_measurement"] == e5_payload["roughness_measurement"]
     assert all(
         len(payload["retrieved_objects"]) == cfg.retrieval.k
         for payload in payloads
     )
-    assert e4_payload["retrieval_config"]["normalized_weights"]["roughness"] == 0
+    assert e3_payload["retrieval_config"]["normalized_weights"]["roughness"] == 0
+    assert "contact" not in e3_payload["retrieval_config"]["normalized_weights"]
+    assert e4_payload["retrieval_config"]["normalized_weights"]["roughness"] > 0
     assert "contact" not in e4_payload["retrieval_config"]["normalized_weights"]
-    assert e5_payload["retrieval_config"]["normalized_weights"]["roughness"] > 0
     assert "contact" not in e5_payload["retrieval_config"]["normalized_weights"]
-    assert "contact" not in e6_payload["retrieval_config"]["normalized_weights"]
+    assert e4_payload["retrieval_config"]["ranking_features"] == [
+        "semantic",
+        "mass",
+        "roughness",
+    ]
     assert e5_payload["retrieval_config"]["ranking_features"] == [
         "semantic",
         "mass",
         "roughness",
     ]
-    assert e6_payload["retrieval_config"]["ranking_features"] == [
-        "semantic",
-        "mass",
-        "roughness",
-    ]
-    assert e6_payload["retrieval_config"][
+    assert e5_payload["retrieval_config"][
         "projected_contact_used_for_surface_ranking"
     ] is False
-    assert [item["surface_id"] for item in e5_payload["retrieved_objects"]] == [
-        item["surface_id"] for item in e6_payload["retrieved_objects"]
+    assert [item["surface_id"] for item in e4_payload["retrieved_objects"]] == [
+        item["surface_id"] for item in e5_payload["retrieved_objects"]
     ]
-    assert results["e4"].effective_inputs[-1] == "mass"
-    assert results["e5"].effective_inputs[-2:] == ("mass", "roughness")
-    assert results["e6"].effective_inputs[-3:] == (
+    assert results["e3"].effective_inputs[-1] == "mass"
+    assert results["e4"].effective_inputs[-2:] == ("mass", "roughness")
+    assert results["e5"].effective_inputs[-3:] == (
         "mass",
         "roughness",
         "projected_contact",
     )
-    serialized = pipeline_result_to_dict(results["e6"])
+    serialized = pipeline_result_to_dict(results["e5"])
     assert serialized["retrieval_payload_version"] == 3
     assert serialized["ranking_features"] == ["semantic", "mass", "roughness"]
     restored = pipeline_result_from_dict(serialized)
@@ -302,7 +302,7 @@ def test_e4_e5_e6_form_a_nested_measurement_and_retrieval_ablation(monkeypatch):
     assert set(retrieval_table["condition_role"]) == {"baseline"}
 
 
-def test_e5_uses_continuous_roughness_and_withholds_contact(monkeypatch):
+def test_e4_uses_continuous_roughness_and_withholds_contact(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.inputs.use_projected_contact = True
     records = fabricate_records(cfg, 12)
@@ -337,7 +337,7 @@ def test_e5_uses_continuous_roughness_and_withholds_contact(monkeypatch):
         lambda _cfg: FakeEmbeddingProvider(cfg.retrieval.embedding.dim),
     )
 
-    detailed = Pipeline(cfg, "e5").fit(train).predict_detailed(
+    detailed = Pipeline(cfg, "e4").fit(train).predict_detailed(
         _query_with_image(test, cfg)
     )
 
@@ -362,7 +362,7 @@ def test_e5_uses_continuous_roughness_and_withholds_contact(monkeypatch):
     )
 
 
-def test_e4_fixed_profile_removes_roughness_and_contact(monkeypatch):
+def test_e3_fixed_profile_removes_roughness_and_contact(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     cfg.inputs.use_roughness = True
     cfg.inputs.use_projected_contact = True
@@ -398,7 +398,7 @@ def test_e4_fixed_profile_removes_roughness_and_contact(monkeypatch):
     train = [record for record in records if record.object_id != held]
     test = [record for record in records if record.object_id == held]
 
-    Pipeline(cfg, "e4").fit(train).predict_detailed(_query_with_image(test, cfg))
+    Pipeline(cfg, "e3").fit(train).predict_detailed(_query_with_image(test, cfg))
 
     assert "projected_contact_fraction" not in captured["extra"]["query"]
     assert "roughness_index" not in captured["extra"]["query"]
@@ -418,7 +418,7 @@ def test_e4_fixed_profile_removes_roughness_and_contact(monkeypatch):
     assert captured["extra"]["retrieval_config"]["k"] == cfg.retrieval.k
 
 
-@pytest.mark.parametrize("experiment", ["e1", "e3"])
+@pytest.mark.parametrize("experiment", ["e1", "e2"])
 def test_sensor_free_experiments_accept_missing_physical_fields(experiment, monkeypatch):
     cfg = load_config().model_copy(deep=True)
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
@@ -445,7 +445,7 @@ def test_sensor_free_experiments_accept_missing_physical_fields(experiment, monk
     )
 
 
-def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
+def test_e2_is_sensor_free_semantic_only_retrieval(monkeypatch):
     cfg = load_config().model_copy(deep=True)
     records = fabricate_records(cfg, 20)
     held = records[0].object_id
@@ -470,7 +470,7 @@ def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
             return {}
 
     def sensors_must_not_score(*_args, **_kwargs):
-        raise AssertionError("E3 must not evaluate sensor similarity")
+        raise AssertionError("E2 must not evaluate sensor similarity")
 
     client = CapturingClient()
     monkeypatch.setattr("modules.prediction.get_client", lambda _cfg: client)
@@ -482,7 +482,7 @@ def test_e3_is_sensor_free_semantic_only_retrieval(monkeypatch):
     monkeypatch.setattr("modules.retrieval.s_mass", sensors_must_not_score)
     monkeypatch.setattr("modules.retrieval.s_roughness", sensors_must_not_score)
 
-    detailed = Pipeline(cfg, "e3").fit(train).predict_detailed(
+    detailed = Pipeline(cfg, "e2").fit(train).predict_detailed(
         _query_with_image(test, cfg)
     )
 

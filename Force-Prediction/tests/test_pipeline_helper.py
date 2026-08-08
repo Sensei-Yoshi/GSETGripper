@@ -84,7 +84,7 @@ def test_predict_gripper_force_returns_none_for_infeasible_prediction(monkeypatc
 
 @pytest.mark.parametrize(
     ("experiment", "gripper"),
-    ((2, "gecko"), (True, "gecko"), (1, "vacuum")),
+    ((6, "gecko"), (True, "gecko"), (1, "vacuum")),
 )
 def test_predict_gripper_force_rejects_invalid_inputs(experiment, gripper):  # noqa: ANN001
     cfg = load_config()

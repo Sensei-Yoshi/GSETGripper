@@ -25,6 +25,17 @@ from modules.datasets import (
 from streamlit_app.context import AppContext
 from streamlit_app.prediction_ui import render_prediction
 
+_SPLIT_ORDER = ("train", "test", "surface_validation")
+
+
+def _split_label(split: str) -> str:
+    return split.replace("_", " ").title()
+
+
+def _surface_splits(conditions: list[DatasetObject]) -> tuple[str, ...]:
+    present = {item.split for item in conditions}
+    return tuple(split for split in _SPLIT_ORDER if split in present)
+
 
 def _rgb(image_bgr: np.ndarray) -> np.ndarray:
     return cv2.cvtColor(image_bgr, cv2.COLOR_BGR2RGB)
@@ -77,7 +88,7 @@ def _card_editor(
                 if status is not True:
                     st.session_state[f"{prefix}_{gripper}_force_n"] = None
             edit = DatasetObjectEdit(
-                split=st.session_state[f"{prefix}_split"].lower(),
+                split=st.session_state[f"{prefix}_split"].lower().replace(" ", "_"),
                 mass_g=st.session_state[f"{prefix}_mass_g"],
                 roughness_index=(
                     st.session_state[f"{prefix}_roughness_index"]
@@ -108,18 +119,21 @@ def _card_editor(
     with st.expander(f"Edit {item.condition_id.replace('_', ' ')}"):
         st.caption(
             "Each valid change saves atomically and refreshes completed experience records. "
-            "The train/test assignment and measurements are editable; names, images, "
+            "The dataset split and measurements are editable; names, images, "
             "descriptors, and generated artifacts remain read-only."
         )
+        split_labels = [_split_label(split) for split in _SPLIT_ORDER]
         st.selectbox(
             "Dataset split",
-            ["Train", "Test"],
-            index=0 if item.split == "train" else 1,
+            split_labels,
+            index=split_labels.index(_split_label(item.split)),
             key=f"{prefix}_split",
             on_change=save_change,
             help=(
-                "Train rows may be used as E3-E6 references. Test rows are the only "
-                "objects predicted and scored by a fixed-holdout benchmark."
+                "Train rows may be used as E2-E5 references. Test rows are the only "
+                "rows predicted and scored by a fixed-holdout benchmark. Surface "
+                "validation rows are reserved for single-run surface checks and are "
+                "excluded from benchmark train/test aggregates."
             ),
         )
         measurement_count = 1 + int(context.config.inputs.use_roughness) + int(
@@ -337,6 +351,19 @@ def _description_catalog(context: AppContext) -> None:
         )
         for conditions in grouped.values()
     ]
+    selected_split_labels = st.multiselect(
+        "Filter by dataset split",
+        [_split_label(split) for split in _SPLIT_ORDER],
+        default=[_split_label(split) for split in _SPLIT_ORDER],
+        key=f"catalog_split_filter_{context.dataset.dataset_id}",
+        help=(
+            "A physical object is included when any of its measurement conditions has "
+            "a selected split. Its card still shows every condition."
+        ),
+    )
+    selected_splits = {
+        label.lower().replace(" ", "_") for label in selected_split_labels
+    }
     search = st.text_input("Search objects", placeholder="Material, object, condition...")
     page_size = st.segmented_control(
         "Objects per page", [8, 12, 24], default=12, key="catalog_page_size"
@@ -344,6 +371,9 @@ def _description_catalog(context: AppContext) -> None:
     needle = search.strip().lower()
     filtered = []
     for row in surfaces:
+        conditions = grouped[row.surface_id or row.object_id]
+        if not selected_splits.intersection(_surface_splits(conditions)):
+            continue
         description = row.description.value if row.description else None
         searchable = " ".join(
             (
@@ -351,6 +381,10 @@ def _description_catalog(context: AppContext) -> None:
                 description.retrieval_description if description else "",
                 description.contact_material if description else "",
                 description.visible_surface_condition if description else "",
+                *(
+                    f"{condition.object_id} {condition.condition_id} {condition.split}"
+                    for condition in conditions
+                ),
             )
         ).lower()
         if not needle or needle in searchable:
@@ -406,8 +440,11 @@ def _description_catalog(context: AppContext) -> None:
                 st.subheader(row.name)
                 surface_id = row.surface_id or row.object_id
                 conditions = grouped[surface_id]
+                split_summary = ", ".join(
+                    _split_label(split) for split in _surface_splits(conditions)
+                )
                 st.caption(
-                    f"Surface ID: {surface_id} · Benchmark split: {row.split.upper()} · "
+                    f"Surface ID: {surface_id} · Dataset splits: {split_summary} · "
                     f"{len(conditions)} measurement condition(s)"
                 )
 
@@ -417,7 +454,7 @@ def _description_catalog(context: AppContext) -> None:
                     condition_row = {
                         "Condition": condition.condition_id,
                         "Data-point ID": condition.object_id,
-                        "Split": condition.split.title(),
+                        "Split": _split_label(condition.split),
                         "Mass (g)": condition.mass_g,
                     }
                     if base_cfg.inputs.use_roughness:
@@ -612,13 +649,16 @@ def pipeline_run_inspector(context: AppContext) -> None:
 
 def render(context: AppContext) -> None:
     st.header("Data Viewer")
-    split_by_surface: dict[str, str] = {}
+    splits_by_surface: dict[str, set[str]] = {}
     for item in context.rows:
-        split_by_surface.setdefault(item.surface_id or item.object_id, item.split)
-    split_counts = Counter(split_by_surface.values())
+        splits_by_surface.setdefault(item.surface_id or item.object_id, set()).add(item.split)
+    split_counts = Counter(
+        split for surface_splits in splits_by_surface.values() for split in surface_splits
+    )
     st.caption(
-        f"Benchmark split · Train: {split_counts['train']} physical surfaces · "
-        f"Test: {split_counts['test']} physical surfaces"
+        f"Dataset split membership · Train: {split_counts['train']} physical surfaces · "
+        f"Test: {split_counts['test']} physical surfaces · Surface validation: "
+        f"{split_counts['surface_validation']} physical surfaces"
     )
     if message := st.session_state.pop("data_viewer_flash", None):
         st.success(message)

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 from collections.abc import Callable, Iterable
@@ -26,6 +27,7 @@ from .config import (
     prompt_bundle_sha256,
 )
 from .datasets.storage import write_json_atomic
+from .experiment_ids import is_legacy_v12_definition, resolve_experiment_id
 from .experiments import EXPERIMENT_CATALOG, experiment_eligibility
 from .reporting import (
     common_intersection_artifacts,
@@ -152,8 +154,54 @@ def create_suite(
     return manifest
 
 
+def is_legacy_suite(manifest: dict) -> bool:
+    """Whether a suite uses the immutable, gapped definition-v12 IDs."""
+    snapshot = manifest.get("definition_snapshot", {})
+    return is_legacy_v12_definition(
+        snapshot.get("experiment_definition_version")
+    )
+
+
+def _resolved_experiment_dict(values: dict, definition_version: object) -> dict:
+    resolved: dict = {}
+    for stored_id, value in values.items():
+        active_id = resolve_experiment_id(stored_id, definition_version)
+        if active_id in resolved:
+            raise ValueError(f"duplicate resolved experiment ID {active_id!r}")
+        resolved[active_id] = value
+    return resolved
+
+
+def _resolve_legacy_suite_ids(manifest: dict) -> dict:
+    """Translate a v12 suite in memory without rewriting its immutable manifest."""
+    if not is_legacy_suite(manifest):
+        return manifest
+    resolved = copy.deepcopy(manifest)
+    snapshot = resolved["definition_snapshot"]
+    version = snapshot["experiment_definition_version"]
+    stored_experiments = list(resolved["experiments"])
+    resolved["legacy_stored_experiments"] = stored_experiments
+    resolved["legacy_experiment_ids"] = {
+        resolve_experiment_id(name, version): name for name in stored_experiments
+    }
+    resolved["experiments"] = [
+        resolve_experiment_id(name, version) for name in stored_experiments
+    ]
+    resolved["runs"] = _resolved_experiment_dict(resolved["runs"], version)
+    for key in ("experiment_definitions", "experiment_input_profiles"):
+        if key in snapshot:
+            snapshot[key] = _resolved_experiment_dict(snapshot[key], version)
+    for evaluation in resolved.get("evaluations", []):
+        for key in ("artifacts", "coverage"):
+            if key in evaluation:
+                evaluation[key] = _resolved_experiment_dict(evaluation[key], version)
+    resolved["legacy_id_migration"] = True
+    return resolved
+
+
 def load_suite(path: str | Path) -> dict:
-    return json.loads(Path(path).read_text(encoding="utf-8"))
+    manifest = json.loads(Path(path).read_text(encoding="utf-8"))
+    return _resolve_legacy_suite_ids(manifest)
 
 
 def list_suites(cfg: Config) -> list[dict]:
@@ -172,6 +220,10 @@ def list_suites(cfg: Config) -> list[dict]:
 
 
 def _validate_resumable(cfg: Config, manifest: dict) -> None:
+    if is_legacy_suite(manifest):
+        raise ValueError(
+            "definition-v12 suites are immutable legacy artifacts; start a new E1-E5 suite"
+        )
     if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
         raise ValueError(
             f"unsupported suite schema; expected schema-v{SUITE_SCHEMA_VERSION}"
@@ -311,6 +363,10 @@ def _suite_evaluation_signature(
 
 def evaluate_suite(cfg: Config, manifest: dict) -> dict:
     """Evaluate every generated suite batch against one current truth state."""
+    if is_legacy_suite(manifest):
+        raise ValueError(
+            "definition-v12 suites are immutable legacy artifacts and cannot be rewritten"
+        )
     if manifest.get("schema_version") != SUITE_SCHEMA_VERSION:
         raise ValueError(f"unsupported suite schema; expected {SUITE_SCHEMA_VERSION}")
     batches = suite_prediction_batches(cfg, manifest)

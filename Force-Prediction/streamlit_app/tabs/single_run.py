@@ -148,7 +148,7 @@ def render(context: AppContext) -> None:
         uses_roughness = experiment_spec.uses_roughness
         uses_projected_contact = experiment_spec.uses_projected_contact
         uses_hybrid_retrieval = (
-            experiment_spec.retrieval_mode is not None and experiment != "e3"
+            experiment_spec.retrieval_mode is not None and experiment != "e2"
         )
         eligibility = experiment_eligibility(context.dataset, base_cfg, experiment)
         query_reasons = eligibility.query_reasons(object_id)
@@ -164,7 +164,7 @@ def render(context: AppContext) -> None:
             ),
             step=1.0,
             disabled=not uses_measurements,
-            help="This authoritative value is hidden from E1 and E3.",
+            help="This authoritative value is hidden from E1 and E2.",
         )
         roughness = st.number_input(
             "Roughness index",
@@ -197,7 +197,7 @@ def render(context: AppContext) -> None:
                 f"{experiment.upper()} does not expose mass, roughness, or projected "
                 "contact to the estimator."
             )
-        elif experiment in {"e4", "e5", "e6"}:
+        elif experiment in {"e3", "e4", "e5"}:
             enabled_measurements = ["mass"]
             if uses_roughness:
                 enabled_measurements.append("continuous roughness")
@@ -210,7 +210,7 @@ def render(context: AppContext) -> None:
             )
         with st.expander("Input and retrieval tuning", expanded=True):
             st.caption(
-                "E4-E6 have fixed ranking subsets; only enabled weights affect "
+                "E3-E5 have fixed ranking subsets; only enabled weights affect "
                 "cross-object surface ranking."
             )
             semantic_w = st.slider(
@@ -408,7 +408,7 @@ def render(context: AppContext) -> None:
         st.subheader("Pipeline output")
         if "single_result" not in st.session_state:
             st.info("Select a dataset object or upload an image, then run the pipeline.")
-            if experiment == "e3":
+            if experiment == "e2":
                 render_semantic_formula()
             elif uses_hybrid_retrieval:
                 render_formula(

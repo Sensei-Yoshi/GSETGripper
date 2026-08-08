@@ -68,7 +68,21 @@ def test_default_app_structure_matches_research_lab() -> None:
     benchmark_button = next(item for item in app.button if item.label == "Run selected")
     assert benchmark_button.disabled is True
     multiselect_labels = {item.label for item in app.multiselect}
-    assert {"Marigold dataset images", "Marigold analyses"} <= multiselect_labels
+    assert {
+        "Filter by dataset split",
+        "Marigold dataset images",
+        "Marigold analyses",
+    } <= multiselect_labels
+    split_filter = next(
+        item for item in app.multiselect if item.label == "Filter by dataset split"
+    )
+    assert split_filter.options == ["Train", "Test", "Surface Validation"]
+    split_editors = [item for item in app.selectbox if item.label == "Dataset split"]
+    assert split_editors
+    assert all(
+        item.options == ["Train", "Test", "Surface Validation"]
+        for item in split_editors
+    )
     marigold_uploader = next(
         item
         for item in app.file_uploader
@@ -126,12 +140,12 @@ def test_default_app_structure_matches_research_lab() -> None:
         "run_marigold",
         "prompt_prediction_system",
         "prompt_descriptor_system",
-        "prompt_descriptor_instruction",
-        "prompt_instruction_e1",
-        "prompt_instruction_e3",
+            "prompt_descriptor_instruction",
+            "prompt_instruction_e1",
+            "prompt_instruction_e2",
+            "prompt_instruction_e3",
             "prompt_instruction_e4",
             "prompt_instruction_e5",
-            "prompt_instruction_e6",
         "prompt_target_single",
         "prompt_target_joint",
         "embodiment_description_gecko",
@@ -144,7 +158,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "run_preparation_stages",
     }
     assert expected_state <= set(app.session_state.filtered_state)
-    assert any("Benchmark split · Train:" in item.value for item in app.caption)
+    assert any("Dataset split membership · Train:" in item.value for item in app.caption)
 
 
 def test_single_run_serial_controls_are_opt_in(monkeypatch) -> None:

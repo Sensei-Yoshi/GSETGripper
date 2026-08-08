@@ -137,8 +137,8 @@ def test_fixed_split_queries_only_test_rows_and_retrieves_only_train_rows(
             _complete_edit(index).model_copy(update={"split": split}),
         )
 
-    scope = benchmark_scope(cfg, "e4")
-    batch = generate_benchmark_predictions(cfg, "e4")
+    scope = benchmark_scope(cfg, "e3")
+    batch = generate_benchmark_predictions(cfg, "e3")
 
     assert scope.mode == "fixed_train_test_holdout"
     assert scope.train_ids == ("train_a", "train_b")
@@ -171,17 +171,17 @@ def test_suite_runs_only_the_selected_experiment_subset(tmp_path, monkeypatch) -
     cfg, _dataset = _image_only_config(tmp_path)
     install_gemini_fakes(monkeypatch, cfg.retrieval.embedding.dim)
 
-    manifest = create_suite(cfg, ["e5", "e1", "e3"])
+    manifest = create_suite(cfg, ["e4", "e1", "e2"])
     # Stored in canonical order, and only the chosen runs exist.
-    assert manifest["experiments"] == ["e1", "e3", "e5"]
-    assert set(manifest["runs"]) == {"e1", "e3", "e5"}
-    assert suite_experiments(manifest) == ("e1", "e3", "e5")
+    assert manifest["experiments"] == ["e1", "e2", "e4"]
+    assert set(manifest["runs"]) == {"e1", "e2", "e4"}
+    assert suite_experiments(manifest) == ("e1", "e2", "e4")
 
     manifest = run_suite_predictions(cfg, manifest)
     # E1 is image-only and runs immediately; unselected experiments are never touched.
     assert manifest["runs"]["e1"]["status"] == "completed"
-    assert "e4" not in manifest["runs"]
-    assert "e6" not in manifest["runs"]
+    assert "e3" not in manifest["runs"]
+    assert "e5" not in manifest["runs"]
 
 
 def test_suite_generates_e1_early_then_resumes_other_experiments(
@@ -198,7 +198,7 @@ def test_suite_generates_e1_early_then_resumes_other_experiments(
     assert manifest["runs"]["e1"]["status"] == "completed"
     assert {
         manifest["runs"][name]["status"]
-        for name in ("e3", "e4", "e5", "e6")
+        for name in ("e2", "e3", "e4", "e5")
     } == {
         "waiting"
     }
@@ -222,7 +222,7 @@ def test_suite_generates_e1_early_then_resumes_other_experiments(
     artifacts = suite_evaluation_artifacts(cfg, manifest)
 
     assert manifest["status"] == "evaluated"
-    assert set(artifacts) == {"e1", "e3", "e4", "e5", "e6"}
+    assert set(artifacts) == {"e1", "e2", "e3", "e4", "e5"}
     assert manifest["evaluations"][-1]["common_object_ids"] == ["one", "two"]
     assert set(manifest["evaluations"][-1]["exports"]) == {
         "png",

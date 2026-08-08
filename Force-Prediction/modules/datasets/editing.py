@@ -230,14 +230,20 @@ def update_dataset_object(
             raise ValueError(
                 "an identical mass/roughness/contact measurement tuple already exists"
             )
-        updated_rows = [
-            (
-                row.model_copy(update={"split": updated.split})
-                if row.surface_id == updated.surface_id
-                else row
-            )
-            for row in updated_rows
-        ]
+        # Train/test membership is surface-wide, but surface-validation conditions may
+        # coexist with either benchmark split. Moving one condition into surface
+        # validation therefore affects only that condition. Moving a condition back to
+        # train/test aligns every non-validation sibling with the selected benchmark side.
+        if updated.split != "surface_validation":
+            updated_rows = [
+                (
+                    row.model_copy(update={"split": updated.split})
+                    if row.surface_id == updated.surface_id
+                    and row.split != "surface_validation"
+                    else row
+                )
+                for row in updated_rows
+            ]
         updated_rows[positions[0]] = updated
         save_rows(dataset.paths.root / "dataset.csv", updated_rows)
     elif dataset.adapter == "image_folder":

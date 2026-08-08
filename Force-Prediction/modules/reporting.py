@@ -18,14 +18,15 @@ from .contracts import (
     group_by_object,
 )
 from .evaluation import EvalRow, compute_metrics
+from .experiment_ids import resolve_experiment_id
 
 PRIMARY_EXPERIMENTS = EXPERIMENT_IDS
 EXPERIMENT_STYLES = {
     "e1": {"color": "#0072B2", "marker": "o"},
-    "e3": {"color": "#009E73", "marker": "^"},
-    "e4": {"color": "#CC79A7", "marker": "D"},
-    "e5": {"color": "#D55E00", "marker": "v"},
-    "e6": {"color": "#56B4E9", "marker": "P"},
+    "e2": {"color": "#009E73", "marker": "^"},
+    "e3": {"color": "#CC79A7", "marker": "D"},
+    "e4": {"color": "#D55E00", "marker": "v"},
+    "e5": {"color": "#56B4E9", "marker": "P"},
 }
 ERROR_ZERO_TOLERANCE_N = 1e-9
 
@@ -701,7 +702,11 @@ def individual_calibration_figure(
     """Plot predicted and oracle forces by force-ordered benchmark object."""
     plt = _pyplot()
     grippers = artifact_grippers(artifact)
-    experiment = artifact.get("metadata", {}).get("experiment", "benchmark")
+    metadata = artifact.get("metadata", {})
+    experiment = resolve_experiment_id(
+        metadata.get("experiment", "benchmark"),
+        metadata.get("experiment_definition_version"),
+    )
     resolved_image_root = Path(image_root) if image_root is not None else None
     point_sets = {
         gripper: _benchmark_force_points(artifact, gripper) for gripper in grippers
@@ -822,15 +827,15 @@ def export_comparison(
         artifacts,
         image_root=image_root,
     )
-    png = destination / "calibration_e1_e6.png"
-    svg = destination / "calibration_e1_e6.svg"
-    force_png = destination / "force_by_object_e1_e6.png"
-    force_svg = destination / "force_by_object_e1_e6.svg"
-    percentage_png = destination / "percentage_error_e1_e6.png"
-    percentage_svg = destination / "percentage_error_e1_e6.svg"
-    data_csv = destination / "calibration_e1_e6_data.csv"
-    metrics_csv = destination / "metrics_e1_e6.csv"
-    statistics_csv = destination / "force_error_statistics_e1_e6.csv"
+    png = destination / "calibration_e1_e5.png"
+    svg = destination / "calibration_e1_e5.svg"
+    force_png = destination / "force_by_object_e1_e5.png"
+    force_svg = destination / "force_by_object_e1_e5.svg"
+    percentage_png = destination / "percentage_error_e1_e5.png"
+    percentage_svg = destination / "percentage_error_e1_e5.svg"
+    data_csv = destination / "calibration_e1_e5_data.csv"
+    metrics_csv = destination / "metrics_e1_e5.csv"
+    statistics_csv = destination / "force_error_statistics_e1_e5.csv"
     calibration.savefig(png, dpi=300, bbox_inches="tight")
     calibration.savefig(svg, bbox_inches="tight")
     force_by_object.savefig(force_png, dpi=300, bbox_inches="tight")

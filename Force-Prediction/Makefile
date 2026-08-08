@@ -14,8 +14,8 @@ typecheck:
 test:
 	pytest
 
-# Active experiments retain the stable IDs E1, E3, E4, E5, and E6.
-E ?= e6
+# Active experiments use the contiguous IDs E1-E5.
+E ?= e5
 run:
 	$(PY) scripts/run_experiment.py --exp $(E) --confirm-gemini-cost
 

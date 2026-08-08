@@ -61,14 +61,10 @@ prompts:
     \ infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass,\
     \ continuous roughness index, and projected contact fraction are authoritative.\
     \ Use the roughness index with its supplied metric definition and do not invent\
-    \ an unreported measurement.\n\
-    If an experiment intentionally omits them, state uncertainty rather than pretending\n\
-    they were measured.\nIf a contact area fraction is given, you can likely assume\
-    \ the orientation in which the gripper grasped the object if necessary as well.\n\
-    Assume all objects are grasped in the most optimal direction to maximize surface\
-    \ area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen\
-    \ retrieved experiences are supplied, treat them as empirical observations under\n\
-    the same force convention. Experiences report outcomes only for the requested\n\
+    \ an unreported measurement.\nIf an experiment intentionally omits them, state\
+    \ uncertainty rather than pretending\nthey were measured.\n\nRETRIEVED EXPERIENCES\n\
+    When retrieved experiences are supplied, treat them as empirical observations\
+    \ under\nthe same force convention. Experiences report outcomes only for the requested\n\
     candidate or candidates.\nConditions nested under one retrieved surface are repeated\
     \ experiments on the same physical object, not independent neighbors. Use the\
     \ supplied comparison_to_baseline metadata to identify exactly which measured\
@@ -130,7 +126,7 @@ prompts:
       Do not invent physical constants or claim to run calibrated physics.
 
       '
-    e3: 'E3 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.
+    e2: 'E2 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.
 
       Use the object image, fixed gripper embodiment context, and the ranked semantic
 
@@ -147,7 +143,7 @@ prompts:
       that
 
       any omitted sensor value was measured or used.'
-    e4: 'E4 SEMANTIC AND MASS RETRIEVAL CONDITION.
+    e3: 'E3 SEMANTIC AND MASS RETRIEVAL CONDITION.
 
       Use the object image, fixed gripper embodiment context, supplied authoritative
 
@@ -160,13 +156,13 @@ prompts:
       The supplied retrieval weights describe neighbor ranking, not a force equation.
 
       A retrieved surface includes its baseline and only controlled sibling conditions
-      whose recorded changes are fully visible in E4; therefore any included variant
+      whose recorded changes are fully visible in E3; therefore any included variant
       changes mass and no hidden roughness or projected-contact measurement.
 
       No calibrated physics estimate is available; do not invent one.
 
       '
-    e5: 'E5 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.
+    e4: 'E4 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.
 
       Use the object image, fixed gripper embodiment context, supplied authoritative
 
@@ -179,52 +175,44 @@ prompts:
       equation. No calibrated physics estimate is available; do not invent one.
 
       A retrieved surface includes its baseline and only controlled sibling conditions
-      whose recorded changes are fully visible in E5. Projected-contact-only and mixed
+      whose recorded changes are fully visible in E4. Projected-contact-only and mixed
       visible-plus-hidden-contact variants are excluded; never infer contact from
       the remaining conditions.
 
       '
-    e6: 'E6 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.
-
-      Use the object image, fixed gripper embodiment context, supplied authoritative
-
-      mass, continuous roughness index, and projected contact fraction, plus one object
-      list ranked using semantic, mass, and continuous-roughness similarity only.
-
-      Projected contact is intentionally excluded from cross-object surface ranking.
-      It is supplied as query evidence and within-surface condition evidence only.
-      Treat projected contact fraction as a dimensionless contact proxy, not literal
-      physical area. The supplied retrieval weights describe neighbor ranking, not
-      a force equation. No calibrated physics estimate is available; do not invent
-      one.
-
-      Reason in two explicit stages and show both in your trace.
-
-      STAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at
-      full, optimal contact, anchoring only to retrieved BASELINE conditions and their
-      semantic material, mass, and continuous roughness. Projected contact fraction
-      is confounded across different objects (a low-contact neighbor may need low
-      force and a full-contact neighbor may need high force), so it was deliberately
-      kept out of ranking: do NOT use the query contact fraction to pick, weight,
-      match, or discount cross-object neighbors, and do NOT prefer a neighbor because
-      its contact fraction resembles the query. Roughness and material remain the
-      dominant drivers of this baseline; do not let contact override them. Prefer
-      the baselines that bracket the query by mass and align on roughness and material,
-      and do not dilute the estimate by averaging in poorly matched heavier or lighter
-      neighbors.
-
-      STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for
-      the query contact fraction using ONLY within-surface controlled variants via
-      comparison_to_baseline. Each variant reports force_deltas: the signed change
-      in a gripper''s force from that surface''s own baseline to the variant. Apply
-      those as relative adjustments scaled to the query; never import a variant''s
-      absolute force as a cross-object anchor, and never treat variants as separate
-      neighbors or average their absolute forces. The contact effect is monotonic
-      non-decreasing as contact falls: reducing contact never lowers the required
-      force below the Stage 1 baseline, and a query contact fraction at or near 1.0
-      warrants no upward contact adjustment.
-
-      '
+    e5: "E5 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.\nUse the object image,\
+      \ fixed gripper embodiment context, supplied authoritative\nmass, continuous\
+      \ roughness index, and projected contact fraction, plus one object list ranked\
+      \ using semantic, mass, and continuous-roughness similarity only.\nProjected\
+      \ contact is intentionally excluded from cross-object surface ranking. It is\
+      \ supplied as query evidence and within-surface condition evidence only. Treat\
+      \ projected contact fraction as a dimensionless contact proxy, not literal physical\
+      \ area. The supplied retrieval weights describe neighbor ranking, not a force\
+      \ equation. No calibrated physics estimate is available; do not invent one.\n\
+      Reason in two explicit stages and show both in your trace.\nSTAGE 1 - FULL-CONTACT\
+      \ BASELINE. Estimate the force the query would need at full, optimal contact,\
+      \ anchoring only to retrieved BASELINE conditions and their semantic material,\
+      \ mass, and continuous roughness. Projected contact fraction is confounded across\
+      \ different objects (a low-contact neighbor may need low force and a full-contact\
+      \ neighbor may need high force), so it was deliberately kept out of ranking:\
+      \ do NOT use the query contact fraction to pick, weight, match, or discount\
+      \ cross-object neighbors, and do NOT prefer a neighbor because its contact fraction\
+      \ resembles the query. Roughness and material remain the dominant drivers of\
+      \ this baseline; do not let contact override them. Prefer the baselines that\
+      \ bracket the query by mass and align on roughness and material, and do not\
+      \ dilute the estimate by averaging in poorly matched heavier or lighter neighbors.\n\
+      STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for\
+      \ the query contact fraction using ONLY within-surface controlled variants via\
+      \ comparison_to_baseline. Each variant reports force_deltas: the signed change\
+      \ in a gripper's force from that surface's own baseline to the variant. Apply\
+      \ those as relative adjustments scaled to the query; never import a variant's\
+      \ absolute force as a cross-object anchor, and never treat variants as separate\
+      \ neighbors or average their absolute forces. The contact effect is monotonic\
+      \ non-decreasing as contact falls: reducing contact never lowers the required\
+      \ force below the Stage 1 baseline, and a query contact fraction at or near\
+      \ 1.0 warrants no upward contact adjustment. Remember that as roughness increases,\
+      \ the impact of surface area on the force applied to grasp the object decreases\
+      \ (thus the impact of surface area increases on smoother objects).  \n"
   target_instructions:
     single: 'SINGLE-CANDIDATE OUTPUT CONDITION.
 

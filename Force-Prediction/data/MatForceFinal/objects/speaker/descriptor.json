@@ -1,0 +1,27 @@
+{
+  "schema_version": 3,
+  "dataset_id": "MatForceFinal",
+  "object_id": "speaker",
+  "object_name": "Speaker",
+  "image_name": "image.jpg",
+  "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+  "image_sha256": "598c3975ccc7fe99f5474eff07c25c5515520e9a0a7e6beef7fe067265c45e79",
+  "descriptor_source": "live_gemini",
+  "descriptor_model": "gemini-flash-lite-latest",
+  "descriptor_signature": "47963d393d1e2ad5b71214e7ed8c3545747392989875b7552618682059dd0c89",
+  "descriptor": {
+    "retrieval_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+    "contact_material": "woven textile",
+    "visible_surface_material": "woven textile",
+    "visible_surface_condition": "clean, dry, compliant fibrous texture",
+    "contact_patch_visibility": "fully visible",
+    "uncertainty": "none"
+  },
+  "embedding_status": "ready",
+  "embedding_model": "gemini-embedding-2-preview",
+  "embedding_dim": 1536,
+  "embedding_descriptor_sha256": "3e6aa3b162c600c80757831d51d15018571ae1a63f3500e337f188f3bc2b2f2c",
+  "embedding_cache_key": "c006f8cdeb163f1ae885d2b301e30faddfdb77e6c5a751fa83769602af33d5ef",
+  "embedding_sha256": "433f21b32515af013897f67256729f1de4bb0aa257b38f146140961e515f9922",
+  "updated_at": "2026-08-08T01:00:37.269043+00:00"
+}

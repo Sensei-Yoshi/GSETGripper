@@ -28,7 +28,7 @@ def render(context: AppContext) -> None:
    are still missing.
 4. Select Gecko, silicone, or both with the global prediction checkboxes. Record every
    measurement required by the selected fixed experiment profile.
-5. Choose an experiment. Adjust retrieval weights for E4-E6; E3 is fixed to semantic cosine.
+5. Choose an experiment. Adjust retrieval weights for E3-E5; E2 is fixed to semantic cosine.
 6. Click **Run pipeline**. Single-target runs show force and feasibility; paired runs also
    compare candidates and select the lowest-force feasible gripper.
 7. Use **Benchmark** to save truth-free predictions and evaluate them later without model
@@ -41,10 +41,10 @@ def render(context: AppContext) -> None:
     st.header("Experiment definitions")
     uses = {
         "e1": "Image + target-aware VLM",
-        "e3": "Image + semantic-only retrieval + target-aware VLM",
-        "e4": "Semantic + mass retrieval + target-aware VLM",
-        "e5": "E4 + continuous roughness",
-        "e6": "E5 + projected contact",
+        "e2": "Image + semantic-only retrieval + target-aware VLM",
+        "e3": "Semantic + mass retrieval + target-aware VLM",
+        "e4": "E3 + continuous roughness",
+        "e5": "E4 + projected contact",
     }
     experiments = pd.DataFrame(
         [
@@ -58,7 +58,7 @@ def render(context: AppContext) -> None:
     )
     st.dataframe(experiments, hide_index=True, width="stretch")
     st.caption(
-        "Primary comparisons: E1 vs E3 tests semantic experience; E3-E6 isolate the "
+        "Primary comparisons: E1 vs E2 tests semantic experience; E2-E5 isolate the "
         "incremental value of "
         "mass, roughness, and projected contact."
     )
@@ -76,13 +76,13 @@ def render(context: AppContext) -> None:
         with st.expander(f"{experiment.upper()} instruction — prompts.experiments.{prompt_key}"):
             st.code(base_cfg.prompts.experiments[prompt_key], language=None)
 
-    st.header("What Gemini-backed E3-E6 means")
+    st.header("What Gemini-backed E2-E5 means")
     st.markdown(
         """
 For a known dataset object, the pipeline excludes that object and uses eligible outcomes from the other objects.
 For a custom query, it uses the eligible outcomes in the active dataset. It reuses one cached text embedding per reference object for
-the active grippers and embeds the query description. E3 ranks by semantic cosine only and hides
-all sensor values. E4 adds mass, E5 adds continuous roughness, and E6 adds projected contact.
+the active grippers and embeds the query description. E2 ranks by semantic cosine only and hides
+all sensor values. E3 adds mass, E4 adds continuous roughness, and E5 adds projected contact.
 The hybrid conditions receive the normalized ranking weights as provenance; those weights are
 not a force equation. Each
 retrieves five objects once, with only active-gripper outcomes attached to each object.

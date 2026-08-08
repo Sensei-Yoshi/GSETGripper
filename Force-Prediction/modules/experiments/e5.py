@@ -1,4 +1,4 @@
-"""E5: E4 plus continuous roughness evidence."""
+"""E5: semantic, mass, roughness, and projected-contact evidence."""
 
 from ..retrieval import RetrievalMode
 from .helper import RetrievalVLMExperiment

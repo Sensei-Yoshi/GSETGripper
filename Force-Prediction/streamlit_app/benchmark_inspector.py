@@ -233,7 +233,7 @@ def _render_query_panel(
 
     st.subheader("Run configuration")
     st.write(
-        f"**Experiment:** {metadata['experiment'].upper()} · "
+        f"**Experiment:** {batch.experiment_id.upper()} · "
         f"{metadata['experiment_method']}"
     )
     st.write(f"**Created:** {metadata['created_at']}")
@@ -305,7 +305,7 @@ def render_benchmark_object_inspector(
             counterfactual=False,
             baseline=None,
             cfg=inspection.config,
-            experiment=batch.metadata["experiment"],
+            experiment=batch.experiment_id,
             unscored_message=unscored_message,
             truth_context_label="Selected benchmark evaluation truth",
         )

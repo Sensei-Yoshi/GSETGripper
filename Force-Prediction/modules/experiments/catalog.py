@@ -5,10 +5,10 @@ from __future__ import annotations
 from ..config import EXPERIMENT_IDS, Config, ExperimentMethod
 from ..retrieval import RetrievalMode
 from .e1 import E1Strategy
+from .e2 import E2Strategy
 from .e3 import E3Strategy
 from .e4 import E4Strategy
 from .e5 import E5Strategy
-from .e6 import E6Strategy
 from .helper import ExperimentSpec, ExperimentStrategy
 
 EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
@@ -19,16 +19,16 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         "Object image and fixed gripper context; no sensors or experiences.",
         1,
     ),
-    "e3": ExperimentSpec(
-        "e3",
+    "e2": ExperimentSpec(
+        "e2",
         ExperimentMethod.SEMANTIC_RETRIEVAL_VLM,
         "Semantic experiential retrieval",
         "Image plus semantic-only experiences for the active grippers; no sensor values exposed.",
         1,
         retrieval_mode=RetrievalMode.SEMANTIC_ONLY,
     ),
-    "e4": ExperimentSpec(
-        "e4",
+    "e3": ExperimentSpec(
+        "e3",
         ExperimentMethod.HYBRID_RETRIEVAL_VLM,
         "Semantic + mass retrieval",
         "Semantic experiences ranked with semantic similarity and mass only.",
@@ -38,11 +38,11 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         ranking_features=("semantic", "mass"),
         visible_condition_fields=("mass_g",),
     ),
-    "e5": ExperimentSpec(
-        "e5",
+    "e4": ExperimentSpec(
+        "e4",
         ExperimentMethod.HYBRID_RETRIEVAL_VLM,
         "Semantic + mass + roughness retrieval",
-        "E4 plus authoritative continuous roughness in ranking and VLM evidence.",
+        "E3 plus authoritative continuous roughness in ranking and VLM evidence.",
         1,
         uses_measurements=True,
         uses_roughness=True,
@@ -50,11 +50,11 @@ EXPERIMENT_CATALOG: dict[str, ExperimentSpec] = {
         ranking_features=("semantic", "mass", "roughness"),
         visible_condition_fields=("mass_g", "roughness_index"),
     ),
-    "e6": ExperimentSpec(
-        "e6",
+    "e5": ExperimentSpec(
+        "e5",
         ExperimentMethod.HYBRID_RETRIEVAL_VLM,
         "Contact-conditioned experience reasoning",
-        "E5-ranked surfaces plus authoritative projected-contact condition evidence.",
+        "E4-ranked surfaces plus authoritative projected-contact condition evidence.",
         1,
         uses_measurements=True,
         uses_roughness=True,
@@ -74,10 +74,10 @@ if tuple(EXPERIMENT_CATALOG) != EXPERIMENT_IDS:
 
 STRATEGY_TYPES: dict[str, type[ExperimentStrategy]] = {
     "e1": E1Strategy,
+    "e2": E2Strategy,
     "e3": E3Strategy,
     "e4": E4Strategy,
     "e5": E5Strategy,
-    "e6": E6Strategy,
 }
 
 

@@ -25,6 +25,7 @@ from .contracts import Gripper, SelectionResult, group_by_object
 from .datasets import get_dataset
 from .datasets.storage import dataset_experience_records, write_json_atomic
 from .evaluation import EvalRow, compute_metrics
+from .experiment_ids import resolve_experiment_id
 from .experiments import (
     EXPERIMENT_CATALOG,
     evaluation_truth_eligibility,
@@ -64,6 +65,14 @@ class BenchmarkPredictionBatch:
     def display_name(self) -> str:
         return str(self.metadata.get("display_name") or self.batch_id)
 
+    @property
+    def experiment_id(self) -> str:
+        """Active ID, including translation of immutable v12 metadata."""
+        return resolve_experiment_id(
+            str(self.metadata["experiment"]),
+            self.metadata.get("experiment_definition_version"),
+        )
+
     def to_artifact(self) -> dict[str, Any]:
         return {
             "schema_version": BENCHMARK_SCHEMA_VERSION,
@@ -84,6 +93,14 @@ class BenchmarkEvaluation:
     @property
     def evaluation_id(self) -> str:
         return str(self.metadata["evaluation_id"])
+
+    @property
+    def experiment_id(self) -> str:
+        """Active ID, including translation of immutable v12 metadata."""
+        return resolve_experiment_id(
+            str(self.metadata["experiment"]),
+            self.metadata.get("experiment_definition_version"),
+        )
 
     def to_artifact(self) -> dict[str, Any]:
         return {
@@ -606,7 +623,7 @@ def list_prediction_batches(
             batch = load_prediction_batch(path)
         except (OSError, ValueError, json.JSONDecodeError):
             continue
-        if experiment is None or batch.metadata["experiment"] == experiment.lower():
+        if experiment is None or batch.experiment_id == experiment.lower():
             batches.append(batch)
     return batches
 

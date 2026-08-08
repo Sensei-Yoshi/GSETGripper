@@ -50,7 +50,7 @@ def _batch(cfg, image_path, image_sha256: str) -> BenchmarkPredictionBatch:  # n
         candidate_predictions={"gecko": prediction},
     )
     detailed = PipelineRunResult(
-        experiment_id="e4",
+        experiment_id="e3",
         experiment_method="hybrid_retrieval_vlm",
         experiment_definition_version=8,
         selection=selection,
@@ -87,12 +87,12 @@ def _batch(cfg, image_path, image_sha256: str) -> BenchmarkPredictionBatch:  # n
         "pipeline_result": pipeline_result_to_dict(detailed),
     }
     metadata = {
-        "batch_id": "saved_e4_batch",
+        "batch_id": "saved_e3_batch",
         "dataset_id": cfg.dataset_id,
         "created_at": "2026-07-29T12:00:00+00:00",
-        "experiment": "e4",
+        "experiment": "e3",
         "experiment_method": "hybrid_retrieval_vlm",
-        "experiment_definition": {"method": "hybrid_retrieval_vlm", "prompt": "e4"},
+        "experiment_definition": {"method": "hybrid_retrieval_vlm", "prompt": "e3"},
         "evaluation_protocol": "fixed_train_test_holdout",
         "active_grippers": ["gecko"],
         "backend": {"force": "test"},
@@ -152,7 +152,7 @@ def _paired_batch_and_evaluation(
         ),
     }
     detailed = PipelineRunResult(
-        experiment_id="e4",
+        experiment_id="e3",
         experiment_method="hybrid_retrieval_vlm",
         experiment_definition_version=8,
         selection=SelectionResult(

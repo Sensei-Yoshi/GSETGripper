@@ -129,12 +129,12 @@ def test_single_gripper_dataset_capabilities_and_eligibility(tmp_path) -> None:
 
     run_cfg = dataset.runtime_config(cfg)
     run_cfg.prediction.active_grippers = (Gripper.GECKO,)
-    report = experiment_eligibility(dataset, run_cfg, "e3")
+    report = experiment_eligibility(dataset, run_cfg, "e2")
     assert report.reference_ids == ("one", "two")
     assert report.benchmark_ids == ("one", "two")
 
     run_cfg.prediction.active_grippers = (Gripper.GECKO, Gripper.SILICONE)
-    paired = experiment_eligibility(dataset, run_cfg, "e3")
+    paired = experiment_eligibility(dataset, run_cfg, "e2")
     assert paired.reference_ids == ()
     assert paired.benchmark_ids == ()
 
@@ -170,7 +170,7 @@ def test_experiment_references_are_train_only_and_surface_safe(tmp_path) -> None
 
     run_cfg = dataset.runtime_config(cfg)
     run_cfg.prediction.active_grippers = (Gripper.GECKO,)
-    report = experiment_eligibility(dataset, run_cfg, "e4")
+    report = experiment_eligibility(dataset, run_cfg, "e3")
 
     assert report.reference_ids == ("shared", "shared__condition_2")
     assert report.query_ids == ("held_out",)
@@ -225,17 +225,17 @@ def test_experiment_eligibility_uses_only_enabled_inputs(tmp_path) -> None:
         "image_only",
         "mass_only",
     )
-    assert experiment_eligibility(dataset, run_cfg, "e3").benchmark_ids == (
+    assert experiment_eligibility(dataset, run_cfg, "e2").benchmark_ids == (
         "complete",
         "mass_only",
     )
-    assert experiment_eligibility(dataset, run_cfg, "e4").query_ids == (
+    assert experiment_eligibility(dataset, run_cfg, "e3").query_ids == (
         "complete",
         "mass_only",
     )
+    assert experiment_eligibility(dataset, run_cfg, "e4").query_ids == ()
     assert experiment_eligibility(dataset, run_cfg, "e5").query_ids == ()
-    assert experiment_eligibility(dataset, run_cfg, "e6").query_ids == ()
-    assert experiment_eligibility(dataset, run_cfg, "e4").reference_ids == (
+    assert experiment_eligibility(dataset, run_cfg, "e3").reference_ids == (
         "complete",
         "mass_only",
     )

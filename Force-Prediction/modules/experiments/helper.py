@@ -104,7 +104,7 @@ class ExperimentStrategy(ABC):
             )
         # Every named experiment is a fixed ablation. Scope the configuration before
         # retrieval and payload construction so global UI/config switches cannot turn
-        # E4-E6 into undocumented variants.
+        # E3-E5 into undocumented variants.
         self.cfg = spec.scoped_config(cfg)
         self.spec = spec
         self.definition = definition
@@ -277,7 +277,7 @@ class VisionOnlyExperiment(ExperimentStrategy):
 
 
 class RetrievalVLMExperiment(ExperimentStrategy):
-    """Shared E3-E6 active-gripper object-retrieval lifecycle."""
+    """Shared E2-E5 active-gripper object-retrieval lifecycle."""
 
     include_measured = False
     retrieval_mode = RetrievalMode.SEMANTIC_ONLY
