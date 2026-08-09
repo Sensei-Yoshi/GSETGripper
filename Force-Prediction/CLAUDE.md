@@ -57,6 +57,9 @@ scored separately.
   physical-score components, or physics estimate.
 - Live E1–E4 calls receive the query-object image and fixed written descriptions of only
   the active gripper embodiments; gripper images are not sent.
+- VLM calls estimate force only. Their response schema omits feasibility and `none`, and
+  the prediction adapter records every VLM candidate as feasible. Physical truth records
+  retain their measured feasibility contract.
 - E1/E3 never require physical measurements. E2/E4 always require mass and use roughness
   and projected contact only when their global input switches are enabled.
 
@@ -98,6 +101,8 @@ legacy cache files are read-through Exp-Force entries and are not deleted. Singl
 remain schema v8. New benchmark prediction/evaluation and suite artifacts use schema v9 with
 prompt, active-gripper, embodiment, generation-input, and truth-snapshot provenance. Old artifacts
 are never rewritten; schema-v8 benchmarks and suites are inspectable but read-only.
+Benchmark reproducibility runs may bypass generation-cache reads and writes while continuing
+to reuse the dataset-scoped embedding cache; the selected policy is saved with the batch.
 
 ## Commands
 

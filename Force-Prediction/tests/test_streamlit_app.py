@@ -70,6 +70,7 @@ def test_default_app_structure_matches_research_lab() -> None:
     assert marigold_uploader.accept_multiple_files is True
     checkbox_labels = {item.label for item in app.checkbox}
     assert {
+        "Force rerun predictions",
         "Gemini descriptions",
         "Text embeddings",
             "Marigold roughness",
@@ -92,6 +93,7 @@ def test_default_app_structure_matches_research_lab() -> None:
         "predict_silicone_force",
         "benchmark_experiment",
         "benchmark_display_name",
+        "force_rerun_benchmark_predictions",
         "run_benchmark_predictions",
         "catalog_page",
         "catalog_page_size",

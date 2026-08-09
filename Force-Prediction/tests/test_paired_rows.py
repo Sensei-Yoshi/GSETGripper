@@ -8,6 +8,8 @@ from modules.contracts import (
     Gripper,
     JointGripperPrediction,
     PerGripperPrediction,
+    VLMJointGripperForceEstimate,
+    VLMPerGripperForceEstimate,
 )
 from modules.expforce import pipeline_result_from_dict, pipeline_result_to_dict
 from modules.hardware import fabricate_records
@@ -79,6 +81,7 @@ def test_single_silicone_e4_uses_per_gripper_schema_and_filtered_payload(monkeyp
             captured.update(kwargs)
             return PerGripperPrediction(
                 candidate_gripper=Gripper.GECKO,
+                feasible=False,
                 predicted_normal_force_n=1.125,
             ).model_dump(mode="json")
 
@@ -99,7 +102,8 @@ def test_single_silicone_e4_uses_per_gripper_schema_and_filtered_payload(monkeyp
         _query_with_image(test, cfg)
     )
 
-    assert captured["schema"] is PerGripperPrediction
+    assert captured["schema"] is VLMPerGripperForceEstimate
+    assert "feasible" not in captured["schema"].model_fields
     assert captured["extra"]["active_grippers"] == ["silicone"]
     assert set(captured["extra"]["gripper_embodiments"]) == {"silicone"}
     assert all(
@@ -108,6 +112,7 @@ def test_single_silicone_e4_uses_per_gripper_schema_and_filtered_payload(monkeyp
     )
     prediction = detailed.selection.candidate_predictions["silicone"]
     assert prediction.candidate_gripper is Gripper.SILICONE
+    assert prediction.feasible is True
     assert prediction.predicted_normal_force_n == 1.125
 
 
@@ -188,7 +193,7 @@ def test_e4_uses_one_object_retrieval_and_one_joint_vlm_call(monkeypatch):
 
     assert client.generation_calls == 1
     assert retrieval_calls == 1
-    assert captured["schema"] is JointGripperPrediction
+    assert captured["schema"] is VLMJointGripperForceEstimate
     assert captured["instruction"].startswith(cfg.prompts.experiments["e4"].strip())
     assert cfg.prompts.target_instructions["joint"].strip() in captured["instruction"]
     paired_payload = captured["extra"]["retrieved_objects"]

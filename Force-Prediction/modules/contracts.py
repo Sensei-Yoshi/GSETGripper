@@ -19,6 +19,7 @@ from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 GripperChoice = Literal["gecko", "silicone", "none"]
+VLMGripperChoice = Literal["gecko", "silicone"]
 
 
 class Gripper(StrEnum):
@@ -159,14 +160,13 @@ class Query(BaseModel):
         return self
 
 
-class PerGripperPrediction(BaseModel):
-    """VLM (or non-VLM) prediction for a single candidate gripper."""
+class VLMPerGripperForceEstimate(BaseModel):
+    """Force-only response shown to the VLM; graspability is out of scope."""
 
     candidate_gripper: Gripper
     visible_surface_material: str = "unknown"
     visible_surface_condition: str = "unknown"
     compatibility: Compatibility = Compatibility.UNKNOWN
-    feasible: bool = True
     predicted_normal_force_n: float = Field(
         ge=0,
         description="Best continuous stationary-finger normal-force estimate in newtons.",
@@ -198,8 +198,33 @@ class PerGripperPrediction(BaseModel):
     )
 
 
+class PerGripperPrediction(VLMPerGripperForceEstimate):
+    """Persisted candidate prediction with pipeline-normalized feasibility."""
+
+    feasible: bool = True
+
+
+class VLMJointGripperForceEstimate(BaseModel):
+    """Force-only two-gripper response shown to the VLM."""
+
+    gecko: VLMPerGripperForceEstimate
+    silicone: VLMPerGripperForceEstimate
+    recommended_gripper: VLMGripperChoice
+    comparison_evidence: list[str] = Field(
+        default_factory=list,
+        description="The decisive evidence used to compare the two grippers.",
+    )
+    recommendation_summary: str = Field(
+        default="",
+        description=(
+            "Auditable comparison of both candidates explaining the recommendation and "
+            "remaining uncertainty."
+        ),
+    )
+
+
 class JointGripperPrediction(BaseModel):
-    """One VLM response containing both estimates and its explicit recommendation."""
+    """Persisted joint prediction with pipeline-normalized feasibility."""
 
     gecko: PerGripperPrediction
     silicone: PerGripperPrediction
@@ -211,8 +236,8 @@ class JointGripperPrediction(BaseModel):
     recommendation_summary: str = Field(
         default="",
         description=(
-            "Auditable comparison of both candidates explaining the recommendation, remaining "
-            "uncertainty, and why the alternative requires more force or is infeasible."
+            "Auditable comparison of both candidates explaining the recommendation and "
+            "remaining uncertainty."
         ),
     )
 

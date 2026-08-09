@@ -75,6 +75,7 @@ class GeminiClient:
         keys = ("hits", "misses", "writes", "read_errors", "legacy_hits")
         return {
             "enabled": bool(caches),
+            "generation_bypassed": self.cfg.models.bypass_generation_cache,
             **{
                 key: sum(cache.stats()[key] for cache in caches)
                 for key in keys
@@ -107,7 +108,10 @@ class GeminiClient:
     ) -> dict:
         img_b64 = _encode_image(image_bgr)
         cache_key = None
-        if self.generation_cache is not None:
+        if (
+            self.generation_cache is not None
+            and not self.cfg.models.bypass_generation_cache
+        ):
             cache_key = self.generation_cache.key(
                 "gen", self.cfg.models.vlm, system, instruction,
                 schema.model_json_schema(), img_b64, extra,

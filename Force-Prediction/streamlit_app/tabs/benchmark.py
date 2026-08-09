@@ -119,6 +119,16 @@ def render(context: AppContext) -> None:
         )
         benchmark_name = benchmark_name.strip()
 
+        force_rerun = st.checkbox(
+            "Force rerun predictions",
+            value=False,
+            help=(
+                "Make fresh Gemini generation calls for this benchmark. "
+                "Cached embeddings are still reused, and existing cache files are unchanged."
+            ),
+            key="force_rerun_benchmark_predictions",
+        )
+
         run_predictions = st.button(
             "Run selected",
             type="primary",
@@ -133,6 +143,8 @@ def render(context: AppContext) -> None:
         )
 
     if run_predictions:
+        run_cfg = cfg.model_copy(deep=True)
+        run_cfg.models.bypass_generation_cache = force_rerun
         progress_bar = summary_col.progress(0.0)
         status = summary_col.empty()
         with summary_col, st.spinner("Generating and saving prediction batch…"):
@@ -143,12 +155,12 @@ def render(context: AppContext) -> None:
                 status.caption(f"{done}/{total}: {object_id.replace('_', ' ')}")
 
             batch = generate_benchmark_predictions(
-                cfg,
+                run_cfg,
                 experiment,
                 display_name=benchmark_name,
                 progress=progress,
             )
-            paths = save_prediction_batch(cfg, batch)
+            paths = save_prediction_batch(run_cfg, batch)
             st.session_state["benchmark_prediction_result"] = (batch, paths)
         progress_bar.empty()
         status.empty()

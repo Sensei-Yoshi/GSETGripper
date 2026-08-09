@@ -158,6 +158,10 @@ class ModelsConfig(BaseModel):
     temperature: float = Field(ge=0)
     max_retries: int = Field(ge=0)
     cache: bool
+    # Runtime-only benchmark override. Keeping this separate from ``cache`` lets
+    # reproducibility runs make fresh structured-generation calls while still
+    # reusing the much less variable embedding requests.
+    bypass_generation_cache: bool = False
 
 
 class EvaluationConfig(BaseModel):
@@ -208,7 +212,7 @@ class ExperimentMethod(StrEnum):
 
 
 EXPERIMENT_IDS = ("e1", "e2", "e3", "e4", "e5", "e6")
-EXPERIMENT_DEFINITION_VERSION = 11
+EXPERIMENT_DEFINITION_VERSION = 12
 
 
 class ExperimentConfig(BaseModel):

@@ -72,10 +72,12 @@ A feasible record stores the measured minimum successful force. An infeasible re
 `min_force_n: null` and the force limit at which it failed. A failure at `8 N` must never be
 misread as a successful minimum of `8 N`.
 
-The final selector is deterministic Python. It considers model-predicted feasibility and
-chooses the candidate with the lowest continuous predicted force. Equal forces are resolved
-by compatibility and then stable gripper order. If neither candidate is feasible, it
-returns `none`.
+The final selector is deterministic Python. For E1–E6, graspability is outside the VLM task:
+the model-facing response schema omits feasibility, and the adapter records every returned
+candidate as feasible before selecting the lowest continuous predicted force. Equal forces
+are resolved by compatibility and then stable gripper order. The general selector retains
+legacy/non-VLM infeasibility handling, while measured truth records preserve actual physical
+feasibility.
 
 ## 4. Query inputs and projected contact
 
@@ -343,15 +345,17 @@ comparison_evidence: decisive cross-gripper evidence
 recommendation_summary: auditable comparison and recommendation
 ```
 
-Each per-gripper prediction includes compatibility, feasibility, continuous force, visible
-surface properties, evidence used, an explicit calculation summary, assumptions and
-uncertainty, and a detailed auditable rationale. The implementation rebinds each nested
-candidate to the correct gripper and continuously clamps force to the configured range.
+Each VLM per-gripper estimate includes compatibility, continuous force, visible surface
+properties, evidence used, an explicit calculation summary, assumptions and uncertainty,
+and a detailed auditable rationale. It does not include feasibility. The implementation
+rebinds each nested candidate to the correct gripper, records it as feasible, and continuously
+clamps force to the configured range. Joint VLM responses must recommend Gecko or silicone;
+`none` is not part of the model-facing schema.
 
 For paired runs, `SelectionResult` stores both the authoritative Python choice and the raw
 model recommendation, plus `recommendation_agrees_with_selector`. This supports direct evaluation
 of zero-shot/model gripper classification without allowing free-form model choice to bypass
-the force/feasibility rule.
+the deterministic minimum-force rule.
 
 The shared prediction prompt requires a detailed evidence report rather than an unsupported
 number. For each gripper it records all material supplied/visible evidence, explicit
@@ -509,6 +513,12 @@ Single Run shows both predicted forces, final selector output, raw VLM recommend
 and paired retrieval for E3–E6. Measurement controls are enabled only for the fields in the
 selected fixed experiment profile.
 
+Benchmark generation includes an explicit **Force rerun predictions** control for repeated
+model trials. It bypasses generation-cache reads and writes for that batch only, while
+semantic embeddings continue to use the normal dataset-scoped cache. The source dataset,
+fixed split, prompts, and other inputs remain unchanged so batches with the same generation
+input hash can be compared for model-response variability.
+
 Changing an image or measured value creates a counterfactual query. The viewer does not
 score it against the unchanged source label; it displays a delta from the original query.
 
@@ -585,6 +595,11 @@ dimension, and text. Identical requests within one dataset reuse responses; chan
 new keys. Existing flat `data/cache/*.json` files are treated as Exp-Force entries. A legacy
 hit is copied into the Exp-Force namespace without rewriting or deleting the original. Writes
 use temporary files followed by atomic replacement.
+
+The benchmark force-rerun override applies only to structured generation: it makes a live
+request and deliberately performs neither a generation-cache read nor write. Embedding calls
+retain their standard cache behavior. Prediction-batch metadata records the effective policy
+for both cache namespaces.
 
 Reference descriptor checkpoints are separate from API cache entries, so quota-interrupted
 preparation can resume. Credentials are loaded from environment or local `.env` and are not

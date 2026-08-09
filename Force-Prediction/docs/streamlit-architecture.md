@@ -46,7 +46,9 @@ used by the camera and background-removal model preserve this rule.
 | `modules/models/` | Lazy Gemini, background-removal, and Marigold adapters. |
 
 The **Benchmark** tab owns the two actions: immutable prediction generation and later
-truth evaluation. The **Runs Viewer** owns saved single runs, prediction/evaluation histories,
+truth evaluation. Its **Force rerun predictions** checkbox uses a copied runtime config to
+bypass generation-cache reads and writes without disabling the embedding cache. The saved
+batch records that cache policy. The **Runs Viewer** owns saved single runs, prediction/evaluation histories,
 a Single Run-style object inspector for every prediction in a selected benchmark batch, and
 resumable two-stage E1–E6 suite comparison/export. The **Data Viewer** owns the dataset and descriptor catalog plus validated,
 auto-saving measurement and partial outcome labels. CSV sources remain authoritative; image

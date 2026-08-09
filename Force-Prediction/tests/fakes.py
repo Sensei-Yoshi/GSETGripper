@@ -6,7 +6,13 @@ import hashlib
 
 import numpy as np
 
-from modules.contracts import Gripper, JointGripperPrediction, PerGripperPrediction
+from modules.contracts import (
+    Gripper,
+    JointGripperPrediction,
+    PerGripperPrediction,
+    VLMJointGripperForceEstimate,
+    VLMPerGripperForceEstimate,
+)
 from modules.perception import Description
 
 
@@ -23,7 +29,7 @@ class FakeGeminiClient:
                 retrieval_description="test Gemini object descriptor",
                 contact_material="test material",
             ).model_dump(mode="json")
-        if schema is JointGripperPrediction:
+        if schema in (JointGripperPrediction, VLMJointGripperForceEstimate):
             return JointGripperPrediction(
                 gecko=PerGripperPrediction(
                     candidate_gripper=Gripper.GECKO,
@@ -38,7 +44,7 @@ class FakeGeminiClient:
                 recommended_gripper="gecko",
                 recommendation_summary="test Gemini recommendation",
             ).model_dump(mode="json")
-        if schema is PerGripperPrediction:
+        if schema in (PerGripperPrediction, VLMPerGripperForceEstimate):
             active = _kwargs.get("extra", {}).get("active_grippers", ["gecko"])
             return PerGripperPrediction(
                 candidate_gripper=Gripper(active[0]),

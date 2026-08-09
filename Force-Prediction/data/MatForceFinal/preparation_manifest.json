@@ -1,9 +1,9 @@
 {
   "schema_version": 4,
   "dataset_id": "MatForceFinal",
-  "source_fingerprint": "f661edaf85fa770f5173a68d78bda844d47480cceb61d191b961bb62337a868f",
+  "source_fingerprint": "9afe22978609963b85f26ebeb32b1ca9e5421bf49ae16fe780b870550c58e3e7",
   "created_at": "2026-07-30T20:48:57.829067+00:00",
-  "updated_at": "2026-07-31T03:13:35.099375+00:00",
+  "updated_at": "2026-08-09T01:34:50.595351+00:00",
   "stages": {
     "index": {
       "status": "complete",
@@ -35,7 +35,7 @@
       "total": 44,
       "failed_object": null,
       "error": null,
-      "updated_at": "2026-07-31T03:13:35.099360+00:00"
+      "updated_at": "2026-08-09T01:34:50.595340+00:00"
     }
   },
   "missing_images": [],

@@ -15,8 +15,14 @@ from modules.benchmarking import (
     save_prediction_batch,
 )
 from modules.config import load_config
-from modules.contracts import Gripper
+from modules.contracts import (
+    Gripper,
+    JointGripperPrediction,
+    PerGripperPrediction,
+    VLMJointGripperForceEstimate,
+)
 from modules.datasets import DatasetObjectEdit, get_dataset, update_dataset_object
+from modules.models.gemini import GeminiClient
 from modules.suites import (
     SUITE_REPORTING_VERSION,
     create_suite,
@@ -167,6 +173,55 @@ def test_explicit_blank_benchmark_name_is_rejected(tmp_path) -> None:
 
     with pytest.raises(ValueError, match="benchmark name is required"):
         generate_benchmark_predictions(cfg, "e1", display_name="   ")
+
+
+def test_benchmark_force_rerun_bypasses_only_generation_cache_end_to_end(
+    tmp_path,
+    monkeypatch,
+) -> None:
+    cfg, _ = _image_only_config(tmp_path, object_ids=("one",))
+    monkeypatch.setattr("modules.models.gemini._CLIENT_CACHE", {})
+    generation_calls = 0
+
+    def generate_live(self, system, instruction, schema, img_b64, extra):
+        del self, system, instruction, img_b64, extra
+        nonlocal generation_calls
+        generation_calls += 1
+        assert schema is VLMJointGripperForceEstimate
+        return JointGripperPrediction(
+            gecko=PerGripperPrediction(
+                candidate_gripper=Gripper.GECKO,
+                predicted_normal_force_n=1.0,
+            ),
+            silicone=PerGripperPrediction(
+                candidate_gripper=Gripper.SILICONE,
+                predicted_normal_force_n=1.2,
+            ),
+            recommended_gripper="gecko",
+        ).model_dump(mode="json")
+
+    monkeypatch.setattr(GeminiClient, "_generate_json_live", generate_live)
+
+    first_cached = generate_benchmark_predictions(cfg, "e1")
+    second_cached = generate_benchmark_predictions(cfg, "e1")
+
+    assert generation_calls == 1
+    assert first_cached.metadata["cache_policy"] == {
+        "generation": "enabled",
+        "embeddings": "enabled",
+    }
+    assert second_cached.metadata["cache_policy"] == first_cached.metadata["cache_policy"]
+
+    cfg.models.bypass_generation_cache = True
+    first_forced = generate_benchmark_predictions(cfg, "e1")
+    second_forced = generate_benchmark_predictions(cfg, "e1")
+
+    assert generation_calls == 3
+    assert first_forced.metadata["cache_policy"] == {
+        "generation": "bypassed",
+        "embeddings": "enabled",
+    }
+    assert second_forced.metadata["cache_policy"] == first_forced.metadata["cache_policy"]
 
 
 def test_suite_runs_only_the_selected_experiment_subset(tmp_path, monkeypatch) -> None:

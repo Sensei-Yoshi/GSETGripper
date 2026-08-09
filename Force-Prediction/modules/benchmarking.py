@@ -346,6 +346,14 @@ def generate_benchmark_predictions(
         "model": cfg.models.vlm,
         "embedding_model": cfg.retrieval.embedding.model,
         "embedding_dim": cfg.retrieval.embedding.dim,
+        "cache_policy": {
+            "generation": (
+                "bypassed"
+                if cfg.models.bypass_generation_cache
+                else "enabled" if cfg.models.cache else "disabled"
+            ),
+            "embeddings": "enabled" if cfg.models.cache else "disabled",
+        },
         "inputs": effective_cfg.inputs.model_dump(mode="json"),
         "effective_inputs": list(rows[0]["pipeline_result"]["effective_inputs"]),
         "roughness_measurement": cfg.roughness.model_dump(mode="json"),

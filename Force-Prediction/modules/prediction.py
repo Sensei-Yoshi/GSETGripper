@@ -1,8 +1,8 @@
 """Shared VLM force estimation and the authoritative deterministic selector.
 
-E1 through E6 use one joint VLM response for both grippers. Python always makes the final
-feasible minimum-force selection and records agreement with the VLM's explicit
-recommendation.
+E1 through E6 use one joint VLM response for both grippers. Graspability is outside the
+VLM task: its schema contains force estimates only, and Python normalizes every candidate
+to feasible before making the final minimum-force selection.
 """
 
 from __future__ import annotations
@@ -18,6 +18,8 @@ from .contracts import (
     PerGripperPrediction,
     Query,
     SelectionResult,
+    VLMJointGripperForceEstimate,
+    VLMPerGripperForceEstimate,
 )
 from .models.gemini import get_client
 from .retrieval import (
@@ -288,11 +290,21 @@ def vlm_predict_joint(
     raw = get_client(cfg).generate_json(
         system=cfg.prompts.prediction_system,
         instruction=instruction,
-        schema=JointGripperPrediction,
+        schema=VLMJointGripperForceEstimate,
         image_bgr=image_bgr,
         extra=payload,
     )
-    response = JointGripperPrediction.model_validate(raw)
+    estimate = VLMJointGripperForceEstimate.model_validate(raw)
+    response = JointGripperPrediction.model_validate(
+        {
+            **estimate.model_dump(mode="json"),
+            "gecko": {**estimate.gecko.model_dump(mode="json"), "feasible": True},
+            "silicone": {
+                **estimate.silicone.model_dump(mode="json"),
+                "feasible": True,
+            },
+        }
+    )
     response.gecko.candidate_gripper = Gripper.GECKO
     response.silicone.candidate_gripper = Gripper.SILICONE
     response.gecko.predicted_normal_force_n = clamp_force(
@@ -335,11 +347,14 @@ def vlm_predict_single(
     raw = get_client(cfg).generate_json(
         system=cfg.prompts.prediction_system,
         instruction=instruction,
-        schema=PerGripperPrediction,
+        schema=VLMPerGripperForceEstimate,
         image_bgr=image_bgr,
         extra=payload,
     )
-    response = PerGripperPrediction.model_validate(raw)
+    estimate = VLMPerGripperForceEstimate.model_validate(raw)
+    response = PerGripperPrediction.model_validate(
+        {**estimate.model_dump(mode="json"), "feasible": True}
+    )
     response.candidate_gripper = gripper
     response.predicted_normal_force_n = clamp_force(
         response.predicted_normal_force_n, cfg

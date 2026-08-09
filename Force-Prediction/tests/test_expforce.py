@@ -22,6 +22,7 @@ from modules.contracts import (
     JointGripperPrediction,
     PerGripperPrediction,
     Query,
+    VLMJointGripperForceEstimate,
 )
 from modules.datasets import PreparationStage, get_dataset, prepare_dataset_stages
 from modules.expforce import (
@@ -152,6 +153,11 @@ def test_vlm_prompts_require_auditable_evidence_without_invented_constants():
     assert "calculation_summary" in shared
     assert "assumptions_and_uncertainty" in shared
     assert "do not invent" in shared
+    assert "graspability and feasibility classification are outside this task" in shared
+    assert "never reject a candidate" in shared
+    assert "never recommend none" in " ".join(
+        cfg.prompts.target_instructions["joint"].lower().split()
+    )
     assert "hidden chain-of-thought" not in shared
     assert "side-view" not in shared
     assert "rough visual approximations" in e1_prompt
@@ -172,10 +178,12 @@ def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
             return JointGripperPrediction(
                 gecko=PerGripperPrediction(
                     candidate_gripper=Gripper.GECKO,
+                    feasible=False,
                     predicted_normal_force_n=1.137,
                 ),
                 silicone=PerGripperPrediction(
                     candidate_gripper=Gripper.SILICONE,
+                    feasible=False,
                     predicted_normal_force_n=1.731,
                 ),
                 recommended_gripper="gecko",
@@ -202,6 +210,8 @@ def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
     )
 
     assert client.calls == 1
+    assert captured["schema"] is VLMJointGripperForceEstimate
+    assert "feasible" not in str(captured["schema"].model_json_schema()).lower()
     assert captured["instruction"].startswith("E1 ZERO-SHOT VISION-ONLY CONDITION")
     assert captured["extra"]["query"] == {}
     assert "retrieved_objects" not in captured["extra"]
@@ -212,6 +222,8 @@ def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):
     assert "require_context_images" not in captured
     assert prediction.gecko.predicted_normal_force_n == 1.137
     assert prediction.silicone.predicted_normal_force_n == 1.731
+    assert prediction.gecko.feasible is True
+    assert prediction.silicone.feasible is True
     assert prediction.recommended_gripper == "gecko"
 
 
