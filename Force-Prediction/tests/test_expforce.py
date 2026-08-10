@@ -148,6 +148,8 @@ def test_vlm_prompts_require_auditable_evidence_without_invented_constants():
     shared = " ".join(cfg.prompts.prediction_system.lower().split())
     e1_prompt = " ".join(cfg.prompts.experiments["e1"].lower().split())
     e2_prompt = " ".join(cfg.prompts.experiments["e2"].lower().split())
+    e5_prompt = " ".join(cfg.prompts.experiments["e5"].lower().split())
+    silicone = " ".join(cfg.embodiments["silicone"].description.lower().split())
 
     assert "evidence_used" in shared
     assert "calculation_summary" in shared
@@ -163,6 +165,10 @@ def test_vlm_prompts_require_auditable_evidence_without_invented_constants():
     assert "rough visual approximations" in e1_prompt
     assert "authoritative measurements" in e2_prompt
     assert "do not infer hidden" in e2_prompt
+    assert "greater roughness for silicone is a downward or zero adjustment" in e5_prompt
+    assert "must never increase the force by itself" in e5_prompt
+    assert "signed roughness adjustment" in e5_prompt
+    assert "must never increase the force solely because" in silicone
 
 
 def test_e1_payload_is_truly_zero_shot_and_uses_e1_prompt(monkeypatch):

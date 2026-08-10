@@ -201,6 +201,29 @@ prompts:
       visible-plus-hidden-contact variants are excluded; never infer contact from
       the remaining conditions.
 
+      SILICONE ROUGHNESS DIRECTION.
+      When the requested candidate is silicone, treat greater measured roughness as
+      favorable to the high-friction silicone interface. Holding contact material,
+      mass, geometry, condition, and contact approximately constant, a higher roughness
+      index may decrease the required normal force or leave it unchanged; it must never
+      increase the force by itself. Conversely, lower roughness must not be used by
+      itself to decrease the silicone force. Do not describe additional roughness or
+      surface micro-geometry as requiring extra silicone force.
+
+      Keep the effects separate before combining them: greater mass is an upward force
+      adjustment, while greater roughness for silicone is a downward or zero adjustment.
+      State the direction of each adjustment explicitly and then compute the net result.
+      Do not apply this roughness rule blindly across materially or geometrically
+      dissimilar objects. If retrieved outcomes appear to contradict it, attribute the
+      discrepancy to material, geometry, contact, condition, or uncertainty rather than
+      claiming that higher roughness caused a higher silicone force.
+
+      ARITHMETIC CONSISTENCY CHECK.
+      In calculation_summary, show the anchor force, signed mass adjustment, signed
+      roughness adjustment, any other adjustment, intermediate result, and final
+      rounding. Recompute the arithmetic before answering. predicted_normal_force_n
+      must equal the final displayed result after rounding.
+
       '
     e6: 'E6 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.
 
@@ -289,4 +312,7 @@ embodiments:
       mainly from normal force, friction, and the silicone pad’s viscoelastic interaction
       with the surface. The silicone pads are effective on rough, irregular, or interrupted
       surfaces, but performance still decreases when the contact area is small or
-      the surface is wet, oily, or contaminated.
+      the surface is wet, oily, or contaminated. Holding other grasp factors approximately
+      constant, increasing the measured roughness is a non-increasing adjustment to
+      the required silicone normal force. It may reduce the force or leave it unchanged,
+      but it must never increase the force solely because the surface is rougher.

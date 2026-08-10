@@ -1,0 +1,2261 @@
+{
+  "schema_version": 10,
+  "artifact_type": "benchmark_evaluation",
+  "metadata": {
+    "evaluation_id": "20260809T061536873037Z_a0b38c59d612",
+    "prediction_batch_id": "20260809T052859122135Z_e1",
+    "dataset_id": "MatForceFinal",
+    "created_at": "2026-08-09T06:15:36.873037+00:00",
+    "experiment": "e1",
+    "experiment_method": "vision_vlm",
+    "experiment_definition_version": 12,
+    "active_grippers": [
+      "gecko",
+      "silicone"
+    ],
+    "generation_mode": "joint",
+    "evaluation_protocol": "fixed_train_test_holdout",
+    "backend": {
+      "force": "gemini_joint_generation",
+      "semantic_embedding": null
+    },
+    "prediction_created_at": "2026-08-09T05:28:59.122135+00:00",
+    "generation_source_sha256": "51e75d0a184784fc9c4df3fd87331e996f85e398c93f417e2fa72011d0bfbd69",
+    "generation_input_sha256": "8ab355bb494f93589433deba1f10f2633dcc4865e0a1e5c4a72beb2c42bb8a88",
+    "truth_source_sha256": "51e75d0a184784fc9c4df3fd87331e996f85e398c93f417e2fa72011d0bfbd69",
+    "truth_snapshot_sha256": "a0b38c59d61260f9f1f05125eafb348c562e2757c9243f9a1ebe963bf08ef554",
+    "coverage": {
+      "predicted": 15,
+      "evaluated": 15,
+      "skipped": 0,
+      "fraction": 1.0
+    },
+    "skipped_truth": {},
+    "exports": {
+      "json": "data/MatForceFinal/results/evaluations/20260809T052859122135Z_e1/20260809T061536873037Z_a0b38c59d612.json",
+      "csv": "data/MatForceFinal/results/evaluations/20260809T052859122135Z_e1/20260809T061536873037Z_a0b38c59d612.csv",
+      "png": "data/MatForceFinal/results/evaluations/20260809T052859122135Z_e1/20260809T061536873037Z_a0b38c59d612.png",
+      "svg": "data/MatForceFinal/results/evaluations/20260809T052859122135Z_e1/20260809T061536873037Z_a0b38c59d612.svg"
+    }
+  },
+  "metrics": {
+    "force": {
+      "gecko": {
+        "n": 15,
+        "mae": 2.1510000000000002,
+        "rmse": 2.6382713911448405,
+        "medae": 1.7830000000000001,
+        "within_0.25n": 0.06666666666666667,
+        "within_0.5n": 0.06666666666666667
+      },
+      "silicone": {
+        "n": 15,
+        "mae": 1.6446666666666665,
+        "rmse": 2.4012662770574473,
+        "medae": 1.169,
+        "within_0.25n": 0.0,
+        "within_0.5n": 0.06666666666666667
+      },
+      "overall": {
+        "n": 30,
+        "mae": 1.8978333333333333,
+        "rmse": 2.522553831602674,
+        "medae": 1.2640000000000002,
+        "within_0.25n": 0.03333333333333333,
+        "within_0.5n": 0.06666666666666667
+      }
+    },
+    "feasibility": {
+      "gecko": {
+        "tp": 15,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      },
+      "silicone": {
+        "tp": 15,
+        "fp": 0,
+        "tn": 0,
+        "fn": 0,
+        "precision": 1.0,
+        "recall": 1.0
+      }
+    },
+    "selection": {
+      "applicable": true,
+      "n": 15,
+      "accuracy": 0.7333333333333333,
+      "infeasible_pick_rate": 0.0,
+      "mean_regret_n": 0.39819999999999994,
+      "median_regret_n": 0.0,
+      "worst_regret_n": 2.256
+    },
+    "model_recommendation": {
+      "applicable": true,
+      "n": 15,
+      "accuracy": 0.6666666666666666,
+      "selector_agreement": 0.9333333333333333
+    }
+  },
+  "rows": [
+    {
+      "object_id": "avacado",
+      "surface_id": "avacado",
+      "condition_id": "baseline",
+      "object_name": "Avacado",
+      "image_path": "data/MatForceFinal/avacado.jpeg",
+      "image_sha256": "90786816e47407e042fa0fa147a3806fd61ce4cc0e26e3fb6a5349bba79fd6dc",
+      "mass_g": 157.55,
+      "roughness_index": 2415.65,
+      "projected_contact_fraction": 0.1,
+      "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 2.2,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 2.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "avocado skin (pebble-textured, bumpy, semi-rigid organic exocarp)",
+              "visible_surface_condition": "rough, pebble-textured, curved, non-flat sidewalls",
+              "compatibility": "low",
+              "predicted_normal_force_n": 5.5,
+              "evidence_used": [
+                "visual image showing a whole avocado with a highly textured, bumpy, pebble-like surface",
+                "curved and non-flat object geometry",
+                "gecko gripper embodiment requiring flat, parallel, smooth surfaces for effective mushroom-tipped dry adhesion"
+              ],
+              "calculation_summary": "Estimated force = baseline moderate object mass requirement scaled up due to poor compatibility (rough, curved, non-flat surface degrading dry adhesion performance). Force = 3.0 N base + 2.5 N penalty for severe texture/curvature = 5.5 N.",
+              "assumptions_and_uncertainty": [
+                "mass is estimated purely from visual scale (approximately 150-200g)",
+                "rough texture severely prevents broad contact formation for rigid gecko pads",
+                "high uncertainty due to zero-shot visual-only estimation without physical testing"
+              ],
+              "reasoning_trace": "The gecko gripper relies heavily on smooth, flat, parallel surfaces to achieve maximum dry adhesion via its rigid mushroom-tipped pads. The avocado presented has a distinctly rough, pebble-textured, and curved surface. This morphology drastically reduces the available contact area and prevents effective van der Waals or fibrillar attachment, leading to very low compatibility. Consequently, dry adhesion is weak, forcing the gripper to rely primarily on limited frictional support and a higher normal force to lift the object securely.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "avocado skin (pebble-textured, bumpy, semi-rigid organic exocarp)",
+              "visible_surface_condition": "rough, pebble-textured, curved organic surface",
+              "compatibility": "high",
+              "predicted_normal_force_n": 2.2,
+              "evidence_used": [
+                "visual image showing a whole avocado",
+                "high-friction silicone pads capable of conforming locally at the interface",
+                "surface roughness that matches the effective operating envelope of high-friction silicone grippers"
+              ],
+              "calculation_summary": "Estimated force = baseline friction-based lift force for an object of visually estimated mass (~180g) using high-friction silicone pads on a rough surface. Force = 2.2 N.",
+              "assumptions_and_uncertainty": [
+                "mass estimated visually as roughly 150-200g",
+                "local deformation of the silicone pad sufficiently accommodates the pebble texture",
+                "uncertainty in exact object weight and friction coefficient"
+              ],
+              "reasoning_trace": "The silicone gripper uses high-friction pads that excel on rough, irregular, or naturally textured surfaces like an avocado's skin. Although the surface is bumpy, the local compliance of the silicone enables effective frictional engagement without requiring a perfectly flat plane. Therefore, a moderate normal force is sufficient to securely hold and lift the object.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "avocado surface is distinctly rough and pebble-textured, which is unfavorable for rigid dry-adhesive gecko pads but well-suited for compliant high-friction silicone pads",
+            "gecko gripper requires flat, parallel, smooth surfaces to form broad contact, whereas silicone can deform locally around surface irregularities",
+            "predicted normal force is lower for silicone (2.2 N) compared to gecko (5.5 N) due to superior material-surface compatibility"
+          ],
+          "model_recommendation_summary": "The silicone gripper is recommended because its high-friction, compliant pads are designed to handle rough, irregular, and curved surfaces like that of the avocado. In contrast, the gecko gripper suffers from very low compatibility due to the object's bumpy texture and curvature, which prevents proper dry-adhesive contact and necessitates a significantly higher normal force.",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+        "object_id": "avacado",
+        "surface_id": "avacado",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.5,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.2,
+      "pred_silicone_feasible": true,
+      "true_favored": "silicone",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 1.24,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 4.26,
+      "absolute_error_gecko_n": 4.26,
+      "true_silicone_force_n": 0.85,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 1.35,
+      "absolute_error_silicone_n": 1.35
+    },
+    {
+      "object_id": "camera_cardboard_box",
+      "surface_id": "camera_cardboard_box",
+      "condition_id": "baseline",
+      "object_name": "Camera Cardboard Box",
+      "image_path": "data/MatForceFinal/camera_cardboard_box.jpg",
+      "image_sha256": "3e353710f8a3077c21e9ace671d33500c26947691c4da1fafd3d7e3651dce996",
+      "mass_g": 871.93,
+      "roughness_index": 804.32,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 2.5,
+      "model_recommended_gripper": "gecko",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 2.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Cardboard",
+              "visible_surface_condition": "Slightly textured, flat, dry",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 2.5,
+              "evidence_used": [
+                "Visual appearance of a standard rectangular cardboard box with flat vertical sidewalls",
+                "Dry surface condition visible on the cardboard",
+                "Compatibility of gecko pads with reasonably flat cardboard surfaces despite mild texture"
+              ],
+              "calculation_summary": "Estimated base force of 2.5 N considering moderate gecko adhesion on flat cardboard sidewalls.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass or friction measurements are available",
+                "Cardboard texture may slightly reduce optimal gecko dry adhesion compared to a perfectly smooth polished surface",
+                "Visual size estimation suggests a moderate weight box"
+              ],
+              "reasoning_trace": "The gecko gripper benefits from the flat, rigid parallel sidewalls of the cardboard box. While cardboard has minor surface texture and porosity that slightly degrades ideal mushroom-tipped pad adhesion, broad contact can still be formed, allowing a relatively low pre-grasp normal force of 2.5 N to achieve a secure hold.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "Cardboard",
+              "visible_surface_condition": "Slightly textured, flat, dry",
+              "compatibility": "high",
+              "predicted_normal_force_n": 3.2,
+              "evidence_used": [
+                "Visual appearance of a standard rectangular cardboard box with flat vertical sidewalls",
+                "High friction silicone pads which perform reliably on textured paper/cardboard surfaces"
+              ],
+              "calculation_summary": "Estimated normal force of 3.2 N based on friction-based gripping requirements for a medium-sized cardboard box.",
+              "assumptions_and_uncertainty": [
+                "No direct mass measurement is supplied, relying entirely on visual scale",
+                "Frictional coefficient between high-friction silicone and cardboard is assumed to be favorable"
+              ],
+              "reasoning_trace": "The high-friction silicone gripper relies primarily on normal force and friction rather than dry adhesion. Cardboard provides a great frictional interface for silicone pads. A moderate normal force of 3.2 N is estimated to safely lift the object without slipping.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "gecko",
+          "model_comparison_evidence": [
+            "Flat, parallel sidewalls of the cardboard box provide favorable geometry for gecko dry-adhesive pads",
+            "Gecko adhesion typically permits a lower required normal force than pure friction-based silicone gripping when surfaces are reasonably flat and dry"
+          ],
+          "model_recommendation_summary": "Both grippers are capable of handling the cardboard box. The gecko gripper is recommended because its dry-adhesive pads can achieve secure holding on the flat vertical cardboard sidewalls with a slightly lower required normal force (2.5 N vs 3.2 N).",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a rigid fibrous substrate and no visible coating or contamination.",
+        "object_id": "camera_cardboard_box",
+        "surface_id": "camera_cardboard_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 2.5,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 3.2,
+      "pred_silicone_feasible": true,
+      "true_favored": "silicone",
+      "selection_correct": false,
+      "regret_n": 1.9479999999999995,
+      "true_gecko_force_n": 6.22,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -3.7199999999999998,
+      "absolute_error_gecko_n": 3.7199999999999998,
+      "true_silicone_force_n": 4.272,
+      "true_silicone_feasible": true,
+      "error_silicone_n": -1.072,
+      "absolute_error_silicone_n": 1.072
+    },
+    {
+      "object_id": "caprisun",
+      "surface_id": "caprisun",
+      "condition_id": "baseline",
+      "object_name": "CapriSun",
+      "image_path": "data/MatForceFinal/caprisun.jpeg",
+      "image_sha256": "eb48b0254bd89c9684ce36c3d88daf3e6ad76723ffe9f7a0872e6362fa8ff9bd",
+      "mass_g": 186.01,
+      "roughness_index": 557.2,
+      "projected_contact_fraction": 0.2976190476,
+      "semantic_description": "Clean, dry flexible foil pouch contact surface with a smooth glossy printed finish over a metallic plastic laminate substrate.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 2.2,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": false,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 2.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "flexible foil pouch laminate",
+              "visible_surface_condition": "smooth, nonporous, flexible pouch with slight wrinkling",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 2.2,
+              "evidence_used": [
+                "Capri Sun flexible foil pouch",
+                "smooth metallic exterior finish",
+                "soft/flexible pouch structure requiring controlled low normal force to avoid crushing"
+              ],
+              "calculation_summary": "Estimated base force = 2.0 N + 0.2 N compliance margin for flexible packaging = 2.2 N",
+              "assumptions_and_uncertainty": [
+                "Assumes pouch can be flattened slightly against the rigid backing during grasp",
+                "Uncertainty in exact liquid content weight and local surface deformation"
+              ],
+              "reasoning_trace": "The gecko pads leverage the smooth, nonporous metallic foil surface to generate dry adhesion. However, because the pouch is soft and flexible, excessive normal force would deform the pouch body rather than forming a secure planar grip. A moderate normal force of 2.2 N provides sufficient preload for the gecko pads while maintaining structural integrity of the pouch.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "flexible foil pouch laminate",
+              "visible_surface_condition": "smooth, nonporous, flexible pouch with slight wrinkling",
+              "compatibility": "high",
+              "predicted_normal_force_n": 3.0,
+              "evidence_used": [
+                "Capri Sun flexible foil pouch",
+                "high-friction silicone pads",
+                "flexible package geometry requiring firm frictional hold"
+              ],
+              "calculation_summary": "Estimated base force = 2.5 N + 0.5 N friction and deformation adjustment = 3.0 N",
+              "assumptions_and_uncertainty": [
+                "Assumes silicone pads achieve stable friction against the pouch laminate",
+                "Uncertainty regarding internal fluid shifting during lift"
+              ],
+              "reasoning_trace": "The high-friction silicone pads rely primarily on normal force and friction to secure the object. Since the foil pouch is flexible and relatively light, a normal force of 3.0 N ensures adequate frictional engagement without crushing the liquid-filled container.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "Flexible foil pouch material and slight surface wrinkling favor silicone compliance over rigid gecko backing requirements",
+            "Silicone gripper accommodates minor pouch deformation more robustly than flat gecko pads"
+          ],
+          "model_recommendation_summary": "Both grippers are capable of handling the flexible pouch. The silicone gripper is recommended because its high-friction pads and local compliance adapt better to the slightly irregular, deformable surface of the juice pouch compared to the rigid backing requirements of the gecko gripper.",
+          "recommendation_agrees_with_selector": false
+        },
+        "semantic_description": "Clean, dry flexible foil pouch contact surface with a smooth glossy printed finish over a metallic plastic laminate substrate.",
+        "object_id": "caprisun",
+        "surface_id": "caprisun",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 2.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 3.0,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 0.417,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 1.7830000000000001,
+      "absolute_error_gecko_n": 1.7830000000000001,
+      "true_silicone_force_n": 1.831,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 1.169,
+      "absolute_error_silicone_n": 1.169
+    },
+    {
+      "object_id": "clay_bowl",
+      "surface_id": "clay_bowl",
+      "condition_id": "baseline",
+      "object_name": "Clay Bowl",
+      "image_path": "data/MatForceFinal/clay_bowl.jpg",
+      "image_sha256": "de1b845b4662fb46b27d674cefb9e02353ea1578cb272aaf90617b6a5e707d13",
+      "mass_g": 286.71,
+      "roughness_index": 1847.68,
+      "projected_contact_fraction": 0.4166666667,
+      "semantic_description": "Rigid mineral substrate with a painted ceramic-like coating and dry, slightly textured surface finish.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 4.1,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 4.1,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "painted ceramic or clay pottery",
+              "visible_surface_condition": "irregularly shaped, textured, and coated with a rough painted finish",
+              "compatibility": "low",
+              "predicted_normal_force_n": 6.2,
+              "evidence_used": [
+                "visible uneven painted surface",
+                "irregular organic geometry lacking parallel flat sides",
+                "rough texture reducing gecko adhesive pad contact"
+              ],
+              "calculation_summary": "Estimated force = baseline moderate force + penalty for poor geometric compatibility and paint roughness = 6.2 N",
+              "assumptions_and_uncertainty": [
+                "assumed the object is graspable despite poor geometric alignment",
+                "high uncertainty due to lack of direct physical measurements of weight and friction coefficient"
+              ],
+              "reasoning_trace": "The gecko gripper relies heavily on smooth, flat, parallel surfaces for optimal dry-adhesive contact. The query object is a hand-formed, irregularly shaped, painted vessel with curved, non-parallel walls and a textured, painted surface. These factors severely degrade gecko adhesion, requiring a high normal force to compensate through residual friction.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "painted ceramic or clay pottery",
+              "visible_surface_condition": "irregularly shaped, textured, and coated with a rough painted finish",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 4.1,
+              "evidence_used": [
+                "visible rough painted surface",
+                "irregular organic shape",
+                "high-friction silicone pad capability on non-ideal surfaces"
+              ],
+              "calculation_summary": "Estimated force = baseline moderate force adjusted for high-friction silicone gripping on irregular texture = 4.1 N",
+              "assumptions_and_uncertainty": [
+                "assumed standard object mass for a small pottery piece",
+                "uncertainty regarding exact frictional properties of the painted layer"
+              ],
+              "reasoning_trace": "The silicone gripper uses high-friction pads and viscoelastic interaction, making it well-suited for rough, irregular, or painted surfaces. Although the shape is somewhat irregular, the silicone material conforms locally and maintains better holding capacity on textured surfaces compared to dry adhesives, leading to a moderately low required normal force.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "surface condition is rough and painted, which degrades gecko dry adhesion",
+            "silicone pads accommodate rough and irregular surfaces better than rigid gecko pads",
+            "geometry lacks flat parallel sidewalls required for broad gecko contact"
+          ],
+          "model_recommendation_summary": "The silicone gripper is recommended because the object features a textured, painted, and irregular surface with non-parallel walls. Gecko adhesion performs poorly on rough, coated, and non-flat surfaces, whereas the silicone gripper's high-friction pads handle irregular texture more reliably with a lower required normal force.",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Rigid mineral substrate with a painted ceramic-like coating and dry, slightly textured surface finish.",
+        "object_id": "clay_bowl",
+        "surface_id": "clay_bowl",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 6.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 4.1,
+      "pred_silicone_feasible": true,
+      "true_favored": "silicone",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 3.63,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 2.5700000000000003,
+      "absolute_error_gecko_n": 2.5700000000000003,
+      "true_silicone_force_n": 1.25,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 2.8499999999999996,
+      "absolute_error_silicone_n": 2.8499999999999996
+    },
+    {
+      "object_id": "computer",
+      "surface_id": "computer",
+      "condition_id": "baseline",
+      "object_name": "Computer",
+      "image_path": "data/MatForceFinal/computer.jpg",
+      "image_sha256": "db0ce50667da5e4af3cba486a44020b020f4014be09a62fe9e71eca9abbc5172",
+      "mass_g": 1550.0,
+      "roughness_index": 780.1,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry metal contact surface with a smooth anodized finish and no visible moisture or loose debris.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.5,
+      "model_recommended_gripper": "gecko",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Anodized aluminum",
+              "visible_surface_condition": "Smooth, flat, clean, and rigid",
+              "compatibility": "high",
+              "predicted_normal_force_n": 1.5,
+              "evidence_used": [
+                "Smooth and flat aluminum housing of the device",
+                "Large parallel sidewall offering excellent contact area for the gecko pads",
+                "Clean surface condition favoring dry-adhesive attachment"
+              ],
+              "calculation_summary": "Estimated base force = 1.5 N based on high adhesion compatibility with smooth metal surfaces and object scale.",
+              "assumptions_and_uncertainty": [
+                "Mass and precise weight distribution are visually estimated",
+                "Surface is assumed to be dry and free of oil or contaminants"
+              ],
+              "reasoning_trace": "The device presents a smooth, flat, anodized aluminum surface that is exceptionally well-suited for mushroom-tipped gecko dry-adhesive pads. The large flat contact area allows maximum adhesion to develop, significantly lowering the required stationary-finger normal force to securely lift the object.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "Anodized aluminum",
+              "visible_surface_condition": "Smooth, flat, and rigid",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 3.0,
+              "evidence_used": [
+                "Smooth metal surface lacking high micro-roughness for interlocking",
+                "Rigid high-friction silicone pads requiring higher normal force on smooth non-conformable surfaces"
+              ],
+              "calculation_summary": "Estimated base force = 3.0 N relying purely on friction and viscoelastic shear interaction without dry-adhesive enhancement.",
+              "assumptions_and_uncertainty": [
+                "Friction coefficient is visually approximated",
+                "Object weight is inferred solely from scale and typical laptop/tablet dimensions"
+              ],
+              "reasoning_trace": "While the silicone gripper can securely hold the object, the smooth metal surface provides lower frictional engagement compared to the specialized dry-adhesives, necessitating a moderately higher normal force to prevent slip.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "gecko",
+          "model_comparison_evidence": [
+            "Surface is smooth and flat, making it ideal for gecko dry adhesion",
+            "Gecko gripper achieves higher holding capacity through direct adhesion, lowering the required normal force compared to the high-friction silicone gripper"
+          ],
+          "model_recommendation_summary": "The gecko gripper is recommended because the target object's flat, smooth aluminum casing provides an optimal substrate for dry-adhesive pads, resulting in a lower required normal force than the silicone alternative.",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry metal contact surface with a smooth anodized finish and no visible moisture or loose debris.",
+        "object_id": "computer",
+        "surface_id": "computer",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.5,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 3.0,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 2.5,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -1.0,
+      "absolute_error_gecko_n": 1.0,
+      "true_silicone_force_n": 10.506,
+      "true_silicone_feasible": true,
+      "error_silicone_n": -7.506,
+      "absolute_error_silicone_n": 7.506
+    },
+    {
+      "object_id": "headphones_case",
+      "surface_id": "headphones_case",
+      "condition_id": "baseline",
+      "object_name": "Headphones Case",
+      "image_path": "data/MatForceFinal/Headphones Case.jpg",
+      "image_sha256": "440437a99a4b2d78a18aee34bdd49426d553e873ee64c5176a1402857240f69e",
+      "mass_g": 218.15,
+      "roughness_index": 1610.85,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry woven textile contact surface with a textured fibrous substrate and no visible coating or contamination.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 2.5,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 2.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "fabric-covered semi-rigid shell",
+              "visible_surface_condition": "textured, woven fabric exterior with moderate surface roughness",
+              "compatibility": "low",
+              "predicted_normal_force_n": 4.5,
+              "evidence_used": [
+                "woven fabric surface texture visible in image",
+                "curved object geometry reducing flat contact area for rigid pads",
+                "gecko adhesive requires smooth, flat, nonporous surfaces"
+              ],
+              "calculation_summary": "Estimated force based on reduced dry adhesion due to fabric texture and curvature, requiring higher normal force to rely partly on frictional support: Force = 4.5 N",
+              "assumptions_and_uncertainty": [
+                "Exact object mass is unmeasured and estimated visually",
+                "Fabric texture creates micro-roughness that degrades dry-adhesive performance",
+                "Curvature limits the continuous flat contact patch"
+              ],
+              "reasoning_trace": "The gecko gripper relies on smooth, flat surfaces for broad contact and strong dry adhesion. The object's exterior is covered in a woven fabric, which introduces micro-roughness and porosity that degrade gecko adhesion. Additionally, the rounded geometry prevents optimal flat pad engagement. Therefore, adhesion is weak, and the gripper must rely more heavily on limited frictional support, resulting in an estimated normal force of 4.5 N.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "fabric-covered semi-rigid shell",
+              "visible_surface_condition": "textured, woven fabric exterior",
+              "compatibility": "high",
+              "predicted_normal_force_n": 2.5,
+              "evidence_used": [
+                "high-friction silicone pads well-suited for textured fabric surfaces",
+                "moderate object scale and weight implied visually",
+                "viscoelastic interaction of silicone provides strong grip on woven materials"
+              ],
+              "calculation_summary": "Estimated force leveraging high-friction silicone grip on textured fabric: Force = 2.5 N",
+              "assumptions_and_uncertainty": [
+                "Visual mass estimate assumes a lightweight consumer case",
+                "Silicone pad local deformation accommodates the fabric texture well"
+              ],
+              "reasoning_trace": "The silicone gripper uses high-friction pads and viscoelastic interaction, which perform effectively on textured and slightly irregular surfaces like the woven fabric of this case. Because the silicone pads can conform locally and maintain high frictional resistance against fabric, a lower normal force of 2.5 N is sufficient to lift and hold the object securely.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "surface material is a woven fabric which presents micro-roughness and texture",
+            "gecko adhesion degrades significantly on rough or porous fabric surfaces",
+            "silicone friction and viscoelastic interaction excel on textured, non-smooth surfaces"
+          ],
+          "model_recommendation_summary": "The silicone gripper is recommended because its high-friction pads and local surface compliance are well-suited for the woven fabric exterior of the object. In contrast, the gecko gripper's dry-adhesive pads suffer performance degradation on textured and porous fabric surfaces, requiring a significantly higher normal force.",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry woven textile contact surface with a textured fibrous substrate and no visible coating or contamination.",
+        "object_id": "headphones_case",
+        "surface_id": "headphones_case",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 4.5,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.5,
+      "pred_silicone_feasible": true,
+      "true_favored": "silicone",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 3.01,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 1.4900000000000002,
+      "absolute_error_gecko_n": 1.4900000000000002,
+      "true_silicone_force_n": 1.985,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 0.5149999999999999,
+      "absolute_error_silicone_n": 0.5149999999999999
+    },
+    {
+      "object_id": "large_hand_sanitizer",
+      "surface_id": "large_hand_sanitizer",
+      "condition_id": "baseline",
+      "object_name": "Large hand sanitizer",
+      "image_path": "data/MatForceFinal/large_hand_sanitizer_sa_1.jpeg",
+      "image_sha256": "1cc772e5cf5b3f015189c37c0030f044352a8625cb0acc79a733b04b146b99ac",
+      "mass_g": 836.04,
+      "roughness_index": 958.71,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.2,
+      "model_recommended_gripper": "gecko",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "smooth rigid plastic bottle",
+              "visible_surface_condition": "clean and smooth with a paper label",
+              "compatibility": "high",
+              "predicted_normal_force_n": 1.2,
+              "evidence_used": [
+                "smooth plastic bottle surface",
+                "flat enough cylindrical sidewalls for gecko pad engagement",
+                "bottle contains approximately 1000 mL of hand sanitizer with a visual mass of about 1.1 kg",
+                "dry adhesive pads perform exceptionally well on clean smooth plastic"
+              ],
+              "calculation_summary": "Estimated object weight W approx 11 N. Gecko dry adhesion provides high normal pull-off support on smooth plastic, reducing required gripping force significantly. F_normal = W * 0.11 = 1.2 N.",
+              "assumptions_and_uncertainty": [
+                "Assumes bottle sidewalls are sufficiently flat and parallel for the rigid 4.2-inch gecko pad to make broad contact.",
+                "Visual weight approximation carries high uncertainty.",
+                "Paper label may slightly reduce local gecko adhesion effectiveness."
+              ],
+              "reasoning_trace": "The object is a large hand sanitizer bottle made of smooth rigid plastic, highly compatible with gecko-inspired dry adhesive pads. Due to strong dry adhesion on clean smooth plastic, the required stationary-finger normal force is relatively low to prevent slip, estimated continuously at 1.2 N.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "smooth rigid plastic bottle",
+              "visible_surface_condition": "clean and smooth with a paper label",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "smooth plastic bottle surface",
+                "high-friction silicone pads relying on normal force and friction",
+                "estimated object weight of approximately 11 N based on 1000 mL volume"
+              ],
+              "calculation_summary": "Estimated object weight W approx 11 N. Silicone pads rely purely on friction and normal force without dry adhesion benefits. Assuming an effective friction coefficient mu approx 0.35 for silicone on smooth plastic, F_normal = W / (2 * mu) = 11 / (2 * 0.35) = 15.7 N, but capped or scaled down considering parallel grip mechanics and tactile compliance, set to 3.5 N.",
+              "assumptions_and_uncertainty": [
+                "Friction coefficient is visually approximated.",
+                "Rigid fingers with silicone pads may experience small contact area on rounded cylindrical sidewalls.",
+                "Weight is estimated visually from volume."
+              ],
+              "reasoning_trace": "The silicone gripper relies on friction rather than dry adhesion. For a smooth plastic bottle weighing around 1.1 kg, a higher normal force is required compared to the gecko gripper to maintain frictional grip against slippage, resulting in an estimate of 3.5 N.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "gecko",
+          "model_comparison_evidence": [
+            "smooth rigid plastic surface matches the optimal operating conditions for gecko dry adhesive pads",
+            "gecko adhesion drastically lowers the required normal force compared to pure friction silicone gripping"
+          ],
+          "model_recommendation_summary": "The gecko gripper is recommended because the smooth plastic bottle provides an ideal surface for dry adhesion, allowing a significantly lower normal force (1.2 N) to securely lift the object compared to the silicone gripper (3.5 N).",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "object_id": "large_hand_sanitizer",
+        "surface_id": "large_hand_sanitizer",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 1.3,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.10000000000000009,
+      "absolute_error_gecko_n": 0.10000000000000009,
+      "true_silicone_force_n": 3.2,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 0.2999999999999998,
+      "absolute_error_silicone_n": 0.2999999999999998
+    },
+    {
+      "object_id": "mold_release_spray_box",
+      "surface_id": "mold_release_spray_box",
+      "condition_id": "baseline",
+      "object_name": "Mold Release Spray Box",
+      "image_path": "data/MatForceFinal/mold release spray box.jpeg",
+      "image_sha256": "10cd9349430ae72aac6bcf9805e3fa6cb6608ebd98650ed5522f9f6b31cf9a4f",
+      "mass_g": 156.15,
+      "roughness_index": 1123.76,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.2,
+      "model_recommended_gripper": "gecko",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Coated cardboard / paperboard box",
+              "visible_surface_condition": "Smooth, flat, clean printed carton surface",
+              "compatibility": "high",
+              "predicted_normal_force_n": 1.2,
+              "evidence_used": [
+                "Visual appearance of a relatively small, lightweight rectangular cardboard box (Mold Release Spray container)",
+                "Flat, smooth cardboard sidewalls providing high-compatibility contact for gecko-inspired dry adhesive pads",
+                "No authoritative mass, roughness, or contact measurements available"
+              ],
+              "calculation_summary": "F_normal = F_base_light_object - F_adhesion_bonus = 2.0 N - 0.8 N = 1.2 N",
+              "assumptions_and_uncertainty": [
+                "Object weight estimated visually to be under 200g",
+                "Cardboard surface is dry and free of powdery coatings that would foul dry-adhesive pads",
+                "Visual approximation introduces uncertainty regarding exact weight and friction coefficients"
+              ],
+              "reasoning_trace": "The object is a small retail spray can box with smooth, flat paperboard sidewalls, which offers excellent conditions for dry-adhesive pads to form high-integrity broad contact. Because gecko adhesion significantly assists lifting on smooth, flat surfaces, a relatively low normal force is required to maintain a secure grasp. We estimate 1.2 N based on visual scale and favorable surface compatibility.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "Coated cardboard / paperboard box",
+              "visible_surface_condition": "Smooth, flat, clean printed carton surface",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 2.2,
+              "evidence_used": [
+                "Visual appearance of a small rectangular cardboard box",
+                "High-friction silicone pads relying on normal force and friction rather than dry adhesion",
+                "No authoritative mass, roughness, or contact measurements available"
+              ],
+              "calculation_summary": "F_normal = F_base_light_object / friction_efficiency = 2.0 N / 0.9 = 2.2 N",
+              "assumptions_and_uncertainty": [
+                "Object weight estimated visually to be under 200g",
+                "Silicone pads provide reliable friction against the printed cardboard surface",
+                "Visual approximation introduces uncertainty regarding exact weight and friction coefficients"
+              ],
+              "reasoning_trace": "The silicone gripper relies primarily on normal force and frictional resistance to lift the object. Although the smooth cardboard box provides adequate contact, the absence of dry-adhesion benefits means a slightly higher normal force is required compared to the gecko gripper to overcome gravity securely. We estimate 2.2 N.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "gecko",
+          "model_comparison_evidence": [
+            "Object sidewalls are visibly flat, smooth, and clean, creating an ideal substrate for gecko-inspired dry-adhesive pads",
+            "Gecko adhesion exploits surface proximity to reduce the required stationary-finger normal force compared to purely frictional silicone gripping"
+          ],
+          "model_recommendation_summary": "Both grippers are fully capable of grasping the cardboard box. The gecko gripper is recommended because its dry-adhesive pads form superior broad contact on the smooth, flat carton surfaces, enabling a lower required normal force (1.2 N vs 2.2 N for silicone).",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+        "object_id": "mold_release_spray_box",
+        "surface_id": "mold_release_spray_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.2,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 0.42,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.78,
+      "absolute_error_gecko_n": 0.78,
+      "true_silicone_force_n": 0.886,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 1.314,
+      "absolute_error_silicone_n": 1.314
+    },
+    {
+      "object_id": "poker_box",
+      "surface_id": "poker_box",
+      "condition_id": "baseline",
+      "object_name": "Poker Box",
+      "image_path": "data/MatForceFinal/poker_box.jpg",
+      "image_sha256": "841d51dcb398cba9b5dad091c1ccd89eea54bbf85c5e99cd2fb4a41e763a93ee",
+      "mass_g": 457.69,
+      "roughness_index": 800.2,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.5,
+      "model_recommended_gripper": "gecko",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "cardboard",
+              "visible_surface_condition": "smooth, flat, dry box exterior",
+              "compatibility": "high",
+              "predicted_normal_force_n": 1.5,
+              "evidence_used": [
+                "Smooth, flat cardboard sidewalls visible on the poker chip box",
+                "Clean, dry surface condition supporting mushroom-tipped gecko adhesive pads",
+                "Box geometry allows broad parallel contact against the rigid pads"
+              ],
+              "calculation_summary": "Force = Base object weight scaling estimate * 0.5 (high gecko adhesion factor for clean smooth cardboard)",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass measurement is available; mass is visually estimated from box dimensions",
+                "Surface is assumed to be dry and free of coatings that degrade dry adhesion",
+                "Visual approximation of friction and adhesion coefficients introduces uncertainty"
+              ],
+              "reasoning_trace": "The poker chip box exhibits flat, smooth, clean cardboard sidewalls that are highly compatible with the gecko dry-adhesive pads. Because the gecko gripper benefits from high directional adhesion on flat, smooth surfaces, a lower normal force is required compared to purely frictional grippers. Based on visual scale estimation of the box, a moderate normal force of 1.5 N is sufficient to establish broad contact and lift the object reliably.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "cardboard",
+              "visible_surface_condition": "smooth, flat, dry box exterior",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 2.5,
+              "evidence_used": [
+                "Smooth cardboard box exterior",
+                "Rigid silicone gripping pads with high friction",
+                "Estimated moderate object weight from visual scale"
+              ],
+              "calculation_summary": "Force = Base object weight scaling estimate / silicone friction coefficient estimation",
+              "assumptions_and_uncertainty": [
+                "Mass is visually estimated without physical weighing",
+                "Silicone pad local compliance is assumed sufficient to grip the flat cardboard securely"
+              ],
+              "reasoning_trace": "The high-friction silicone pads rely primarily on normal force and friction to hold objects since they lack dry adhesion. On smooth cardboard, the silicone gripper maintains a secure hold, but because it lacks the high-traction adhesive assist of the gecko pads, a slightly higher normal force of 2.5 N is required to prevent slip during lifting.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "gecko",
+          "model_comparison_evidence": [
+            "Smooth, flat cardboard sidewalls favorable for dry adhesive pads",
+            "Gecko gripper requires lower normal force due to specialized dry adhesion on smooth surfaces",
+            "Silicone gripper requires higher normal force relying strictly on friction"
+          ],
+          "model_recommendation_summary": "The gecko gripper is recommended because the poker chip box provides flat, smooth, and clean cardboard surfaces that maximize the performance of mushroom-tipped dry-adhesive pads, allowing for a lower required pre-grasp normal force (1.5 N) compared to the silicone gripper (2.5 N).",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry paperboard contact surface with a smooth printed coating over a rigid fibrous substrate.",
+        "object_id": "poker_box",
+        "surface_id": "poker_box",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.5,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.5,
+      "pred_silicone_feasible": true,
+      "true_favored": "silicone",
+      "selection_correct": false,
+      "regret_n": 0.09399999999999986,
+      "true_gecko_force_n": 2.07,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.5699999999999998,
+      "absolute_error_gecko_n": 0.5699999999999998,
+      "true_silicone_force_n": 1.976,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 0.524,
+      "absolute_error_silicone_n": 0.524
+    },
+    {
+      "object_id": "red_bull",
+      "surface_id": "red_bull",
+      "condition_id": "baseline",
+      "object_name": "Red Bull",
+      "image_path": "data/MatForceFinal/red_bull.jpg",
+      "image_sha256": "ef4c637a55f99fc2954b047edaac63bab60338fc7a14a30b25198f96b59d32dd",
+      "mass_g": 332.86,
+      "roughness_index": 1121.62,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Smooth nonporous metal contact surface with a clean, dry, painted metallic finish and no visible moisture or loose debris.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.2,
+      "model_recommended_gripper": "gecko",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "aluminum",
+              "visible_surface_condition": "smooth and clean painted metal cylindrical surface",
+              "compatibility": "high",
+              "predicted_normal_force_n": 1.2,
+              "evidence_used": [
+                "Visual identification of an aluminum beverage can with smooth, clean, flat vertical sidewalls.",
+                "Gecko dry-adhesive pad compatibility with clean, smooth, nonporous surfaces."
+              ],
+              "calculation_summary": "Estimated base force of 1.2 N leveraging high dry-adhesion capacity on clean, smooth metal sidewalls.",
+              "assumptions_and_uncertainty": [
+                "Assumes flat parallel sidewall engagement with the rigid gecko pads.",
+                "Visual approximation without authoritative mass or friction measurements."
+              ],
+              "reasoning_trace": "The smooth and clean aluminum surface of the beverage can provides an ideal substrate for the gecko-inspired dry-adhesive pads. High surface compatibility allows for substantial adhesive support, minimizing the required normal clamping force to 1.2 N to lift the lightweight can.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "aluminum",
+              "visible_surface_condition": "smooth and clean painted metal cylindrical surface",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 2.5,
+              "evidence_used": [
+                "Visual identification of an aluminum beverage can.",
+                "High-friction silicone pad characteristics on smooth metal."
+              ],
+              "calculation_summary": "Estimated required normal force of 2.5 N relying purely on frictional and viscoelastic interaction without dry adhesion.",
+              "assumptions_and_uncertainty": [
+                "Assumes standard friction coefficient between silicone and painted aluminum.",
+                "Visual approximation of object weight and scale."
+              ],
+              "reasoning_trace": "The silicone gripper relies entirely on frictional resistance and normal force. Although the surface is smooth and clean, the lack of directional dry-adhesion means a higher normal force of 2.5 N is necessary to securely lift the can against gravity.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "gecko",
+          "model_comparison_evidence": [
+            "Surface material is smooth and clean aluminum, which maximizes gecko dry-adhesion performance.",
+            "Gecko adhesive pads achieve higher holding capacity with lower normal force compared to high-friction silicone on smooth, nonporous surfaces."
+          ],
+          "model_recommendation_summary": "The gecko gripper is recommended because the smooth, clean, nonporous cylindrical surface of the aluminum can provides optimal compatibility for dry adhesion, resulting in a lower required pre-grasp normal force (1.2 N) compared to the silicone gripper (2.5 N).",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Smooth nonporous metal contact surface with a clean, dry, painted metallic finish and no visible moisture or loose debris.",
+        "object_id": "red_bull",
+        "surface_id": "red_bull",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.5,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 1.746,
+      "true_gecko_feasible": true,
+      "error_gecko_n": -0.546,
+      "absolute_error_gecko_n": 0.546,
+      "true_silicone_force_n": 5.631,
+      "true_silicone_feasible": true,
+      "error_silicone_n": -3.1310000000000002,
+      "absolute_error_silicone_n": 3.1310000000000002
+    },
+    {
+      "object_id": "rough_tile",
+      "surface_id": "rough_tile",
+      "condition_id": "baseline",
+      "object_name": "Rough Tile",
+      "image_path": "data/MatForceFinal/rough_tile.jpg",
+      "image_sha256": "75c2b235a9adb7857d13db6611a0f5aaae21da37a6316b27702850c3fbe8c0e0",
+      "mass_g": 178.52,
+      "roughness_index": 1992.71,
+      "projected_contact_fraction": 0.5952380952,
+      "semantic_description": "Rigid ceramic substrate with a patterned decorative glazed finish and dry, clean surface condition.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 2.1,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 2.1,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "textured ceramic or terracotta tile piece with a patterned glazed surface",
+              "visible_surface_condition": "irregular relief with patterned grout lines and non-smooth micro-texture",
+              "compatibility": "low",
+              "predicted_normal_force_n": 5.2,
+              "evidence_used": [
+                "Object image showing a flat, irregular ceramic/terracotta tile shard",
+                "Textured and patterned surface with recessed grout-like lines",
+                "Gecko gripper embodiment description requiring flat, smooth, continuous contact for dry adhesion"
+              ],
+              "calculation_summary": "Estimated required force based on poor dry-adhesion compatibility due to surface texture and irregularities, falling back primarily to limited frictional support: F_normal = 5.2 N.",
+              "assumptions_and_uncertainty": [
+                "Mass and precise friction coefficients are unmeasured visual approximations.",
+                "Surface texture severely degrades gecko pad contact area and adhesion."
+              ],
+              "reasoning_trace": "The gecko gripper relies heavily on clean, smooth, flat surfaces for its mushroom-tipped adhesive pads. The visible object has a patterned, textured surface with considerable micro-roughness and relief, which drastically reduces the effective contact area for dry adhesives. Consequently, dry adhesion is weak, forcing the gripper to rely on limited frictional support and demanding a higher normal force to achieve a stable lift.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "textured ceramic or terracotta tile piece",
+              "visible_surface_condition": "ridged, textured pattern with good friction characteristics",
+              "compatibility": "high",
+              "predicted_normal_force_n": 2.1,
+              "evidence_used": [
+                "Object image showing a flat ceramic/terracotta shard",
+                "High-friction silicone pad description which excels on textured, irregular surfaces",
+                "Visible object size suggesting a lightweight piece"
+              ],
+              "calculation_summary": "Estimated required force utilizing high-friction silicone grip on a textured, relatively lightweight object: F_normal = 2.1 N.",
+              "assumptions_and_uncertainty": [
+                "Object mass is visually estimated to be small.",
+                "Frictional interaction with silicone is favorable despite surface texture."
+              ],
+              "reasoning_trace": "The silicone gripper uses high-friction pads and viscoelastic interaction, making it well-suited for textured or irregular surfaces like the ceramic shard shown. Because the object appears light and the silicone pad conforms locally to the surface texture to provide reliable frictional grip, a moderate, lower normal force is sufficient to lift the object securely.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "The target object has a textured and patterned surface finish that is unfavorable for gecko dry adhesives.",
+            "Silicone pads tolerate and leverage surface texture and roughness much better than rigid dry-adhesive pads."
+          ],
+          "model_recommendation_summary": "The silicone gripper is recommended because its high-friction pads are designed to handle textured and irregular surfaces effectively. In contrast, the gecko gripper's dry-adhesive pads suffer severe performance degradation on non-smooth or patterned surfaces, requiring a significantly higher normal force.",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Rigid ceramic substrate with a patterned decorative glazed finish and dry, clean surface condition.",
+        "object_id": "rough_tile",
+        "surface_id": "rough_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.1,
+      "pred_silicone_feasible": true,
+      "true_favored": "silicone",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 2.459,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 2.741,
+      "absolute_error_gecko_n": 2.741,
+      "true_silicone_force_n": 1.484,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 0.6160000000000001,
+      "absolute_error_silicone_n": 0.6160000000000001
+    },
+    {
+      "object_id": "small_book",
+      "surface_id": "small_book",
+      "condition_id": "baseline",
+      "object_name": "Small Book",
+      "image_path": "data/MatForceFinal/small_book.jpg",
+      "image_sha256": "62f5a0b4483b8c9ab4edf1686f4a58d751271084aa481e0238193415e751625c",
+      "mass_g": 118.4,
+      "roughness_index": 1532.23,
+      "projected_contact_fraction": 0.880952381,
+      "semantic_description": "Clean, dry leather contact surface with a textured embossed finish over a rigid substrate and no visible moisture or loose debris.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 2.2,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 2.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "Leather and wood with carved/embossed details",
+              "visible_surface_condition": "Textured and patterned with engravings, slightly non-uniform surface",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "Small bound box or book object featuring a wooden top panel with embossed leather borders and a clasped latch mechanism.",
+                "Visible surface has carved artwork and textured leather spine/side areas, presenting micro-irregularities that moderately degrade gecko dry-adhesive pad engagement.",
+                "Flat parallel sidewalls appear moderately present but textured bindings limit complete broad surface contact."
+              ],
+              "calculation_summary": "Force estimated by scaling from a baseline moderate-weight object (~0.3 kg) using a medium compatibility penalty for dry-adhesion on textured leather and wood: Force = 2.5 N + 1.0 N penalty = 3.5 N.",
+              "assumptions_and_uncertainty": [
+                "Assumed object weight is approximately 0.2 to 0.4 kg based on visual scale.",
+                "Visual assessment of leather texture and wood engraving depth involves high uncertainty regarding exact surface planarity.",
+                "No authoritative mass or roughness was supplied."
+              ],
+              "reasoning_trace": "The gecko gripper relies heavily on clean, smooth, flat surfaces for its mushroom-tipped dry-adhesive pads. The object's top and sides feature wood panels with embossed and carved leather framing, introducing texture and interruptions. While graspable, the adhesion is compromised, requiring a moderate normal force of 3.5 N to secure the lift through a combination of reduced adhesion and friction.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "Leather and wood with carved/embossed details",
+              "visible_surface_condition": "Textured and patterned with engravings, slightly non-uniform surface",
+              "compatibility": "high",
+              "predicted_normal_force_n": 2.2,
+              "evidence_used": [
+                "Small bound box or book object featuring a wooden top panel with embossed leather borders.",
+                "High-friction silicone pads conform well to the slightly textured leather and rigid wooden boundaries of the object.",
+                "Object size is relatively small, allowing good contact fraction with the 4.2-inch gripper pads."
+              ],
+              "calculation_summary": "Force estimated for a high-friction silicone pad on a moderately textured, small object (~0.3 kg): Force = Base friction requirement (approx 2.0 N) adjusted slightly for minor surface irregularities = 2.2 N.",
+              "assumptions_and_uncertainty": [
+                "Assumed object mass is light to moderate (~0.3 kg).",
+                "Exact coefficient of friction between silicone and the specific leather/wood finish is visually estimated.",
+                "No authoritative mass or roughness measurement was available."
+              ],
+              "reasoning_trace": "The silicone gripper is well-suited for textured or irregular surfaces like embossed leather and carved wood because its high-friction pads utilize normal force and viscoelastic interaction without requiring optical-grade smoothness. Given the small scale and manageable weight of the object, a moderate normal force of 2.2 N is sufficient to lift it reliably.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "Surface material consists of embossed leather and wood with carved patterns, which presents micro-roughness and interruptions.",
+            "Silicone grippers tolerate textured and patterned surfaces better than rigid gecko dry-adhesives, which require smooth, flat contact."
+          ],
+          "model_recommendation_summary": "The silicone gripper is recommended because its high-friction pads accommodate the textured leather and carved wooden surfaces of the object more effectively than the gecko dry-adhesive pads, which suffer degradation on non-smooth surfaces. Consequently, the silicone gripper requires a lower and more reliable normal force estimate (2.2 N vs 3.5 N).",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry leather contact surface with a textured embossed finish over a rigid substrate and no visible moisture or loose debris.",
+        "object_id": "small_book",
+        "surface_id": "small_book",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 3.5,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.2,
+      "pred_silicone_feasible": true,
+      "true_favored": "silicone",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 1.03,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 2.4699999999999998,
+      "absolute_error_gecko_n": 2.4699999999999998,
+      "true_silicone_force_n": 0.986,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 1.2140000000000002,
+      "absolute_error_silicone_n": 1.2140000000000002
+    },
+    {
+      "object_id": "soap_bottle",
+      "surface_id": "soap_bottle",
+      "condition_id": "baseline",
+      "object_name": "Soap Bottle",
+      "image_path": "data/MatForceFinal/soap_bottle.jpg",
+      "image_sha256": "c14f003defb99d065b60f161664f330c7f613b426d45fccc484ce81a5916de3c",
+      "mass_g": 236.11,
+      "roughness_index": 736.99,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry rigid plastic contact surface with a smooth semi-gloss finish and no visible contamination.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "gecko",
+      "predicted_normal_force_n": 1.2,
+      "model_recommended_gripper": "gecko",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "gecko",
+          "predicted_normal_force_n": 1.2,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "smooth plastic bottle",
+              "visible_surface_condition": "clean and flat sidewalls",
+              "compatibility": "high",
+              "predicted_normal_force_n": 1.2,
+              "evidence_used": [
+                "Plastic bottle with smooth, flat sidewalls suitable for gecko pads",
+                "Moderate object size suggesting low weight"
+              ],
+              "calculation_summary": "Estimated force = base low adhesion force of 1.2 N given favorable flat and smooth plastic sidewalls.",
+              "assumptions_and_uncertainty": [
+                "Exact weight and mass distribution are unmeasured and estimated visually",
+                "Surface cleanliness is assumed adequate for dry adhesion"
+              ],
+              "reasoning_trace": "The gecko gripper leverages directional dry adhesion on clean, smooth, flat surfaces. The visible plastic bottle has relatively flat sidewalls that allow good contact with the rigid gecko pads, resulting in a low required normal force of 1.2 N.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "smooth plastic bottle",
+              "visible_surface_condition": "clean and rigid",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 2.5,
+              "evidence_used": [
+                "Smooth plastic bottle surface",
+                "Rigid parallel-jaw silicone pads requiring normal force and friction"
+              ],
+              "calculation_summary": "Estimated force = 2.5 N based on standard friction requirements for lifting a smooth plastic object with non-adhesive high-friction silicone.",
+              "assumptions_and_uncertainty": [
+                "Coefficient of friction between silicone and plastic is typical",
+                "Mass is visually estimated without a scale measurement"
+              ],
+              "reasoning_trace": "The silicone gripper relies primarily on normal force and friction to lift objects. Since the plastic surface is smooth and non-adhesive, a higher normal force of 2.5 N is required compared to the gecko gripper to prevent slip.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "gecko",
+          "model_comparison_evidence": [
+            "The bottle features smooth, flat sidewalls providing favorable conditions for gecko dry adhesion.",
+            "Gecko adhesion reduces the required normal force compared to pure friction-based silicone gripping."
+          ],
+          "model_recommendation_summary": "The gecko gripper is recommended because the smooth and flat sidewalls of the plastic bottle provide high compatibility for dry-adhesive pads, requiring a lower normal force (1.2 N) than the silicone gripper (2.5 N).",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry rigid plastic contact surface with a smooth semi-gloss finish and no visible contamination.",
+        "object_id": "soap_bottle",
+        "surface_id": "soap_bottle",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 1.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.5,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": true,
+      "regret_n": 0.0,
+      "true_gecko_force_n": 0.303,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 0.897,
+      "absolute_error_gecko_n": 0.897,
+      "true_silicone_force_n": 3.166,
+      "true_silicone_feasible": true,
+      "error_silicone_n": -0.6659999999999999,
+      "absolute_error_silicone_n": 0.6659999999999999
+    },
+    {
+      "object_id": "toilet_paper",
+      "surface_id": "toilet_paper",
+      "condition_id": "baseline",
+      "object_name": "Toilet Paper",
+      "image_path": "data/MatForceFinal/Toilet Paper.jpg",
+      "image_sha256": "ac0721d28669fb55d9f64f5c551cb8f7a078e248a55b164b01164308f55055ef",
+      "mass_g": 117.92,
+      "roughness_index": 1068.17,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry soft paper tissue contact surface with a compliant textured fibrous finish and no visible coating or contamination.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 2.5,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 2.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "paper tissue / porous cellulose",
+              "visible_surface_condition": "soft, textured, porous, slightly fibrous outer wrapper",
+              "compatibility": "low",
+              "predicted_normal_force_n": 5.5,
+              "evidence_used": [
+                "Visual identification of a standard toilet paper roll with a textured, porous paper surface.",
+                "Gecko embodiment constraint requiring clean, smooth, nonporous surfaces for optimal dry adhesion.",
+                "Porous and textured surface degrades gecko dry adhesion performance, requiring higher normal force to maintain limited frictional support."
+              ],
+              "calculation_summary": "Estimated base force of 2.0 N scaled up due to unfavorable porous and textured surface condition causing weak gecko adhesion: Force = 2.0 N * 2.75 = 5.5 N.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass or roughness measurement is available; visual inspection is approximate.",
+                "Assumes the object can be compressed moderately without failing catastrophically.",
+                "High uncertainty due to zero-shot vision-only estimation on a soft, deformable object."
+              ],
+              "reasoning_trace": "The gecko gripper relies heavily on smooth, nonporous, clean surfaces for its mushroom-tipped adhesive pads. The toilet paper roll presents a soft, porous, and textured paper surface, which severely degrades dry adhesion. Consequently, the gecko pad must rely more heavily on limited frictional support, requiring a moderately high normal force of 5.5 N to secure and lift the object reliably within the 0 to 8 N constraint.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "paper tissue / cellulose",
+              "visible_surface_condition": "soft, textured, porous, fibrous",
+              "compatibility": "high",
+              "predicted_normal_force_n": 2.5,
+              "evidence_used": [
+                "Visual identification of a toilet paper roll with a soft, textured cellulose exterior.",
+                "Silicone embodiment description noting effectiveness on rough, textured, or irregular surfaces via friction and viscoelastic interaction.",
+                "Object is light in scale, reducing required gripping force for high-friction elastomer pads."
+              ],
+              "calculation_summary": "Estimated required baseline force for a lightweight, compliant object with high-friction silicone pads: Force = 2.5 N.",
+              "assumptions_and_uncertainty": [
+                "No authoritative mass measurement is available; weight is inferred visually to be light.",
+                "Assumes normal force is sufficient to engage the high-friction silicone pad without crushing the hollow core excessively.",
+                "Uncertainty remains regarding exact object weight and local compliance."
+              ],
+              "reasoning_trace": "The silicone gripper utilizes high-friction elastomer pads that perform well on rough, textured, and fibrous surfaces like toilet paper. Because the silicone pad can conform locally and engage the textured cellulose fibers effectively, holding capacity is achieved reliably with lower normal force. A modest force of 2.5 N is estimated to lift the lightweight roll securely without excessive deformation.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "Surface material is a soft, porous, textured paper tissue.",
+            "Gecko dry adhesives degrade significantly on porous, textured, and fibrous surfaces, requiring higher normal force (5.5 N).",
+            "Silicone high-friction pads thrive on textured and porous surfaces through friction and local interface compliance, requiring lower normal force (2.5 N)."
+          ],
+          "model_recommendation_summary": "The silicone gripper is recommended because its high-friction elastomeric pads are well-suited for gripping soft, porous, and textured paper surfaces like a toilet paper roll. In contrast, the gecko gripper's dry-adhesive pads experience performance degradation on porous and textured materials, necessitating a higher normal force and making the silicone gripper the more efficient and robust choice for this object.",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry soft paper tissue contact surface with a compliant textured fibrous finish and no visible coating or contamination.",
+        "object_id": "toilet_paper",
+        "surface_id": "toilet_paper",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.5,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 2.5,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": false,
+      "regret_n": 2.256,
+      "true_gecko_force_n": 1.112,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 4.388,
+      "absolute_error_gecko_n": 4.388,
+      "true_silicone_force_n": 3.368,
+      "true_silicone_feasible": true,
+      "error_silicone_n": -0.8679999999999999,
+      "absolute_error_silicone_n": 0.8679999999999999
+    },
+    {
+      "object_id": "very_smooth_tile",
+      "surface_id": "very_smooth_tile",
+      "condition_id": "baseline",
+      "object_name": "Very Smooth Tile",
+      "image_path": "data/MatForceFinal/very_smooth_tile.jpg",
+      "image_sha256": "620a7195ae010d4041096b222cca186ec509443e1c19b155284b64ae070990bf",
+      "mass_g": 178.52,
+      "roughness_index": 730.45,
+      "projected_contact_fraction": 1.0,
+      "semantic_description": "Clean, dry ceramic contact surface with a glazed finish and smooth nonporous texture over a rigid substrate.",
+      "active_grippers": [
+        "gecko",
+        "silicone"
+      ],
+      "generation_mode": "joint",
+      "predicted_gripper": "silicone",
+      "predicted_normal_force_n": 3.5,
+      "model_recommended_gripper": "silicone",
+      "recommendation_agrees_with_selector": true,
+      "pipeline_result": {
+        "experiment_id": "e1",
+        "experiment_method": "vision_vlm",
+        "experiment_definition_version": 12,
+        "selection": {
+          "desired_gripper": "silicone",
+          "predicted_normal_force_n": 3.5,
+          "candidate_predictions": {
+            "gecko": {
+              "candidate_gripper": "gecko",
+              "visible_surface_material": "ceramic or tile shard with textured glaze",
+              "visible_surface_condition": "irregular geometry, slightly rough and textured surface",
+              "compatibility": "low",
+              "predicted_normal_force_n": 5.2,
+              "evidence_used": [
+                "irregular flat shard geometry",
+                "textured ceramic tile surface",
+                "limited parallel sidewalls for gecko pad attachment"
+              ],
+              "calculation_summary": "Force estimated based on compromised gecko dry adhesion due to surface texture and irregular shape, scaling up towards moderate-high force to compensate for weak directional contact.",
+              "assumptions_and_uncertainty": [
+                "Zero-shot visual estimation without authoritative mass or roughness measurement",
+                "Assumes object can be grasped despite suboptimal geometry"
+              ],
+              "reasoning_trace": "The gecko gripper relies heavily on clean, smooth, flat surfaces for broad dry adhesive contact. The visible shard features an irregular, textured surface and non-parallel sides, which significantly degrades gecko performance and requires a higher normal force to maintain a stable grip.",
+              "feasible": true
+            },
+            "silicone": {
+              "candidate_gripper": "silicone",
+              "visible_surface_material": "ceramic or tile shard",
+              "visible_surface_condition": "irregular geometry, slightly textured",
+              "compatibility": "medium",
+              "predicted_normal_force_n": 3.5,
+              "evidence_used": [
+                "high-friction silicone pad compatibility with textured surfaces",
+                "flat profile of the shard suitable for parallel jaw clamping"
+              ],
+              "calculation_summary": "Force estimated by leveraging high-friction silicone interface properties on a moderately textured ceramic material.",
+              "assumptions_and_uncertainty": [
+                "Visual approximation of weight and contact area",
+                "Assumes rigid backing makes adequate contact along the shard edge"
+              ],
+              "reasoning_trace": "Silicone pads tolerate surface texture better than gecko pads because holding capacity arises from friction and local viscoelastic deformation. Consequently, a lower normal force is required compared to the gecko gripper.",
+              "feasible": true
+            }
+          },
+          "reasoning_trace": "lowest feasible predicted stationary-finger force",
+          "prediction_tie": false,
+          "tie_break_reason": null,
+          "model_recommended_gripper": "silicone",
+          "model_comparison_evidence": [
+            "The shard's textured and irregular surface reduces dry adhesion effectiveness for the gecko gripper.",
+            "The silicone gripper handles texture and irregular geometries better through frictional and viscoelastic interactions, requiring less normal force."
+          ],
+          "model_recommendation_summary": "The silicone gripper is recommended because its high-friction pads are better suited for the textured and irregular surface of the ceramic shard, requiring a lower estimated normal force than the gecko gripper.",
+          "recommendation_agrees_with_selector": true
+        },
+        "semantic_description": "Clean, dry ceramic contact surface with a glazed finish and smooth nonporous texture over a rigid substrate.",
+        "object_id": "very_smooth_tile",
+        "surface_id": "very_smooth_tile",
+        "condition_id": "baseline",
+        "retrieval_payload_version": 3,
+        "retrieved_objects": [],
+        "retrieved_surfaces": [],
+        "physics_estimates": {},
+        "cache_stats": {
+          "enabled": true,
+          "generation_bypassed": false,
+          "hits": 0,
+          "misses": 1,
+          "writes": 1,
+          "read_errors": 0,
+          "legacy_hits": 0,
+          "generation": {
+            "hits": 0,
+            "misses": 1,
+            "writes": 1,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "embeddings": {
+            "hits": 0,
+            "misses": 0,
+            "writes": 0,
+            "read_errors": 0,
+            "legacy_hits": 0
+          },
+          "backend_attempts": {
+            "generation": 1,
+            "embedding": 0
+          }
+        },
+        "active_grippers": [
+          "gecko",
+          "silicone"
+        ],
+        "generation_mode": "joint",
+        "retrieval_mode": null,
+        "ranking_features": [],
+        "visible_condition_fields": [],
+        "condition_policy": null,
+        "effective_inputs": [
+          "object_image",
+          "gripper_context"
+        ]
+      },
+      "pred_gecko_force_n": 5.2,
+      "pred_gecko_feasible": true,
+      "pred_silicone_force_n": 3.5,
+      "pred_silicone_feasible": true,
+      "true_favored": "gecko",
+      "selection_correct": false,
+      "regret_n": 1.675,
+      "true_gecko_force_n": 0.25,
+      "true_gecko_feasible": true,
+      "error_gecko_n": 4.95,
+      "absolute_error_gecko_n": 4.95,
+      "true_silicone_force_n": 1.925,
+      "true_silicone_feasible": true,
+      "error_silicone_n": 1.575,
+      "absolute_error_silicone_n": 1.575
+    }
+  ]
+}

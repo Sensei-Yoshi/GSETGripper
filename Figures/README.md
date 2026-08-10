@@ -1,5 +1,20 @@
 # Figures
 
+## Gecko E3/E4 paper bar chart
+
+Run from the GSET workspace root:
+
+```bash
+env/bin/python GSETGripper/Figures/full_suite/generate_gecko_e3_e4_paper_figure.py
+```
+
+This regenerates `gecko_e3_e4_force_by_object.{png,pdf,svg}` plus the exact
+plotted values and artifact provenance in `gecko_e3_e4_force_by_object.csv`.
+The displayed E3 series is the newest saved Gecko source-E4 run selected for
+this paper artifact. The displayed E4 series is the best saved Gecko source-E5
+run (MAE 0.205 N). Both are checked against the same frozen 15-object truth
+snapshot before rendering.
+
 ## MatForceFinal regression figures
 
 Run from the GSET workspace root:

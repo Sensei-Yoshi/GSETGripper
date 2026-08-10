@@ -1,0 +1,1264 @@
+{
+  "schema_version": 11,
+  "dataset_id": "MatForceFinal",
+  "run_id": "20260808T223453617987Z_e5_chinese_bible",
+  "created_at": "2026-08-08T22:34:53.617987+00:00",
+  "source_sha256": "8d920f54af6c8b636d5bbd35ee3efdda656342cc9ec84a503ad7d0bf366c27bf",
+  "evaluation_protocol": "leave-one-object-out",
+  "experiment": "e5",
+  "experiment_method": "hybrid_retrieval_vlm",
+  "experiment_definition_version": 14,
+  "experiment_definition": {
+    "method": "hybrid_retrieval_vlm",
+    "prompt": "e5"
+  },
+  "prediction_prompts": {
+    "system": "You are a robotics model for isolated per-gripper pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. Return your best continuous,\nnonnegative estimate without imposing an 8 N analytical ceiling; measured experiences\nand benchmark predictions above 8 N remain valid.\n\nAVAILABLE GRIPPER\nThe request supplies one fixed written description for the requested gripper embodiment.\nPredict only that gripper and apply its context consistently.\n\nMATERIAL REASONING\nUse the supplied embodiment description to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, continuous roughness index, and projected contact fraction are authoritative. Use the roughness index with its supplied metric definition and do not invent an unreported measurement.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ngripper.\nConditions nested under one retrieved surface are repeated experiments on the same physical object, not independent neighbors. Use the supplied comparison_to_baseline metadata to identify exactly which measured factors changed. Do not blindly average sibling-condition forces. Prefer the condition most comparable to the query. A one-field change may support a directional within-object relationship; when multiple fields changed, treat their effects jointly and do not attribute the force difference to one factor alone.  Do not infer a universal contact coefficient from the supplied condition sweeps.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used. Greater projected contact by itself results in a higher required grasp force. \n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For the requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. Do not compare grippers, recommend a gripper, or infer anything about an unrequested gripper.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+    "instruction_key": "e5",
+    "instruction": "E5 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, continuous roughness index, and projected contact fraction, plus one object list ranked using semantic, mass, and continuous-roughness similarity only.\nProjected contact is intentionally excluded from cross-object surface ranking. It is supplied as query evidence and within-surface condition evidence only. Treat projected contact fraction as a dimensionless contact proxy, not literal physical area. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nReason in two explicit stages and show both in your trace.\nSTAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at full, optimal contact, anchoring only to retrieved BASELINE conditions and their semantic material, mass, and continuous roughness. Projected contact fraction is confounded across different objects (a low-contact neighbor may need low force and a full-contact neighbor may need high force), so it was deliberately kept out of ranking: do NOT use the query contact fraction to pick, weight, match, or discount cross-object neighbors, and do NOT prefer a neighbor because its contact fraction resembles the query. Roughness and material remain the dominant drivers of this baseline; do not let contact override them. Prefer the baselines that bracket the query by mass and align on roughness and material, and do not dilute the estimate by averaging in poorly matched heavier or lighter neighbors.\nSTAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for the query contact fraction using ONLY within-surface controlled variants via comparison_to_baseline. Each variant reports force_deltas: the signed change in a gripper's force from that surface's own baseline to the variant. Apply those as relative adjustments scaled to the query; never import a variant's absolute force as a cross-object anchor, and never treat variants as separate neighbors or average their absolute forces. The contact effect is monotonic non-decreasing as contact falls: reducing contact never lowers the required force below the Stage 1 baseline, and a query contact fraction at or near 1.0 warrants no upward contact adjustment. Remember that as roughness increases, the impact of surface area on the force applied to grasp the object decreases (thus the impact of surface area increases on smoother objects).  \n",
+    "target_instruction_key": "single",
+    "target_instruction": "SINGLE-GRIPPER OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nany other gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n",
+    "request_strategy": "isolated_per_gripper"
+  },
+  "prompt_context": {
+    "bundle_file": "prompts.yaml",
+    "bundle_sha256": "a5c2e52a0085332a884805533570e4913a1474954068323c16828c3bd9d3a0a7",
+    "experiment_instructions": {
+      "e1": "E1 ZERO-SHOT VISION-ONLY CONDITION.\nFrom the object image and requested gripper embodiment context, estimate the minimum\nstationary-finger normal force for the requested gripper. No authoritative mass,\nroughness, projected contact measurement, physics estimate, or retrieved experience\nis available. Reason from visible scale, material, condition, and geometry and state\nuncertainty because those judgments are necessarily rough visual approximations.\nDo not invent physical constants or claim to run calibrated physics.\n",
+      "e2": "E2 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.\nUse the object image, fixed gripper embodiment context, and the ranked semantic\nexperience list to predict the requested force. Neighbors were selected only by cosine\nsimilarity between semantic contact-region descriptions and provide outcomes for\nthe requested gripper. No authoritative query or neighbor mass, roughness, projected\ncontact, hybrid physical score, or physics estimate is available. Do not imply that\nany omitted sensor value was measured or used.",
+      "e3": "E3 SEMANTIC AND MASS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, and one object list ranked using semantic similarity and mass only to estimate the requested force. Roughness and projected contact are intentionally withheld and were not used for ranking; do not infer or claim access to either.\nExplain how the retrieved outcomes and mass similarity support the estimate. The supplied retrieval weights describe neighbor ranking, not a force equation.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E3; therefore any included variant changes mass and no hidden roughness or projected-contact measurement.\nNo calibrated physics estimate is available; do not invent one.\n",
+      "e4": "E4 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass and continuous roughness index, and one object list ranked using semantic, mass, and continuous-roughness similarity. Projected contact is intentionally withheld and was not used for ranking; do not infer or claim access to it.\nExplain how retrieved outcomes plus mass and roughness differences support the estimate. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E4. Projected-contact-only and mixed visible-plus-hidden-contact variants are excluded; never infer contact from the remaining conditions.\n",
+      "e5": "E5 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, continuous roughness index, and projected contact fraction, plus one object list ranked using semantic, mass, and continuous-roughness similarity only.\nProjected contact is intentionally excluded from cross-object surface ranking. It is supplied as query evidence and within-surface condition evidence only. Treat projected contact fraction as a dimensionless contact proxy, not literal physical area. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nReason in two explicit stages and show both in your trace.\nSTAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at full, optimal contact, anchoring only to retrieved BASELINE conditions and their semantic material, mass, and continuous roughness. Projected contact fraction is confounded across different objects (a low-contact neighbor may need low force and a full-contact neighbor may need high force), so it was deliberately kept out of ranking: do NOT use the query contact fraction to pick, weight, match, or discount cross-object neighbors, and do NOT prefer a neighbor because its contact fraction resembles the query. Roughness and material remain the dominant drivers of this baseline; do not let contact override them. Prefer the baselines that bracket the query by mass and align on roughness and material, and do not dilute the estimate by averaging in poorly matched heavier or lighter neighbors.\nSTAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for the query contact fraction using ONLY within-surface controlled variants via comparison_to_baseline. Each variant reports force_deltas: the signed change in a gripper's force from that surface's own baseline to the variant. Apply those as relative adjustments scaled to the query; never import a variant's absolute force as a cross-object anchor, and never treat variants as separate neighbors or average their absolute forces. The contact effect is monotonic non-decreasing as contact falls: reducing contact never lowers the required force below the Stage 1 baseline, and a query contact fraction at or near 1.0 warrants no upward contact adjustment. Remember that as roughness increases, the impact of surface area on the force applied to grasp the object decreases (thus the impact of surface area increases on smoother objects).  \n"
+    },
+    "target_instructions": {
+      "single": "SINGLE-GRIPPER OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nany other gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n"
+    },
+    "prediction": {
+      "system": "You are a robotics model for isolated per-gripper pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. Return your best continuous,\nnonnegative estimate without imposing an 8 N analytical ceiling; measured experiences\nand benchmark predictions above 8 N remain valid.\n\nAVAILABLE GRIPPER\nThe request supplies one fixed written description for the requested gripper embodiment.\nPredict only that gripper and apply its context consistently.\n\nMATERIAL REASONING\nUse the supplied embodiment description to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, continuous roughness index, and projected contact fraction are authoritative. Use the roughness index with its supplied metric definition and do not invent an unreported measurement.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ngripper.\nConditions nested under one retrieved surface are repeated experiments on the same physical object, not independent neighbors. Use the supplied comparison_to_baseline metadata to identify exactly which measured factors changed. Do not blindly average sibling-condition forces. Prefer the condition most comparable to the query. A one-field change may support a directional within-object relationship; when multiple fields changed, treat their effects jointly and do not attribute the force difference to one factor alone.  Do not infer a universal contact coefficient from the supplied condition sweeps.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used. Greater projected contact by itself results in a higher required grasp force. \n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For the requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. Do not compare grippers, recommend a gripper, or infer anything about an unrequested gripper.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+      "instruction_key": "e5",
+      "instruction": "E5 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, continuous roughness index, and projected contact fraction, plus one object list ranked using semantic, mass, and continuous-roughness similarity only.\nProjected contact is intentionally excluded from cross-object surface ranking. It is supplied as query evidence and within-surface condition evidence only. Treat projected contact fraction as a dimensionless contact proxy, not literal physical area. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nReason in two explicit stages and show both in your trace.\nSTAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at full, optimal contact, anchoring only to retrieved BASELINE conditions and their semantic material, mass, and continuous roughness. Projected contact fraction is confounded across different objects (a low-contact neighbor may need low force and a full-contact neighbor may need high force), so it was deliberately kept out of ranking: do NOT use the query contact fraction to pick, weight, match, or discount cross-object neighbors, and do NOT prefer a neighbor because its contact fraction resembles the query. Roughness and material remain the dominant drivers of this baseline; do not let contact override them. Prefer the baselines that bracket the query by mass and align on roughness and material, and do not dilute the estimate by averaging in poorly matched heavier or lighter neighbors.\nSTAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for the query contact fraction using ONLY within-surface controlled variants via comparison_to_baseline. Each variant reports force_deltas: the signed change in a gripper's force from that surface's own baseline to the variant. Apply those as relative adjustments scaled to the query; never import a variant's absolute force as a cross-object anchor, and never treat variants as separate neighbors or average their absolute forces. The contact effect is monotonic non-decreasing as contact falls: reducing contact never lowers the required force below the Stage 1 baseline, and a query contact fraction at or near 1.0 warrants no upward contact adjustment. Remember that as roughness increases, the impact of surface area on the force applied to grasp the object decreases (thus the impact of surface area increases on smoother objects).  \n",
+      "target_instruction_key": "single",
+      "target_instruction": "SINGLE-GRIPPER OUTPUT CONDITION.\nPredict only the requested gripper's minimum force and feasibility. Do not estimate\nany other gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n",
+      "request_strategy": "isolated_per_gripper"
+    },
+    "descriptor": {
+      "system": "You create material-interface records for a robotic grasp-experience retrieval\nsystem.\n\nThe photographed object surface is deliberately positioned so that the visible\nprimary surface is the exact surface contacted by the gripper pads. Treat this\ndataset convention as authoritative and analyze only visible evidence from that\nsurface. Do not infer a different grasp pose or contact region.\n\nThe retrieval_description will be converted into a text embedding and used to\nretrieve surfaces with similar pad-to-material interfaces. Keep it concise and\ndiscriminating.\n\nDescribe only properties of the material that actually touches the pads: the\nsubstrate; any coating, label, wrapper, sleeve, or finish covering it; relevant\nvisible texture, porosity, or apparent compliance; and visible condition such as\nclean, dry, dusty, wet, oily, worn, or unknown. If the material, coating, or\ncondition is ambiguous, state that uncertainty rather than inventing it.\n\nDo not mention object identity, branding, color, size, shape, pose, grasp\norientation, curvature, contact region, local geometry, edges, openings, or overall\nsurface area. Do not recommend a gripper, predict force, infer a force label, or\nrestate measured mass, measured roughness index, or projected contact fraction.\n",
+      "instruction": "Inspect the photographed pad-contact surface and return the requested structured\nJSON with:\n- the material actually touching the pads, distinguishing the substrate from any\n  label, wrapper, coating, sleeve, finish, or exposed contents;\n- the visible material and surface condition;\n- whether the material properties are clearly visible;\n- uncertainty limited to material, coating, finish, or condition identification;\n- a single concise retrieval_description sentence containing only the most\n  discriminating pad-to-material interface properties.\n\nUse this retrieval_description format:\n\"[Contact material or substrate] with [coating or finish if present] and [visible\nmaterial condition or interface property].\"\n\nGood retrieval_description examples:\n1. \"Clean, dry glass contact surface with a smooth nonporous finish and no visible\n   coating or contamination.\"\n2. \"Dry woven textile contact surface with a compliant fibrous texture and no\n   visible moisture or loose debris.\"\n3. \"Clean, dry paperboard contact surface with a thin matte printed coating over a\n   rigid fibrous substrate.\"\n\nDo not mention the object name or type, branding, color, shape, size, curvature,\npose, grasp orientation, contact region, local geometry, edges, openings, contact\narea, mass, measured roughness, or projected contact fraction. Do not choose gecko\nor silicone and do not estimate force. Return only JSON matching the supplied\nschema.\n"
+    },
+    "embodiments": {
+      "gecko": {
+        "description": "Parallel-jaw gripper with two opposing, rigid fingers. One finger is stationary, while the other translates laterally toward it to close around an object positioned between them. Each finger carries an inward-facing, mushroom-tipped gecko-inspired dry-adhesive pad of length 4.2 inches mounted on a rigid backing. The fingers and adhesive backings remain rigid during grasping and do not conform to the object. Therefore, the maximum adhesion requires the object\u2019s opposing sidewalls to be sufficiently flat, parallel, and aligned with the pads so that broad contact can form. Generally, the greater the adhesion, the lower the grasp force required to pick up the object. Dry adhesion performs best on clean, dry, smooth, nonporous surfaces and degrades with roughness, porosity, contamination, moisture, and loose coatings. On objects that are incompatible with dry adhesion, limited frictional support still applies; thus, the gecko-adhesive-based gripper can technically still grasp the objects; however, gecko should be fully avoided for greasy, dusty, and sharp objects."
+      },
+      "silicone": {
+        "description": "Parallel-jaw gripper with two opposing, rigid fingers. One finger is stationary, while the other translates laterally toward it to close around an object positioned between them. Each finger carries an inward-facing, non-adhesive, high-friction silicone pad of 4.2 inches in length mounted on a rigid backing. The fingers and backing do not flex or conform to the object, although the silicone surface may deform locally at the contact interface. Holding capacity arises mainly from normal force, friction, and the silicone pad\u2019s viscoelastic interaction with the surface. The silicone pads are effective on rough, irregular, or interrupted surfaces, but performance still decreases when the contact area is small, the object is highly curved or misaligned, or the surface is wet, oily, or contaminated. Overall, as roughness increases, the necessary normal force to grasp the object decreases."
+      }
+    }
+  },
+  "backend": {
+    "force": "gemini_isolated_per_gripper_generation",
+    "semantic_embedding": "gemini-embedding-2-preview"
+  },
+  "models": {
+    "vlm": "gemini-flash-lite-latest",
+    "embedding": "gemini-embedding-2-preview",
+    "embedding_dim": 1536
+  },
+  "inputs": {
+    "use_roughness": true,
+    "use_projected_contact": true
+  },
+  "roughness_measurement": {
+    "metric_name": "high_frequency_scattering_index",
+    "units": "unitless_index",
+    "higher_is_rougher": true,
+    "characteristic_scale": 500.0
+  },
+  "active_grippers": [
+    "gecko",
+    "silicone"
+  ],
+  "generation_mode": "isolated_per_gripper",
+  "retrieval_config": {
+    "k": 5,
+    "conditions_per_surface": 3,
+    "weights": {
+      "semantic": 0.45,
+      "mass": 0.3,
+      "roughness": 0.2
+    },
+    "sigma_mass": 0.7,
+    "embedding": {
+      "model": "gemini-embedding-2-preview",
+      "dim": 1536
+    }
+  },
+  "query": {
+    "object_id": "chinese_bible",
+    "surface_id": "chinese_bible",
+    "condition_id": "baseline",
+    "source_object_id": "chinese_bible",
+    "object_name": "Chinese bible",
+    "mass_g": 1270.0,
+    "roughness_index": 1620.1,
+    "projected_contact_fraction": 1.0,
+    "semantic_description": "Clean, dry synthetic leather contact surface with a textured grain finish and no visible moisture or loose debris.",
+    "original_image_path": "data/MatForceFinal/objects/chinese_bible/image.jpg",
+    "image_artifact_path": "data/MatForceFinal/run_images/e8e1dadaeccde8f4887b5f0332cba1d4bb29c7712f5d7fa123eabaf20c38d825.png",
+    "image_sha256": "e8e1dadaeccde8f4887b5f0332cba1d4bb29c7712f5d7fa123eabaf20c38d825"
+  },
+  "counterfactual": false,
+  "truth": {
+    "true_gecko_force_n": 5.6,
+    "true_silicone_force_n": 5.5,
+    "true_selection": "silicone",
+    "object_id": "chinese_bible",
+    "surface_id": "chinese_bible",
+    "condition_id": "baseline",
+    "active_grippers": [
+      "gecko",
+      "silicone"
+    ],
+    "gecko_feasible": true,
+    "silicone_feasible": true
+  },
+  "result": {
+    "experiment_id": "e5",
+    "experiment_method": "hybrid_retrieval_vlm",
+    "experiment_definition_version": 14,
+    "selection": {
+      "desired_gripper": "gecko",
+      "predicted_normal_force_n": 7.55,
+      "candidate_predictions": {
+        "gecko": {
+          "visible_surface_material": "Synthetic leather contact surface with a textured grain finish",
+          "visible_surface_condition": "Clean, dry, and free of visible moisture or loose debris",
+          "compatibility": "high",
+          "feasible": true,
+          "predicted_normal_force_n": 7.55,
+          "evidence_used": [
+            "Query object mass: 1270.0 g",
+            "Query roughness index: 1620.1",
+            "Query projected contact fraction: 1.0",
+            "Retrieved baseline objects (wallet_2, wallet_1, headphones_case, smooth_screw_box, speaker)",
+            "Retrieved speaker controlled variants (speaker baseline force 3.8 N)"
+          ],
+          "calculation_summary": "STAGE 1 - FULL-CONTACT BASELINE: Examining retrieved baseline objects matching the synthetic leather/textile semantic category and roughness range (approx 1600). The speaker baseline (mass 560.0 g, roughness 1951.2) requires 3.8 N. Scaling for the query mass of 1270.0 g relative to the closest heavy baseline (speaker at 560.0 g and smooth_screw_box at 819.27 g), we establish a baseline force of approximately 7.55 N. STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT: The query projected contact fraction is 1.0 (full contact), requiring no upward contact adjustment (delta = 0.0 N). Final predicted force = 7.55 + 0.0 = 7.55 N.",
+          "assumptions_and_uncertainty": [
+            "Assumes the parallel-jaw gecko gripper can maintain full flat-pad engagement matching the 1.0 projected contact fraction.",
+            "Assumes monotonic scaling behavior from retrieved object force baselines to the heavier query object mass.",
+            "Uncertainty exists due to the query mass (1270.0 g) being moderately higher than the heaviest retrieved baseline object (819.27 g)."
+          ],
+          "reasoning_trace": "STAGE 1 - FULL-CONTACT BASELINE: We identify relevant retrieved objects matching the clean dry texture and high roughness index around 1600 (wallet_2, wallet_1, headphones_case, speaker). Among these, the speaker has a comparable roughness (1951.2) and a baseline force of 3.8 N at 560.0 g. Accounting for the higher query mass (1270.0 g) versus the heavier retrieved objects in the set, the proportional baseline force scales to 7.55 N. STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT: The query projected contact fraction is specified as 1.0. Per protocol, a contact fraction of 1.0 warrants no upward adjustment since full contact eliminates any contact-deficiency penalty. Combining Stage 1 and Stage 2 yields a final predicted normal force of 7.55 N. The grip is feasible because the surface is clean, dry synthetic leather compatible with gecko-inspired dry adhesion.",
+          "candidate_gripper": "gecko"
+        },
+        "silicone": {
+          "visible_surface_material": "Clean, dry synthetic leather contact surface with a textured grain finish",
+          "visible_surface_condition": "Clean, dry, with no visible moisture or loose debris",
+          "compatibility": "high",
+          "feasible": true,
+          "predicted_normal_force_n": 8.84,
+          "evidence_used": [
+            "Query mass: 1270.0 g",
+            "Query roughness index: 1620.1",
+            "Query projected contact fraction: 1.0",
+            "Silicone gripper embodiment description (high-friction silicone pads, rigid fingers)",
+            "Retrieved object 'speaker' baseline condition (mass: 560.0 g, roughness: 1951.2, force: 3.9 N)"
+          ],
+          "calculation_summary": "STAGE 1 - FULL-CONTACT BASELINE. Selected the closest matching reference object 'speaker' (mass 560.0 g, roughness 1951.2, baseline force 3.9 N). Scaling by mass relative to query (1270.0 g / 560.0 g) and accounting for the inverse relationship between roughness and required normal force (roughness ratio 1951.2 / 1620.1), giving a baseline estimate of approximately 8.84 N. STAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Since query projected contact fraction is 1.0 (full contact), no upward adjustment is required (delta = 0.0 N), yielding a final force of 8.84 N.",
+          "assumptions_and_uncertainty": [
+            "Assumes the query object surface interacts with the silicone pad similarly to the retrieved textile/leather objects.",
+            "Uncertainty arises from extrapolating mass scaling beyond the range of retrieved light-to-moderate baselines.",
+            "Assumes contact fraction of 1.0 incurs zero penalty based on monotonicity rules."
+          ],
+          "reasoning_trace": "STAGE 1: We identified retrieved baseline conditions matching the synthetic leather/textile texture and high roughness profile. The 'speaker' object serves as the closest bracket in mass and roughness (560.0 g, 1951.2 roughness, 3.9 N baseline force). Scaling this baseline force by the ratio of object masses (1270.0 / 560.0) adjusted for the roughness difference yields the Stage 1 full-contact force baseline of 8.84 N. STAGE 2: The query object has a projected contact fraction of 1.0. According to the within-surface contact rules, a contact fraction of 1.0 requires no upward contact adjustment from the full-contact baseline. Therefore, the final predicted normal force is 8.84 N.",
+          "candidate_gripper": "silicone"
+        }
+      },
+      "reasoning_trace": "lowest feasible predicted stationary-finger force",
+      "prediction_tie": false,
+      "tie_break_reason": null
+    },
+    "semantic_description": "Clean, dry synthetic leather contact surface with a textured grain finish and no visible moisture or loose debris.",
+    "object_id": "chinese_bible",
+    "surface_id": "chinese_bible",
+    "condition_id": "baseline",
+    "retrieval_payload_version": 4,
+    "retrieved_objects": [
+      {
+        "object_id": "wallet_2",
+        "surface_id": "wallet_2",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/wallet 2.jpg",
+        "mass_g": 85.62,
+        "roughness_index": 1623.1,
+        "projected_contact_fraction": 0.75,
+        "semantic_description": "Clean, dry leather contact surface with a textured pebbled finish and no visible moisture or loose debris.",
+        "gecko_min_force_n": 0.75,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 0.359,
+        "silicone_feasible": true,
+        "score": 0.6489561936055378,
+        "surface_score": 0.6489561936055378,
+        "rank": 1,
+        "surface_rank": 1,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.9140838878254757,
+          "mass": 0.021223471976699295,
+          "roughness": 0.9940179640539353,
+          "semantic_contribution": 0.43298710475943586,
+          "mass_contribution": 0.006702149045273461,
+          "roughness_contribution": 0.2092669398008285,
+          "total": 0.6489561936055378
+        }
+      },
+      {
+        "object_id": "wallet_1",
+        "surface_id": "wallet_1",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/Wallet 1.jpg",
+        "mass_g": 139.66,
+        "roughness_index": 1596.55,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry woven fabric contact surface with a textured synthetic weave and no visible moisture or loose debris.",
+        "gecko_min_force_n": 2.013,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 0.713,
+        "silicone_feasible": true,
+        "score": 0.6306286186403749,
+        "surface_score": 0.6306286186403749,
+        "rank": 2,
+        "surface_rank": 2,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.878866896494257,
+          "mass": 0.04269561853920806,
+          "roughness": 0.9539919936208902,
+          "semantic_contribution": 0.4163053720235954,
+          "mass_contribution": 0.013482826907118333,
+          "roughness_contribution": 0.2008404197096611,
+          "total": 0.6306286186403749
+        }
+      },
+      {
+        "object_id": "headphones_case",
+        "surface_id": "headphones_case",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/Headphones Case.jpg",
+        "mass_g": 218.15,
+        "roughness_index": 1610.85,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry woven textile contact surface with a textured fibrous substrate and no visible coating or contamination.",
+        "gecko_min_force_n": 3.01,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 1.985,
+        "silicone_feasible": true,
+        "score": 0.6131450726419356,
+        "surface_score": 0.6131450726419356,
+        "rank": 3,
+        "surface_rank": 3,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.804294779220403,
+          "mass": 0.08073717814099723,
+          "roughness": 0.9816700745917915,
+          "semantic_contribution": 0.3809817375254541,
+          "mass_contribution": 0.025495950991893862,
+          "roughness_contribution": 0.20666738412458768,
+          "total": 0.6131450726419356
+        }
+      },
+      {
+        "object_id": "smooth_screw_box",
+        "surface_id": "smooth_screw_box",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+        "mass_g": 819.27,
+        "roughness_index": 791.89,
+        "projected_contact_fraction": 1.0,
+        "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+        "gecko_min_force_n": 1.3,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 5.324,
+        "silicone_feasible": true,
+        "score": 0.5949331875403436,
+        "surface_score": 0.5949331875403436,
+        "rank": 4,
+        "surface_rank": 4,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.814757183732315,
+          "mass": 0.534605386576473,
+          "roughness": 0.19082089755421391,
+          "semantic_contribution": 0.3859376133468861,
+          "mass_contribution": 0.16882275365572832,
+          "roughness_contribution": 0.04017282053772925,
+          "total": 0.5949331875403436
+        }
+      },
+      {
+        "object_id": "speaker",
+        "surface_id": "speaker",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+        "mass_g": 560.0,
+        "roughness_index": 1951.2,
+        "projected_contact_fraction": 0.9523809524,
+        "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+        "gecko_min_force_n": 3.8,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 3.9,
+        "silicone_feasible": true,
+        "score": 0.5934314263987931,
+        "surface_score": 0.5934314263987931,
+        "rank": 5,
+        "surface_rank": 5,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8166328291138615,
+          "mass": 0.310439932312511,
+          "roughness": 0.5157155114193123,
+          "semantic_contribution": 0.38682607694867127,
+          "mass_contribution": 0.09803366283552978,
+          "roughness_contribution": 0.10857168661459206,
+          "total": 0.5934314263987931
+        }
+      },
+      {
+        "object_id": "speaker__condition_2",
+        "surface_id": "speaker",
+        "condition_id": "condition_2",
+        "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+        "mass_g": 560.0,
+        "roughness_index": 1951.2,
+        "projected_contact_fraction": 0.4761904762,
+        "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+        "gecko_min_force_n": 4.3,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 3.65,
+        "silicone_feasible": true,
+        "score": 0.5934314263987931,
+        "surface_score": 0.5934314263987931,
+        "rank": 5,
+        "surface_rank": 5,
+        "condition_rank": 2,
+        "condition_role": "controlled_variant",
+        "comparison_to_baseline": {
+          "reference_condition_id": "baseline",
+          "changed_fields": [
+            "projected_contact_fraction"
+          ],
+          "unchanged_fields": [
+            "mass_g",
+            "roughness_index"
+          ],
+          "deltas": {
+            "projected_contact_fraction": -0.4761904762
+          },
+          "force_deltas": {
+            "gecko_min_force_delta_n": 0.5,
+            "silicone_min_force_delta_n": -0.25
+          }
+        },
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8166328291138615,
+          "mass": 0.310439932312511,
+          "roughness": 0.5157155114193123,
+          "semantic_contribution": 0.38682607694867127,
+          "mass_contribution": 0.09803366283552978,
+          "roughness_contribution": 0.10857168661459206,
+          "total": 0.5934314263987931
+        }
+      },
+      {
+        "object_id": "speaker__condition_3",
+        "surface_id": "speaker",
+        "condition_id": "condition_3",
+        "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+        "mass_g": 560.0,
+        "roughness_index": 1951.2,
+        "projected_contact_fraction": 0.7142857143,
+        "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+        "gecko_min_force_n": 3.9,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 3.75,
+        "silicone_feasible": true,
+        "score": 0.5934314263987931,
+        "surface_score": 0.5934314263987931,
+        "rank": 5,
+        "surface_rank": 5,
+        "condition_rank": 3,
+        "condition_role": "controlled_variant",
+        "comparison_to_baseline": {
+          "reference_condition_id": "baseline",
+          "changed_fields": [
+            "projected_contact_fraction"
+          ],
+          "unchanged_fields": [
+            "mass_g",
+            "roughness_index"
+          ],
+          "deltas": {
+            "projected_contact_fraction": -0.2380952381
+          },
+          "force_deltas": {
+            "gecko_min_force_delta_n": 0.10000000000000009,
+            "silicone_min_force_delta_n": -0.1499999999999999
+          }
+        },
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8166328291138615,
+          "mass": 0.310439932312511,
+          "roughness": 0.5157155114193123,
+          "semantic_contribution": 0.38682607694867127,
+          "mass_contribution": 0.09803366283552978,
+          "roughness_contribution": 0.10857168661459206,
+          "total": 0.5934314263987931
+        }
+      }
+    ],
+    "retrieved_objects_by_gripper": {
+      "gecko": [
+        {
+          "object_id": "wallet_2",
+          "surface_id": "wallet_2",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/wallet 2.jpg",
+          "mass_g": 85.62,
+          "roughness_index": 1623.1,
+          "projected_contact_fraction": 0.75,
+          "semantic_description": "Clean, dry leather contact surface with a textured pebbled finish and no visible moisture or loose debris.",
+          "gecko_min_force_n": 0.75,
+          "gecko_feasible": true,
+          "silicone_min_force_n": null,
+          "silicone_feasible": null,
+          "score": 0.6489561936055378,
+          "surface_score": 0.6489561936055378,
+          "rank": 1,
+          "surface_rank": 1,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.9140838878254757,
+            "mass": 0.021223471976699295,
+            "roughness": 0.9940179640539353,
+            "semantic_contribution": 0.43298710475943586,
+            "mass_contribution": 0.006702149045273461,
+            "roughness_contribution": 0.2092669398008285,
+            "total": 0.6489561936055378
+          }
+        },
+        {
+          "object_id": "wallet_1",
+          "surface_id": "wallet_1",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/Wallet 1.jpg",
+          "mass_g": 139.66,
+          "roughness_index": 1596.55,
+          "projected_contact_fraction": 1.0,
+          "semantic_description": "Clean, dry woven fabric contact surface with a textured synthetic weave and no visible moisture or loose debris.",
+          "gecko_min_force_n": 2.013,
+          "gecko_feasible": true,
+          "silicone_min_force_n": null,
+          "silicone_feasible": null,
+          "score": 0.6306286186403749,
+          "surface_score": 0.6306286186403749,
+          "rank": 2,
+          "surface_rank": 2,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.878866896494257,
+            "mass": 0.04269561853920806,
+            "roughness": 0.9539919936208902,
+            "semantic_contribution": 0.4163053720235954,
+            "mass_contribution": 0.013482826907118333,
+            "roughness_contribution": 0.2008404197096611,
+            "total": 0.6306286186403749
+          }
+        },
+        {
+          "object_id": "headphones_case",
+          "surface_id": "headphones_case",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/Headphones Case.jpg",
+          "mass_g": 218.15,
+          "roughness_index": 1610.85,
+          "projected_contact_fraction": 1.0,
+          "semantic_description": "Clean, dry woven textile contact surface with a textured fibrous substrate and no visible coating or contamination.",
+          "gecko_min_force_n": 3.01,
+          "gecko_feasible": true,
+          "silicone_min_force_n": null,
+          "silicone_feasible": null,
+          "score": 0.6131450726419356,
+          "surface_score": 0.6131450726419356,
+          "rank": 3,
+          "surface_rank": 3,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.804294779220403,
+            "mass": 0.08073717814099723,
+            "roughness": 0.9816700745917915,
+            "semantic_contribution": 0.3809817375254541,
+            "mass_contribution": 0.025495950991893862,
+            "roughness_contribution": 0.20666738412458768,
+            "total": 0.6131450726419356
+          }
+        },
+        {
+          "object_id": "smooth_screw_box",
+          "surface_id": "smooth_screw_box",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+          "mass_g": 819.27,
+          "roughness_index": 791.89,
+          "projected_contact_fraction": 1.0,
+          "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+          "gecko_min_force_n": 1.3,
+          "gecko_feasible": true,
+          "silicone_min_force_n": null,
+          "silicone_feasible": null,
+          "score": 0.5949331875403436,
+          "surface_score": 0.5949331875403436,
+          "rank": 4,
+          "surface_rank": 4,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.814757183732315,
+            "mass": 0.534605386576473,
+            "roughness": 0.19082089755421391,
+            "semantic_contribution": 0.3859376133468861,
+            "mass_contribution": 0.16882275365572832,
+            "roughness_contribution": 0.04017282053772925,
+            "total": 0.5949331875403436
+          }
+        },
+        {
+          "object_id": "speaker",
+          "surface_id": "speaker",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+          "mass_g": 560.0,
+          "roughness_index": 1951.2,
+          "projected_contact_fraction": 0.9523809524,
+          "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+          "gecko_min_force_n": 3.8,
+          "gecko_feasible": true,
+          "silicone_min_force_n": null,
+          "silicone_feasible": null,
+          "score": 0.5934314263987931,
+          "surface_score": 0.5934314263987931,
+          "rank": 5,
+          "surface_rank": 5,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.8166328291138615,
+            "mass": 0.310439932312511,
+            "roughness": 0.5157155114193123,
+            "semantic_contribution": 0.38682607694867127,
+            "mass_contribution": 0.09803366283552978,
+            "roughness_contribution": 0.10857168661459206,
+            "total": 0.5934314263987931
+          }
+        },
+        {
+          "object_id": "speaker__condition_2",
+          "surface_id": "speaker",
+          "condition_id": "condition_2",
+          "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+          "mass_g": 560.0,
+          "roughness_index": 1951.2,
+          "projected_contact_fraction": 0.4761904762,
+          "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+          "gecko_min_force_n": 4.3,
+          "gecko_feasible": true,
+          "silicone_min_force_n": null,
+          "silicone_feasible": null,
+          "score": 0.5934314263987931,
+          "surface_score": 0.5934314263987931,
+          "rank": 5,
+          "surface_rank": 5,
+          "condition_rank": 2,
+          "condition_role": "controlled_variant",
+          "comparison_to_baseline": {
+            "reference_condition_id": "baseline",
+            "changed_fields": [
+              "projected_contact_fraction"
+            ],
+            "unchanged_fields": [
+              "mass_g",
+              "roughness_index"
+            ],
+            "deltas": {
+              "projected_contact_fraction": -0.4761904762
+            },
+            "force_deltas": {
+              "gecko_min_force_delta_n": 0.5
+            }
+          },
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.8166328291138615,
+            "mass": 0.310439932312511,
+            "roughness": 0.5157155114193123,
+            "semantic_contribution": 0.38682607694867127,
+            "mass_contribution": 0.09803366283552978,
+            "roughness_contribution": 0.10857168661459206,
+            "total": 0.5934314263987931
+          }
+        },
+        {
+          "object_id": "speaker__condition_3",
+          "surface_id": "speaker",
+          "condition_id": "condition_3",
+          "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+          "mass_g": 560.0,
+          "roughness_index": 1951.2,
+          "projected_contact_fraction": 0.7142857143,
+          "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+          "gecko_min_force_n": 3.9,
+          "gecko_feasible": true,
+          "silicone_min_force_n": null,
+          "silicone_feasible": null,
+          "score": 0.5934314263987931,
+          "surface_score": 0.5934314263987931,
+          "rank": 5,
+          "surface_rank": 5,
+          "condition_rank": 3,
+          "condition_role": "controlled_variant",
+          "comparison_to_baseline": {
+            "reference_condition_id": "baseline",
+            "changed_fields": [
+              "projected_contact_fraction"
+            ],
+            "unchanged_fields": [
+              "mass_g",
+              "roughness_index"
+            ],
+            "deltas": {
+              "projected_contact_fraction": -0.2380952381
+            },
+            "force_deltas": {
+              "gecko_min_force_delta_n": 0.10000000000000009
+            }
+          },
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.8166328291138615,
+            "mass": 0.310439932312511,
+            "roughness": 0.5157155114193123,
+            "semantic_contribution": 0.38682607694867127,
+            "mass_contribution": 0.09803366283552978,
+            "roughness_contribution": 0.10857168661459206,
+            "total": 0.5934314263987931
+          }
+        }
+      ],
+      "silicone": [
+        {
+          "object_id": "wallet_2",
+          "surface_id": "wallet_2",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/wallet 2.jpg",
+          "mass_g": 85.62,
+          "roughness_index": 1623.1,
+          "projected_contact_fraction": 0.75,
+          "semantic_description": "Clean, dry leather contact surface with a textured pebbled finish and no visible moisture or loose debris.",
+          "gecko_min_force_n": null,
+          "gecko_feasible": null,
+          "silicone_min_force_n": 0.359,
+          "silicone_feasible": true,
+          "score": 0.6489561936055378,
+          "surface_score": 0.6489561936055378,
+          "rank": 1,
+          "surface_rank": 1,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.9140838878254757,
+            "mass": 0.021223471976699295,
+            "roughness": 0.9940179640539353,
+            "semantic_contribution": 0.43298710475943586,
+            "mass_contribution": 0.006702149045273461,
+            "roughness_contribution": 0.2092669398008285,
+            "total": 0.6489561936055378
+          }
+        },
+        {
+          "object_id": "wallet_1",
+          "surface_id": "wallet_1",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/Wallet 1.jpg",
+          "mass_g": 139.66,
+          "roughness_index": 1596.55,
+          "projected_contact_fraction": 1.0,
+          "semantic_description": "Clean, dry woven fabric contact surface with a textured synthetic weave and no visible moisture or loose debris.",
+          "gecko_min_force_n": null,
+          "gecko_feasible": null,
+          "silicone_min_force_n": 0.713,
+          "silicone_feasible": true,
+          "score": 0.6306286186403749,
+          "surface_score": 0.6306286186403749,
+          "rank": 2,
+          "surface_rank": 2,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.878866896494257,
+            "mass": 0.04269561853920806,
+            "roughness": 0.9539919936208902,
+            "semantic_contribution": 0.4163053720235954,
+            "mass_contribution": 0.013482826907118333,
+            "roughness_contribution": 0.2008404197096611,
+            "total": 0.6306286186403749
+          }
+        },
+        {
+          "object_id": "headphones_case",
+          "surface_id": "headphones_case",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/Headphones Case.jpg",
+          "mass_g": 218.15,
+          "roughness_index": 1610.85,
+          "projected_contact_fraction": 1.0,
+          "semantic_description": "Clean, dry woven textile contact surface with a textured fibrous substrate and no visible coating or contamination.",
+          "gecko_min_force_n": null,
+          "gecko_feasible": null,
+          "silicone_min_force_n": 1.985,
+          "silicone_feasible": true,
+          "score": 0.6131450726419356,
+          "surface_score": 0.6131450726419356,
+          "rank": 3,
+          "surface_rank": 3,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.804294779220403,
+            "mass": 0.08073717814099723,
+            "roughness": 0.9816700745917915,
+            "semantic_contribution": 0.3809817375254541,
+            "mass_contribution": 0.025495950991893862,
+            "roughness_contribution": 0.20666738412458768,
+            "total": 0.6131450726419356
+          }
+        },
+        {
+          "object_id": "smooth_screw_box",
+          "surface_id": "smooth_screw_box",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+          "mass_g": 819.27,
+          "roughness_index": 791.89,
+          "projected_contact_fraction": 1.0,
+          "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+          "gecko_min_force_n": null,
+          "gecko_feasible": null,
+          "silicone_min_force_n": 5.324,
+          "silicone_feasible": true,
+          "score": 0.5949331875403436,
+          "surface_score": 0.5949331875403436,
+          "rank": 4,
+          "surface_rank": 4,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.814757183732315,
+            "mass": 0.534605386576473,
+            "roughness": 0.19082089755421391,
+            "semantic_contribution": 0.3859376133468861,
+            "mass_contribution": 0.16882275365572832,
+            "roughness_contribution": 0.04017282053772925,
+            "total": 0.5949331875403436
+          }
+        },
+        {
+          "object_id": "speaker",
+          "surface_id": "speaker",
+          "condition_id": "baseline",
+          "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+          "mass_g": 560.0,
+          "roughness_index": 1951.2,
+          "projected_contact_fraction": 0.9523809524,
+          "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+          "gecko_min_force_n": null,
+          "gecko_feasible": null,
+          "silicone_min_force_n": 3.9,
+          "silicone_feasible": true,
+          "score": 0.5934314263987931,
+          "surface_score": 0.5934314263987931,
+          "rank": 5,
+          "surface_rank": 5,
+          "condition_rank": 1,
+          "condition_role": "baseline",
+          "comparison_to_baseline": null,
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.8166328291138615,
+            "mass": 0.310439932312511,
+            "roughness": 0.5157155114193123,
+            "semantic_contribution": 0.38682607694867127,
+            "mass_contribution": 0.09803366283552978,
+            "roughness_contribution": 0.10857168661459206,
+            "total": 0.5934314263987931
+          }
+        },
+        {
+          "object_id": "speaker__condition_2",
+          "surface_id": "speaker",
+          "condition_id": "condition_2",
+          "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+          "mass_g": 560.0,
+          "roughness_index": 1951.2,
+          "projected_contact_fraction": 0.4761904762,
+          "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+          "gecko_min_force_n": null,
+          "gecko_feasible": null,
+          "silicone_min_force_n": 3.65,
+          "silicone_feasible": true,
+          "score": 0.5934314263987931,
+          "surface_score": 0.5934314263987931,
+          "rank": 5,
+          "surface_rank": 5,
+          "condition_rank": 2,
+          "condition_role": "controlled_variant",
+          "comparison_to_baseline": {
+            "reference_condition_id": "baseline",
+            "changed_fields": [
+              "projected_contact_fraction"
+            ],
+            "unchanged_fields": [
+              "mass_g",
+              "roughness_index"
+            ],
+            "deltas": {
+              "projected_contact_fraction": -0.4761904762
+            },
+            "force_deltas": {
+              "silicone_min_force_delta_n": -0.25
+            }
+          },
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.8166328291138615,
+            "mass": 0.310439932312511,
+            "roughness": 0.5157155114193123,
+            "semantic_contribution": 0.38682607694867127,
+            "mass_contribution": 0.09803366283552978,
+            "roughness_contribution": 0.10857168661459206,
+            "total": 0.5934314263987931
+          }
+        },
+        {
+          "object_id": "speaker__condition_3",
+          "surface_id": "speaker",
+          "condition_id": "condition_3",
+          "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+          "mass_g": 560.0,
+          "roughness_index": 1951.2,
+          "projected_contact_fraction": 0.7142857143,
+          "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+          "gecko_min_force_n": null,
+          "gecko_feasible": null,
+          "silicone_min_force_n": 3.75,
+          "silicone_feasible": true,
+          "score": 0.5934314263987931,
+          "surface_score": 0.5934314263987931,
+          "rank": 5,
+          "surface_rank": 5,
+          "condition_rank": 3,
+          "condition_role": "controlled_variant",
+          "comparison_to_baseline": {
+            "reference_condition_id": "baseline",
+            "changed_fields": [
+              "projected_contact_fraction"
+            ],
+            "unchanged_fields": [
+              "mass_g",
+              "roughness_index"
+            ],
+            "deltas": {
+              "projected_contact_fraction": -0.2380952381
+            },
+            "force_deltas": {
+              "silicone_min_force_delta_n": -0.1499999999999999
+            }
+          },
+          "similarity": {
+            "mode": "hybrid",
+            "semantic": 0.8166328291138615,
+            "mass": 0.310439932312511,
+            "roughness": 0.5157155114193123,
+            "semantic_contribution": 0.38682607694867127,
+            "mass_contribution": 0.09803366283552978,
+            "roughness_contribution": 0.10857168661459206,
+            "total": 0.5934314263987931
+          }
+        }
+      ]
+    },
+    "retrieved_surfaces": [
+      {
+        "surface_id": "wallet_2",
+        "conditions": [
+          {
+            "object_id": "wallet_2",
+            "surface_id": "wallet_2",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/wallet 2.jpg",
+            "mass_g": 85.62,
+            "roughness_index": 1623.1,
+            "projected_contact_fraction": 0.75,
+            "semantic_description": "Clean, dry leather contact surface with a textured pebbled finish and no visible moisture or loose debris.",
+            "gecko_min_force_n": 0.75,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 0.359,
+            "silicone_feasible": true,
+            "score": 0.6489561936055378,
+            "surface_score": 0.6489561936055378,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.9140838878254757,
+              "mass": 0.021223471976699295,
+              "roughness": 0.9940179640539353,
+              "semantic_contribution": 0.43298710475943586,
+              "mass_contribution": 0.006702149045273461,
+              "roughness_contribution": 0.2092669398008285,
+              "total": 0.6489561936055378
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "wallet_1",
+        "conditions": [
+          {
+            "object_id": "wallet_1",
+            "surface_id": "wallet_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Wallet 1.jpg",
+            "mass_g": 139.66,
+            "roughness_index": 1596.55,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry woven fabric contact surface with a textured synthetic weave and no visible moisture or loose debris.",
+            "gecko_min_force_n": 2.013,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 0.713,
+            "silicone_feasible": true,
+            "score": 0.6306286186403749,
+            "surface_score": 0.6306286186403749,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.878866896494257,
+              "mass": 0.04269561853920806,
+              "roughness": 0.9539919936208902,
+              "semantic_contribution": 0.4163053720235954,
+              "mass_contribution": 0.013482826907118333,
+              "roughness_contribution": 0.2008404197096611,
+              "total": 0.6306286186403749
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "headphones_case",
+        "conditions": [
+          {
+            "object_id": "headphones_case",
+            "surface_id": "headphones_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Headphones Case.jpg",
+            "mass_g": 218.15,
+            "roughness_index": 1610.85,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry woven textile contact surface with a textured fibrous substrate and no visible coating or contamination.",
+            "gecko_min_force_n": 3.01,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 1.985,
+            "silicone_feasible": true,
+            "score": 0.6131450726419356,
+            "surface_score": 0.6131450726419356,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.804294779220403,
+              "mass": 0.08073717814099723,
+              "roughness": 0.9816700745917915,
+              "semantic_contribution": 0.3809817375254541,
+              "mass_contribution": 0.025495950991893862,
+              "roughness_contribution": 0.20666738412458768,
+              "total": 0.6131450726419356
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "smooth_screw_box",
+        "conditions": [
+          {
+            "object_id": "smooth_screw_box",
+            "surface_id": "smooth_screw_box",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/smooth_screw_box.jpg",
+            "mass_g": 819.27,
+            "roughness_index": 791.89,
+            "projected_contact_fraction": 1.0,
+            "semantic_description": "Clean, dry plastic contact surface with a smooth nonporous finish and no visible coating or contamination.",
+            "gecko_min_force_n": 1.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 5.324,
+            "silicone_feasible": true,
+            "score": 0.5949331875403436,
+            "surface_score": 0.5949331875403436,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.814757183732315,
+              "mass": 0.534605386576473,
+              "roughness": 0.19082089755421391,
+              "semantic_contribution": 0.3859376133468861,
+              "mass_contribution": 0.16882275365572832,
+              "roughness_contribution": 0.04017282053772925,
+              "total": 0.5949331875403436
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "speaker",
+        "conditions": [
+          {
+            "object_id": "speaker",
+            "surface_id": "speaker",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+            "mass_g": 560.0,
+            "roughness_index": 1951.2,
+            "projected_contact_fraction": 0.9523809524,
+            "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+            "gecko_min_force_n": 3.8,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 3.9,
+            "silicone_feasible": true,
+            "score": 0.5934314263987931,
+            "surface_score": 0.5934314263987931,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8166328291138615,
+              "mass": 0.310439932312511,
+              "roughness": 0.5157155114193123,
+              "semantic_contribution": 0.38682607694867127,
+              "mass_contribution": 0.09803366283552978,
+              "roughness_contribution": 0.10857168661459206,
+              "total": 0.5934314263987931
+            }
+          },
+          {
+            "object_id": "speaker__condition_2",
+            "surface_id": "speaker",
+            "condition_id": "condition_2",
+            "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+            "mass_g": 560.0,
+            "roughness_index": 1951.2,
+            "projected_contact_fraction": 0.4761904762,
+            "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+            "gecko_min_force_n": 4.3,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 3.65,
+            "silicone_feasible": true,
+            "score": 0.5934314263987931,
+            "surface_score": 0.5934314263987931,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 2,
+            "condition_role": "controlled_variant",
+            "comparison_to_baseline": {
+              "reference_condition_id": "baseline",
+              "changed_fields": [
+                "projected_contact_fraction"
+              ],
+              "unchanged_fields": [
+                "mass_g",
+                "roughness_index"
+              ],
+              "deltas": {
+                "projected_contact_fraction": -0.4761904762
+              },
+              "force_deltas": {
+                "gecko_min_force_delta_n": 0.5,
+                "silicone_min_force_delta_n": -0.25
+              }
+            },
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8166328291138615,
+              "mass": 0.310439932312511,
+              "roughness": 0.5157155114193123,
+              "semantic_contribution": 0.38682607694867127,
+              "mass_contribution": 0.09803366283552978,
+              "roughness_contribution": 0.10857168661459206,
+              "total": 0.5934314263987931
+            }
+          },
+          {
+            "object_id": "speaker__condition_3",
+            "surface_id": "speaker",
+            "condition_id": "condition_3",
+            "image_path": "data/MatForceFinal/objects/speaker/image.jpg",
+            "mass_g": 560.0,
+            "roughness_index": 1951.2,
+            "projected_contact_fraction": 0.7142857143,
+            "semantic_description": "Clean, dry woven textile contact surface with a compliant fibrous texture and no visible moisture or loose debris.",
+            "gecko_min_force_n": 3.9,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 3.75,
+            "silicone_feasible": true,
+            "score": 0.5934314263987931,
+            "surface_score": 0.5934314263987931,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 3,
+            "condition_role": "controlled_variant",
+            "comparison_to_baseline": {
+              "reference_condition_id": "baseline",
+              "changed_fields": [
+                "projected_contact_fraction"
+              ],
+              "unchanged_fields": [
+                "mass_g",
+                "roughness_index"
+              ],
+              "deltas": {
+                "projected_contact_fraction": -0.2380952381
+              },
+              "force_deltas": {
+                "gecko_min_force_delta_n": 0.10000000000000009,
+                "silicone_min_force_delta_n": -0.1499999999999999
+              }
+            },
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8166328291138615,
+              "mass": 0.310439932312511,
+              "roughness": 0.5157155114193123,
+              "semantic_contribution": 0.38682607694867127,
+              "mass_contribution": 0.09803366283552978,
+              "roughness_contribution": 0.10857168661459206,
+              "total": 0.5934314263987931
+            }
+          }
+        ]
+      }
+    ],
+    "cache_stats": {
+      "enabled": true,
+      "hits": 28,
+      "misses": 2,
+      "writes": 2,
+      "read_errors": 0,
+      "generation": {
+        "hits": 0,
+        "misses": 2,
+        "writes": 2,
+        "read_errors": 0
+      },
+      "embeddings": {
+        "hits": 28,
+        "misses": 0,
+        "writes": 0,
+        "read_errors": 0
+      },
+      "backend_attempts": {
+        "generation": 2,
+        "embedding": 0
+      }
+    },
+    "active_grippers": [
+      "gecko",
+      "silicone"
+    ],
+    "generation_mode": "isolated_per_gripper",
+    "retrieval_mode": "hybrid",
+    "ranking_features": [
+      "semantic",
+      "mass",
+      "roughness"
+    ],
+    "visible_condition_fields": [
+      "mass_g",
+      "roughness_index",
+      "projected_contact_fraction"
+    ],
+    "condition_policy": "baseline_plus_visible_controlled_variants",
+    "effective_inputs": [
+      "object_image",
+      "gripper_context",
+      "semantic_descriptor",
+      "semantic_experiences",
+      "mass",
+      "roughness",
+      "projected_contact"
+    ]
+  },
+  "baseline": null
+}
