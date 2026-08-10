@@ -26,7 +26,7 @@ class ContactParams:
     pad_length_mm: float = 106.68
     minimum_bend_radius_mm: float = 20.0
     side_angle_deg: float = 30.0
-    minimum_contact_fraction: float = 0.05
+    minimum_contact_fraction: float = 0.0
     ds: float = 0.25
     smoothing: float = 0.2
     sweep_radii_mm: tuple[float, ...] = (10.0, 20.0, 30.0)

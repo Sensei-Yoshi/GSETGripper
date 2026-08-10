@@ -6,16 +6,15 @@ contact exists, so it cancels from the required ratio:
 
     geometric_fraction = (left_contact_length + right_contact_length)
                          / (2 * pad_length)
-    combined_fraction = max(minimum_contact_fraction, geometric_fraction)
+    combined_fraction = geometric_fraction
 
 This is a macroscopic projected-contact proxy, not microscopic adhesive area.
 Each pad produces one contiguous patch from its first-touch anchor.  Traversal
 stops permanently when pad budget, side orientation, convex curvature, or
 concave accessibility fails.
 
-For an otherwise valid antipodal grasp, a configurable minimum fraction
-represents the unavoidable finite seating/contact patch that is not resolved
-by the macroscopic boundary walk. Rejected non-antipodal grasps remain zero.
+No unresolved seating-contact floor is assumed by default. Rejected
+non-antipodal grasps remain zero.
 """
 
 from __future__ import annotations
@@ -231,7 +230,7 @@ def estimate_contact(
     pad_length_mm: float = 106.68,
     minimum_bend_radius_mm: float = 20.0,
     side_angle_deg: float = 30.0,
-    minimum_contact_fraction: float = 0.05,
+    minimum_contact_fraction: float = 0.0,
     ds: float = 0.25,
     smoothing_mm: float = 0.2,
 ) -> ContactEstimate:

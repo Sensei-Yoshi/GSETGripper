@@ -18,7 +18,7 @@ combined longitudinal contact of both 4.2-inch pads:
 
 ```text
 combined_contact_fraction
-    = max(0.05, geometric_contact_fraction) for an antipodal grasp
+    = geometric_contact_fraction for an antipodal grasp
     = 0 otherwise
 
 geometric_contact_fraction
@@ -69,7 +69,7 @@ estimate = estimate_contact(
     pad_length_mm=106.68,
     minimum_bend_radius_mm=20.0,
     side_angle_deg=30.0,
-    minimum_contact_fraction=0.05,
+    minimum_contact_fraction=0.0,
     ds=0.25,
     smoothing_mm=0.2,
 )
@@ -110,7 +110,7 @@ params = ContactParams(
     pad_length_mm=106.68,
     minimum_bend_radius_mm=20.0,
     side_angle_deg=30.0,
-    minimum_contact_fraction=0.05,
+    minimum_contact_fraction=0.0,
     sweep_radii_mm=(10.0, 20.0, 30.0),
 )
 
@@ -138,10 +138,10 @@ needed by other code are:
 |---|---|---|
 | `combined_contact_fraction` | `float` | Authoritative two-pad ratio in `[0, 1]` |
 | `combined_contact_length` | `float` | Sum of both valid contact lengths, capped at `213.36 mm` |
-| `geometric_contact_fraction` | `float` | Green-path length ratio before the minimum-contact floor |
-| `contact_floor_applied` | `bool` | Whether the authoritative ratio was raised to the configured floor |
-| `minimum_contact_fraction` | `float` | Configured floor for a valid antipodal grasp |
-| `feasible` | `bool` | Whether a valid antipodal grasp has geometric or assumed minimum contact |
+| `geometric_contact_fraction` | `float` | Geometrically resolved green-path length ratio |
+| `contact_floor_applied` | `bool` | Legacy compatibility flag; false with the default zero floor |
+| `minimum_contact_fraction` | `float` | Compatibility parameter, default `0.0` |
+| `feasible` | `bool` | Whether a valid antipodal grasp has resolved geometric contact |
 | `pair.antipodal` | `bool` | Whether the two red anchors pass the 40° opposed-normal test |
 | `left.contact_length` | `float` | Valid contiguous left-pad length in millimeters |
 | `right.contact_length` | `float` | Valid contiguous right-pad length in millimeters |
@@ -167,11 +167,9 @@ The authoritative fraction is already zero for a rejected non-antipodal
 grasp. The flags explain why a zero occurred and should not be discarded from
 research artifacts.
 
-The minimum-contact floor is an explicit physical assumption about unavoidable
-TPU seating/contact that the macroscopic outline walk cannot resolve. It does
-not create green-path length. Keep `geometric_contact_fraction` when the
-difference matters scientifically, and calibrate the `0.05` default against
-physical measurements when those data become available.
+No unresolved TPU seating/contact floor is assumed by default. Consequently,
+the authoritative fraction equals the geometric fraction for an antipodal
+grasp, including values below `0.05`.
 
 ## Schema-v2 JSON and CSV contract
 
@@ -182,7 +180,7 @@ Every new image-pipeline run writes a `summary.json` with:
   "schema_version": 2,
   "metric": "projected_two_pad_contact_fraction",
   "params": {
-    "minimum_contact_fraction": 0.05
+    "minimum_contact_fraction": 0.0
   },
   "results": {
     "grasp_feasible": true,
@@ -238,10 +236,9 @@ normal `N(s)` and signed curvature `kappa(s)`. The model applies these steps:
    model never bridges a gap or re-lands later.
 8. **Integration.** Accepted Euclidean boundary-segment lengths are summed.
    A last partial segment is interpolated when the pad budget ends inside it.
-9. **Minimum physical contact.** For an accepted antipodal grasp, the
-   authoritative fraction is no smaller than `minimum_contact_fraction`. This
-   represents unresolved finite seating contact and does not alter the green
-   geometric paths. A rejected non-antipodal grasp remains zero.
+9. **No synthetic seating contact.** For an accepted antipodal grasp, the
+   authoritative fraction retains the resolved geometric value. A rejected
+   non-antipodal grasp remains zero.
 
 The final result is:
 
@@ -251,8 +248,8 @@ ell_right = min(valid right boundary length, L)
 
 f_geometric = clip((ell_left + ell_right) / (2L), 0, 1)
 
-f = max(minimum_contact_fraction, f_geometric)  if antipodal
-f = 0                                           otherwise
+f = f_geometric  if antipodal
+f = 0            otherwise
 ```
 
 ## Defaults and invariants
@@ -264,12 +261,12 @@ f = 0                                           otherwise
 | Bend-radius validation sweep | `10, 20, 30 mm` |
 | Side-normal tolerance | `30°` |
 | Antipodal tolerance | `40°` |
-| Minimum authoritative contact fraction | `0.05` |
+| Minimum authoritative contact fraction | `0.0` |
 | Resampling `ds` | `0.25 mm` |
 | Per-pad contact length | `[0, 106.68] mm` |
 | Combined contact length | `[0, 213.36] mm` |
 | Geometric contact fraction | `[0, 1]` |
-| Authoritative fraction, antipodal | `[0.05, 1]` with default config |
+| Authoritative fraction, antipodal | `[0, 1]` with default config |
 | Authoritative fraction, non-antipodal | `0` |
 
 Increasing `minimum_bend_radius_mm` is more conservative. The saved-fixture

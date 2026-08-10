@@ -40,6 +40,6 @@ Large Cardboard Box,large_cardboard_box.jpg,train,condition_2,671.94,810.34,0.5,
 Poker Box,poker_box.jpg,test,baseline,457.69,800.2,1.0,1.976,True,2.07,True,silicone
 Creatine,creatine.jpg,train,baseline,381.0,823.15,1.0,4.887,True,2.327,True,gecko
 Creatine,creatine.jpg,train,condition_2,381.0,823.15,0.1,,True,3.961,True,
-Beaker,beaker.jpg,train,condition_2,351.24,1106.84,0.05,,True,4.19,True,
+Beaker,beaker.jpg,train,condition_2,351.24,1106.84,0.03,,True,4.19,True,
 Computer,computer.jpg,test,baseline,1550.0,780.1,1.0,10.506,True,2.5,True,gecko
 Large hand sanitizer,large_hand_sanitizer_sa_1.jpeg,surface_validation,condition_2,836.04,958.71,0.48,,True,2.1,True,

@@ -60,8 +60,8 @@ geometry:
                         # the contact-fraction model, the pad's vertical extent
   minimum_bend_radius_mm: 20.0 # assembled Fin-Ray longitudinal bend limit
   side_angle_deg: 30.0  # maximum contact-normal deviation from jaw direction
-  minimum_contact_fraction: 0.05 # unavoidable seating-contact floor for a
-                                 # valid antipodal grasp; dimensionless
+  minimum_contact_fraction: 0.0  # no synthetic seating-contact floor; retain
+                                 # the geometrically resolved fraction
 
 # --- Roughness ---------------------------------------------------------------
 roughness:

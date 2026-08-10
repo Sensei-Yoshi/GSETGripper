@@ -99,8 +99,8 @@ def render(context: AppContext) -> None:
             f"Pad length is fixed to L={cfg.geometry.pad_length_mm:.2f} mm "
             "(4.2 inches) from config.yaml. The pad top is aligned to the "
             "detected object top. Constant pad width cancels from the fraction. "
-            f"Valid antipodal grasps use a minimum contact fraction of "
-            f"{cfg.geometry.minimum_contact_fraction:.3f}."
+            "No unresolved seating-contact floor is added to valid antipodal "
+            "grasps."
         )
 
     st.divider()
@@ -212,10 +212,7 @@ def render(context: AppContext) -> None:
                 "angle and bend-radius limits."
             )
         elif r["contact_floor_applied"]:
-            st.info(
-                "The configured minimum-contact floor was applied because "
-                "the resolved continuous green-path fraction was smaller."
-            )
+            st.info("A non-default configured contact floor was applied.")
 
         m = st.columns(4)
         m[0].metric(
@@ -253,7 +250,7 @@ def render(context: AppContext) -> None:
 
         st.caption(
             f"Geometric fraction: {r['geometric_contact_fraction']:.4f}; "
-            f"configured minimum: "
+            f"configured compatibility minimum: "
             f"{res['summary']['params']['minimum_contact_fraction']:.4f}. "
             "Minimum-bend-radius sweep (combined fraction): "
             f"{res['summary']['bend_radius_sweep_combined_fraction']}"

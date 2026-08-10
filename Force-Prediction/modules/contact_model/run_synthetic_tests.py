@@ -14,7 +14,7 @@ OUT = Path(__file__).resolve().parent / "test_outputs"
 PAD_LENGTH_MM = 106.68
 MINIMUM_BEND_RADIUS_MM = 20.0
 SIDE_ANGLE_DEG = 30.0
-MINIMUM_CONTACT_FRACTION = 0.05
+MINIMUM_CONTACT_FRACTION = 0.0
 
 
 def estimate(points: np.ndarray, ds: float = 0.25):
@@ -56,10 +56,9 @@ def main() -> int:
             estimates["v2_gentle_circle_R40"].left.contact_length
             - expected_circle
         ) < 0.8,
-        "tight circle uses contact floor": (
-            estimates["v2_tight_circle_R8"].combined_contact_fraction
-            == MINIMUM_CONTACT_FRACTION
-            and estimates["v2_tight_circle_R8"].contact_floor_applied
+        "tight circle does not invent contact": (
+            estimates["v2_tight_circle_R8"].combined_contact_fraction == 0.0
+            and not estimates["v2_tight_circle_R8"].contact_floor_applied
         ),
     }
 

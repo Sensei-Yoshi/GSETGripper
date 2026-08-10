@@ -1,0 +1,606 @@
+{
+  "schema_version": 9,
+  "dataset_id": "MatForceFinal",
+  "run_id": "20260810T020651038782Z_e5_avacado",
+  "created_at": "2026-08-10T02:06:51.038782+00:00",
+  "source_sha256": "53ece2f06db47ff3b2a4927c82a13e97f807932c5bc884840e0c4ac09c2af369",
+  "evaluation_protocol": "leave-one-object-out",
+  "experiment": "e5",
+  "experiment_method": "hybrid_retrieval_vlm",
+  "experiment_definition_version": 12,
+  "experiment_definition": {
+    "method": "hybrid_retrieval_vlm",
+    "prompt": "e5"
+  },
+  "prediction_prompts": {
+    "system": "You are a robotics model for grasp-material selection and pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. The controller accepts\ncontinuous commands from 0 to 8 N. Return your best continuous estimate.\n\nGRASPABILITY\n Treat every requested gripper-object pair as graspable. Graspability and feasibility classification are outside this task. Never reject a candidate, describe it as infeasible or ungraspable, recommend none, or use the 8 N limit merely as a fallback for weak compatibility. Surface compatibility may influence the force estimate, but every requested candidate must receive a best continuous force estimate.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, roughness evidence, and projected contact fraction are authoritative. Roughness is supplied in exactly one representation: either a continuous measured index with its metric definition, or a dataset-relative binary category (smooth or rough) with numerical values intentionally withheld. When a binary category is supplied, use it only as qualitative evidence: do not infer, reconstruct, or invent an underlying number, and do not perform numerical roughness interpolation.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\nIf a contact area fraction is given, you can likely assume the orientation in which the gripper grasped the object if necessary as well.\nAssume all objects are grasped in the most optimal direction to maximize surface area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nConditions nested under one retrieved surface are repeated experiments on the same physical object, not independent neighbors. Use the supplied comparison_to_baseline metadata to identify exactly which measured factors changed. Do not blindly average sibling-condition forces. Prefer the condition most comparable to the query. A one-field change may support a directional within-object relationship; when multiple fields changed, treat their effects jointly and do not attribute the force difference to one factor alone. Greater projected contact by itself must not justify a greater required normal force. Do not infer a universal contact coefficient from the supplied condition sweeps.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+    "instruction_key": "e5",
+    "instruction": "E5 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass and continuous roughness index, and one object list ranked using semantic, mass, and continuous-roughness similarity. Projected contact is intentionally withheld and was not used for ranking; do not infer or claim access to it.\nExplain how retrieved outcomes plus mass and roughness differences support the estimates. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E5. Projected-contact-only and mixed visible-plus-hidden-contact variants are excluded; never infer contact from the remaining conditions.\nSILICONE ROUGHNESS DIRECTION. When the requested candidate is silicone, treat greater measured roughness as favorable to the high-friction silicone interface. Holding contact material, mass, geometry, condition, and contact approximately constant, a higher roughness index may decrease the required normal force or leave it unchanged; it must never increase the force by itself. Conversely, lower roughness must not be used by itself to decrease the silicone force. Do not describe additional roughness or surface micro-geometry as requiring extra silicone force.\nKeep the effects separate before combining them: greater mass is an upward force adjustment, while greater roughness for silicone is a downward or zero adjustment. State the direction of each adjustment explicitly and then compute the net result. Do not apply this roughness rule blindly across materially or geometrically dissimilar objects. If retrieved outcomes appear to contradict it, attribute the discrepancy to material, geometry, contact, condition, or uncertainty rather than claiming that higher roughness caused a higher silicone force.\nARITHMETIC CONSISTENCY CHECK. In calculation_summary, show the anchor force, signed mass adjustment, signed roughness adjustment, any other adjustment, intermediate result, and final rounding. Recompute the arithmetic before answering. predicted_normal_force_n must equal the final displayed result after rounding.\n",
+    "target_instruction_key": "joint",
+    "target_instruction": "JOINT-CANDIDATE OUTPUT CONDITION.\nTreat both requested grippers as graspable, predict and compare their force estimates, and\nrecommend either gecko or silicone with the comparison evidence required by the schema. Never recommend none.\n"
+  },
+  "prompt_context": {
+    "bundle_file": "prompts.yaml",
+    "bundle_sha256": "a13a6a1b8e5d026f7d313a889898ec0651553a453d780f2140860f09b8b988d0",
+    "experiment_instructions": {
+      "e1": "E1 ZERO-SHOT VISION-ONLY CONDITION.\nFrom the object image and requested gripper embodiment context, estimate the minimum\nstationary-finger normal force for each requested candidate. No authoritative mass,\nroughness, projected contact measurement, physics estimate, or retrieved experience\nis available. Reason from visible scale, material, condition, and geometry and state\nuncertainty because those judgments are necessarily rough visual approximations.\nDo not invent physical constants or claim to run calibrated physics.\n",
+      "e2": "E2 MEASURED-INPUT ZERO-RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, and supplied authoritative\nmeasurements: mass, roughness, and projected contact fraction.\nNo retrieved experience or physics estimate is available. Do not infer hidden\nfriction or adhesion constants.\n",
+      "e3": "E3 SEMANTIC-ONLY EXPERIENCE-CONDITIONED CONDITION.\nUse the object image, fixed gripper embodiment context, and the ranked semantic\nexperience list to predict the requested force or forces. Neighbors were selected only by cosine\nsimilarity between semantic contact-region descriptions and provide outcomes for\nthe requested candidate or candidates. No authoritative query or neighbor mass, roughness, projected\ncontact, hybrid physical score, or physics estimate is available. Do not imply that\nany omitted sensor value was measured or used.",
+      "e4": "E4 SEMANTIC AND MASS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, and one object list ranked using semantic similarity and mass only to estimate the requested force or forces. Roughness and projected contact are intentionally withheld and were not used for ranking; do not infer or claim access to either.\nExplain how the retrieved outcomes and mass similarity support the estimates. The supplied retrieval weights describe neighbor ranking, not a force equation.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E4; therefore any included variant changes mass and no hidden roughness or projected-contact measurement.\nNo calibrated physics estimate is available; do not invent one.\n",
+      "e5": "E5 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass and continuous roughness index, and one object list ranked using semantic, mass, and continuous-roughness similarity. Projected contact is intentionally withheld and was not used for ranking; do not infer or claim access to it.\nExplain how retrieved outcomes plus mass and roughness differences support the estimates. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E5. Projected-contact-only and mixed visible-plus-hidden-contact variants are excluded; never infer contact from the remaining conditions.\nSILICONE ROUGHNESS DIRECTION. When the requested candidate is silicone, treat greater measured roughness as favorable to the high-friction silicone interface. Holding contact material, mass, geometry, condition, and contact approximately constant, a higher roughness index may decrease the required normal force or leave it unchanged; it must never increase the force by itself. Conversely, lower roughness must not be used by itself to decrease the silicone force. Do not describe additional roughness or surface micro-geometry as requiring extra silicone force.\nKeep the effects separate before combining them: greater mass is an upward force adjustment, while greater roughness for silicone is a downward or zero adjustment. State the direction of each adjustment explicitly and then compute the net result. Do not apply this roughness rule blindly across materially or geometrically dissimilar objects. If retrieved outcomes appear to contradict it, attribute the discrepancy to material, geometry, contact, condition, or uncertainty rather than claiming that higher roughness caused a higher silicone force.\nARITHMETIC CONSISTENCY CHECK. In calculation_summary, show the anchor force, signed mass adjustment, signed roughness adjustment, any other adjustment, intermediate result, and final rounding. Recompute the arithmetic before answering. predicted_normal_force_n must equal the final displayed result after rounding.\n",
+      "e6": "E6 CONTACT-CONDITIONED EXPERIENCE-REASONING CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass, continuous roughness index, and projected contact fraction, plus one object list ranked using semantic, mass, and continuous-roughness similarity only.\nProjected contact is intentionally excluded from cross-object surface ranking. It is supplied as query evidence and within-surface condition evidence only. Treat projected contact fraction as a dimensionless contact proxy, not literal physical area. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nReason in two explicit stages and show both in your trace.\nSTAGE 1 - FULL-CONTACT BASELINE. Estimate the force the query would need at full, optimal contact, anchoring only to retrieved BASELINE conditions and their semantic material, mass, and continuous roughness. Projected contact fraction is confounded across different objects (a low-contact neighbor may need low force and a full-contact neighbor may need high force), so it was deliberately kept out of ranking: do NOT use the query contact fraction to pick, weight, match, or discount cross-object neighbors, and do NOT prefer a neighbor because its contact fraction resembles the query. Roughness and material remain the dominant drivers of this baseline; do not let contact override them. Prefer the baselines that bracket the query by mass and align on roughness and material, and do not dilute the estimate by averaging in poorly matched heavier or lighter neighbors.\nSTAGE 2 - WITHIN-SURFACE CONTACT ADJUSTMENT. Adjust the Stage 1 baseline for the query contact fraction using ONLY within-surface controlled variants via comparison_to_baseline. Each variant reports force_deltas: the signed change in a gripper's force from that surface's own baseline to the variant. Apply those as relative adjustments scaled to the query; never import a variant's absolute force as a cross-object anchor, and never treat variants as separate neighbors or average their absolute forces. The contact effect is monotonic non-decreasing as contact falls: reducing contact never lowers the required force below the Stage 1 baseline, and a query contact fraction at or near 1.0 warrants no upward contact adjustment.\n"
+    },
+    "target_instructions": {
+      "single": "SINGLE-CANDIDATE OUTPUT CONDITION.\nTreat the requested gripper as graspable and predict only its minimum force. Do not assess feasibility, reject the candidate, estimate\nthe inactive gripper, compare grippers, or recommend an alternative. Return only the\nper-gripper JSON required by the supplied schema.\n",
+      "joint": "JOINT-CANDIDATE OUTPUT CONDITION.\nTreat both requested grippers as graspable, predict and compare their force estimates, and\nrecommend either gecko or silicone with the comparison evidence required by the schema. Never recommend none.\n"
+    },
+    "prediction": {
+      "system": "You are a robotics model for grasp-material selection and pre-grasp force estimation.\n\nTASK\nGiven the evidence supplied for the active experiment, estimate the minimum\nstationary-finger normal force required to lift the object under the standardized\ntest protocol. Use only evidence present in the request, and never claim that an absent\nvalue was measured or retrieved. \n\nFORCE CONVENTION\nAll force values are in newtons and refer exclusively to the normal force measured\nby the load cell mounted behind the stationary gripper finger. Do not double the\nforce and do not convert it into a summed two-finger force. The controller accepts\ncontinuous commands from 0 to 8 N. Return your best continuous estimate.\n\nGRASPABILITY\n Treat every requested gripper-object pair as graspable. Graspability and feasibility classification are outside this task. Never reject a candidate, describe it as infeasible or ungraspable, recommend none, or use the 8 N limit merely as a fallback for weak compatibility. Surface compatibility may influence the force estimate, but every requested candidate must receive a best continuous force estimate.\n\nAVAILABLE GRIPPERS\nThe request supplies fixed written descriptions for the requested gripper embodiment\nor embodiments. Predict only those requested candidates and apply their context\nconsistently.\n\nMATERIAL REASONING\nUse the supplied active embodiment descriptions to reason about contact mechanics,\nvisible material, surface condition, and local geometry. Do not assume an inactive\ngripper is available, and do not infer compatibility from roughness alone.\n\nMEASUREMENTS\nAny supplied mass, roughness evidence, and projected contact fraction are authoritative. Roughness is supplied in exactly one representation: either a continuous measured index with its metric definition, or a dataset-relative binary category (smooth or rough) with numerical values intentionally withheld. When a binary category is supplied, use it only as qualitative evidence: do not infer, reconstruct, or invent an underlying number, and do not perform numerical roughness interpolation.\nIf an experiment intentionally omits them, state uncertainty rather than pretending\nthey were measured.\nIf a contact area fraction is given, you can likely assume the orientation in which the gripper grasped the object if necessary as well.\nAssume all objects are grasped in the most optimal direction to maximize surface area and material grasp for the gecko grippers.\n\nRETRIEVED EXPERIENCES\nWhen retrieved experiences are supplied, treat them as empirical observations under\nthe same force convention. Experiences report outcomes only for the requested\ncandidate or candidates.\nConditions nested under one retrieved surface are repeated experiments on the same physical object, not independent neighbors. Use the supplied comparison_to_baseline metadata to identify exactly which measured factors changed. Do not blindly average sibling-condition forces. Prefer the condition most comparable to the query. A one-field change may support a directional within-object relationship; when multiple fields changed, treat their effects jointly and do not attribute the force difference to one factor alone. Greater projected contact by itself must not justify a greater required normal force. Do not infer a universal contact coefficient from the supplied condition sweeps.\nUse only comparison fields actually present in the request. If no experiences are\nsupplied, do not imply that retrieval evidence was used.\n\nQUANTITATIVE JUSTIFICATION\nUse quantitative checks when the available evidence supports them. Do not invent\ncalibrated friction, adhesion, or contact coefficients. Object weight may be used as\na sanity check, but it is not itself the required gripper normal force.\n\nOUTPUT\nReturn only valid JSON matching the supplied schema. For each requested gripper,\nrecord every material piece of supplied or\nvisible evidence in evidence_used, show equations/substitutions/scaling in\ncalculation_summary, and list assumptions, missing evidence, and uncertainty in\nassumptions_and_uncertainty. reasoning_trace must connect those items to the force\nestimate in a detailed, auditable explanation. When multiple candidates are requested,\ncomparison_evidence and recommendation_summary must explain the decisive comparison.\nDo not return an unsupported number or omit\nevidence merely to keep the answer short.\n",
+      "instruction_key": "e5",
+      "instruction": "E5 SEMANTIC, MASS, AND CONTINUOUS-ROUGHNESS RETRIEVAL CONDITION.\nUse the object image, fixed gripper embodiment context, supplied authoritative\nmass and continuous roughness index, and one object list ranked using semantic, mass, and continuous-roughness similarity. Projected contact is intentionally withheld and was not used for ranking; do not infer or claim access to it.\nExplain how retrieved outcomes plus mass and roughness differences support the estimates. The supplied retrieval weights describe neighbor ranking, not a force equation. No calibrated physics estimate is available; do not invent one.\nA retrieved surface includes its baseline and only controlled sibling conditions whose recorded changes are fully visible in E5. Projected-contact-only and mixed visible-plus-hidden-contact variants are excluded; never infer contact from the remaining conditions.\nSILICONE ROUGHNESS DIRECTION. When the requested candidate is silicone, treat greater measured roughness as favorable to the high-friction silicone interface. Holding contact material, mass, geometry, condition, and contact approximately constant, a higher roughness index may decrease the required normal force or leave it unchanged; it must never increase the force by itself. Conversely, lower roughness must not be used by itself to decrease the silicone force. Do not describe additional roughness or surface micro-geometry as requiring extra silicone force.\nKeep the effects separate before combining them: greater mass is an upward force adjustment, while greater roughness for silicone is a downward or zero adjustment. State the direction of each adjustment explicitly and then compute the net result. Do not apply this roughness rule blindly across materially or geometrically dissimilar objects. If retrieved outcomes appear to contradict it, attribute the discrepancy to material, geometry, contact, condition, or uncertainty rather than claiming that higher roughness caused a higher silicone force.\nARITHMETIC CONSISTENCY CHECK. In calculation_summary, show the anchor force, signed mass adjustment, signed roughness adjustment, any other adjustment, intermediate result, and final rounding. Recompute the arithmetic before answering. predicted_normal_force_n must equal the final displayed result after rounding.\n",
+      "target_instruction_key": "joint",
+      "target_instruction": "JOINT-CANDIDATE OUTPUT CONDITION.\nTreat both requested grippers as graspable, predict and compare their force estimates, and\nrecommend either gecko or silicone with the comparison evidence required by the schema. Never recommend none.\n"
+    },
+    "descriptor": {
+      "system": "You create material-interface records for a robotic grasp-experience retrieval\nsystem.\n\nThe photographed object surface is deliberately positioned so that the visible\nprimary surface is the exact surface contacted by the gripper pads. Treat this\ndataset convention as authoritative and analyze only visible evidence from that\nsurface. Do not infer a different grasp pose or contact region.\n\nThe retrieval_description will be converted into a text embedding and used to\nretrieve surfaces with similar pad-to-material interfaces. Keep it concise and\ndiscriminating.\n\nDescribe only properties of the material that actually touches the pads: the\nsubstrate; any coating, label, wrapper, sleeve, or finish covering it; relevant\nvisible texture, porosity, or apparent compliance; and visible condition such as\nclean, dry, dusty, wet, oily, worn, or unknown. If the material, coating, or\ncondition is ambiguous, state that uncertainty rather than inventing it.\n\nDo not mention object identity, branding, color, size, shape, pose, grasp\norientation, curvature, contact region, local geometry, edges, openings, or overall\nsurface area. Do not recommend a gripper, predict force, infer a force label, or\nrestate measured mass, measured roughness index, or projected contact fraction.\n",
+      "instruction": "Inspect the photographed pad-contact surface and return the requested structured\nJSON with:\n- the material actually touching the pads, distinguishing the substrate from any\n  label, wrapper, coating, sleeve, finish, or exposed contents;\n- the visible material and surface condition;\n- whether the material properties are clearly visible;\n- uncertainty limited to material, coating, finish, or condition identification;\n- a single concise retrieval_description sentence containing only the most\n  discriminating pad-to-material interface properties.\n\nUse this retrieval_description format:\n\"[Contact material or substrate] with [coating or finish if present] and [visible\nmaterial condition or interface property].\"\n\nGood retrieval_description examples:\n1. \"Clean, dry glass contact surface with a smooth nonporous finish and no visible\n   coating or contamination.\"\n2. \"Dry woven textile contact surface with a compliant fibrous texture and no\n   visible moisture or loose debris.\"\n3. \"Clean, dry paperboard contact surface with a thin matte printed coating over a\n   rigid fibrous substrate.\"\n\nDo not mention the object name or type, branding, color, shape, size, curvature,\npose, grasp orientation, contact region, local geometry, edges, openings, contact\narea, mass, measured roughness, or projected contact fraction. Do not choose gecko\nor silicone and do not estimate force. Return only JSON matching the supplied\nschema.\n"
+    },
+    "embodiments": {
+      "gecko": {
+        "description": "Parallel-jaw gripper with two opposing, rigid fingers. One finger is stationary, while the other translates laterally toward it to close around an object positioned between them. Each finger carries an inward-facing, mushroom-tipped gecko-inspired dry-adhesive pad of length 4.2 inches mounted on a rigid backing. The fingers and adhesive backings remain rigid during grasping and do not conform to the object. Therefore, the maximum adhesion requires the object\u2019s opposing sidewalls to be sufficiently flat, parallel, and aligned with the pads so that broad contact can form. Generally, the greater the adhesion, the lower the grasp force required to pick up the object. Dry adhesion performs best on clean, dry, smooth, nonporous surfaces and degrades with roughness, porosity, contamination, moisture, and loose coatings. When dry adhesion is weak, limited frictional support still applies, and the gripper is treated as able to grasp the object. "
+      },
+      "silicone": {
+        "description": "Parallel-jaw gripper with two opposing, rigid fingers. One finger is stationary, while the other translates laterally toward it to close around an object positioned between them. Each finger carries an inward-facing, non-adhesive, high-friction silicone pad of 4.2 inches in length mounted on a rigid backing. The fingers and backing do not flex or conform to the object, although the silicone surface may deform locally at the contact interface. Holding capacity arises mainly from normal force, friction, and the silicone pad\u2019s viscoelastic interaction with the surface. The silicone pads are effective on rough, irregular, or interrupted surfaces, but performance still decreases when the contact area is small or the surface is wet, oily, or contaminated. Holding other grasp factors approximately constant, increasing the measured roughness is a non-increasing adjustment to the required silicone normal force. It may reduce the force or leave it unchanged, but it must never increase the force solely because the surface is rougher."
+      }
+    }
+  },
+  "backend": {
+    "force": "gemini_joint_generation",
+    "semantic_embedding": "gemini-embedding-2-preview"
+  },
+  "models": {
+    "vlm": "gemini-flash-lite-latest",
+    "embedding": "gemini-embedding-2-preview",
+    "embedding_dim": 1536
+  },
+  "inputs": {
+    "use_roughness": true,
+    "use_projected_contact": false,
+    "roughness_representation": "continuous"
+  },
+  "roughness_measurement": {
+    "metric_name": "high_frequency_scattering_index",
+    "units": "unitless_index",
+    "higher_is_rougher": true,
+    "characteristic_scale": 500.0,
+    "binary_threshold": 1340.0
+  },
+  "active_grippers": [
+    "gecko",
+    "silicone"
+  ],
+  "generation_mode": "joint",
+  "retrieval_config": {
+    "k": 5,
+    "conditions_per_surface": 3,
+    "weights": {
+      "semantic": 0.4,
+      "mass": 0.25,
+      "roughness": 0.2,
+      "contact": 0.0
+    },
+    "sigma_mass": 0.7,
+    "sigma_contact": 0.25,
+    "embedding": {
+      "model": "gemini-embedding-2-preview",
+      "dim": 1536
+    }
+  },
+  "query": {
+    "object_id": "avacado",
+    "surface_id": "avacado",
+    "condition_id": "baseline",
+    "source_object_id": "avacado",
+    "object_name": "Avacado",
+    "mass_g": 157.55,
+    "roughness_index": 2415.65,
+    "projected_contact_fraction": 0.1,
+    "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+    "original_image_path": "data/MatForceFinal/avacado.jpeg",
+    "image_artifact_path": "data/MatForceFinal/run_images/ea0b6894f6f64159485c0ce79642922ff576838580760dd2dba0dc0772d9914b.png",
+    "image_sha256": "ea0b6894f6f64159485c0ce79642922ff576838580760dd2dba0dc0772d9914b"
+  },
+  "counterfactual": false,
+  "truth": {
+    "true_gecko_force_n": 1.24,
+    "true_silicone_force_n": 0.85,
+    "true_selection": "silicone",
+    "object_id": "avacado",
+    "surface_id": "avacado",
+    "condition_id": "baseline",
+    "active_grippers": [
+      "gecko",
+      "silicone"
+    ],
+    "gecko_feasible": true,
+    "silicone_feasible": true
+  },
+  "result": {
+    "experiment_id": "e5",
+    "experiment_method": "hybrid_retrieval_vlm",
+    "experiment_definition_version": 12,
+    "selection": {
+      "desired_gripper": "gecko",
+      "predicted_normal_force_n": 0.55,
+      "candidate_predictions": {
+        "gecko": {
+          "candidate_gripper": "gecko",
+          "visible_surface_material": "Dry pebbled organic rind",
+          "visible_surface_condition": "Textured semi-rigid finish with no visible moisture or loose debris",
+          "compatibility": "medium",
+          "predicted_normal_force_n": 0.55,
+          "evidence_used": [
+            "Query mass: 157.55 g",
+            "Query roughness index: 2415.65",
+            "Retrieved anchor object: orange (mass: 154.17 g, roughness: 1068.18, gecko force: 0.38 N)",
+            "Retrieved second object: leather_sunglasses_case (mass: 179.9 g, roughness: 2014.79, gecko force: 1.906 N)"
+          ],
+          "calculation_summary": "Anchor force from orange baseline = 0.38 N; mass difference adjustment = +0.02 N; roughness increase adjustment (reducing dry adhesion) = +0.15 N; intermediate result = 0.55 N; final rounding = 0.55 N.",
+          "assumptions_and_uncertainty": [
+            "Assumed smooth organic peel of the orange transfers reasonably well as an anchor despite the higher roughness index of the avocado.",
+            "Uncertainty in precise local radii and exact conformity of rigid gecko pads onto the pebbled organic rind."
+          ],
+          "reasoning_trace": "The query object is an avocado with a pebbled organic rind, weighing 157.55 g with a roughness index of 2415.65. Using the orange baseline (mass 154.17 g, gecko force 0.38 N) as the closest semantic and physical anchor, the slightly higher mass requires a negligible upward force adjustment. The higher roughness index of the avocado compared to the orange reduces the effectiveness of the rigid gecko dry-adhesive pads, necessitating an upward force adjustment to 0.55 N to ensure reliable gripping.",
+          "feasible": true
+        },
+        "silicone": {
+          "candidate_gripper": "silicone",
+          "visible_surface_material": "Dry pebbled organic rind",
+          "visible_surface_condition": "Textured semi-rigid finish with no visible moisture or loose debris",
+          "compatibility": "high",
+          "predicted_normal_force_n": 1.75,
+          "evidence_used": [
+            "Query mass: 157.55 g",
+            "Query roughness index: 2415.65",
+            "Retrieved anchor object: orange (mass: 154.17 g, roughness: 1068.18, silicone force: 1.912 N)",
+            "Retrieved second object: leather_sunglasses_case (mass: 179.9 g, roughness: 2014.79, silicone force: 1.507 N)"
+          ],
+          "calculation_summary": "Anchor force from orange baseline = 1.912 N; mass difference adjustment = +0.02 N; roughness increase adjustment (favorable for silicone, non-increasing) = -0.18 N; intermediate result = 1.752 N; final rounding = 1.75 N.",
+          "assumptions_and_uncertainty": [
+            "Silicone viscoelastic deformation effectively engages with the pebbled organic rind texture.",
+            "Uncertainty regarding exact contact area fraction due to withheld projected contact."
+          ],
+          "reasoning_trace": "The silicone gripper benefits from surface roughness, as higher measured roughness permits equal or lower normal force due to enhanced frictional interlocking and viscoelastic accommodation. Starting from the orange baseline silicone force of 1.912 N, the slightly higher mass provides a small upward adjustment (+0.02 N), while the substantially higher roughness index (2415.65 vs 1068.18) allows a downward adjustment (-0.18 N) in accordance with the silicone roughness direction rule. This yields a final rounded force estimate of 1.75 N.",
+          "feasible": true
+        }
+      },
+      "reasoning_trace": "lowest feasible predicted stationary-finger force",
+      "prediction_tie": false,
+      "tie_break_reason": null,
+      "model_recommended_gripper": "silicone",
+      "model_comparison_evidence": [
+        "Query roughness index is high (2415.65), which hinders rigid gecko dry-adhesive pads but favors high-friction silicone pads.",
+        "Retrieved silicone forces across rougher surfaces (e.g., leather sunglasses case at 1.507 N) demonstrate lower required forces compared to smooth organic fruit baselines when surface texture facilitates frictional engagement."
+      ],
+      "model_recommendation_summary": "The silicone gripper is recommended because the avocado's pebbled organic rind and high roughness index (2415.65) degrade dry-adhesion performance for the rigid gecko pads, requiring increased force or leading to less robust contact. In contrast, the silicone pads leverage the surface texture effectively through friction and local deformation, resulting in a lower and more reliable predicted normal force (1.75 N vs 0.55 N, though silicone operates at a higher absolute baseline, it accommodates roughness favorably).",
+      "recommendation_agrees_with_selector": false
+    },
+    "semantic_description": "Dry pebbled organic rind contact surface with a textured semi-rigid finish and no visible moisture or loose debris.",
+    "object_id": "avacado",
+    "surface_id": "avacado",
+    "condition_id": "baseline",
+    "retrieval_payload_version": 3,
+    "retrieved_objects": [
+      {
+        "object_id": "leather_sunglasses_case",
+        "surface_id": "leather_sunglasses_case",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+        "mass_g": 179.9,
+        "roughness_index": 2014.79,
+        "projected_contact_fraction": null,
+        "semantic_description": "Synthetic leather contact surface with a textured pebbled finish and no visible moisture or contamination.",
+        "gecko_min_force_n": 1.906,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 1.507,
+        "silicone_feasible": true,
+        "score": 0.7234598225078807,
+        "surface_score": 0.7234598225078807,
+        "rank": 1,
+        "surface_rank": 1,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.7959718947444088,
+          "mass": 0.827362938883386,
+          "roughness": 0.4485567825654429,
+          "contact": null,
+          "semantic_contribution": 0.37457500929148646,
+          "mass_contribution": 0.24334204084805466,
+          "roughness_contribution": 0.1055427723683395,
+          "contact_contribution": null,
+          "total": 0.7234598225078807
+        }
+      },
+      {
+        "object_id": "orange",
+        "surface_id": "orange",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/orange.jpg",
+        "mass_g": 154.17,
+        "roughness_index": 1068.18,
+        "projected_contact_fraction": null,
+        "semantic_description": "Clean, dry organic peel contact surface with a textured, pebbled natural finish and no visible moisture or loose debris.",
+        "gecko_min_force_n": 0.38,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 1.912,
+        "silicone_feasible": true,
+        "score": 0.7176852441489933,
+        "surface_score": 0.7176852441489933,
+        "rank": 2,
+        "surface_rank": 2,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.885374421894826,
+          "mass": 0.9694936075238884,
+          "roughness": 0.06754643443870968,
+          "contact": null,
+          "semantic_contribution": 0.4166467867740357,
+          "mass_contribution": 0.28514517868349654,
+          "roughness_contribution": 0.0158932786914611,
+          "contact_contribution": null,
+          "total": 0.7176852441489933
+        }
+      },
+      {
+        "object_id": "foam_roller",
+        "surface_id": "foam_roller",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/Foam Roller.jpg",
+        "mass_g": 153.38,
+        "roughness_index": 1353.18,
+        "projected_contact_fraction": null,
+        "semantic_description": "Clean, dry foamed elastomeric contact surface with a compliant textured finish and no visible coating or contamination.",
+        "gecko_min_force_n": 0.723,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 0.25,
+        "silicone_feasible": true,
+        "score": 0.675890115519797,
+        "surface_score": 0.675890115519797,
+        "rank": 3,
+        "surface_rank": 3,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.7750436663627625,
+          "mass": 0.9624044190190509,
+          "roughness": 0.11944013445979926,
+          "contact": null,
+          "semantic_contribution": 0.36472643122953524,
+          "mass_contribution": 0.2830601232408973,
+          "roughness_contribution": 0.028103561049364532,
+          "contact_contribution": null,
+          "total": 0.675890115519797
+        }
+      },
+      {
+        "object_id": "apple",
+        "surface_id": "apple",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/apple.jpg",
+        "mass_g": 159.44,
+        "roughness_index": 562.94,
+        "projected_contact_fraction": null,
+        "semantic_description": "Smooth organic skin contact surface with a waxy semi-gloss finish and clean, dry condition.",
+        "gecko_min_force_n": 0.41,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 1.002,
+        "silicone_feasible": true,
+        "score": 0.6725942979496603,
+        "surface_score": 0.6725942979496603,
+        "rank": 4,
+        "surface_rank": 4,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.8025249125078269,
+          "mass": 0.9831088430596988,
+          "roughness": 0.02458988744577933,
+          "contact": null,
+          "semantic_contribution": 0.3776587823566244,
+          "mass_contribution": 0.28914965972344076,
+          "roughness_contribution": 0.005785855869595137,
+          "contact_contribution": null,
+          "total": 0.6725942979496603
+        }
+      },
+      {
+        "object_id": "wallet_1",
+        "surface_id": "wallet_1",
+        "condition_id": "baseline",
+        "image_path": "data/MatForceFinal/Wallet 1.jpg",
+        "mass_g": 139.66,
+        "roughness_index": 1596.55,
+        "projected_contact_fraction": null,
+        "semantic_description": "Clean, dry woven fabric contact surface with a textured synthetic weave and no visible moisture or loose debris.",
+        "gecko_min_force_n": 2.013,
+        "gecko_feasible": true,
+        "silicone_min_force_n": 0.713,
+        "silicone_feasible": true,
+        "score": 0.6622532159919567,
+        "surface_score": 0.6622532159919567,
+        "rank": 5,
+        "surface_rank": 5,
+        "condition_rank": 1,
+        "condition_role": "baseline",
+        "comparison_to_baseline": null,
+        "similarity": {
+          "mode": "hybrid",
+          "semantic": 0.7839855422965015,
+          "mass": 0.8418204500555965,
+          "roughness": 0.19432952080331745,
+          "contact": null,
+          "semantic_contribution": 0.3689343728454125,
+          "mass_contribution": 0.24759425001635185,
+          "roughness_contribution": 0.04572459313019234,
+          "contact_contribution": null,
+          "total": 0.6622532159919567
+        }
+      }
+    ],
+    "retrieved_surfaces": [
+      {
+        "surface_id": "leather_sunglasses_case",
+        "conditions": [
+          {
+            "object_id": "leather_sunglasses_case",
+            "surface_id": "leather_sunglasses_case",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/leather sunglasses case.jpg",
+            "mass_g": 179.9,
+            "roughness_index": 2014.79,
+            "projected_contact_fraction": null,
+            "semantic_description": "Synthetic leather contact surface with a textured pebbled finish and no visible moisture or contamination.",
+            "gecko_min_force_n": 1.906,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 1.507,
+            "silicone_feasible": true,
+            "score": 0.7234598225078807,
+            "surface_score": 0.7234598225078807,
+            "rank": 1,
+            "surface_rank": 1,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7959718947444088,
+              "mass": 0.827362938883386,
+              "roughness": 0.4485567825654429,
+              "contact": null,
+              "semantic_contribution": 0.37457500929148646,
+              "mass_contribution": 0.24334204084805466,
+              "roughness_contribution": 0.1055427723683395,
+              "contact_contribution": null,
+              "total": 0.7234598225078807
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "orange",
+        "conditions": [
+          {
+            "object_id": "orange",
+            "surface_id": "orange",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/orange.jpg",
+            "mass_g": 154.17,
+            "roughness_index": 1068.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Clean, dry organic peel contact surface with a textured, pebbled natural finish and no visible moisture or loose debris.",
+            "gecko_min_force_n": 0.38,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 1.912,
+            "silicone_feasible": true,
+            "score": 0.7176852441489933,
+            "surface_score": 0.7176852441489933,
+            "rank": 2,
+            "surface_rank": 2,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.885374421894826,
+              "mass": 0.9694936075238884,
+              "roughness": 0.06754643443870968,
+              "contact": null,
+              "semantic_contribution": 0.4166467867740357,
+              "mass_contribution": 0.28514517868349654,
+              "roughness_contribution": 0.0158932786914611,
+              "contact_contribution": null,
+              "total": 0.7176852441489933
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "foam_roller",
+        "conditions": [
+          {
+            "object_id": "foam_roller",
+            "surface_id": "foam_roller",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Foam Roller.jpg",
+            "mass_g": 153.38,
+            "roughness_index": 1353.18,
+            "projected_contact_fraction": null,
+            "semantic_description": "Clean, dry foamed elastomeric contact surface with a compliant textured finish and no visible coating or contamination.",
+            "gecko_min_force_n": 0.723,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 0.25,
+            "silicone_feasible": true,
+            "score": 0.675890115519797,
+            "surface_score": 0.675890115519797,
+            "rank": 3,
+            "surface_rank": 3,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7750436663627625,
+              "mass": 0.9624044190190509,
+              "roughness": 0.11944013445979926,
+              "contact": null,
+              "semantic_contribution": 0.36472643122953524,
+              "mass_contribution": 0.2830601232408973,
+              "roughness_contribution": 0.028103561049364532,
+              "contact_contribution": null,
+              "total": 0.675890115519797
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "apple",
+        "conditions": [
+          {
+            "object_id": "apple",
+            "surface_id": "apple",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/apple.jpg",
+            "mass_g": 159.44,
+            "roughness_index": 562.94,
+            "projected_contact_fraction": null,
+            "semantic_description": "Smooth organic skin contact surface with a waxy semi-gloss finish and clean, dry condition.",
+            "gecko_min_force_n": 0.41,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 1.002,
+            "silicone_feasible": true,
+            "score": 0.6725942979496603,
+            "surface_score": 0.6725942979496603,
+            "rank": 4,
+            "surface_rank": 4,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.8025249125078269,
+              "mass": 0.9831088430596988,
+              "roughness": 0.02458988744577933,
+              "contact": null,
+              "semantic_contribution": 0.3776587823566244,
+              "mass_contribution": 0.28914965972344076,
+              "roughness_contribution": 0.005785855869595137,
+              "contact_contribution": null,
+              "total": 0.6725942979496603
+            }
+          }
+        ]
+      },
+      {
+        "surface_id": "wallet_1",
+        "conditions": [
+          {
+            "object_id": "wallet_1",
+            "surface_id": "wallet_1",
+            "condition_id": "baseline",
+            "image_path": "data/MatForceFinal/Wallet 1.jpg",
+            "mass_g": 139.66,
+            "roughness_index": 1596.55,
+            "projected_contact_fraction": null,
+            "semantic_description": "Clean, dry woven fabric contact surface with a textured synthetic weave and no visible moisture or loose debris.",
+            "gecko_min_force_n": 2.013,
+            "gecko_feasible": true,
+            "silicone_min_force_n": 0.713,
+            "silicone_feasible": true,
+            "score": 0.6622532159919567,
+            "surface_score": 0.6622532159919567,
+            "rank": 5,
+            "surface_rank": 5,
+            "condition_rank": 1,
+            "condition_role": "baseline",
+            "comparison_to_baseline": null,
+            "similarity": {
+              "mode": "hybrid",
+              "semantic": 0.7839855422965015,
+              "mass": 0.8418204500555965,
+              "roughness": 0.19432952080331745,
+              "contact": null,
+              "semantic_contribution": 0.3689343728454125,
+              "mass_contribution": 0.24759425001635185,
+              "roughness_contribution": 0.04572459313019234,
+              "contact_contribution": null,
+              "total": 0.6622532159919567
+            }
+          }
+        ]
+      }
+    ],
+    "physics_estimates": {},
+    "cache_stats": {
+      "enabled": true,
+      "generation_bypassed": false,
+      "hits": 26,
+      "misses": 0,
+      "writes": 0,
+      "read_errors": 0,
+      "legacy_hits": 0,
+      "generation": {
+        "hits": 1,
+        "misses": 0,
+        "writes": 0,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "embeddings": {
+        "hits": 25,
+        "misses": 0,
+        "writes": 0,
+        "read_errors": 0,
+        "legacy_hits": 0
+      },
+      "backend_attempts": {
+        "generation": 0,
+        "embedding": 0
+      }
+    },
+    "active_grippers": [
+      "gecko",
+      "silicone"
+    ],
+    "generation_mode": "joint",
+    "retrieval_mode": "hybrid",
+    "ranking_features": [
+      "semantic",
+      "mass",
+      "roughness"
+    ],
+    "visible_condition_fields": [
+      "mass_g",
+      "roughness_index"
+    ],
+    "condition_policy": "baseline_plus_visible_controlled_variants",
+    "effective_inputs": [
+      "object_image",
+      "gripper_context",
+      "semantic_descriptor",
+      "semantic_experiences",
+      "mass",
+      "roughness"
+    ]
+  },
+  "baseline": null
+}

@@ -111,7 +111,7 @@ schema-v2 projected two-pad contact fraction from the RGB silhouette:
 f_geometric = (left_side_contact_length + right_side_contact_length)
               / (2 * 106.68 mm)
 
-f_contact = max(0.05, f_geometric) for an antipodal grasp; otherwise 0
+f_contact = f_geometric for an antipodal grasp; otherwise 0
 ```
 
 It assumes constant pad width, which cancels from the ratio, and reports no
@@ -162,16 +162,15 @@ when necessary, and each pad is capped at `L`.
 ell_left, ell_right in [0, L]
 f_geometric = clip((ell_left + ell_right) / (2L), 0, 1)
 
-f_contact = max(0.05, f_geometric)  if the anchor pair is antipodal
+f_contact = f_geometric             if the anchor pair is antipodal
 f_contact = 0                       otherwise
 ```
 
 If the anchors fail the antipodal test, the authoritative fraction is zero.
-For a valid antipodal pair, `geometry.minimum_contact_fraction` supplies a
-default `0.05` floor representing unavoidable TPU seating contact below the
-resolution of the macroscopic green-path model. The geometric fraction and a
-`contact_floor_applied` flag are retained separately so the assumption is
-visible and can later be calibrated from physical data.
+For a valid antipodal pair, `geometry.minimum_contact_fraction` defaults to
+`0.0`, so the estimator retains the resolved geometric fraction without
+inventing unresolved TPU seating contact. The legacy `contact_floor_applied`
+flag remains in saved artifacts and is false under the default configuration.
 The 10/20/30 mm bend-radius sweep is a sensitivity check; increasing minimum
 bend radius must not increase predicted contact on the committed regression
 fixtures.

@@ -6,7 +6,7 @@ uses a calibrated 2D object silhouette to estimate the fraction of the two
 
 ```text
 f_geometric = (left_contact_length + right_contact_length) / (2 * 106.68 mm)
-f = max(minimum_contact_fraction, f_geometric)  for an antipodal grasp
+f = f_geometric  for an antipodal grasp
 ```
 
 The output is a dimensionless macroscopic geometry proxy. It is not physical
@@ -47,9 +47,8 @@ so extraction, estimation, summaries, and v2 indexing share one code path.
    there is no idealized bridge or re-landing.
 7. Actual boundary-segment lengths are integrated and capped at one pad length,
    preventing endpoint sampling from producing a fraction above one.
-8. A valid antipodal grasp has a configurable minimum authoritative fraction
-   of 0.05. This represents unresolved TPU seating contact; it does not invent
-   green-path length. Non-antipodal grasps remain zero.
+8. A valid antipodal grasp retains the geometrically resolved fraction without
+   adding unresolved seating contact. Non-antipodal grasps remain zero.
 
 ## Defaults
 
@@ -58,7 +57,7 @@ so extraction, estimation, summaries, and v2 indexing share one code path.
 | `pad_length_mm` | 106.68 | active 4.2-inch pad length |
 | `minimum_bend_radius_mm` | 20 | assembled-finger longitudinal bend limit |
 | `side_angle_deg` | 30 | maximum normal deviation from jaw direction |
-| `minimum_contact_fraction` | 0.05 | assumed seating-contact floor for an antipodal grasp |
+| `minimum_contact_fraction` | 0.0 | compatibility parameter; no floor is applied by default |
 | `ds` | 0.25 mm | boundary resampling target |
 | `smoothing` | 0.2 mm | spline smoothing before curvature differentiation |
 | radius sweep | 10, 20, 30 mm | sensitivity analysis; larger is more conservative |
@@ -72,8 +71,8 @@ Each new run writes the source image at the object root and the
 cutout/mask/spline/contact artifacts plus schema-v2 `summary.json` under the
 object's `contact_fraction/` directory. The primary result is
 `combined_contact_fraction`; per-pad lengths and fractions remain diagnostics.
-The summary also preserves `geometric_contact_fraction` and
-`contact_floor_applied`, making the configured floor visible.
+The summary preserves `geometric_contact_fraction` and the legacy
+`contact_floor_applied` field; with the default zero floor, the latter is false.
 
 ## Validation
 

@@ -150,7 +150,7 @@ def main() -> int:
     parser.add_argument("--pad-length-mm", type=float, default=106.68)
     parser.add_argument("--minimum-bend-radius-mm", type=float, default=20.0)
     parser.add_argument("--side-angle-deg", type=float, default=30.0)
-    parser.add_argument("--minimum-contact-fraction", type=float, default=0.05)
+    parser.add_argument("--minimum-contact-fraction", type=float, default=0.0)
     parser.add_argument("--ds", type=float, default=0.25)
     parser.add_argument("--smoothing", type=float, default=0.2)
     parser.add_argument("--sweep-radii-mm", default=SWEEP_RADII_DEFAULT)

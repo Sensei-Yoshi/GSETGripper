@@ -17,7 +17,7 @@ CONTACT_MODEL = ROOT / "modules" / "contact_model"
 PAD_LENGTH_MM = 106.68
 RADIUS_MM = 20.0
 SIDE_ANGLE_DEG = 30.0
-MINIMUM_CONTACT_FRACTION = 0.05
+MINIMUM_CONTACT_FRACTION = 0.0
 
 
 def _estimate(points: np.ndarray, *, ds: float = 0.1, radius: float = RADIUS_MM):
@@ -79,9 +79,9 @@ def test_short_and_thin_rectangles_scale_with_available_side_height():
     assert short.combined_contact_fraction == pytest.approx(
         60.0 / PAD_LENGTH_MM, abs=0.02
     )
-    assert thin.geometric_contact_fraction < MINIMUM_CONTACT_FRACTION
-    assert thin.combined_contact_fraction == MINIMUM_CONTACT_FRACTION
-    assert thin.contact_floor_applied
+    assert thin.geometric_contact_fraction > 0.0
+    assert thin.combined_contact_fraction == thin.geometric_contact_fraction
+    assert not thin.contact_floor_applied
 
 
 def test_gentle_circle_stops_at_thirty_degree_side_boundary():
@@ -93,12 +93,12 @@ def test_gentle_circle_stops_at_thirty_degree_side_boundary():
     _assert_all_green_points_are_side_facing(estimate)
 
 
-def test_tight_circle_uses_minimum_contact_floor():
+def test_tight_circle_does_not_invent_unresolved_contact():
     estimate = _estimate(circle(8.0) + np.array([0.0, 8.0]))
     assert estimate.geometric_contact_fraction == 0.0
-    assert estimate.combined_contact_fraction == MINIMUM_CONTACT_FRACTION
-    assert estimate.contact_floor_applied
-    assert estimate.feasible
+    assert estimate.combined_contact_fraction == 0.0
+    assert not estimate.contact_floor_applied
+    assert not estimate.feasible
 
 
 def test_waist_stops_at_first_failure_without_relanding():
@@ -190,7 +190,7 @@ def test_contact_api_has_no_width_or_absolute_area_parameter():
     parameters = inspect.signature(estimate_contact).parameters
     assert "w_pad" not in parameters
     assert "object_type" not in parameters
-    assert parameters["minimum_contact_fraction"].default == 0.05
+    assert parameters["minimum_contact_fraction"].default == 0.0
     estimate = _estimate(circle(40.0) + np.array([0.0, 40.0]))
     assert not hasattr(estimate, "total_area")
 
@@ -208,7 +208,7 @@ def test_v2_summary_excludes_pad_width_and_area():
     serialized = repr(summary).lower()
     assert summary["schema_version"] == 2
     assert summary["metric"] == "projected_two_pad_contact_fraction"
-    assert summary["params"]["minimum_contact_fraction"] == 0.05
+    assert summary["params"]["minimum_contact_fraction"] == 0.0
     assert "geometric_contact_fraction" in summary["results"]
     assert "contact_floor_applied" in summary["results"]
     assert "w_pad" not in serialized

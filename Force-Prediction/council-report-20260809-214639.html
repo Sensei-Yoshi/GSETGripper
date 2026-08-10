@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LLM Council — E6 contact reasoning redesign</title>
+  <style>
+    :root { --ink:#172033; --muted:#607086; --line:#dce3ec; --soft:#f5f7fb; --accent:#3157c8; --good:#147a57; --warn:#a25b09; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:#fff; color:var(--ink); font:16px/1.58 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    main { max-width:980px; margin:0 auto; padding:48px 24px 72px; }
+    h1 { font-size:34px; line-height:1.15; margin:0 0 10px; }
+    h2 { margin-top:38px; font-size:22px; }
+    h3 { margin:0 0 8px; font-size:17px; }
+    p { margin:8px 0 14px; }
+    .eyebrow { color:var(--accent); font-weight:700; letter-spacing:.08em; text-transform:uppercase; font-size:12px; }
+    .question, .verdict { border:1px solid var(--line); border-radius:14px; padding:22px; margin:24px 0; }
+    .verdict { border-left:5px solid var(--accent); background:var(--soft); }
+    .recommend { border-left:5px solid var(--good); background:#f1faf6; }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:12px; margin:18px 0; }
+    .card { border:1px solid var(--line); border-radius:12px; padding:16px; }
+    .agree { border-top:4px solid var(--good); }
+    .caution { border-top:4px solid var(--warn); }
+    .position { color:var(--muted); font-size:14px; }
+    details { border:1px solid var(--line); border-radius:10px; margin:10px 0; padding:12px 15px; }
+    summary { cursor:pointer; font-weight:700; }
+    code { background:#edf1f7; padding:2px 5px; border-radius:4px; }
+    ul { padding-left:22px; }
+    footer { margin-top:44px; border-top:1px solid var(--line); padding-top:18px; color:var(--muted); font-size:13px; }
+  </style>
+</head>
+<body><main>
+  <div class="eyebrow">LLM Council briefing</div>
+  <h1>E6 contact-reasoning redesign</h1>
+  <p class="position">Five independent perspectives, anonymous peer review, and chairman synthesis.</p>
+
+  <section class="question">
+    <h2 style="margin-top:0">The question</h2>
+    <p>Should GSET E6 remove its two-stage VLM method—a hypothetical full-contact baseline inferred from observations that may not be full-contact, followed by a transferred contact delta—and what is a scientifically better way to reason about projected contact fractions?</p>
+  </section>
+
+  <section class="verdict recommend">
+    <h2 style="margin-top:0">Council verdict</h2>
+    <p><strong>Retire the current two-stage E6 as a quantitative method.</strong> Replace it first with a pointwise, one-stage <code>E6-joint</code> condition that exposes complete metadata, keeps controlled pairs local, labels interpolation versus extrapolation, and preserves raw responses.</p>
+    <p>Do not silently enforce monotonicity. The proxy-to-force relationship must be tested with replicated controlled sweeps before it becomes a model constraint. Batch prediction and deterministic correction should remain separately reported ablations.</p>
+  </section>
+
+  <h2>Agreement and disagreement</h2>
+  <div class="grid">
+    <div class="card agree"><h3>Contrarian</h3><div class="position">Remove two-stage arithmetic; underidentified and double-counting.</div></div>
+    <div class="card agree"><h3>First Principles</h3><div class="position">Use complete observation tuples; controlled effects stay local.</div></div>
+    <div class="card agree"><h3>Expansionist</h3><div class="position">Direct joint-evidence prediction now; hierarchical curves later.</div></div>
+    <div class="card agree"><h3>Outsider</h3><div class="position">Fix construct validity and misleading “contact area” terminology.</div></div>
+    <div class="card agree"><h3>Executor</h3><div class="position">Implement falsifiable E5/E6 ablations and preserve raw outputs.</div></div>
+    <div class="card caution"><h3>Open tension</h3><div class="position">VLM numerical estimator vs evidence structurer; pointwise vs batched; diagnose vs enforce monotonicity.</div></div>
+  </div>
+
+  <section>
+    <h2>Where the council agrees</h2>
+    <p>The current “full-contact baseline” is not identifiable because retrieved anchors may not represent full contact. Adding a transferred delta can double-count contact. The creatine pair establishes one local finite difference, not a universal response law. Every observation should remain a complete tuple of force, mass, roughness, projected-geometry proxy, and material/geometry evidence.</p>
+
+    <h2>Where the council clashes</h2>
+    <ul>
+      <li>Whether same-object contact sweeps should be predicted pointwise or jointly.</li>
+      <li>Whether monotonicity should only be measured or eventually enforced.</li>
+      <li>Whether the VLM should produce the numerical force or structure evidence for a regression, Gaussian process, or hierarchical model.</li>
+    </ul>
+
+    <h2>Blind spots caught in peer review</h2>
+    <ul>
+      <li><code>projected_contact_fraction</code> may not measure real engaged adhesive contact; pressure distribution, peel, deformation, and failure mode can change with it.</li>
+      <li>Monotonicity is a hypothesis, not yet an established law.</li>
+      <li>Replicated force trials, proxy uncertainty, leakage-safe surface splits, and repeated VLM runs are required.</li>
+      <li>VLM-generated ranges are not calibrated uncertainty intervals.</li>
+      <li>Batching counterfactual values gives the model extra relational information and must be evaluated as a separate task.</li>
+    </ul>
+  </section>
+
+  <section class="verdict">
+    <h2 style="margin-top:0">Recommended replacement</h2>
+    <ol>
+      <li>Reveal the actual proxy value for every retrieved observation.</li>
+      <li>Separate general analogues from same-surface controlled variants.</li>
+      <li>Describe controlled effects as local evidence, never a transferable coefficient.</li>
+      <li>Ask for a direct point estimate, evidence-strength label, and interpolation/extrapolation status.</li>
+      <li>Compare E5, legacy E6, one-stage E6-joint, and VLM-structured-evidence plus a conventional numerical model.</li>
+      <li>Report raw outputs, MAE, repeat variance, and monotonicity diagnostics; add calibrated intervals only with a calibration method.</li>
+    </ol>
+    <p><strong>First action:</strong> freeze legacy E6 and implement the complete-metadata, pointwise E6-joint prompt.</p>
+  </section>
+
+  <h2>Advisor responses</h2>
+  <details><summary>The Contrarian</summary><p>Remove the method. The full-contact baseline is undefined from the supplied evidence, while hidden contact remains latent in measured force. One controlled pair identifies one finite difference for one interface, not a transferable curve. Use complete references, ranges, and explicit underidentification.</p></details>
+  <details><summary>The First Principles Thinker</summary><p>Every observation must remain a joint tuple. Controlled variants provide local direction and sensitivity only. Use direct evidence-conditioned prediction, mark interpolation versus extrapolation, and never claim a universal additive penalty.</p></details>
+  <details><summary>The Expansionist</summary><p>A one-stage E6 can become a clean ablation of whether transparent contact evidence improves held-out prediction. Later, multiple controlled sweeps can support surface-specific or hierarchical response shapes.</p></details>
+  <details><summary>The Outsider</summary><p>The terminology itself overclaims. Consider renaming the feature to projected geometry ratio until it is validated as engaged contact. Separate image-force prediction from learning a contact-response law.</p></details>
+  <details><summary>The Executor</summary><p>Implement pointwise E6-joint quickly, preserve raw outputs, and compare it with E5 and separately declared joint/monotonic variants. Score error, repeat variance, interval calibration, and consistency separately.</p></details>
+
+  <details><summary>Peer-review highlights</summary>
+    <p>Reviewers favored the Executor for falsifiability and the Outsider for construct validity. Their strongest shared warning was that monotonicity itself remains unvalidated. They also identified measurement noise, split leakage, retrieval-policy confounding, and uncalibrated VLM confidence as unresolved threats.</p>
+  </details>
+
+  <footer>Generated 2026-08-09 21:46:39 EDT · Counciled: GSET E6 projected-contact reasoning architecture · Full transcript saved alongside this report.</footer>
+</main></body></html>
